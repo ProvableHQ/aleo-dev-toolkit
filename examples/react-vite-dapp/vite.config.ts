@@ -1,14 +1,31 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const wasmContentTypePlugin = {
+  name: "wasm-content-type-plugin",
+  configureServer(server: any) {
+    server.middlewares.use((req: any, res: any, next: any) => {
+      if (req.url.endsWith(".wasm")) {
+        res.setHeader("Content-Type", "application/wasm");
+      }
+      next();
+    });
+  },
+};
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), wasmContentTypePlugin],
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext'
+    }
+  },
   esbuild: {
     loader: 'tsx',  // This is the correct way to configure the loader for JSX
-    target: 'es2022',  // Ensure that top-level await is supported
-    jsxInject: 'import React from "react"'  // Optional for React projects
-
+    supported: {
+      'top-level-await': true //browsers can handle top-level-await features
+    },
   },
   build: {
     target: ['es2022'],  // Modernize the build target

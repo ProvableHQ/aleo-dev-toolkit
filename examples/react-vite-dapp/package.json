@@ -13,7 +13,6 @@
     "@provablehq/aleo-wallet-adaptor-leo": "file:../../packages/aleo-wallet-adaptor-leo",
     "@provablehq/aleo-wallet-adaptor-react": "file:../../packages/aleo-wallet-adaptor-react",
     "@provablehq/aleo-wallet-adaptor-react-ui": "file:../../packages/aleo-wallet-adaptor-react-ui",
-    "@provablehq/sdk": "^0.8.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
