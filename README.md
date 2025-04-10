@@ -2,6 +2,25 @@
 
 The **Aleo Dev Toolkit** is a monorepo containing a suite of libraries and tools designed to simplify the integration of Aleo wallets and blockchain functionality into your applications. Below is the structure of the repository and a brief explanation of each component.
 
+## Getting Started
+
+To get started, clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/provablehq/aleo-dev-toolkit.git
+cd aleo-dev-toolkit
+pnpm install
+```
+
+Explore the `examples/` directory for sample projects or refer to the `docs/` directory for detailed documentation.
+
+## Build
+
+If you build on the root, it will build all packages.
+
+```bash
+pnpm build
+```
 ## Repository Structure
 
 ```
@@ -86,18 +105,6 @@ aleo-dev-toolkit/                          (Monorepo Root)
 
 8. **`docs/`**  
     Documentation and specifications, including the Aleo Wallet Standard specification.
-
-## Getting Started
-
-To get started, clone the repository and install dependencies:
-
-```bash
-git clone https://github.com/provablehq/aleo-dev-toolkit.git
-cd aleo-dev-toolkit
-npm install
-```
-
-Explore the `examples/` directory for sample projects or refer to the `docs/` directory for detailed documentation.
 
 ## Detailed Explanation of Each Package
 
