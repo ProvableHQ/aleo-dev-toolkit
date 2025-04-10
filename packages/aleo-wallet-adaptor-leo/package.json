@@ -1,0 +1,28 @@
+{
+  "name": "@provablehq/aleo-wallet-adaptor-leo",
+  "version": "0.0.1",
+  "description": "Leo Wallet adaptor for Aleo",
+  "license": "MIT",
+  "type": "module",
+  "extends": "../../tsconfig.json", 
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" --no-error-on-unmatched-pattern",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
+    "@provablehq/aleo-wallet-adaptor-standard": "workspace:*",
+    "@provablehq/sdk": "^0.8.8"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.0"
+  }
+}

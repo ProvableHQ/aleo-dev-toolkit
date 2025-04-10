@@ -1,0 +1,33 @@
+{
+  "name": "@provablehq/aleo-wallet-adaptor-react",
+  "version": "0.0.1",
+  "description": "React context for Aleo wallet adaptors",
+  "license": "MIT",
+  "type": "module",
+  "extends": "../../tsconfig.json", 
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" --no-error-on-unmatched-pattern",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
+    "@provablehq/aleo-wallet-adaptor-standard": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
+  }
+}

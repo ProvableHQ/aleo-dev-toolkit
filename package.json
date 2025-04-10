@@ -1,0 +1,21 @@
+{
+  "name": "aleo-dev-toolkit",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm recursive run build",
+    "clean": "pnpm recursive run clean",
+    "lint": "pnpm recursive run lint",
+    "test": "pnpm recursive run test"
+  },
+  "workspaces": [
+    "packages/*",
+    "examples/*",
+    "docs"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.29.1",
+    "@typescript-eslint/parser": "^8.29.1",
+    "eslint": "^9.24.0"
+  }
+}
