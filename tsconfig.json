@@ -1,34 +1,22 @@
-/**
- * Root TypeScript configuration that is inherited by all packages.
- * Be careful when modifying this file as changes will affect all packages.
- * Package-specific configurations should be added to individual package tsconfig.json files.
- */
 {
-    "compilerOptions": {
-      "target": "ESNext",                         
-      "module": "ESNext",                       
-      "moduleResolution": "node",                 
-      "lib": ["dom", "esnext"],                   
-      "declaration": true,                        
-      "sourceMap": true,                          
-      "rootDir": ".",                             
-      "strict": true,                             
-      "esModuleInterop": true,                    
-      "skipLibCheck": true,                       
-      "forceConsistentCasingInFileNames": true,
-      "resolveJsonModule": true,
-      "isolatedModules": true,
-      "noImplicitAny": true,
-      "experimentalDecorators": true,
-      "emitDecoratorMetadata": true,
-      "jsx": "react-jsx" 
-    },
-    "exclude": [
-      "node_modules",
-      "dist",
-      "**/*.test.ts"
-    ],
-    "include": [
-      "packages/**/*"
-    ]
-  }
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "jsx": "react-jsx"
+  },
+  "exclude": ["**/node_modules", "**/dist"]
+} 
