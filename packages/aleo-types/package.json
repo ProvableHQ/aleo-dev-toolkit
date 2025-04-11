@@ -1,7 +1,7 @@
 {
-  "name": "@provablehq/aleo-wallet-adaptor-core",
+  "name": "@provablehq/aleo-types",
   "version": "0.1.0",
-  "description": "Core wallet adapter logic and utilities",
+  "description": "Types for Aleo blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -15,10 +15,6 @@
     "dev": "tsup --watch",
     "lint": "eslint src/**/*.ts*",
     "test": "jest"
-  },
-  "dependencies": {
-    "@provablehq/aleo-wallet-standard": "workspace:*",
-    "@provablehq/aleo-types": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

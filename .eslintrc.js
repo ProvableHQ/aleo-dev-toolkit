@@ -1,37 +1,30 @@
 module.exports = {
-    // Define environments (browser, Node.js, etc.)
-    env: {
-      browser: true,
-      node: true,
-      es2021: true,
+  root: true,
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 2020,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
     },
-    // Set the parser for TypeScript
-    parser: '@typescript-eslint/parser',
-    parserOptions: {
-      ecmaVersion: 12,
-      sourceType: 'module',
+  },
+  settings: {
+    react: {
+      version: 'detect',
     },
-    // Add plugins
-    plugins: ['@typescript-eslint'],
-    // Extend recommended ESLint and TypeScript rules
-    extends: [
-      'eslint:recommended',
-      'plugin:@typescript-eslint/recommended'
-    ],
-    // Customize rules here
-    rules: {
-      // For example, warn against unused variables
-      'no-unused-vars': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn']
-    },
-    // Optionally, override settings for specific file types or packages
-    overrides: [
-      {
-        files: ['*.ts', '*.tsx'],
-        rules: {
-          // Additional rules for TypeScript files can be specified here
-        },
-      },
-    ],
-  };
-  
+  },
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended',
+  ],
+  rules: {
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    'prettier/prettier': ['error', {}, { usePrettierrc: true }],
+  },
+  env: {
+    browser: true,
+    node: true,
+  },
+}; 

@@ -1,93 +1,222 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { BaseWalletAdaptor } from '@provablehq/aleo-wallet-adaptor-core';
-import { WalletAccount } from '@provablehq/aleo-wallet-adaptor-standard';
+import { FC, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { WalletAdapter, WalletError } from '@provablehq/aleo-wallet-adaptor-core';
+import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import { WalletContext } from './context';
 
-interface WalletContextState {
-  wallet: BaseWalletAdaptor | null;
-  accounts: WalletAccount[];
-  connected: boolean;
-  connecting: boolean;
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-}
-
-// Initialize context with default no-op values
-const WalletContext = createContext<WalletContextState>({
-  wallet: null,
-  accounts: [],
-  connected: false,
-  connecting: false,
-  connect: async () => {},
-  disconnect: async () => {}
-});
-
-interface WalletProviderProps {
-  wallets: BaseWalletAdaptor[];   // available wallet adaptors (e.g., LeoWalletAdaptor)
-  autoConnect?: boolean;          // optionally auto-connect on mount
+/**
+ * Wallet provider props
+ */
+export interface WalletProviderProps {
+  /**
+   * Wallet adapters to use
+   */
+  wallets: WalletAdapter[];
+  
+  /**
+   * Whether to auto connect to the last used wallet
+   */
+  autoConnect?: boolean;
+  
+  /**
+   * Whether to persist the wallet connection in local storage
+   */
+  localStorageKey?: string;
+  
+  /**
+   * Children components
+   */
   children: ReactNode;
+  
+  /**
+   * Callback for wallet errors
+   */
+  onError?: (error: WalletError) => void;
 }
 
-export const WalletProvider: React.FC<WalletProviderProps> = ({ wallets, autoConnect = false, children }) => {
-  const [wallet, setWallet] = useState<BaseWalletAdaptor | null>(null);
-  const [accounts, setAccounts] = useState<WalletAccount[]>([]);
-  const [connected, setConnected] = useState(false);
+/**
+ * Wallet provider component
+ */
+export const WalletProvider: FC<WalletProviderProps> = ({
+  children,
+  wallets,
+  autoConnect = false,
+  localStorageKey = 'aleoWalletName',
+  onError = (error: WalletError) => console.error(error),
+}) => {
   const [connecting, setConnecting] = useState(false);
-
-  // Select the first wallet adaptor by default (could be extended to allow manual selection)
-  useEffect(() => {
-    if (wallets.length > 0) {
-      setWallet(wallets[0]);
-    }
-  }, [wallets]);
-
-  // Auto-connect on initial mount, if enabled and a wallet is preselected
-  useEffect(() => {
-    if (autoConnect && wallet && !connected) {
-      (async () => {
-        setConnecting(true);
-        try {
-          const acc = await wallet.connect();
-          // Convert readonly accounts array to mutable array for state
-          setAccounts(acc.slice());
-          setConnected(true);
-        } catch (err) {
-          console.error('AutoConnect failed', err);
-        } finally {
-          setConnecting(false);
+  const [connected, setConnected] = useState(false);
+  const [wallet, setWallet] = useState<WalletAdapter | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [readyState, setReadyState] = useState<WalletReadyState>(WalletReadyState.UNSUPPORTED);
+  
+  const connect = useCallback(
+    async (walletName?: string) => {
+      if (connecting || connected) {
+        return account!;
+      }
+      
+      setConnecting(true);
+      try {
+        const selectedWallet = walletName ? wallets.find(w => w.name === walletName) : wallet;
+        
+        if (!selectedWallet) {
+          throw new Error('Wallet not found');
         }
-      })();
-    }
-  }, [autoConnect, wallet]);
-
-  // Trigger wallet connection flow
-  const connect = async () => {
-    if (!wallet) throw new Error('No wallet selected');
-    setConnecting(true);
-    try {
-      const acc = await wallet.connect();
-      setAccounts(acc.slice());
-      setConnected(true);
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  // Disconnect the wallet and clear state
-  const disconnect = async () => {
-    if (!wallet) return;
-    await wallet.disconnect();
-    setAccounts([]);
-    setConnected(false);
-  };
-
-  return (
-    <WalletContext.Provider value={{ wallet, accounts, connected, connecting, connect, disconnect }}>
-      {children}
-    </WalletContext.Provider>
+        
+        if (selectedWallet.readyState !== WalletReadyState.READY) {
+          throw new Error(`Wallet not ready: ${selectedWallet.name}`);
+        }
+        
+        const account = await selectedWallet.connect();
+        
+        if (localStorageKey) {
+          localStorage.setItem(localStorageKey, selectedWallet.name);
+        }
+        
+        setWallet(selectedWallet);
+        setAccount(account);
+        setReadyState(selectedWallet.readyState);
+        setConnected(true);
+        
+        return account;
+      } catch (error) {
+        onError(error as WalletError);
+        throw error;
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [connecting, connected, wallet, wallets, localStorageKey, account, onError]
   );
-};
-
-// Hook to access the wallet context in components
-export const useWallet = (): WalletContextState => {
-  return useContext(WalletContext);
-};
+  
+  const disconnect = useCallback(async () => {
+    if (wallet) {
+      try {
+        await wallet.disconnect();
+        
+        if (localStorageKey) {
+          localStorage.removeItem(localStorageKey);
+        }
+      } catch (error) {
+        onError(error as WalletError);
+      } finally {
+        setWallet(null);
+        setAccount(null);
+        setConnected(false);
+      }
+    }
+  }, [wallet, localStorageKey, onError]);
+  
+  const signTransaction = useCallback(
+    async (options: TransactionOptions): Promise<Transaction> => {
+      if (!wallet || !connected) {
+        throw new Error('Wallet not connected');
+      }
+      
+      try {
+        return await wallet.signTransaction(options);
+      } catch (error) {
+        onError(error as WalletError);
+        throw error;
+      }
+    },
+    [wallet, connected, onError]
+  );
+  
+  const executeTransaction = useCallback(
+    async (options: TransactionOptions): Promise<Transaction> => {
+      if (!wallet || !connected) {
+        throw new Error('Wallet not connected');
+      }
+      
+      try {
+        return await wallet.executeTransaction(options);
+      } catch (error) {
+        onError(error as WalletError);
+        throw error;
+      }
+    },
+    [wallet, connected, onError]
+  );
+  
+  // Connect to the last used wallet on startup if auto connect is enabled
+  useEffect(() => {
+    if (autoConnect && !connecting && !connected && localStorageKey) {
+      const savedWalletName = localStorage.getItem(localStorageKey);
+      
+      if (savedWalletName) {
+        connect(savedWalletName).catch(error => {
+          // Don't throw here, as this is on mount
+          console.error(error);
+        });
+      }
+    }
+  }, [autoConnect, connecting, connected, connect, localStorageKey]);
+  
+  // Listen for wallet adapter events
+  useEffect(() => {
+    if (!wallet) return;
+    
+    function handleConnect(account: Account) {
+      setAccount(account);
+      setConnected(true);
+      setReadyState(WalletReadyState.CONNECTED);
+    }
+    
+    function handleDisconnect() {
+      setAccount(null);
+      setConnected(false);
+      setReadyState(wallet?.readyState || WalletReadyState.UNSUPPORTED);
+    }
+    
+    function handleReadyStateChange(readyState: WalletReadyState) {
+      setReadyState(readyState);
+    }
+    
+    function handleError(error: WalletError) {
+      onError(error);
+    }
+    
+    wallet.on('connect', handleConnect);
+    wallet.on('disconnect', handleDisconnect);
+    wallet.on('readyStateChange', handleReadyStateChange);
+    wallet.on('error', handleError);
+    
+    return () => {
+      wallet.off('connect', handleConnect);
+      wallet.off('disconnect', handleDisconnect);
+      wallet.off('readyStateChange', handleReadyStateChange);
+      wallet.off('error', handleError);
+    };
+  }, [wallet, onError]);
+  
+  const contextValue = useMemo(
+    () => ({
+      wallet,
+      wallets,
+      account,
+      readyState,
+      connect,
+      disconnect,
+      signTransaction,
+      executeTransaction,
+      connecting,
+      connected,
+    }),
+    [
+      wallet,
+      wallets,
+      account,
+      readyState,
+      connect,
+      disconnect,
+      signTransaction,
+      executeTransaction,
+      connecting,
+      connected,
+    ]
+  );
+  
+  return <WalletContext.Provider value={contextValue}>{children}</WalletContext.Provider>;
+}; 

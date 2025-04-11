@@ -1,10 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react-jsx",  // Enable JSX for React 17+ and TypeScript
-    "outDir": "dist",
-    "rootDir": "src",
+    "outDir": "./dist"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
-}
+  "include": ["src"]
+} 

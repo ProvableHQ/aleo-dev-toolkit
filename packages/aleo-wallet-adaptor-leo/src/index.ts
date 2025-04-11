@@ -1,1 +1,2 @@
-export * from './LeoWalletAdaptor';
+export * from './LeoWalletAdapter';
+export * from './types'; 
