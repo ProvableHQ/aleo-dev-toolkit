@@ -16,15 +16,25 @@ Explore the `examples/` directory for sample projects or refer to the `docs/` di
 
 ## Build
 
-If you build on the root, it will build all packages.
+To build all packages:
 
 ```bash
 pnpm build
 ```
 
+This will use Turborepo to build all packages in the correct dependency order.
+
+## Development
+
+To start development mode for all packages:
+
+```bash
+pnpm dev
+```
+
 ## Clean
 
-If you build on the root, it will build all packages.
+To clean all built files:
 
 ```bash
 pnpm clean
@@ -84,34 +94,40 @@ aleo-dev-toolkit/                          (Monorepo Root)
 │   │
 │   ├─ aleo-wallet-adaptor-react-ui/       (UI components for wallet adapter integration)
 │   │
-├─ examples/                              (Example projects using the toolkit)
-├─ docs/                                  (Documentation and specifications, including the Aleo Wallet Standard spec)
+├─ examples/
+│   ├─ react-app/                         (Example React application using the toolkit)
+│   │
+├─ .changeset/                            (Changeset configuration for versioning and publishing)
+├─ turbo.json                             (Turborepo configuration)
 ├─ package.json                           (Root package configuration for workspaces)
 └─ README.md                              (High-level introduction and quick start)
 ```
 
 ### Key Components
 
-1. **`aleo-types/`**  
+1. **`@provablehq/aleo-types`**  
     Common types for the Aleo ecosystem, including Account, Transaction, and Network.
 
-2. **`aleo-wallet-standard/`**  
+2. **`@provablehq/aleo-wallet-standard`**  
     Defines the standard interfaces and types for Aleo wallet integration, including chain constants, wallet interfaces, and feature definitions.
 
-3. **`aleo-wallet-adaptor-core/`**  
+3. **`@provablehq/aleo-wallet-adaptor-core`**  
     Provides core wallet adapter logic, including base classes, error handling, and transaction utilities.
 
-4. **`aleo-wallet-adaptor-leo/`**  
+4. **`@provablehq/aleo-wallet-adaptor-leo`**  
     Implements the wallet adapter for LeoWallet, handling wallet-specific logic such as connection and transaction requests.
 
-5. **`aleo-wallet-adaptor-react/`**  
+5. **`@provablehq/aleo-wallet-adaptor-react`**  
     Offers React integration for the wallet adapter, including context providers and hooks for managing wallet state.
 
-6. **`aleo-wallet-adaptor-react-ui/`**  
+6. **`@provablehq/aleo-wallet-adaptor-react-ui`**  
     Contains reusable UI components for wallet integration, such as connect buttons and modals.
 
-7. **`examples/`**  
+7. **`@provablehq/aleo-hooks`**  
+    Provides React hooks for accessing and managing Aleo chain data and state.
+
+8. **`examples/`**  
     Example projects demonstrating how to use the toolkit in real-world applications.
 
-8. **`docs/`**  
+9. **`docs/`**  
     Documentation and specifications, including the Aleo Wallet Standard specification.
