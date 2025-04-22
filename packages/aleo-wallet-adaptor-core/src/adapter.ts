@@ -1,7 +1,7 @@
 import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
 import { AleoChain, StandardWallet, WalletFeatureName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { EventEmitter } from './eventEmitter';
-import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
+import { WalletConnectionError, WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
 
 /**
  * Wallet adapter events
@@ -103,7 +103,16 @@ export abstract class BaseAleoWalletAdapter
   /**
    * The wallet's ready state
    */
-  abstract readyState: WalletReadyState;
+  private _readyState: WalletReadyState = WalletReadyState.NOT_READY;
+  get readyState(): WalletReadyState {
+    return this._readyState;
+  }
+  protected set readyState(state: WalletReadyState) {
+    if (state !== this._readyState) {
+      this._readyState = state;
+      this.emit('readyStateChange', state);
+    }
+  }
   
   /**
    * The connected account, if any
@@ -119,32 +128,32 @@ export abstract class BaseAleoWalletAdapter
    * The supported chains
    */
   get chains(): AleoChain[] {
-    return this._wallet?.chains || [];
+    return this._wallet?.features[WalletFeatureName.CHAINS]?.chains || [];
   }
+
+  
   
   /**
    * Connect to the wallet
    * @returns The connected account
    */
   async connect(): Promise<Account> {
+    if (!this._wallet) {
+      throw new WalletConnectionError('No wallet provider found');
+    }
+    const feature = this._wallet.features[WalletFeatureName.CONNECT];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
+    }
     try {
-      if (!this._wallet) {
-        throw new WalletNotConnectedError();
-      }
-      
-      const connectFeature = this._wallet.features[WalletFeatureName.CONNECT];
-      if (!connectFeature) {
-        throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
-      }
-      
-      const account = await connectFeature.connect();
+      const account = await feature.connect();
       this.account = account;
+      this.readyState = WalletReadyState.CONNECTED;         // emit readyStateChange
       this.emit('connect', account);
-      
       return account;
-    } catch (error) {
-      this.emit('error', error as Error);
-      throw error;
+    } catch (err) {
+      this.emit('error', err as Error);
+      throw err;
     }
   }
   
@@ -152,20 +161,17 @@ export abstract class BaseAleoWalletAdapter
    * Disconnect from the wallet
    */
   async disconnect(): Promise<void> {
-    if (!this._wallet) {
-      return;
-    }
-    
-    const connectFeature = this._wallet.features[WalletFeatureName.CONNECT];
-    if (connectFeature) {
+    if (!this._wallet) return;
+    const feature = this._wallet.features[WalletFeatureName.CONNECT];
+    if (feature && feature.available) {
       try {
-        await connectFeature.disconnect();
-      } catch (error) {
-        this.emit('error', error as Error);
+        await feature.disconnect();
+      } catch (err) {
+        this.emit('error', err as Error);
       }
     }
-    
     this.account = undefined;
+    this.readyState = WalletReadyState.READY;               // emit readyStateChange
     this.emit('disconnect');
   }
   
@@ -175,16 +181,14 @@ export abstract class BaseAleoWalletAdapter
    * @returns The signed transaction
    */
   async signTransaction(options: TransactionOptions): Promise<Transaction> {
-    if (!this._wallet) {
+    if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
-    
-    const signFeature = this._wallet.features[WalletFeatureName.SIGN];
-    if (!signFeature) {
+    const feature = this._wallet.features[WalletFeatureName.SIGN];
+    if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.SIGN);
     }
-    
-    return signFeature.signTransaction(options);
+    return feature.signTransaction(options);
   }
   
   /**
@@ -193,15 +197,13 @@ export abstract class BaseAleoWalletAdapter
    * @returns The executed transaction
    */
   async executeTransaction(options: TransactionOptions): Promise<Transaction> {
-    if (!this._wallet) {
+    if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
-    
-    const executeFeature = this._wallet.features[WalletFeatureName.EXECUTE];
-    if (!executeFeature) {
+    const feature = this._wallet.features[WalletFeatureName.EXECUTE];
+    if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.EXECUTE);
     }
-    
-    return executeFeature.executeTransaction(options);
+    return feature.executeTransaction(options);
   }
 } 

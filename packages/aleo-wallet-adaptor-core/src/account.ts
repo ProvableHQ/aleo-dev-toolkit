@@ -1,4 +1,4 @@
-import { Account, AccountOptions } from '@provablehq/aleo-types';
+import { Account, AccountOptions,  } from '@provablehq/aleo-types';
 
 /**
  * Get the short address representation (for display)

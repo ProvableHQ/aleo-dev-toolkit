@@ -1,3 +1,3 @@
 export * from './context';
-export * from './WalletProvider';
+export { AleoWalletProvider } from './WalletProvider';
 export * from './useWallet'; 
