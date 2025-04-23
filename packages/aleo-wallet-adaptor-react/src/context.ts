@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { WalletAdapter } from '@provablehq/aleo-wallet-adaptor-core';
+import { WalletAdapter } from '@provablehq/aleo-wallet-standard';
 import { Account } from '@provablehq/aleo-types';
 
 /**

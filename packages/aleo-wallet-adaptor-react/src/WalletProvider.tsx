@@ -5,7 +5,7 @@ import React, {
 } from 'react';
 import type {
   WalletAdapter
-} from '@provablehq/aleo-wallet-adaptor-core';
+} from '@provablehq/aleo-wallet-standard';
 import type {
   Account
 } from '@provablehq/aleo-types';

@@ -1,93 +1,24 @@
 import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
-import { AleoChain, StandardWallet, WalletFeatureName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import { 
+  AleoChain, 
+  StandardWallet, 
+  WalletAdapter,
+  WalletConnectionError, 
+  WalletEvents, 
+  WalletFeatureName, 
+  WalletFeatureNotAvailableError, 
+  WalletNotConnectedError, 
+  WalletReadyState 
+} from '@provablehq/aleo-wallet-standard';
 import { EventEmitter } from './eventEmitter';
-import { WalletConnectionError, WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
 
-/**
- * Wallet adapter events
- */
-export interface WalletAdapterEvents {
-  /**
-   * Emitted when the wallet is connected
-   */
-  connect(account: Account): void;
-  
-  /**
-   * Emitted when the wallet is disconnected
-   */
-  disconnect(): void;
-  
-  /**
-   * Emitted when the wallet's ready state changes
-   */
-  readyStateChange(readyState: WalletReadyState): void;
-  
-  /**
-   * Emitted when an error occurs
-   */
-  error(error: Error): void;
-}
 
-/**
- * Wallet adapter interface
- */
-export interface WalletAdapter extends EventEmitter<WalletAdapterEvents> {
-  /**
-   * The wallet name
-   */
-  name: string;
-  
-  /**
-   * The wallet icon
-   */
-  icon?: string;
-  
-  /**
-   * The wallet's ready state
-   */
-  readyState: WalletReadyState;
-  
-  /**
-   * The connected account, if any
-   */
-  account?: Account;
-  
-  /**
-   * The supported chains
-   */
-  chains: AleoChain[];
-  
-  /**
-   * Connect to the wallet
-   * @returns The connected account
-   */
-  connect(): Promise<Account>;
-  
-  /**
-   * Disconnect from the wallet
-   */
-  disconnect(): Promise<void>;
-  
-  /**
-   * Sign a transaction
-   * @param options Transaction options
-   * @returns The signed transaction
-   */
-  signTransaction(options: TransactionOptions): Promise<Transaction>;
-  
-  /**
-   * Execute a transaction
-   * @param options Transaction options
-   * @returns The executed transaction
-   */
-  executeTransaction(options: TransactionOptions): Promise<Transaction>;
-}
 
 /**
  * Base class for Aleo wallet adapters
  */
 export abstract class BaseAleoWalletAdapter 
-  extends EventEmitter<WalletAdapterEvents> 
+  extends EventEmitter<WalletEvents> 
   implements WalletAdapter 
 {
   /**
