@@ -8,12 +8,14 @@ import { HashFunction } from './hash';
  * @property {string} name - The name of the record.
  * @property {boolean} unspent - Whether to filter for unspent records.
  * @property {number} limit - The maximum number of records to return.
+ * @property {string[]} fields - The fields to include in the response.
  */
-export interface RecordsRequest {
+export interface RecordsOptions {
   program: string;
   name?: string;
   unspent?: boolean;
   limit?: number;
+  fields?: string[];
 }
 
 /**
@@ -24,7 +26,7 @@ export interface RecordsRequest {
  * @property {Plaintext[]} key - Keys to look for in the mapping.
  * @property {Plaintext[]} value - Values of the mapping to filter for.
  */
-export interface MappingRequest {
+export interface MappingOptions {
   program: string;
   name: string;
   key: Plaintext[];
@@ -36,7 +38,7 @@ export interface MappingRequest {
  *
  * @message {Plaintext | Uint8Array | field[]} - The message to be signed. This can be a plaintext string, a byte array, or an array of fields.
  */
-export interface SignRequest {
+export interface SignOptions {
   message: Plaintext | Uint8Array | field[];
 }
 
@@ -46,7 +48,7 @@ export interface SignRequest {
  * @property {HashFunction} hash - The hash function to be used.
  * @property {Plaintext | Uint8Array | field[]} message - The message to be hashed. This can be a plaintext string, a byte array, or an array of fields.
  */
-export interface HashRequest {
+export interface HashOptions {
   hash: HashFunction;
   message: Plaintext | Uint8Array | field[];
 }

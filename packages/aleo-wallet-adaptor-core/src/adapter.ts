@@ -1,4 +1,4 @@
-import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import { Account, HashOptions, Plaintext, Record, RecordOptions, SignOptions, signature, TransactionOptions, TransactionResult } from '@provablehq/aleo-types';
 import { AleoChain, StandardWallet, WalletFeatureName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { EventEmitter } from './eventEmitter';
 import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
@@ -69,18 +69,30 @@ export interface WalletAdapter extends EventEmitter<WalletAdapterEvents> {
   disconnect(): Promise<void>;
   
   /**
-   * Sign a transaction
-   * @param options Transaction options
-   * @returns The signed transaction
-   */
-  signTransaction(options: TransactionOptions): Promise<Transaction>;
-  
-  /**
    * Execute a transaction
    * @param options Transaction options
    * @returns The executed transaction
    */
   executeTransaction(options: TransactionOptions): Promise<Transaction>;
+
+  /**
+   * Send a request to get the records for a user
+   * @param options Record options
+   */
+  getRecords(options: RecordOptions): Promise<Record[]>;
+
+  /**
+   * Sign data with the wallet.
+   * @param options Sign options
+   */
+  signData(options: SignOptions): Promise<signature>;
+
+  /**
+   * Hash data with the wallet.
+   *
+   * @param options Hash options
+   */
+  hashData(options: HashOptions): Promise<Plaintext>;
 }
 
 /**
@@ -174,7 +186,7 @@ export abstract class BaseAleoWalletAdapter
    * @param options Transaction options
    * @returns The signed transaction
    */
-  async signTransaction(options: TransactionOptions): Promise<Transaction> {
+  async signTransaction(options: TransactionOptions): Promise<TransactionResult> {
     if (!this._wallet) {
       throw new WalletNotConnectedError();
     }
@@ -203,5 +215,56 @@ export abstract class BaseAleoWalletAdapter
     }
     
     return executeFeature.executeTransaction(options);
+  }
+
+  /**
+   * Get records for a user
+   * @param options Record options
+   */
+  async getRecords(options: RecordOptions): Promise<Record[]> {
+    if (!this._wallet) {
+      throw new WalletNotConnectedError();
+    }
+
+    const recordsFeature = this._wallet.features[WalletFeatureName.RECORDS];
+    if (!recordsFeature) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.RECORDS);
+    }
+
+    return recordsFeature.getRecords(options);
+  }
+
+  /**
+   * Sign data with the wallet
+   * @param options Sign options
+   */
+  async signData(options: SignOptions): Promise<signature> {
+    if (!this._wallet) {
+      throw new WalletNotConnectedError();
+    }
+
+    const signFeature = this._wallet.features[WalletFeatureName.SIGN];
+    if (!signFeature) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.SIGN);
+    }
+
+    return signFeature.signData(options);
+  }
+
+  /**
+   * Hash data with the wallet
+   * @param options Hash options
+   */
+  async hashData(options: HashOptions): Promise<Plaintext> {
+    if (!this._wallet) {
+      throw new WalletNotConnectedError();
+    }
+
+    const hashFeature = this._wallet.features[WalletFeatureName.HASH];
+    if (!hashFeature) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.HASH);
+    }
+
+    return hashFeature.hashData(options);
   }
 } 

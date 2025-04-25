@@ -216,7 +216,7 @@ export type UserInput = Value | InputRequest;
  * @property {number} priorityFee - The priority fee for the transaction.
  * @property {boolean} privateFee - Whether the fee is private or not.
  */
-export interface TransactionRequest {
+export interface TransactionOptions {
   chainId: Network;
   program: string;
   functionName: string;
@@ -225,3 +225,21 @@ export interface TransactionRequest {
   privateFee: boolean;
 }
 
+/**
+ * Data returned from the wallet after a transaction is executed.
+ *
+ * @property {string} id - The ID of the transaction.
+ * @property {TransactionStatus} status - The status of the transaction.
+ * @property {number} height - The height of the block in which the transaction was included.
+ * @property {number} index - The index of the transaction in the block.
+ * @property {number} baseFee - The base fee paid for the transaction.
+ * @property {number} priorityFee - The priority paid fee for the transaction.
+ */
+export interface TransactionResult {
+  id?: string;
+  status: TransactionStatus;
+  height: number;
+  index: number;
+  baseFee: number;
+  priorityFee: number;
+}

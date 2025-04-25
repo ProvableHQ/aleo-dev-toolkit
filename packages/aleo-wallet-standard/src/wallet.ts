@@ -59,6 +59,11 @@ export interface WalletFeatures {
    * The chain feature
    */
   [WalletFeatureName.CHAINS]?: ChainFeature;
+
+  /**
+   * The hash feature
+   */
+  [WalletFeatureName.HASH]?: HashFeature;
   
   /**
    * Other features
@@ -73,6 +78,7 @@ export enum WalletFeatureName {
   CONNECT = 'standard:connect',
   ACCOUNTS = 'standard:accounts',
   SIGN = 'aleo:sign',
+  HASH = 'aleo:hash',
   EXECUTE = 'aleo:execute',
   CHAINS = 'standard:chains',
 }
