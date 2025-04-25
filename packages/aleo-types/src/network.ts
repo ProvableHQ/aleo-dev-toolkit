@@ -3,30 +3,36 @@
  */
 export enum Network {
   MAINNET = 'mainnet',
-  TESTNET3 = 'testnet3',
+  TESTNET = 'testnet',
+  CANARY = 'canary',
 }
 
 /**
  * Network configuration
+ *
+ * @property {string} url - API endpoint for the network.
+ * @property {Object} headers - Headers to be sent with requests.
+ * @property {string} edition - The edition of the network.
+ * @property {Network} network - The network type (mainnet, testnet, canary).
  */
 export interface NetworkConfig {
   /**
-   * Network name
-   */
-  network: Network;
-  
-  /**
    * API endpoint for the network
    */
-  apiUrl: string;
-  
+  url: string;
+
   /**
-   * Explorer URL for the network
+   * Headers
    */
-  explorerUrl?: string;
+  headers: { [key: string]: string };
   
   /**
    * Chain ID for the network
    */
-  chainId: string;
+  edition: string;
+
+  /**
+   * Network name
+   */
+  network: Network;
 } 

@@ -3,25 +3,17 @@
  */
 export interface Account {
   /**
-   * The account's private key
+   * The account's privatekey
    */
-  privateKey?: string;
-  
+  privateKey: string;
+
   /**
    * The account's view key
    */
-  viewKey?: string;
-  
+  viewKey: string;
+
   /**
    * The account's address
    */
   address: string;
 }
-
-/**
- * Account creation options
- */
-export interface AccountOptions {
-  privateKey?: string;
-  seed?: Uint8Array;
-} 
