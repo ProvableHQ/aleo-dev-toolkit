@@ -30,11 +30,14 @@ export enum TransactionStatus {
  * - `EXECUTION`: A transaction that executes a function in a deployed program and generates one or more Transitions.
  * - `FEE`: A /// The fee transaction represents a fee paid to the network, used for rejected transactions.
  */
-export enum TransactionType {
-  DEPLOYMENT = 'Deployment',
-  EXECUTION = 'Execution',
-  FEE = 'Fee',
-}
+// export enum TransactionType {
+//   DEPLOYMENT = 'deployment',
+//   EXECUTION = 'execute',
+//   FEE = 'fee',
+// }
+// The API gives plain strings like "execute" — not enum values
+export type TransactionType = 'deployment' | 'execute' | 'fee';
+
 
 /**
  * Represents an Aleo transaction
@@ -93,8 +96,8 @@ export interface Execution {
  */
 export interface FeeExecution {
   transition: Transition;
-  proof: string;
   global_state_root: string;
+  proof: string;
 }
 
 /**
@@ -112,12 +115,13 @@ export interface Transition {
   id: string;
   program: string;
   function: string;
-  inputs?: (Input)[];
-  outputs?: (Output)[];
-  proof: string;
+  inputs?: Input[];
+  outputs?: Output[];
+  proof?: string;
   tpk: string;
   tcm: string;
-  fee: bigint;
+  scm: string;
+  fee?: bigint | string;
 }
 
 /**
