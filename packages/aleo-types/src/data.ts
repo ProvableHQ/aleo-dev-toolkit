@@ -94,11 +94,10 @@ export type Ciphertext = string;
 
 /** An aleo record type */
 export interface Record {
-  owner: address;
-  [key: string]: Array | Literal | Struct;
-  nonce: string;
+  owner: string;
+  _nonce: string;
+  [key: string]: Array | Literal | Struct | string | undefined;
 }
-
 /** An aleo future type */
 export type Future = {
   programId: string,
