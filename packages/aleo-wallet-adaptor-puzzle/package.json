@@ -5,20 +5,24 @@
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist",
     "dev": "tsup --watch"
   },
   "dependencies": {
-    "@puzzlehq/sdk": "^0.2.0",
+    "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
     "@provablehq/aleo-wallet-standard": "workspace:*",
-    "@provablehq/aleo-types": "workspace:*"
+    "@puzzlehq/sdk": "^0.2.0",
+    "@puzzlehq/sdk-core": "^1.0.3"
   },
   "devDependencies": {
     "tsup": "^7.0.0",
     "typescript": "^5.0.0"
   }
-} 
+}

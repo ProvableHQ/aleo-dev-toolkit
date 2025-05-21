@@ -1,36 +1,34 @@
 import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
-import { 
-  AleoChain, 
-  StandardWallet, 
+import {
+  AleoChain,
+  StandardWallet,
   WalletAdapter,
-  WalletConnectionError, 
-  WalletEvents, 
-  WalletFeatureName, 
-  WalletFeatureNotAvailableError, 
-  WalletNotConnectedError, 
-  WalletReadyState 
+  WalletConnectionError,
+  WalletEvents,
+  WalletFeatureName,
+  WalletFeatureNotAvailableError,
+  WalletNotConnectedError,
+  WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
 import { EventEmitter } from './eventEmitter';
-
-
 
 /**
  * Base class for Aleo wallet adapters
  */
-export abstract class BaseAleoWalletAdapter 
-  extends EventEmitter<WalletEvents> 
-  implements WalletAdapter 
+export abstract class BaseAleoWalletAdapter
+  extends EventEmitter<WalletEvents>
+  implements WalletAdapter
 {
   /**
    * The wallet name
    */
   abstract name: string;
-  
+
   /**
    * The wallet icon
    */
   abstract icon?: string;
-  
+
   /**
    * The wallet's ready state
    */
@@ -44,17 +42,17 @@ export abstract class BaseAleoWalletAdapter
       this.emit('readyStateChange', state);
     }
   }
-  
+
   /**
    * The connected account, if any
    */
   account?: Account;
-  
+
   /**
    * The wallet's standard interface, if available
    */
   protected _wallet?: StandardWallet;
-  
+
   /**
    * The supported chains
    */
@@ -62,8 +60,6 @@ export abstract class BaseAleoWalletAdapter
     return this._wallet?.features[WalletFeatureName.CHAINS]?.chains || [];
   }
 
-  
-  
   /**
    * Connect to the wallet
    * @returns The connected account
@@ -79,7 +75,7 @@ export abstract class BaseAleoWalletAdapter
     try {
       const account = await feature.connect();
       this.account = account;
-      this.readyState = WalletReadyState.CONNECTED;         // emit readyStateChange
+      this.readyState = WalletReadyState.CONNECTED; // emit readyStateChange
       this.emit('connect', account);
       return account;
     } catch (err) {
@@ -87,7 +83,7 @@ export abstract class BaseAleoWalletAdapter
       throw err;
     }
   }
-  
+
   /**
    * Disconnect from the wallet
    */
@@ -102,10 +98,10 @@ export abstract class BaseAleoWalletAdapter
       }
     }
     this.account = undefined;
-    this.readyState = WalletReadyState.READY;               // emit readyStateChange
+    this.readyState = WalletReadyState.READY; // emit readyStateChange
     this.emit('disconnect');
   }
-  
+
   /**
    * Sign a transaction
    * @param options Transaction options
@@ -121,7 +117,7 @@ export abstract class BaseAleoWalletAdapter
     }
     return feature.signTransaction(options);
   }
-  
+
   /**
    * Execute a transaction
    * @param options Transaction options
@@ -137,4 +133,4 @@ export abstract class BaseAleoWalletAdapter
     }
     return feature.executeTransaction(options);
   }
-} 
+}

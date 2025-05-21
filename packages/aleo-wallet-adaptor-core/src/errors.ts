@@ -10,7 +10,7 @@ export class WalletError extends Error {
  */
 export class WalletNotConnectedError extends WalletError {
   name = 'WalletNotConnectedError';
-  
+
   constructor() {
     super('Wallet not connected');
   }
@@ -21,7 +21,7 @@ export class WalletNotConnectedError extends WalletError {
  */
 export class WalletConnectionError extends WalletError {
   name = 'WalletConnectionError';
-  
+
   constructor(message = 'Connection to wallet failed') {
     super(message);
   }
@@ -32,7 +32,7 @@ export class WalletConnectionError extends WalletError {
  */
 export class WalletFeatureNotAvailableError extends WalletError {
   name = 'WalletFeatureNotAvailableError';
-  
+
   constructor(feature: string) {
     super(`Wallet feature not available: ${feature}`);
   }
@@ -43,7 +43,7 @@ export class WalletFeatureNotAvailableError extends WalletError {
  */
 export class WalletTransactionError extends WalletError {
   name = 'WalletTransactionError';
-  
+
   constructor(message = 'Transaction failed') {
     super(message);
   }
@@ -54,7 +54,7 @@ export class WalletTransactionError extends WalletError {
  */
 export class WalletTransactionRejectedError extends WalletTransactionError {
   name = 'WalletTransactionRejectedError';
-  
+
   constructor() {
     super('Transaction rejected by user');
   }
@@ -65,8 +65,8 @@ export class WalletTransactionRejectedError extends WalletTransactionError {
  */
 export class WalletTransactionTimeoutError extends WalletTransactionError {
   name = 'WalletTransactionTimeoutError';
-  
+
   constructor() {
     super('Transaction timed out');
   }
-} 
+}

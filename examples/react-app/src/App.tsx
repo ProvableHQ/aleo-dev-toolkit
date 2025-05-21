@@ -8,16 +8,20 @@ import './App.css';
 // Component to display wallet information
 const WalletInfo = () => {
   const { wallet, account } = useWallet();
-  
+
   if (!wallet || !account) {
     return <p>Please connect your wallet first.</p>;
   }
-  
+
   return (
     <div className="wallet-info">
       <h2>Wallet Connected</h2>
-      <p><strong>Wallet Name:</strong> {wallet.name}</p>
-      <p><strong>Address:</strong> {account.address}</p>
+      <p>
+        <strong>Wallet Name:</strong> {wallet.name}
+      </p>
+      <p>
+        <strong>Address:</strong> {account.address}
+      </p>
     </div>
   );
 };
@@ -27,20 +31,20 @@ const WalletInfo = () => {
 //   const { executeTransaction, connected } = useWallet();
 //   const [txId, setTxId] = useState<string | null>(null);
 //   const [loading, setLoading] = useState(false);
-  
+
 //   const handleExecute = async () => {
 //     if (!connected) return;
-    
+
 //     try {
 //       setLoading(true);
-      
+
 //       // This is just an example - you would need a real program and function to call
 //       const tx = await executeTransaction({
 //         program: 'hello_world.aleo',
 //         function: 'main',
 //         inputs: [],
 //       });
-      
+
 //       setTxId(tx.id);
 //     } catch (error) {
 //       console.error('Transaction failed', error);
@@ -48,11 +52,11 @@ const WalletInfo = () => {
 //       setLoading(false);
 //     }
 //   };
-  
+
 //   if (!connected) {
 //     return null;
 //   }
-  
+
 //   return (
 //     <div className="transaction">
 //       <button
@@ -61,7 +65,7 @@ const WalletInfo = () => {
 //       >
 //         {loading ? 'Executing...' : 'Execute Transaction'}
 //       </button>
-      
+
 //       {txId && (
 //         <div className="tx-result">
 //           <p>Transaction ID: {txId}</p>
@@ -73,32 +77,32 @@ const WalletInfo = () => {
 
 export function App() {
   // memoize to avoid re‑instantiating adapters on each render
-  const wallets = useMemo(() => [
-    new PuzzleWalletAdapter({
-      appName: 'Aleo Wallet Example',
-      appDescription: 'Example application for Puzzle wallet',
-      programIdPermissions: {
-        'AleoTestnet': ['hello_world.aleo'] // Example program IDs
-      }
-    })
-  ], []);
+  const wallets = useMemo(
+    () => [
+      new PuzzleWalletAdapter({
+        appName: 'Aleo Wallet Example',
+        appDescription: 'Example application for Puzzle wallet',
+        programIdPermissions: {
+          AleoTestnet: ['hello_world.aleo'], // Example program IDs
+        },
+      }),
+    ],
+    [],
+  );
 
   return (
     <AleoWalletProvider wallets={wallets} autoConnect>
       <header>
-      <div className="app">
-      <h1>Aleo Wallet Example</h1>
-        <WalletConnectButton />
+        <div className="app">
+          <h1>Aleo Wallet Example</h1>
+          <WalletConnectButton />
 
-        <WalletInfo />
+          <WalletInfo />
         </div>
       </header>
-      <main>
-        {/* your DApp's components */}
-      </main>
+      <main>{/* your DApp's components */}</main>
     </AleoWalletProvider>
   );
 }
 
-export default App; 
-
+export default App;
