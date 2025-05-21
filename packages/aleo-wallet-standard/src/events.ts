@@ -1,61 +1,45 @@
 import { Account } from '@provablehq/aleo-types';
 import { WalletReadyState } from './wallet';
 
-export interface WalletEvents {
-  /**
-   * Emitted when the wallet is connected
-   */
-  connect(account: Account): void;
+export type WalletEventMap = {
+  connect: Account;
+  disconnect: void;
+  accountChange: Account;
+  readyStateChange: WalletReadyState;
+  error: Error;
+};
 
-  /**
-   * Emitted when the wallet is disconnected
-   */
-  disconnect(): void;
-
-  /**
-   * Emitted when the connected account changes
-   */
-  accountChange(newAccount: Account): void;
-
-  /**
-   * Emitted when the wallet's ready state changes
-   */
-  readyStateChange(readyState: WalletReadyState): void;
-
-  /**
-   * Emitted when an error occurs
-   */
-  error(error: Error): void;
-
-  /**
-   * Index signature for additional events
-   */
-  [eventName: string]: ((...args: any[]) => void) | undefined;
-}
+export type WalletEventType = keyof WalletEventMap;
+export type WalletEventHandler<T extends WalletEventType> = (payload: WalletEventMap[T]) => void;
 
 /**
  * Base interface for any wallet event emitter
  */
-export interface EventEmitter<
-  Events extends Record<string, ((...args: any[]) => unknown) | undefined> = WalletEvents,
-> {
+export interface EventEmitter {
   /**
    * Register an event listener
    */
-  on<E extends keyof Events>(event: E, listener: Events[E]): this;
+  on<T extends WalletEventType>(event: T, listener: WalletEventHandler<T>): this;
 
   /**
    * Register a one-time event listener
    */
-  once<E extends keyof Events>(event: E, listener: Events[E]): this;
+  once<T extends WalletEventType>(event: T, listener: WalletEventHandler<T>): this;
 
   /**
    * Unregister an event listener
    */
-  off<E extends keyof Events>(event: E, listener: Events[E]): this;
+  off<T extends WalletEventType>(event: T, listener: WalletEventHandler<T>): this;
 
   /**
    * Emit an event
    */
-  emit<E extends keyof Events>(event: E, ...args: Parameters<NonNullable<Events[E]>>): boolean;
+  emit<T extends WalletEventType>(event: T, payload: WalletEventMap[T]): boolean;
+}
+
+/**
+ * Type guard to check if an event type is valid
+ */
+export function isValidWalletEvent(event: string): event is WalletEventType {
+  return ['connect', 'disconnect', 'accountChange', 'readyStateChange', 'error'].includes(event);
 }

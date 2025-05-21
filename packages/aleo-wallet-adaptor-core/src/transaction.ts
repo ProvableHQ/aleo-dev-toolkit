@@ -51,7 +51,7 @@ export async function pollTransactionStatus(options: PollTransactionOptions): Pr
   } = options;
 
   const startTime = Date.now();
-  let transaction: Transaction = {
+  const transaction: Transaction = {
     id: transactionId,
     status: TransactionStatus.PENDING,
   };
