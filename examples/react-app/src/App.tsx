@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletConnectButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
+import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import './App.css';
 
@@ -73,7 +73,15 @@ const WalletInfo = () => {
 
 export function App() {
   // memoize to avoid re‑instantiating adapters on each render
-  const wallets = useMemo(() => [new LeoWalletAdapter()], []);
+  const wallets = useMemo(() => [
+    new PuzzleWalletAdapter({
+      appName: 'Aleo Wallet Example',
+      appDescription: 'Example application for Puzzle wallet',
+      programIdPermissions: {
+        'AleoTestnet': ['hello_world.aleo'] // Example program IDs
+      }
+    })
+  ], []);
 
   return (
     <AleoWalletProvider wallets={wallets} autoConnect>
@@ -86,7 +94,7 @@ export function App() {
         </div>
       </header>
       <main>
-        {/* your DApp’s components */}
+        {/* your DApp's components */}
       </main>
     </AleoWalletProvider>
   );

@@ -1,31 +1,24 @@
 {
-  "name": "@provablehq/aleo-wallet-adaptor-leo",
+  "name": "@provablehq/aleo-wallet-adaptor-puzzle",
   "version": "0.1.0",
-  "description": "LeoWallet adapter implementation",
+  "description": "Puzzle wallet adapter for Aleo",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
-  "sideEffects": false,
+  "files": ["dist", "src"],
   "scripts": {
     "build": "tsup",
-    "clean": "rimraf dist",
-    "dev": "tsup --watch",
-    "lint": "eslint src/**/*.ts*",
-    "test": "jest"
+    "clean": "rm -rf dist",
+    "dev": "tsup --watch"
   },
   "dependencies": {
+    "@puzzlehq/sdk": "^0.2.0",
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
     "@provablehq/aleo-wallet-standard": "workspace:*",
     "@provablehq/aleo-types": "workspace:*"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "devDependencies": {
-    "rimraf": "^5.0.5",
-    "tsup": "^8.0.2"
+    "tsup": "^7.0.0",
+    "typescript": "^5.0.0"
   }
 } 
