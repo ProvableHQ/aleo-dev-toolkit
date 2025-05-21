@@ -10,38 +10,38 @@ export interface WalletContextState {
    * All available wallet adapters
    */
   wallets: WalletAdapter[];
-  
+
   /**
    * The connected wallet adapter
    */
   wallet: WalletAdapter | null;
-  
+
   /**
    * The connected account
    */
   account: Account | null;
-  
+
   /**
    * Whether the wallet is connected
    */
   connected: boolean;
-  
+
   /**
    * Whether the wallet is connecting
    */
   connecting: boolean;
-  
+
   /**
    * Select a wallet by name
    * @param name The name of the wallet to select
    */
   selectWallet: (name: string) => void;
-  
+
   /**
    * Connect to the selected wallet
    */
   connect: () => Promise<void>;
-  
+
   /**
    * Disconnect from the connected wallet
    */
@@ -63,4 +63,4 @@ export function useWalletContext(): WalletContextState {
     throw new Error('`useWalletContext` must be used inside `AleoWalletProvider`');
   }
   return ctx;
-} 
+}

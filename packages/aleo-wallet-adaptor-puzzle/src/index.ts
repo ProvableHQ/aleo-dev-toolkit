@@ -1,2 +1,2 @@
 export * from './PuzzleWalletAdapter';
-export * from './types'; 
+export * from './types';

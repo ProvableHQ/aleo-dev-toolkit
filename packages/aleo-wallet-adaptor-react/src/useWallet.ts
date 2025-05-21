@@ -7,4 +7,4 @@ import type { WalletContextState } from './context';
  */
 export function useWallet(): WalletContextState {
   return useWalletContext();
-} 
+}

@@ -8,10 +8,10 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   external: [
-    'react', 
-    'react-dom', 
+    'react',
+    'react-dom',
     '@provablehq/aleo-wallet-adaptor-react',
     '@provablehq/aleo-wallet-adaptor-core',
-    '@provablehq/aleo-wallet-standard'
+    '@provablehq/aleo-wallet-standard',
   ],
-}); 
+});

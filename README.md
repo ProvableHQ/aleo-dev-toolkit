@@ -72,6 +72,7 @@ pnpm publish-packages
 ```
 
 This will:
+
 1. Build all packages
 2. Run linters and tests
 3. Apply changesets to update versions
@@ -106,28 +107,28 @@ aleo-dev-toolkit/                          (Monorepo Root)
 ### Key Components
 
 1. **`@provablehq/aleo-types`**  
-    Common types for the Aleo ecosystem, including Account, Transaction, and Network.
+   Common types for the Aleo ecosystem, including Account, Transaction, and Network.
 
 2. **`@provablehq/aleo-wallet-standard`**  
-    Defines the standard interfaces and types for Aleo wallet integration, including chain constants, wallet interfaces, and feature definitions.
+   Defines the standard interfaces and types for Aleo wallet integration, including chain constants, wallet interfaces, and feature definitions.
 
 3. **`@provablehq/aleo-wallet-adaptor-core`**  
-    Provides core wallet adapter logic, including base classes, error handling, and transaction utilities.
+   Provides core wallet adapter logic, including base classes, error handling, and transaction utilities.
 
 4. **`@provablehq/aleo-wallet-adaptor-leo`**  
-    Implements the wallet adapter for LeoWallet, handling wallet-specific logic such as connection and transaction requests.
+   Implements the wallet adapter for LeoWallet, handling wallet-specific logic such as connection and transaction requests.
 
 5. **`@provablehq/aleo-wallet-adaptor-react`**  
-    Offers React integration for the wallet adapter, including context providers and hooks for managing wallet state.
+   Offers React integration for the wallet adapter, including context providers and hooks for managing wallet state.
 
 6. **`@provablehq/aleo-wallet-adaptor-react-ui`**  
-    Contains reusable UI components for wallet integration, such as connect buttons and modals.
+   Contains reusable UI components for wallet integration, such as connect buttons and modals.
 
 7. **`@provablehq/aleo-hooks`**  
-    Provides React hooks for accessing and managing Aleo chain data and state.
+   Provides React hooks for accessing and managing Aleo chain data and state.
 
 8. **`examples/`**  
-    Example projects demonstrating how to use the toolkit in real-world applications.
+   Example projects demonstrating how to use the toolkit in real-world applications.
 
 9. **`docs/`**  
-    Documentation and specifications, including the Aleo Wallet Standard specification.
+   Documentation and specifications, including the Aleo Wallet Standard specification.

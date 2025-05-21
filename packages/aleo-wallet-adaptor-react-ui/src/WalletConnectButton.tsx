@@ -5,33 +5,22 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
 
 export const WalletConnectButton: React.FC = () => {
-  const {
-    wallets,
-    wallet,
-    account,
-    connected,
-    connecting,
-    selectWallet,
-    connect,
-    disconnect,
-  } = useWallet();
+  const { wallets, wallet, account, connected, connecting, selectWallet, connect, disconnect } =
+    useWallet();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Only list adapters that are ready to connect
-  const available = wallets.filter(
-    (w) => w.readyState === WalletReadyState.READY
-  );
+  const available = wallets.filter(w => w.readyState === WalletReadyState.READY);
 
   // Helper to shorten an address for display
-  const short = (addr: string) =>
-    addr.slice(0, 6) + '…' + addr.slice(-4);
+  const short = (addr: string) => addr.slice(0, 6) + '…' + addr.slice(-4);
 
   if (!connected) {
     return (
       <div style={{ position: 'relative', display: 'inline-block' }}>
         <button
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={() => setMenuOpen(o => !o)}
           disabled={connecting || available.length === 0}
         >
           {connecting ? 'Connecting…' : 'Connect Aleo Wallet'}
@@ -50,7 +39,7 @@ export const WalletConnectButton: React.FC = () => {
               listStyle: 'none',
             }}
           >
-            {available.map((w) => (
+            {available.map(w => (
               <li key={w.name} style={{ margin: '0.25rem 0' }}>
                 <button
                   style={{ display: 'flex', alignItems: 'center' }}
@@ -74,9 +63,7 @@ export const WalletConnectButton: React.FC = () => {
               </li>
             ))}
 
-            {available.length === 0 && (
-              <li style={{ color: '#888' }}>No wallets detected</li>
-            )}
+            {available.length === 0 && <li style={{ color: '#888' }}>No wallets detected</li>}
           </ul>
         )}
       </div>
@@ -86,7 +73,7 @@ export const WalletConnectButton: React.FC = () => {
   // — Connected State —
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
-      <button onClick={() => setMenuOpen((o) => !o)}>
+      <button onClick={() => setMenuOpen(o => !o)}>
         {wallet?.name} – {account ? short(account.address) : '…'}
       </button>
 
@@ -104,13 +91,18 @@ export const WalletConnectButton: React.FC = () => {
           }}
         >
           <li style={{ margin: '0.25rem 0' }}>
-            <button onClick={() => { disconnect(); setMenuOpen(false); }}>
+            <button
+              onClick={() => {
+                disconnect();
+                setMenuOpen(false);
+              }}
+            >
               Disconnect
             </button>
           </li>
           {wallets
-            .filter((w) => w.name !== wallet?.name && w.readyState === WalletReadyState.READY)
-            .map((w) => (
+            .filter(w => w.name !== wallet?.name && w.readyState === WalletReadyState.READY)
+            .map(w => (
               <li key={w.name} style={{ margin: '0.25rem 0' }}>
                 <button
                   style={{ display: 'flex', alignItems: 'center' }}

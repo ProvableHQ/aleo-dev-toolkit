@@ -1,17 +1,7 @@
-import React, {
-  useEffect,
-  useState,
-  ReactNode
-} from 'react';
-import type {
-  WalletAdapter
-} from '@provablehq/aleo-wallet-standard';
-import type {
-  Account
-} from '@provablehq/aleo-types';
-import {
-  WalletReadyState
-} from '@provablehq/aleo-wallet-standard';
+import React, { useEffect, useState, ReactNode } from 'react';
+import type { WalletAdapter } from '@provablehq/aleo-wallet-standard';
+import type { Account } from '@provablehq/aleo-types';
+import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { WalletContext } from './context';
 
 export const AleoWalletProvider: React.FC<{
@@ -28,7 +18,7 @@ export const AleoWalletProvider: React.FC<{
   useEffect(() => {
     const handlers: { adapter: WalletAdapter; cleanup: () => void }[] = [];
 
-    wallets.forEach((adapter) => {
+    wallets.forEach(adapter => {
       const onConnect = (acc: Account) => {
         setWallet(adapter);
         setAccount(acc);
@@ -53,12 +43,12 @@ export const AleoWalletProvider: React.FC<{
           adapter.off('connect', onConnect);
           adapter.off('disconnect', onDisconnect);
           adapter.off('error', onError);
-        }
+        },
       });
     });
 
     return () => {
-      handlers.forEach((h) => h.cleanup());
+      handlers.forEach(h => h.cleanup());
     };
   }, [wallets]);
 
@@ -66,15 +56,18 @@ export const AleoWalletProvider: React.FC<{
   useEffect(() => {
     if (!autoConnect) return;
     const last = window.localStorage.getItem('aleo_last_wallet');
-    const found = wallets.find((w) => w.name === last && w.readyState === WalletReadyState.READY);
+    const found = wallets.find(w => w.name === last && w.readyState === WalletReadyState.READY);
     if (found) {
       setConnecting(true);
-      found.connect().catch(() => {}).finally(() => setConnecting(false));
+      found
+        .connect()
+        .catch(() => {})
+        .finally(() => setConnecting(false));
     }
   }, [wallets, autoConnect]);
 
   const selectWallet = (name: string) => {
-    const found = wallets.find((w) => w.name === name);
+    const found = wallets.find(w => w.name === name);
     if (found) setWallet(found);
   };
 
@@ -103,7 +96,7 @@ export const AleoWalletProvider: React.FC<{
         connecting,
         selectWallet,
         connect,
-        disconnect
+        disconnect,
       }}
     >
       {children}
