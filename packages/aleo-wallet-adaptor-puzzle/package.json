@@ -18,7 +18,6 @@
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
     "@provablehq/aleo-wallet-standard": "workspace:*",
-    "@puzzlehq/sdk": "^0.2.0",
     "@puzzlehq/sdk-core": "^1.0.3"
   },
   "devDependencies": {

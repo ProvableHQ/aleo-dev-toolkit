@@ -7,13 +7,13 @@ import {
 import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { BaseAleoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-core';
 import {
+  connect,
   disconnect,
   requestCreateEvent,
   requestSignature,
   EventType,
   Network,
-} from '@puzzlehq/sdk';
-import { connect } from '@puzzlehq/sdk-core';
+} from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig } from './types';
 
 // Define custom error classes
