@@ -1,5 +1,5 @@
 import { useWalletContext } from './context';
-import { WalletContextState } from './context';
+import type { WalletContextState } from './context';
 
 /**
  * Custom hook to use the wallet
@@ -7,4 +7,4 @@ import { WalletContextState } from './context';
  */
 export function useWallet(): WalletContextState {
   return useWalletContext();
-} 
+}

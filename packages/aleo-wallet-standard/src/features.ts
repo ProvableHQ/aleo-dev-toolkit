@@ -9,7 +9,7 @@ export interface WalletFeature {
    * The feature identifier
    */
   name: string;
-  
+
   /**
    * Whether the feature is available
    */
@@ -21,13 +21,13 @@ export interface WalletFeature {
  */
 export interface ConnectFeature extends WalletFeature {
   name: 'standard:connect';
-  
+
   /**
    * Connect to the wallet
    * @returns The connected account
    */
   connect(): Promise<Account>;
-  
+
   /**
    * Disconnect from the wallet
    */
@@ -39,7 +39,7 @@ export interface ConnectFeature extends WalletFeature {
  */
 export interface AccountsFeature extends WalletFeature {
   name: 'standard:accounts';
-  
+
   /**
    * Get the wallet accounts
    * @returns The wallet accounts
@@ -52,7 +52,7 @@ export interface AccountsFeature extends WalletFeature {
  */
 export interface SignFeature extends WalletFeature {
   name: 'aleo:sign';
-  
+
   /**
    * Sign a transaction
    * @param options Transaction options
@@ -66,7 +66,7 @@ export interface SignFeature extends WalletFeature {
  */
 export interface ExecuteFeature extends WalletFeature {
   name: 'aleo:execute';
-  
+
   /**
    * Execute a transaction
    * @param options Transaction options
@@ -80,9 +80,9 @@ export interface ExecuteFeature extends WalletFeature {
  */
 export interface ChainFeature extends WalletFeature {
   name: 'standard:chains';
-  
+
   /**
    * The chains supported by the wallet
    */
   chains: AleoChain[];
-} 
+}

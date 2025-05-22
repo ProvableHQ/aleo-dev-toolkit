@@ -6,12 +6,12 @@ export interface Account {
    * The account's private key
    */
   privateKey?: string;
-  
+
   /**
    * The account's view key
    */
   viewKey?: string;
-  
+
   /**
    * The account's address
    */
@@ -24,4 +24,4 @@ export interface Account {
 export interface AccountOptions {
   privateKey?: string;
   seed?: Uint8Array;
-} 
+}

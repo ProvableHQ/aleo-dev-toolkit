@@ -9,4 +9,4 @@ export const ALEO_CHAINS = {
 /**
  * Aleo chain type
  */
-export type AleoChain = typeof ALEO_CHAINS[keyof typeof ALEO_CHAINS]; 
+export type AleoChain = (typeof ALEO_CHAINS)[keyof typeof ALEO_CHAINS];
