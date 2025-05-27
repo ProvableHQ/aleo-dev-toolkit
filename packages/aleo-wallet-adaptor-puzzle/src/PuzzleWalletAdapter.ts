@@ -45,10 +45,10 @@ class WalletDisconnectionError extends WalletError {
   }
 }
 
-class WalletSignTransactionError extends WalletError {
-  name = 'WalletSignTransactionError';
+class WalletSignMessageError extends WalletError {
+  name = 'WalletSignMessageError';
 
-  constructor(message = 'Failed to sign transaction') {
+  constructor(message = 'Failed to sign message') {
     super(message);
   }
 }
@@ -214,37 +214,26 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Sign a transaction with Puzzle wallet
-   * @param options Transaction options
-   * @returns The signed transaction
+   * Sign a message with Puzzle wallet
+   * @param message The message to sign
+   * @returns The signed message
    */
-  async signTransaction(options: TransactionOptions): Promise<Transaction> {
+  async signMessage(message: Uint8Array): Promise<Uint8Array> {
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
 
     try {
-      const message = JSON.stringify({
-        program: options.program,
-        function: options.function,
-        inputs: options.inputs,
-        fee: options.fee,
-      });
-
       // Pass only the parameters expected by the Puzzle SDK
       const signature = await requestSignature({
-        message,
+        message: message.toString(),
         address: this._publicKey,
       });
 
-      return {
-        id: signature.signature || '',
-        status: TransactionStatus.PENDING,
-        fee: options.fee,
-      };
+      return new TextEncoder().encode(signature.signature);
     } catch (error: Error | unknown) {
-      throw new WalletSignTransactionError(
-        error instanceof Error ? error.message : 'Failed to sign transaction',
+      throw new WalletSignMessageError(
+        error instanceof Error ? error.message : 'Failed to sign message',
       );
     }
   }
