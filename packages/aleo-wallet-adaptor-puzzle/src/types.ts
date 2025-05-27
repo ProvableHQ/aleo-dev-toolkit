@@ -4,7 +4,7 @@
 export interface PuzzleWindow extends Window {
   puzzle?: {
     connected: boolean;
-    connect(): Promise<any>;
+    connect(): Promise<unknown>;
     disconnect(): Promise<void>;
   };
 }

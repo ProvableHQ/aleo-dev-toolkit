@@ -1,45 +1,37 @@
 import { Account } from '@provablehq/aleo-types';
 import { WalletReadyState } from './wallet';
+import EventEmitter from 'eventemitter3';
 
-export type WalletEventMap = {
-  connect: Account;
-  disconnect: void;
-  accountChange: Account;
-  readyStateChange: WalletReadyState;
-  error: Error;
-};
+export { EventEmitter };
 
-export type WalletEventType = keyof WalletEventMap;
-export type WalletEventHandler<T extends WalletEventType> = (payload: WalletEventMap[T]) => void;
-
-/**
- * Base interface for any wallet event emitter
- */
-export interface EventEmitter {
+export interface WalletEvents {
   /**
-   * Register an event listener
+   * Emitted when the wallet is connected
    */
-  on<T extends WalletEventType>(event: T, listener: WalletEventHandler<T>): this;
+  connect(account: Account): void;
 
   /**
-   * Register a one-time event listener
+   * Emitted when the wallet is disconnected
    */
-  once<T extends WalletEventType>(event: T, listener: WalletEventHandler<T>): this;
+  disconnect(): void;
 
   /**
-   * Unregister an event listener
+   * Emitted when the connected account changes
    */
-  off<T extends WalletEventType>(event: T, listener: WalletEventHandler<T>): this;
+  accountChange(newAccount: Account): void;
 
   /**
-   * Emit an event
+   * Emitted when the wallet's ready state changes
    */
-  emit<T extends WalletEventType>(event: T, payload: WalletEventMap[T]): boolean;
-}
+  readyStateChange(readyState: WalletReadyState): void;
 
-/**
- * Type guard to check if an event type is valid
- */
-export function isValidWalletEvent(event: string): event is WalletEventType {
-  return ['connect', 'disconnect', 'accountChange', 'readyStateChange', 'error'].includes(event);
+  /**
+   * Emitted when an error occurs
+   */
+  error(error: Error): void;
+
+  // /**
+  //  * Index signature for additional events
+  //  */
+  // [eventName: string]: ((...args: any[]) => void) | undefined;
 }

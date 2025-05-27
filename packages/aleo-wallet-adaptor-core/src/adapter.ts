@@ -4,13 +4,13 @@ import {
   StandardWallet,
   WalletAdapter,
   WalletConnectionError,
-  WalletEvents,
   WalletFeatureName,
   WalletFeatureNotAvailableError,
   WalletNotConnectedError,
   WalletReadyState,
+  EventEmitter,
+  WalletEvents,
 } from '@provablehq/aleo-wallet-standard';
-import { EventEmitter } from './eventEmitter';
 
 /**
  * Base class for Aleo wallet adapters
