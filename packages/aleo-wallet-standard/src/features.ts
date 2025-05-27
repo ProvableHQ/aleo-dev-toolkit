@@ -54,11 +54,11 @@ export interface SignFeature extends WalletFeature {
   name: 'aleo:sign';
 
   /**
-   * Sign a transaction
-   * @param options Transaction options
-   * @returns The signed transaction
+   * Sign a message
+   * @param message The message to sign
+   * @returns The signed message
    */
-  signTransaction(options: TransactionOptions): Promise<Transaction>;
+  signMessage(message: Uint8Array): Promise<Uint8Array>;
 }
 
 /**

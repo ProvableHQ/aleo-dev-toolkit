@@ -44,16 +44,16 @@ export interface WalletAdapter extends EventEmitter<WalletEvents> {
   disconnect(): Promise<void>;
 
   /**
-   * Sign a transaction
-   * @param options Transaction options
-   * @returns The signed transaction
-   */
-  signTransaction(options: TransactionOptions): Promise<Transaction>;
-
-  /**
    * Execute a transaction
    * @param options Transaction options
    * @returns The executed transaction
    */
   executeTransaction(options: TransactionOptions): Promise<Transaction>;
+
+  /**
+   * Sign a message
+   * @param message The message to sign
+   * @returns The signed message
+   */
+  signMessage(message: Uint8Array): Promise<Uint8Array> | undefined;
 }

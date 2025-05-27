@@ -121,9 +121,6 @@ importers:
 
   packages/aleo-wallet-adaptor-leo:
     dependencies:
-      '@demox-labs/aleo-wallet-adapter-leo':
-        specifier: 0.0.25
-        version: 0.0.25
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../aleo-types
@@ -387,12 +384,6 @@ packages:
 
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
-
-  '@demox-labs/aleo-wallet-adapter-base@0.0.23':
-    resolution: {integrity: sha512-p0WvbKWuP2Rt05DAqnuXJV20k0J76p0DQvcVTck85MHCGwtak+xeJg6nxBl6Q/n7uc/opEWN0BLHqhynVzWlXA==}
-
-  '@demox-labs/aleo-wallet-adapter-leo@0.0.25':
-    resolution: {integrity: sha512-8Te8YiPR2k0We8vk/OBjdM18V/dDq0RpW743xCn2wotUzm4LA3hJwEW2+Jwy+BJqyNHBa7wIljdttEAT3OY6yA==}
 
   '@esbuild/aix-ppc64@0.19.12':
     resolution: {integrity: sha512-bmoCYyWdEL3wDQIVbcyzRyeKLgk2WtWLTWz1ZIAZF/EGbNOwSA6ew3PftJ1PqMiOOGu0OyFMzG53L0zqIpPeNA==}
@@ -1873,9 +1864,6 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
-  eventemitter3@4.0.7:
-    resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
-
   eventemitter3@5.0.1:
     resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
 
@@ -2424,11 +2412,6 @@ packages:
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
-  nanoid@4.0.2:
-    resolution: {integrity: sha512-7ZtY5KTCNheRGfEFxnedV5zFiORN1+Y1N6zvPTnHQd8ENUvfaDBeuJDZb2bN/oXwXxu3qkTXDzy57W5vAmDTBw==}
-    engines: {node: ^14 || ^16 || >=18}
     hasBin: true
 
   natural-compare@1.4.0:
@@ -3659,15 +3642,6 @@ snapshots:
       fs-extra: 7.0.1
       human-id: 4.1.1
       prettier: 2.8.8
-
-  '@demox-labs/aleo-wallet-adapter-base@0.0.23':
-    dependencies:
-      eventemitter3: 4.0.7
-
-  '@demox-labs/aleo-wallet-adapter-leo@0.0.25':
-    dependencies:
-      '@demox-labs/aleo-wallet-adapter-base': 0.0.23
-      nanoid: 4.0.2
 
   '@esbuild/aix-ppc64@0.19.12':
     optional: true
@@ -5539,8 +5513,6 @@ snapshots:
 
   esutils@2.0.3: {}
 
-  eventemitter3@4.0.7: {}
-
   eventemitter3@5.0.1: {}
 
   events@3.3.0: {}
@@ -6090,8 +6062,6 @@ snapshots:
       thenify-all: 1.6.0
 
   nanoid@3.3.11: {}
-
-  nanoid@4.0.2: {}
 
   natural-compare@1.4.0: {}
 

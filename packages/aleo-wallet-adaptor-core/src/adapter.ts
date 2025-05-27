@@ -103,11 +103,11 @@ export abstract class BaseAleoWalletAdapter
   }
 
   /**
-   * Sign a transaction
+   * Sign a message
    * @param options Transaction options
    * @returns The signed transaction
    */
-  async signTransaction(options: TransactionOptions): Promise<Transaction> {
+  async signMessage(message: Uint8Array): Promise<Uint8Array> {
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -115,7 +115,7 @@ export abstract class BaseAleoWalletAdapter
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.SIGN);
     }
-    return feature.signTransaction(options);
+    return feature.signMessage(message);
   }
 
   /**
