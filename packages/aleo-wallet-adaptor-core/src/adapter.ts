@@ -1,4 +1,4 @@
-import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
 import {
   AleoChain,
   StandardWallet,
@@ -62,9 +62,10 @@ export abstract class BaseAleoWalletAdapter
 
   /**
    * Connect to the wallet
+   * @param network The network to connect to
    * @returns The connected account
    */
-  async connect(): Promise<Account> {
+  async connect(network: Network): Promise<Account> {
     if (!this._wallet) {
       throw new WalletConnectionError('No wallet provider found');
     }
@@ -73,7 +74,7 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
     }
     try {
-      const account = await feature.connect();
+      const account = await feature.connect(network);
       this.account = account;
       this.readyState = WalletReadyState.CONNECTED; // emit readyStateChange
       this.emit('connect', account);

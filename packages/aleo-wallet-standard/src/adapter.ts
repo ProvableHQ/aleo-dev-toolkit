@@ -1,4 +1,4 @@
-import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import { WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
@@ -34,9 +34,10 @@ export interface WalletAdapter extends EventEmitter<WalletEvents> {
 
   /**
    * Connect to the wallet
+   * @param network The network to connect to
    * @returns The connected account
    */
-  connect(): Promise<Account>;
+  connect(network: Network): Promise<Account>;
 
   /**
    * Disconnect from the wallet

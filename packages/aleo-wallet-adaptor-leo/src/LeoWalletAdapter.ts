@@ -131,7 +131,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    * Connect to Leo wallet
    * @returns The connected account
    */
-  async connect(): Promise<Account> {
+  async connect(network: Network): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.READY) {
         throw new WalletConnectionError('Leo Wallet is not available');
@@ -139,8 +139,19 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        await this._leoWallet?.connect(DecryptPermission.NoDecrypt, this._network);
-      } catch (error) {
+        await this._leoWallet?.connect(DecryptPermission.NoDecrypt, network);
+      } catch (error: unknown) {
+        if (
+          error instanceof Object &&
+          'name' in error &&
+          error.name === 'InvalidParamsAleoWalletError'
+        ) {
+          // TODO: Handle wrongNetwork at WalletProvider level?
+          throw new WalletConnectionError(
+            'Connection failed: Likely due to a difference in configured network and the selected wallet network',
+          );
+        }
+
         throw new WalletConnectionError(
           error instanceof Error ? error.message : 'Connection failed',
         );

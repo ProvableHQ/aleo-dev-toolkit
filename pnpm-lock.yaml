@@ -44,6 +44,9 @@ importers:
       '@provablehq/aleo-wallet-adaptor-core':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor-core
+      '@provablehq/aleo-wallet-adaptor-leo':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor-leo
       '@provablehq/aleo-wallet-adaptor-puzzle':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor-puzzle
