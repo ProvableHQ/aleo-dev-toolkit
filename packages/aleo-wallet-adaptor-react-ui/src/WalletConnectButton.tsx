@@ -1,6 +1,6 @@
 // packages/aleo-wallet-adaptor-react-ui/src/WalletConnectButton.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
 
@@ -15,6 +15,13 @@ export const WalletConnectButton: React.FC = () => {
 
   // Helper to shorten an address for display
   const short = (addr: string) => addr.slice(0, 6) + '…' + addr.slice(-4);
+
+  // If the wallet changes, connect to it
+  useEffect(() => {
+    if (wallet) {
+      connect();
+    }
+  }, [wallet]);
 
   if (!connected) {
     return (
@@ -45,7 +52,6 @@ export const WalletConnectButton: React.FC = () => {
                   style={{ display: 'flex', alignItems: 'center' }}
                   onClick={() => {
                     selectWallet(w.name);
-                    connect();
                     setMenuOpen(false);
                   }}
                 >
@@ -109,7 +115,6 @@ export const WalletConnectButton: React.FC = () => {
                   onClick={() => {
                     disconnect();
                     selectWallet(w.name);
-                    connect();
                     setMenuOpen(false);
                   }}
                 >

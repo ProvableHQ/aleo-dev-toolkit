@@ -1,6 +1,6 @@
 import React, { useEffect, useState, ReactNode } from 'react';
 import type { WalletAdapter } from '@provablehq/aleo-wallet-standard';
-import type { Account } from '@provablehq/aleo-types';
+import type { Account, Network } from '@provablehq/aleo-types';
 import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { WalletContext } from './context';
 
@@ -8,7 +8,8 @@ export const AleoWalletProvider: React.FC<{
   wallets: WalletAdapter[];
   autoConnect?: boolean;
   children: ReactNode;
-}> = ({ wallets, autoConnect = false, children }) => {
+  network: Network;
+}> = ({ wallets, autoConnect = false, children, network }) => {
   const [wallet, setWallet] = useState<WalletAdapter | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [connected, setConnected] = useState(false);
@@ -60,7 +61,7 @@ export const AleoWalletProvider: React.FC<{
     if (found) {
       setConnecting(true);
       found
-        .connect()
+        .connect(network)
         .catch(() => {})
         .finally(() => setConnecting(false));
     }
@@ -75,7 +76,7 @@ export const AleoWalletProvider: React.FC<{
     if (!wallet) throw new Error('No wallet selected');
     setConnecting(true);
     try {
-      await wallet.connect();
+      await wallet.connect(network);
     } finally {
       setConnecting(false);
     }
@@ -84,6 +85,7 @@ export const AleoWalletProvider: React.FC<{
   const disconnect = async () => {
     if (!wallet) return;
     await wallet.disconnect();
+    setWallet(null);
   };
 
   return (

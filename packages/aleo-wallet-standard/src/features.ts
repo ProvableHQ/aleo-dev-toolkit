@@ -1,4 +1,4 @@
-import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 
 /**
@@ -24,9 +24,10 @@ export interface ConnectFeature extends WalletFeature {
 
   /**
    * Connect to the wallet
+   * @param network The network to connect to
    * @returns The connected account
    */
-  connect(): Promise<Account>;
+  connect(network: Network): Promise<Account>;
 
   /**
    * Disconnect from the wallet
@@ -54,11 +55,11 @@ export interface SignFeature extends WalletFeature {
   name: 'aleo:sign';
 
   /**
-   * Sign a transaction
-   * @param options Transaction options
-   * @returns The signed transaction
+   * Sign a message
+   * @param message The message to sign
+   * @returns The signed message
    */
-  signTransaction(options: TransactionOptions): Promise<Transaction>;
+  signMessage(message: Uint8Array): Promise<Uint8Array>;
 }
 
 /**

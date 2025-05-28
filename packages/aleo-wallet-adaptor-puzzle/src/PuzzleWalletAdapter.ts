@@ -3,16 +3,17 @@ import {
   Transaction,
   TransactionOptions,
   TransactionStatus,
+  Network,
 } from '@provablehq/aleo-types';
 import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { BaseAleoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-core';
 import {
   connect,
   disconnect,
+  Network as PuzzleNetwork,
   requestCreateEvent,
   requestSignature,
   EventType,
-  Network,
 } from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig } from './types';
 
@@ -45,10 +46,10 @@ class WalletDisconnectionError extends WalletError {
   }
 }
 
-class WalletSignTransactionError extends WalletError {
-  name = 'WalletSignTransactionError';
+class WalletSignMessageError extends WalletError {
+  name = 'WalletSignMessageError';
 
-  constructor(message = 'Failed to sign transaction') {
+  constructor(message = 'Failed to sign message') {
     super(message);
   }
 }
@@ -104,7 +105,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  private _network: Network;
+  private _network: Network | undefined;
 
   /**
    * Public key
@@ -121,7 +122,6 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     this._appIconUrl = config?.appIconUrl;
     this._appDescription = config?.appDescription;
     this._programIdPermissions = config?.programIdPermissions || {};
-    this._network = Network.AleoTestnet;
     this._checkAvailability();
   }
 
@@ -147,9 +147,10 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
 
   /**
    * Connect to Puzzle wallet
+   * @param network The network to connect to
    * @returns The connected account
    */
-  async connect(): Promise<Account> {
+  async connect(network: Network): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.READY) {
         throw new WalletConnectionError('Puzzle Wallet is not available');
@@ -171,6 +172,8 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
       if (!response || typeof response !== 'object' || !('connection' in response)) {
         throw new WalletConnectionError('Invalid response from wallet');
       }
+
+      this._network = network;
 
       const address = (response as { connection: { address: string } }).connection?.address;
 
@@ -214,37 +217,26 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Sign a transaction with Puzzle wallet
-   * @param options Transaction options
-   * @returns The signed transaction
+   * Sign a message with Puzzle wallet
+   * @param message The message to sign
+   * @returns The signed message
    */
-  async signTransaction(options: TransactionOptions): Promise<Transaction> {
+  async signMessage(message: Uint8Array): Promise<Uint8Array> {
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
 
     try {
-      const message = JSON.stringify({
-        program: options.program,
-        function: options.function,
-        inputs: options.inputs,
-        fee: options.fee,
-      });
-
       // Pass only the parameters expected by the Puzzle SDK
       const signature = await requestSignature({
-        message,
+        message: message.toString(),
         address: this._publicKey,
       });
 
-      return {
-        id: signature.signature || '',
-        status: TransactionStatus.PENDING,
-        fee: options.fee,
-      };
+      return new TextEncoder().encode(signature.signature);
     } catch (error: Error | unknown) {
-      throw new WalletSignTransactionError(
-        error instanceof Error ? error.message : 'Failed to sign transaction',
+      throw new WalletSignMessageError(
+        error instanceof Error ? error.message : 'Failed to sign message',
       );
     }
   }
@@ -269,7 +261,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         fee,
         inputs: options.inputs,
         address: this._publicKey,
-        network: this._network,
+        network: this._network as unknown as PuzzleNetwork,
       };
 
       const result = await requestCreateEvent(requestData);
