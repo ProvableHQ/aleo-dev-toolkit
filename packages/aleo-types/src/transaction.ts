@@ -29,7 +29,7 @@ export interface Transaction {
   /**
    * The transaction fee
    */
-  fee?: string;
+  fee?: number;
 
   /**
    * The transaction data
@@ -59,7 +59,7 @@ export interface TransactionOptions {
   /**
    * The transaction fee to pay
    */
-  fee?: string;
+  fee?: number;
 
   /**
    * Record indices to use

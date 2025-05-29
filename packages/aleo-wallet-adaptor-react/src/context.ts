@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import { WalletAdapter } from '@provablehq/aleo-wallet-standard';
-import { Account } from '@provablehq/aleo-types';
+import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
 
 /**
  * Wallet context state
@@ -46,6 +46,11 @@ export interface WalletContextState {
    * Disconnect from the connected wallet
    */
   disconnect: () => Promise<void>;
+
+  /**
+   * Execute a transaction
+   */
+  executeTransaction: (options: TransactionOptions) => Promise<Transaction>;
 }
 
 /**
