@@ -140,6 +140,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       // Call connect and extract address safely
       try {
         await this._leoWallet?.connect(DecryptPermission.NoDecrypt, network);
+        this._network = network;
       } catch (error: unknown) {
         if (
           error instanceof Object &&
@@ -235,8 +236,8 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       const requestData = {
         address: this._publicKey,
         chainId: this._network,
-        fee: options.fee ? parseFloat(options.fee) : 0.001,
-        feePrivate: true,
+        fee: options.fee ? options.fee : 0.001,
+        feePrivate: false,
         transitions: [
           {
             program: options.program,

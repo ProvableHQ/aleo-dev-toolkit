@@ -1,6 +1,6 @@
 import React, { useEffect, useState, ReactNode } from 'react';
 import type { WalletAdapter } from '@provablehq/aleo-wallet-standard';
-import type { Account, Network } from '@provablehq/aleo-types';
+import type { Account, Network, TransactionOptions } from '@provablehq/aleo-types';
 import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { WalletContext } from './context';
 
@@ -88,6 +88,12 @@ export const AleoWalletProvider: React.FC<{
     setWallet(null);
   };
 
+  const executeTransaction = async (options: TransactionOptions) => {
+    if (!wallet) throw new Error('No wallet selected');
+    if (!connected) throw new Error('No wallet connected');
+    return await wallet.executeTransaction(options);
+  };
+
   return (
     <WalletContext.Provider
       value={{
@@ -99,6 +105,7 @@ export const AleoWalletProvider: React.FC<{
         selectWallet,
         connect,
         disconnect,
+        executeTransaction,
       }}
     >
       {children}

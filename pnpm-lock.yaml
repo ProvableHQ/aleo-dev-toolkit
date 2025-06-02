@@ -41,6 +41,15 @@ importers:
 
   examples/react-app:
     dependencies:
+      '@demox-labs/aleo-wallet-adapter-base':
+        specifier: ^0.0.23
+        version: 0.0.23
+      '@demox-labs/aleo-wallet-adapter-react':
+        specifier: ^0.0.22
+        version: 0.0.22(react@18.3.1)
+      '@demox-labs/aleo-wallet-adapter-reactui':
+        specifier: ^0.0.36
+        version: 0.0.36(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@provablehq/aleo-wallet-adaptor-core':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor-core
@@ -59,6 +68,9 @@ importers:
       '@puzzlehq/sdk':
         specifier: ^0.2.0
         version: 0.2.7(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(typescript@5.8.3)
+      aleo-adapters:
+        specifier: ^1.2.1
+        version: 1.2.1(@types/react@18.3.20)(buffer@6.0.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -387,6 +399,29 @@ packages:
 
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
+
+  '@demox-labs/aleo-wallet-adapter-base@0.0.21':
+    resolution: {integrity: sha512-tF+tX2HoHJGNEuKoWrx8L4pJhtgEpJo9hLXJSxU+Y+ItIyLNJvggq3duJunONyprLaN83E3jZGQL5PbMd6iUOQ==}
+
+  '@demox-labs/aleo-wallet-adapter-base@0.0.22':
+    resolution: {integrity: sha512-6xkfiovSCb+vNf6xEBFOr0vzlktztZgOcgbTvbAK9BkQ+NyEfz0+PVa9iMF/4eJjN3dxFmEyiWvECl/HLbnSZQ==}
+
+  '@demox-labs/aleo-wallet-adapter-base@0.0.23':
+    resolution: {integrity: sha512-p0WvbKWuP2Rt05DAqnuXJV20k0J76p0DQvcVTck85MHCGwtak+xeJg6nxBl6Q/n7uc/opEWN0BLHqhynVzWlXA==}
+
+  '@demox-labs/aleo-wallet-adapter-leo@0.0.24':
+    resolution: {integrity: sha512-P43XO34sxae9ipD/p0dkCQVDkfh5dD0NwaMmy3MpO7IGYmu0mW6Rls/Jne9L8jGHwavERRSinJAs3y0mybczow==}
+
+  '@demox-labs/aleo-wallet-adapter-react@0.0.22':
+    resolution: {integrity: sha512-X4Ys69MdEErzlQn8G+edf6LuQSMgKAZjOVaB9Wae1ZfJTABzVF21/0Y8/iodlVcNeTPoo5h3sKv3gLJV6zyeGg==}
+    peerDependencies:
+      react: ^18.2.0
+
+  '@demox-labs/aleo-wallet-adapter-reactui@0.0.36':
+    resolution: {integrity: sha512-GCqrrDKCjuqsO6pUHhHc55pCVEBmi606vqizhEhndzo9YxrQajxZrlQFwqnB5qMeoYToICbKfUl4ESlGfdTuwg==}
+    peerDependencies:
+      react: ^18.2.0
+      react-dom: ^18.2.0
 
   '@esbuild/aix-ppc64@0.19.12':
     resolution: {integrity: sha512-bmoCYyWdEL3wDQIVbcyzRyeKLgk2WtWLTWz1ZIAZF/EGbNOwSA6ew3PftJ1PqMiOOGu0OyFMzG53L0zqIpPeNA==}
@@ -952,6 +987,11 @@ packages:
   '@puzzlehq/sdk@0.2.7':
     resolution: {integrity: sha512-WB4aXg+CkhO+1euzD8v30vr/mnUF503wEV0p+cbJRjiADblxUnppWFLSoCO+R3xhTcfexlLx98DOQI8s7qOqtw==}
 
+  '@puzzlehq/sdk@1.0.3':
+    resolution: {integrity: sha512-IqK/GMB3larnPzUWxNyMm23t+KDtcD/ZzaPVL0RakWUQ3jmRULcnKIeGNTZ2FPvRShCespyPXI/Qp6flftll2A==}
+    peerDependencies:
+      react: ^18.2.0
+
   '@puzzlehq/types@1.0.11':
     resolution: {integrity: sha512-Elk1gs+RxTR3zBGdENpH3TMdp6aQaO17bI+ubfkbAPW6gN4PyYicN4z++TQCCvXwtIarOr0I2K0kLe8yQAIovw==}
 
@@ -1118,11 +1158,22 @@ packages:
   '@stablelib/x25519@1.0.3':
     resolution: {integrity: sha512-KnTbKmUhPhHavzobclVJQG5kuivH+qDLpe84iRqX3CLrKp881cF160JvXJ+hjn1aMyCwYOKeIZefIH/P5cJoRw==}
 
+  '@tanstack/match-sorter-utils@8.19.4':
+    resolution: {integrity: sha512-Wo1iKt2b9OT7d+YGhvEPD3DXvPv2etTusIMhMUoG7fbhmxcXCtIjJDEygy91Y2JFlwGyjqiBPRozme7UD8hoqg==}
+    engines: {node: '>=12'}
+
   '@tanstack/query-core@4.36.1':
     resolution: {integrity: sha512-DJSilV5+ytBP1FbFcEJovv4rnnm/CokuVvrBEtW/Va9DvuJ3HksbXUJEpI0aV1KtuL4ZoO9AVE6PyNLzF7tLeA==}
 
   '@tanstack/query-devtools@5.74.7':
     resolution: {integrity: sha512-nSNlfuGdnHf4yB0S+BoNYOE1o3oAH093weAYZolIHfS2stulyA/gWfSk/9H4ZFk5mAAHb5vNqAeJOmbdcGPEQw==}
+
+  '@tanstack/react-query-devtools@4.36.1':
+    resolution: {integrity: sha512-WYku83CKP3OevnYSG8Y/QO9g0rT75v1om5IvcWUwiUZJ4LanYGLVCZ8TdFG5jfsq4Ej/lu2wwDAULEUnRIMBSw==}
+    peerDependencies:
+      '@tanstack/react-query': ^4.36.1
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
 
   '@tanstack/react-query-devtools@5.75.0':
     resolution: {integrity: sha512-ogTsCCONHPq8opyeU/NJZlus8+g36KnK+cybC1cs0Knr8iO/wAYgnciz+3DVNq38kRflBb0iJhHkUexp/7WfcQ==}
@@ -1398,6 +1449,9 @@ packages:
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
 
+  aleo-adapters@1.2.1:
+    resolution: {integrity: sha512-eKUXuNgGju/HSnMFMK6o1XP5vh6aM53fY5W/BnwQ2bdPhRXFgW46ZhrZNP9mCsHfkMz94tDD2SUkdYPb0qjGng==}
+
   ansi-colors@4.1.3:
     resolution: {integrity: sha512-/6w/C21Pm1A7aZitlI5Ni/2J6FFQN8i1Cvz3kHABAAbw93v/NlvKdVOqz7CCWz/3iv/JplRSEEZ83XION15ovw==}
     engines: {node: '>=6'}
@@ -1593,6 +1647,10 @@ packages:
 
   cookie-es@1.2.2:
     resolution: {integrity: sha512-+W7VmiVINB+ywl1HGXJXmrqkOhpKrIiVZV6tQuV54ZyQC7MMuBt81Vc336GMLoHBq5hV/F9eXgt5Mnx0Rha5Fg==}
+
+  copy-anything@3.0.5:
+    resolution: {integrity: sha512-yCEafptTtb4bk7GLEQoM8KVJpxAfdBJYaXyzQEgQQQgYrZiDp8SJmGKlYza6CYjEDNstAdNdKA3UuoULlEbS6w==}
+    engines: {node: '>=12.13'}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -1866,6 +1924,9 @@ packages:
   esutils@2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
+
+  eventemitter3@4.0.7:
+    resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
 
   eventemitter3@5.0.1:
     resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
@@ -2239,6 +2300,10 @@ packages:
     resolution: {integrity: sha512-mfcwb6IzQyOKTs84CQMrOwW4gQcaTOAWJ0zzJCl2WSPDrWk/OzDaImWFH3djXhb24g4eudZfLRozAvPGw4d9hQ==}
     engines: {node: '>= 0.4'}
 
+  is-what@4.1.16:
+    resolution: {integrity: sha512-ZhMwEosbFJkA0YhFnNDgTM4ZxDRsS6HqTo7qsZM08fehyRYIYa0yHu5R6mgo1n/8MgaPBXiPimPD77baVFYg+A==}
+    engines: {node: '>=12.13'}
+
   is-windows@1.0.2:
     resolution: {integrity: sha512-eXK1UInq2bPmjyX6e3VHIzMLobc4J94i4AWn+Hpq3OU5KkrRC96OAcR3PRJ/pGu6m8TRnBHP9dkXQVsT/COVIA==}
     engines: {node: '>=0.10.0'}
@@ -2415,6 +2480,11 @@ packages:
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
+  nanoid@4.0.2:
+    resolution: {integrity: sha512-7ZtY5KTCNheRGfEFxnedV5zFiORN1+Y1N6zvPTnHQd8ENUvfaDBeuJDZb2bN/oXwXxu3qkTXDzy57W5vAmDTBw==}
+    engines: {node: ^14 || ^16 || >=18}
     hasBin: true
 
   natural-compare@1.4.0:
@@ -2730,6 +2800,9 @@ packages:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
     engines: {node: '>= 0.4'}
 
+  remove-accents@0.5.0:
+    resolution: {integrity: sha512-8g3/Otx1eJaVD12e31UbJj1YzdtVvzH85HV7t+9MJYk/u3XmkOUJ5Ys9wQrf9PCPK8+xn4ymzqYCiZl6QWKn+A==}
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -2934,6 +3007,10 @@ packages:
     resolution: {integrity: sha512-8EbVDiu9iN/nESwxeSxDKe0dunta1GOlHufmSSXxMD2z2/tMZpDMpvXQGsc+ajGo8y2uYUmixaSRUc/QPoQ0GA==}
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
+
+  superjson@1.13.3:
+    resolution: {integrity: sha512-mJiVjfd2vokfDxsQPOwJ/PtanO87LhpYY88ubI5dUB1Ab58Txbyje3+jpm+/83R/fevaq/107NNhtYBLuoTrFg==}
+    engines: {node: '>=10'}
 
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -3190,6 +3267,12 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  use-debounce@10.0.4:
+    resolution: {integrity: sha512-6Cf7Yr7Wk7Kdv77nnJMf6de4HuDE4dTxKij+RqE9rufDsI6zsbjyAxcH5y2ueJCQAnfgKbzXbZHYlkFwmBlWkw==}
+    engines: {node: '>= 16.0.0'}
+    peerDependencies:
+      react: '*'
 
   use-sync-external-store@1.2.0:
     resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
@@ -3646,6 +3729,35 @@ snapshots:
       human-id: 4.1.1
       prettier: 2.8.8
 
+  '@demox-labs/aleo-wallet-adapter-base@0.0.21':
+    dependencies:
+      eventemitter3: 4.0.7
+
+  '@demox-labs/aleo-wallet-adapter-base@0.0.22':
+    dependencies:
+      eventemitter3: 4.0.7
+
+  '@demox-labs/aleo-wallet-adapter-base@0.0.23':
+    dependencies:
+      eventemitter3: 4.0.7
+
+  '@demox-labs/aleo-wallet-adapter-leo@0.0.24':
+    dependencies:
+      '@demox-labs/aleo-wallet-adapter-base': 0.0.21
+      nanoid: 4.0.2
+
+  '@demox-labs/aleo-wallet-adapter-react@0.0.22(react@18.3.1)':
+    dependencies:
+      '@demox-labs/aleo-wallet-adapter-base': 0.0.23
+      react: 18.3.1
+
+  '@demox-labs/aleo-wallet-adapter-reactui@0.0.36(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@demox-labs/aleo-wallet-adapter-base': 0.0.23
+      '@demox-labs/aleo-wallet-adapter-react': 0.0.22(react@18.3.1)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   '@esbuild/aix-ppc64@0.19.12':
     optional: true
 
@@ -4081,6 +4193,31 @@ snapshots:
       - utf-8-validate
       - zod
 
+  '@puzzlehq/sdk@1.0.3(@types/react@18.3.20)(buffer@6.0.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@puzzlehq/sdk-core': 1.0.3(buffer@6.0.3)
+      '@puzzlehq/types': 1.0.31
+      '@tanstack/query-core': 4.36.1
+      '@tanstack/react-query': 4.36.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-query-devtools': 4.36.1(@tanstack/react-query@4.36.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@trpc/server': 10.45.2
+      debug: 4.4.0
+      events: 3.3.0
+      immer: 9.0.21
+      react: 18.3.1
+      use-debounce: 10.0.4(react@18.3.1)
+      ws: 8.18.1
+      zod: 3.21.1
+      zustand: 4.5.6(@types/react@18.3.20)(immer@9.0.21)(react@18.3.1)
+    transitivePeerDependencies:
+      - '@types/react'
+      - buffer
+      - bufferutil
+      - react-dom
+      - react-native
+      - supports-color
+      - utf-8-validate
+
   '@puzzlehq/types@1.0.11':
     dependencies:
       zod: 3.21.1
@@ -4232,9 +4369,22 @@ snapshots:
       '@stablelib/random': 1.0.2
       '@stablelib/wipe': 1.0.1
 
+  '@tanstack/match-sorter-utils@8.19.4':
+    dependencies:
+      remove-accents: 0.5.0
+
   '@tanstack/query-core@4.36.1': {}
 
   '@tanstack/query-devtools@5.74.7': {}
+
+  '@tanstack/react-query-devtools@4.36.1(@tanstack/react-query@4.36.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@tanstack/match-sorter-utils': 8.19.4
+      '@tanstack/react-query': 4.36.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      superjson: 1.13.3
+      use-sync-external-store: 1.5.0(react@18.3.1)
 
   '@tanstack/react-query-devtools@5.75.0(@tanstack/react-query@4.36.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
     dependencies:
@@ -4897,6 +5047,21 @@ snapshots:
       json-schema-traverse: 0.4.1
       uri-js: 4.4.1
 
+  aleo-adapters@1.2.1(@types/react@18.3.20)(buffer@6.0.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      '@demox-labs/aleo-wallet-adapter-base': 0.0.22
+      '@demox-labs/aleo-wallet-adapter-leo': 0.0.24
+      '@puzzlehq/sdk': 1.0.3(@types/react@18.3.20)(buffer@6.0.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+    transitivePeerDependencies:
+      - '@types/react'
+      - buffer
+      - bufferutil
+      - react
+      - react-dom
+      - react-native
+      - supports-color
+      - utf-8-validate
+
   ansi-colors@4.1.3: {}
 
   ansi-regex@5.0.1: {}
@@ -5102,6 +5267,10 @@ snapshots:
   convert-source-map@2.0.0: {}
 
   cookie-es@1.2.2: {}
+
+  copy-anything@3.0.5:
+    dependencies:
+      is-what: 4.1.16
 
   cross-spawn@7.0.6:
     dependencies:
@@ -5516,6 +5685,8 @@ snapshots:
 
   esutils@2.0.3: {}
 
+  eventemitter3@4.0.7: {}
+
   eventemitter3@5.0.1: {}
 
   events@3.3.0: {}
@@ -5908,6 +6079,8 @@ snapshots:
       call-bound: 1.0.4
       get-intrinsic: 1.3.0
 
+  is-what@4.1.16: {}
+
   is-windows@1.0.2: {}
 
   isarray@2.0.5: {}
@@ -6065,6 +6238,8 @@ snapshots:
       thenify-all: 1.6.0
 
   nanoid@3.3.11: {}
+
+  nanoid@4.0.2: {}
 
   natural-compare@1.4.0: {}
 
@@ -6363,6 +6538,8 @@ snapshots:
       gopd: 1.2.0
       set-function-name: 2.0.2
 
+  remove-accents@0.5.0: {}
+
   require-directory@2.1.1: {}
 
   require-main-filename@2.0.0: {}
@@ -6602,6 +6779,10 @@ snapshots:
       pirates: 4.0.7
       ts-interface-checker: 0.1.13
 
+  superjson@1.13.3:
+    dependencies:
+      copy-anything: 3.0.5
+
   supports-color@7.2.0:
     dependencies:
       has-flag: 4.0.0
@@ -6828,6 +7009,10 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  use-debounce@10.0.4(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   use-sync-external-store@1.2.0(react@18.3.1):
     dependencies:

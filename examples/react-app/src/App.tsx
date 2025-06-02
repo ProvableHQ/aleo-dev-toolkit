@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletConnectButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
@@ -29,53 +29,51 @@ const WalletInfo = () => {
 };
 
 // Example transaction component
-// const ExecuteTransaction = () => {
-//   const { executeTransaction, connected } = useWallet();
-//   const [txId, setTxId] = useState<string | null>(null);
-//   const [loading, setLoading] = useState(false);
+const ExecuteTransaction = () => {
+  const { executeTransaction, connected } = useWallet();
+  const [txId, setTxId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-//   const handleExecute = async () => {
-//     if (!connected) return;
+  const handleExecute = async () => {
+    if (!connected) return;
 
-//     try {
-//       setLoading(true);
+    try {
+      setLoading(true);
 
-//       // This is just an example - you would need a real program and function to call
-//       const tx = await executeTransaction({
-//         program: 'hello_world.aleo',
-//         function: 'main',
-//         inputs: [],
-//       });
+      // This is just an example - you would need a real program and function to call
+      const tx = await executeTransaction({
+        program: 'hello_world.aleo',
+        function: 'main',
+        inputs: ['1u32', '1u32'],
+        fee: 100000,
+      });
 
-//       setTxId(tx.id);
-//     } catch (error) {
-//       console.error('Transaction failed', error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+      setTxId(tx.id);
+    } catch (error) {
+      console.error('Transaction failed', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//   if (!connected) {
-//     return null;
-//   }
+  if (!connected) {
+    return null;
+  }
 
-//   return (
-//     <div className="transaction">
-//       <button
-//         onClick={handleExecute}
-//         disabled={loading}
-//       >
-//         {loading ? 'Executing...' : 'Execute Transaction'}
-//       </button>
+  return (
+    <div className="transaction">
+      <button onClick={handleExecute} disabled={loading}>
+        {loading ? 'Executing...' : 'Execute Transaction'}
+      </button>
 
-//       {txId && (
-//         <div className="tx-result">
-//           <p>Transaction ID: {txId}</p>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
+      {txId && (
+        <div className="tx-result">
+          <p>Transaction ID: {txId}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export function App() {
   // memoize to avoid re‑instantiating adapters on each render
@@ -97,13 +95,14 @@ export function App() {
   );
 
   return (
-    <AleoWalletProvider wallets={wallets} autoConnect network={Network.MAINNET}>
+    <AleoWalletProvider wallets={wallets} autoConnect network={Network.TESTNET3}>
       <header>
         <div className="app">
           <h1>Aleo Wallet Example</h1>
           <WalletConnectButton />
 
           <WalletInfo />
+          <ExecuteTransaction />
         </div>
       </header>
       <main>{/* your DApp's components */}</main>

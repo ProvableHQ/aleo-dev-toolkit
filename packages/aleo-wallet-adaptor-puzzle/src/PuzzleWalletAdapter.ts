@@ -105,7 +105,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  private _network: Network | undefined;
+  private _network: PuzzleNetwork | undefined;
 
   /**
    * Public key
@@ -173,7 +173,8 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletConnectionError('Invalid response from wallet');
       }
 
-      this._network = network;
+      this._network =
+        network === Network.MAINNET ? PuzzleNetwork.AleoMainnet : PuzzleNetwork.AleoTestnet;
 
       const address = (response as { connection: { address: string } }).connection?.address;
 
@@ -252,7 +253,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     }
 
     try {
-      const fee = options.fee ? parseFloat(options.fee) / 1000000 : 0.001;
+      const fee = options.fee ? options.fee / 1000000 : 0.001;
 
       const requestData = {
         type: EventType.Execute,
@@ -261,7 +262,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         fee,
         inputs: options.inputs,
         address: this._publicKey,
-        network: this._network as unknown as PuzzleNetwork,
+        network: this._network,
       };
 
       const result = await requestCreateEvent(requestData);
