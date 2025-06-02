@@ -16,8 +16,10 @@
     "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-react-ui": "workspace:*",
     "@puzzlehq/sdk": "^0.2.0",
+    "@tailwindcss/vite": "^4.1.8",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^4.1.8"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -25,6 +27,7 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.21",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",

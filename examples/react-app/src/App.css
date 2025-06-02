@@ -27,13 +27,13 @@
 }
 
 .wallet-info {
-  background-color: #1a1a1a;
+  background-color: #c2bdbd;
   padding: 1.5em;
   border-radius: 8px;
   width: 100%;
-  max-width: 500px;
   margin-top: 1em;
   text-align: left;
+  margin-bottom: 4em;
 }
 
 .transaction {
@@ -42,7 +42,6 @@
   flex-direction: column;
   gap: 1em;
   width: 100%;
-  max-width: 500px;
 }
 
 .tx-result {
@@ -56,4 +55,4 @@
 
 .read-the-docs {
   color: #888;
-} 
+}

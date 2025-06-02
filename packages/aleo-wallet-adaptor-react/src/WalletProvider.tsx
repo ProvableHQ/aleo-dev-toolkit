@@ -94,6 +94,15 @@ export const AleoWalletProvider: React.FC<{
     return await wallet.executeTransaction(options);
   };
 
+  const signMessage = async (message: Uint8Array | string) => {
+    if (!wallet) throw new Error('No wallet selected');
+    if (!connected) throw new Error('No wallet connected');
+
+    return await wallet.signMessage(
+      typeof message === 'string' ? new TextEncoder().encode(message) : message,
+    );
+  };
+
   return (
     <WalletContext.Provider
       value={{
@@ -106,6 +115,7 @@ export const AleoWalletProvider: React.FC<{
         connect,
         disconnect,
         executeTransaction,
+        signMessage,
       }}
     >
       {children}
