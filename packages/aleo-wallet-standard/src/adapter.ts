@@ -56,5 +56,5 @@ export interface WalletAdapter extends EventEmitter<WalletEvents> {
    * @param message The message to sign
    * @returns The signed message
    */
-  signMessage(message: Uint8Array): Promise<Uint8Array> | undefined;
+  signMessage(message: Uint8Array): Promise<Uint8Array>;
 }

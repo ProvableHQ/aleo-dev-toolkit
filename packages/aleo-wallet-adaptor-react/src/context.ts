@@ -51,6 +51,11 @@ export interface WalletContextState {
    * Execute a transaction
    */
   executeTransaction: (options: TransactionOptions) => Promise<Transaction>;
+
+  /**
+   * Sign a message
+   */
+  signMessage: (message: Uint8Array | string) => Promise<Uint8Array>;
 }
 
 /**
