@@ -1,117 +1,286 @@
-import React, { useEffect, useState, ReactNode } from 'react';
-import type { WalletAdapter } from '@provablehq/aleo-wallet-standard';
-import type { Account, Network, TransactionOptions } from '@provablehq/aleo-types';
-import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
-import { WalletContext } from './context';
+import type { FC, ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { WalletName, WalletReadyState, WalletAdapter } from '@provablehq/aleo-wallet-standard';
+import { Network, TransactionOptions } from '@provablehq/aleo-types';
+import { Wallet, WalletContext } from './context';
+import { useLocalStorage } from './useLocalStorage';
+import {
+  WalletError,
+  WalletNotConnectedError,
+  WalletNotReadyError,
+  WalletNotSelectedError,
+  MethodNotImplementedError,
+} from '@provablehq/aleo-wallet-adaptor-core';
 
-export const AleoWalletProvider: React.FC<{
-  wallets: WalletAdapter[];
-  autoConnect?: boolean;
+export interface WalletProviderProps {
   children: ReactNode;
-  network: Network;
-}> = ({ wallets, autoConnect = false, children, network }) => {
-  const [wallet, setWallet] = useState<WalletAdapter | null>(null);
-  const [account, setAccount] = useState<Account | null>(null);
-  const [connected, setConnected] = useState(false);
+  wallets: WalletAdapter[];
+  network?: Network;
+  autoConnect?: boolean;
+  onError?: (error: WalletError) => void;
+  localStorageKey?: string;
+}
+
+const initialState: {
+  wallet: Wallet | null;
+  adapter: WalletAdapter | null;
+  publicKey: string | null;
+  connected: boolean;
+} = {
+  wallet: null,
+  adapter: null,
+  publicKey: null,
+  connected: false,
+};
+
+export const AleoWalletProvider: FC<WalletProviderProps> = ({
+  children,
+  wallets: adapters,
+  autoConnect = false,
+  network = Network.TESTNET3,
+  onError,
+  localStorageKey = 'walletName',
+}) => {
+  const [name, setName] = useLocalStorage<WalletName | null>(localStorageKey, null);
+  const [{ wallet, adapter, publicKey, connected }, setState] = useState(initialState);
+  const readyState = adapter?.readyState || WalletReadyState.UNSUPPORTED;
   const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const isConnecting = useRef(false);
+  const isDisconnecting = useRef(false);
+  const isUnloading = useRef(false);
 
-  // 1️⃣ Subscribe to adapter events
+  // Wrap adapters to conform to the `Wallet` interface
+  const [wallets, setWallets] = useState(() =>
+    adapters.map(adapter => ({
+      adapter,
+      readyState: adapter.readyState,
+    })),
+  );
+
+  // When the adapters change, start to listen for changes to their `readyState`
   useEffect(() => {
-    const handlers: { adapter: WalletAdapter; cleanup: () => void }[] = [];
+    // When the adapters change, wrap them to conform to the `Wallet` interface
+    setWallets(wallets =>
+      adapters.map((adapter, index) => {
+        const wallet = wallets[index];
+        // If the wallet hasn't changed, return the same instance
+        return wallet && wallet.adapter === adapter && wallet.readyState === adapter.readyState
+          ? wallet
+          : {
+              adapter: adapter,
+              readyState: adapter.readyState,
+            };
+      }),
+    );
 
-    wallets.forEach(adapter => {
-      const onConnect = (acc: Account) => {
-        setWallet(adapter);
-        setAccount(acc);
-        setConnected(true);
-        window.localStorage.setItem('aleo_last_wallet', adapter.name);
-      };
-      const onDisconnect = () => {
-        setConnected(false);
-        setAccount(null);
-      };
-      const onError = (err: Error) => {
-        console.error(`Wallet error (${adapter.name}):`, err);
-      };
+    function handleReadyStateChange(this: WalletAdapter, readyState: WalletReadyState): void {
+      setWallets(prevWallets => {
+        const index = prevWallets.findIndex(({ adapter }) => adapter === this);
+        if (index === -1) return prevWallets;
 
-      adapter.on('connect', onConnect);
-      adapter.on('disconnect', onDisconnect);
-      adapter.on('error', onError);
-
-      handlers.push({
-        adapter,
-        cleanup: () => {
-          adapter.off('connect', onConnect);
-          adapter.off('disconnect', onDisconnect);
-          adapter.off('error', onError);
-        },
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const { adapter } = prevWallets[index]!;
+        return [
+          ...prevWallets.slice(0, index),
+          { adapter, readyState },
+          ...prevWallets.slice(index + 1),
+        ];
       });
-    });
-
-    return () => {
-      handlers.forEach(h => h.cleanup());
-    };
-  }, [wallets]);
-
-  // 2️⃣ autoConnect if requested
-  useEffect(() => {
-    if (!autoConnect) return;
-    const last = window.localStorage.getItem('aleo_last_wallet');
-    const found = wallets.find(w => w.name === last && w.readyState === WalletReadyState.READY);
-    if (found) {
-      setConnecting(true);
-      found
-        .connect(network)
-        .catch(() => {})
-        .finally(() => setConnecting(false));
     }
-  }, [wallets, autoConnect]);
 
-  const selectWallet = (name: string) => {
-    const found = wallets.find(w => w.name === name);
-    if (found) setWallet(found);
-  };
+    adapters.forEach(adapter => adapter.on('readyStateChange', handleReadyStateChange, adapter));
+    return () =>
+      adapters.forEach(adapter => adapter.off('readyStateChange', handleReadyStateChange, adapter));
+  }, [adapters]);
 
-  const connect = async () => {
-    if (!wallet) throw new Error('No wallet selected');
+  // When the selected wallet changes, initialize the state
+  useEffect(() => {
+    const wallet = name && wallets.find(({ adapter }) => adapter.name === name);
+    if (wallet) {
+      setState({
+        wallet,
+        adapter: wallet.adapter,
+        connected: wallet.adapter.connected,
+        publicKey: wallet.adapter.account?.address ?? null,
+      });
+    } else {
+      setState(initialState);
+    }
+  }, [name, wallets]);
+
+  // If the window is closing or reloading, ignore disconnect and error events from the adapter
+  useEffect(() => {
+    function listener() {
+      isUnloading.current = true;
+    }
+
+    window.addEventListener('beforeunload', listener);
+    return () => window.removeEventListener('beforeunload', listener);
+  }, [isUnloading]);
+
+  // Handle the adapter's connect event
+  const handleConnect = useCallback(() => {
+    if (!adapter) return;
+    setState(state => ({
+      ...state,
+      connected: adapter.connected,
+      publicKey: adapter.account?.address ?? null,
+    }));
+  }, [adapter]);
+
+  // Handle the adapter's disconnect event
+  const handleDisconnect = useCallback(() => {
+    // Clear the selected wallet unless the window is unloading
+    if (!isUnloading.current) setName(null);
+  }, [isUnloading, setName]);
+
+  // Handle the adapter's error event, and local errors
+  const handleError = useCallback(
+    (error: WalletError) => {
+      // Call onError unless the window is unloading
+      if (!isUnloading.current) (onError || console.error)(error);
+      return error;
+    },
+    [isUnloading, onError],
+  );
+
+  // Setup and teardown event listeners when the adapter changes
+  useEffect(() => {
+    if (adapter) {
+      adapter.on('connect', handleConnect);
+      adapter.on('disconnect', handleDisconnect);
+      adapter.on('error', handleError);
+      return () => {
+        adapter.off('connect', handleConnect);
+        adapter.off('disconnect', handleDisconnect);
+        adapter.off('error', handleError);
+      };
+    }
+  }, [adapter, handleConnect, handleDisconnect, handleError]);
+
+  // When the adapter changes, disconnect the old one
+  useEffect(() => {
+    return () => {
+      adapter?.disconnect();
+    };
+  }, [adapter]);
+
+  // If autoConnect is enabled, try to connect when the adapter changes and is ready
+  useEffect(() => {
+    if (
+      isConnecting.current ||
+      connected ||
+      !autoConnect ||
+      !adapter ||
+      !(readyState === WalletReadyState.INSTALLED || readyState === WalletReadyState.LOADABLE)
+    )
+      return;
+
+    (async function () {
+      isConnecting.current = true;
+      setConnecting(true);
+      try {
+        await adapter.connect(network);
+      } catch (error: unknown) {
+        // Clear the selected wallet
+        setName(null);
+        // Don't throw error, but handleError will still be called
+      } finally {
+        setConnecting(false);
+        isConnecting.current = false;
+      }
+    })();
+  }, [isConnecting, connected, autoConnect, adapter, readyState, setName]);
+
+  // Connect the adapter to the wallet
+  const connect = useCallback(async () => {
+    if (isConnecting.current || isDisconnecting.current || connected) return;
+    if (!adapter) throw handleError(new WalletNotSelectedError());
+
+    if (!(readyState === WalletReadyState.INSTALLED || readyState === WalletReadyState.LOADABLE)) {
+      // Clear the selected wallet
+      setName(null);
+
+      if (typeof window !== 'undefined') {
+        window.open(adapter.url, '_blank');
+      }
+
+      throw handleError(new WalletNotReadyError());
+    }
+
+    isConnecting.current = true;
     setConnecting(true);
     try {
-      await wallet.connect(network);
+      await adapter.connect(network);
+    } catch (error: unknown) {
+      // Clear the selected wallet
+      setName(null);
+      // Rethrow the error, and handleError will also be called
+      throw error;
     } finally {
       setConnecting(false);
+      isConnecting.current = false;
     }
-  };
+  }, [isConnecting, isDisconnecting, connected, adapter, readyState, handleError, setName]);
 
-  const disconnect = async () => {
-    if (!wallet) return;
-    await wallet.disconnect();
-    setWallet(null);
-  };
+  // Disconnect the adapter from the wallet
+  const disconnect = useCallback(async () => {
+    if (isDisconnecting.current) return;
+    if (!adapter) return setName(null);
 
-  const executeTransaction = async (options: TransactionOptions) => {
-    if (!wallet) throw new Error('No wallet selected');
-    if (!connected) throw new Error('No wallet connected');
-    return await wallet.executeTransaction(options);
-  };
+    isDisconnecting.current = true;
+    setDisconnecting(true);
+    try {
+      await adapter.disconnect();
+    } catch (error: unknown) {
+      // Clear the selected wallet
+      setName(null);
+      // Rethrow the error, and handleError will also be called
+      throw error;
+    } finally {
+      setDisconnecting(false);
+      isDisconnecting.current = false;
+    }
+  }, [isDisconnecting, adapter, setName]);
 
-  const signMessage = async (message: Uint8Array | string) => {
-    if (!wallet) throw new Error('No wallet selected');
-    if (!connected) throw new Error('No wallet connected');
+  const executeTransaction = useCallback(
+    async (transaction: TransactionOptions) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('executeTransaction' in adapter))
+        throw handleError(new MethodNotImplementedError('executeTransaction'));
 
-    return await wallet.signMessage(
-      typeof message === 'string' ? new TextEncoder().encode(message) : message,
-    );
-  };
+      return await adapter.executeTransaction(transaction);
+    },
+    [adapter, handleError, connected],
+  );
+
+  // Sign an arbitrary message if the wallet supports it
+  const signMessage = useMemo(
+    () =>
+      async (message: Uint8Array | string): Promise<Uint8Array | undefined> => {
+        if (!connected) throw handleError(new WalletNotConnectedError());
+        if (!adapter || !('signMessage' in adapter))
+          throw handleError(new MethodNotImplementedError('signMessage'));
+
+        return await adapter.signMessage(
+          typeof message === 'string' ? new TextEncoder().encode(message) : message,
+        );
+      },
+    [adapter, handleError, connected],
+  );
 
   return (
     <WalletContext.Provider
       value={{
+        autoConnect,
         wallets,
         wallet,
-        account,
+        address: publicKey ?? null,
         connected,
         connecting,
-        selectWallet,
+        disconnecting,
+        selectWallet: setName,
         connect,
         disconnect,
         executeTransaction,

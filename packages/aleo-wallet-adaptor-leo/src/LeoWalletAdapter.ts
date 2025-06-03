@@ -5,8 +5,16 @@ import {
   TransactionOptions,
   TransactionStatus,
 } from '@provablehq/aleo-types';
-import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
-import { BaseAleoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-core';
+import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  BaseAleoWalletAdapter,
+  WalletConnectionError,
+  WalletDisconnectionError,
+  WalletError,
+  WalletNotConnectedError,
+  WalletSignMessageError,
+  WalletTransactionError,
+} from '@provablehq/aleo-wallet-adaptor-core';
 import {
   AleoTransaction,
   DecryptPermission,
@@ -15,51 +23,6 @@ import {
   LeoWindow,
 } from './types';
 
-// Define custom error classes
-class WalletError extends Error {
-  name = 'WalletError';
-}
-
-class WalletNotConnectedError extends WalletError {
-  name = 'WalletNotConnectedError';
-
-  constructor() {
-    super('Wallet not connected');
-  }
-}
-
-class WalletConnectionError extends WalletError {
-  name = 'WalletConnectionError';
-
-  constructor(message = 'Connection to wallet failed') {
-    super(message);
-  }
-}
-
-class WalletDisconnectionError extends WalletError {
-  name = 'WalletDisconnectionError';
-
-  constructor(message = 'Disconnection failed') {
-    super(message);
-  }
-}
-
-class WalletSignTransactionError extends WalletError {
-  name = 'WalletSignTransactionError';
-
-  constructor(message = 'Failed to sign transaction') {
-    super(message);
-  }
-}
-
-class WalletTransactionError extends WalletError {
-  name = 'WalletTransactionError';
-
-  constructor(message = 'Transaction failed') {
-    super(message);
-  }
-}
-
 /**
  * Leo wallet adapter
  */
@@ -67,7 +30,12 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * The wallet name
    */
-  readonly name = 'Leo Wallet';
+  readonly name = 'Leo Wallet' as WalletName<'Leo Wallet'>;
+
+  /**
+   * The wallet URL
+   */
+  url = 'https://app.leo.app';
 
   /**
    * The wallet icon (base64-encoded SVG)
@@ -90,6 +58,11 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    */
   private _publicKey: string = '';
 
+  _readyState: WalletReadyState =
+    typeof window === 'undefined' || typeof document === 'undefined'
+      ? WalletReadyState.UNSUPPORTED
+      : WalletReadyState.NOT_DETECTED;
+
   /**
    * Leo wallet instance
    */
@@ -105,13 +78,16 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     this._network = Network.TESTNET3;
     this._checkAvailability();
     this._leoWallet = this._window?.leoWallet || this._window?.leo;
+    if (config?.isMobile) {
+      this.url = `https://app.leo.app/browser?url=${config.mobileWebviewUrl}`;
+    }
   }
 
   /**
    * Check if Leo wallet is available
    */
   private _checkAvailability(): void {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
       this.readyState = WalletReadyState.UNSUPPORTED;
       return;
     }
@@ -119,11 +95,11 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     this._window = window as LeoWindow;
 
     if (this._window.leoWallet || this._window.leo) {
-      this.readyState = WalletReadyState.READY;
+      this.readyState = WalletReadyState.INSTALLED;
     } else {
       // Check if user is on a mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      this.readyState = isMobile ? WalletReadyState.NOT_READY : WalletReadyState.UNSUPPORTED;
+      this.readyState = isMobile ? WalletReadyState.LOADABLE : WalletReadyState.UNSUPPORTED;
     }
   }
 
@@ -133,7 +109,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    */
   async connect(network: Network): Promise<Account> {
     try {
-      if (this.readyState !== WalletReadyState.READY) {
+      if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Leo Wallet is not available');
       }
 
@@ -168,7 +144,6 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       };
 
       this.account = account;
-      this.readyState = WalletReadyState.CONNECTED;
       this.emit('connect', account);
 
       return account;
@@ -186,7 +161,6 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       await this._leoWallet?.disconnect();
       this._publicKey = '';
       this.account = undefined;
-      this.readyState = WalletReadyState.READY;
       this.emit('disconnect');
     } catch (err: Error | unknown) {
       this.emit('error', err instanceof Error ? err : new Error(String(err)));
@@ -211,13 +185,13 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       const signature = await this._leoWallet?.signMessage(message);
 
       if (!signature) {
-        throw new WalletSignTransactionError('Failed to sign message');
+        throw new WalletSignMessageError('Failed to sign message');
       }
 
       return signature.signature;
     } catch (error: Error | unknown) {
-      throw new WalletSignTransactionError(
-        error instanceof Error ? error.message : 'Failed to sign transaction',
+      throw new WalletSignMessageError(
+        error instanceof Error ? error.message : 'Failed to sign message',
       );
     }
   }

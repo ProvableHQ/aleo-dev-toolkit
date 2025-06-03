@@ -21,7 +21,7 @@ export default function ExecuteTransaction() {
         fee: 100000,
       });
 
-      setTxId(tx.id);
+      setTxId(tx?.id ?? null);
     } catch (error) {
       console.error('Transaction failed', error);
     } finally {

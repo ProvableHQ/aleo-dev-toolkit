@@ -24,6 +24,16 @@ export interface LeoWalletAdapterConfig {
    * Program ID permissions by network
    */
   programIdPermissions?: Record<string, string[]>;
+
+  /**
+   * Whether the wallet is mobile
+   */
+  isMobile?: boolean;
+
+  /**
+   * The mobile webview URL
+   */
+  mobileWebviewUrl?: string;
 }
 
 export interface LeoWalletEvents {

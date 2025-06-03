@@ -1,6 +1,11 @@
 import { createContext, useContext } from 'react';
-import { WalletAdapter } from '@provablehq/aleo-wallet-standard';
-import { Account, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import { WalletAdapter, WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import { Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+
+export interface Wallet {
+  adapter: WalletAdapter;
+  readyState: WalletReadyState;
+}
 
 /**
  * Wallet context state
@@ -9,17 +14,17 @@ export interface WalletContextState {
   /**
    * All available wallet adapters
    */
-  wallets: WalletAdapter[];
+  wallets: Wallet[];
 
   /**
    * The connected wallet adapter
    */
-  wallet: WalletAdapter | null;
+  wallet: Wallet | null;
 
   /**
    * The connected account
    */
-  account: Account | null;
+  address: string | null;
 
   /**
    * Whether the wallet is connected
@@ -32,15 +37,25 @@ export interface WalletContextState {
   connecting: boolean;
 
   /**
+   * Whether the wallet is disconnecting
+   */
+  disconnecting: boolean;
+
+  /**
+   * Whether the wallet is auto-connecting
+   */
+  autoConnect: boolean;
+
+  /**
    * Select a wallet by name
    * @param name The name of the wallet to select
    */
-  selectWallet: (name: string) => void;
+  selectWallet: (name: WalletName) => void;
 
   /**
    * Connect to the selected wallet
    */
-  connect: () => Promise<void>;
+  connect: (network: Network) => Promise<void>;
 
   /**
    * Disconnect from the connected wallet
@@ -50,12 +65,12 @@ export interface WalletContextState {
   /**
    * Execute a transaction
    */
-  executeTransaction: (options: TransactionOptions) => Promise<Transaction>;
+  executeTransaction: (options: TransactionOptions) => Promise<Transaction | undefined>;
 
   /**
    * Sign a message
    */
-  signMessage: (message: Uint8Array | string) => Promise<Uint8Array>;
+  signMessage: (message: Uint8Array | string) => Promise<Uint8Array | undefined>;
 }
 
 /**
