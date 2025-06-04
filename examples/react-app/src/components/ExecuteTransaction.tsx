@@ -35,7 +35,7 @@ export default function ExecuteTransaction() {
 
   return (
     <div className="transaction">
-      <button onClick={handleExecute} disabled={loading}>
+      <button onClick={handleExecute} disabled={loading} className="action-button">
         {loading ? 'Executing...' : 'Execute Transaction'}
       </button>
 

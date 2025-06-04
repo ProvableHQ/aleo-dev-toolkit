@@ -44,6 +44,15 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
     closeDropdown();
   }, [setVisible, closeDropdown]);
 
+  const onDisconnect = useCallback(() => {
+    disconnect();
+    closeDropdown();
+  }, [disconnect, closeDropdown]);
+
+  useEffect(() => {
+    console.log('ACTIVE', active);
+  }, [active]);
+
   useEffect(() => {
     const listener = (event: MouseEvent | TouchEvent) => {
       const node = ref.current;
@@ -99,7 +108,7 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
         <li onClick={openModal} className="wallet-adapter-dropdown-list-item" role="menuitem">
           Change wallet <GenericWalletIcon />
         </li>
-        <li onClick={disconnect} className="wallet-adapter-dropdown-list-item" role="menuitem">
+        <li onClick={onDisconnect} className="wallet-adapter-dropdown-list-item" role="menuitem">
           Disconnect
         </li>
       </ul>
