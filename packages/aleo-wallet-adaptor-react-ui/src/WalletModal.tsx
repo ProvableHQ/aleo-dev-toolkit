@@ -231,7 +231,7 @@ export const WalletModal: FC<WalletModalProps> = ({
                       onClick={handleCollapseClick}
                       tabIndex={0}
                     >
-                      <span>{expanded ? 'Hide ' : 'Already have a wallet? View '}options</span>
+                      <span>{expanded ? 'Hide ' : 'View other '}options</span>
                       <svg
                         width="13"
                         height="7"
