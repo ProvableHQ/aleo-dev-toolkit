@@ -7,6 +7,7 @@ import { Network } from '../../../packages/aleo-types/dist';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 import WalletAdapterDemo from './WalletAdapterDemo';
+import { Toaster } from 'sonner';
 
 export function App() {
   // memoize to avoid re‑instantiating adapters on each render
@@ -28,9 +29,10 @@ export function App() {
   );
 
   return (
-    <AleoWalletProvider wallets={wallets} autoConnect network={Network.MAINNET}>
+    <AleoWalletProvider wallets={wallets} autoConnect network={Network.TESTNET3}>
       <WalletModalProvider>
         <WalletAdapterDemo />
+        <Toaster />
       </WalletModalProvider>
     </AleoWalletProvider>
   );

@@ -10,31 +10,35 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 
 export function ExecuteTransaction() {
   const { connected, executeTransaction } = useWallet();
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
+  const [program, setProgram] = useState('hello_world.aleo');
+  const [functionName, setFunctionName] = useState('main');
+  const [inputs, setInputs] = useState('1u32\n1u32');
+  const [fee, setFee] = useState('100000');
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [isExecutingTransaction, setIsExecutingTransaction] = useState(false);
 
   const handleExecuteTransaction = async () => {
-    if (!recipient.trim() || !amount.trim()) {
-      toast.error('Please enter both recipient and amount');
+    if (!program.trim() || !functionName.trim() || !fee.trim()) {
+      toast.error('Please enter program, function, and fee');
       return;
     }
-
     setIsExecutingTransaction(true);
     try {
-      // This is just an example - you would need a real program and function to call
+      const inputArray = inputs
+        .split('\n')
+        .map(arg => arg.trim())
+        .filter(arg => arg.length > 0);
       const tx = await executeTransaction({
-        program: 'hello_world.aleo',
-        function: 'main',
-        inputs: ['1u32', '1u32'],
-        fee: 100000,
+        program: program.trim(),
+        function: functionName.trim(),
+        inputs: inputArray,
+        fee: Number(fee),
       });
-
       setTransactionHash(tx?.id ?? null);
       toast.success('Transaction submitted successfully');
     } catch (error) {
-      toast.error('Failed to execute transaction');
+      console.error(error);
+      toast.error('Failed to execute transaction. Check console for details.');
     } finally {
       setIsExecutingTransaction(false);
     }
@@ -55,26 +59,47 @@ export function ExecuteTransaction() {
         <CardDescription>Send a transaction using your connected wallet</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="recipient">Recipient Address</Label>
+            <Label htmlFor="program">Program ID</Label>
             <Input
-              id="recipient"
-              placeholder="0x..."
-              value={recipient}
-              onChange={e => setRecipient(e.target.value)}
+              id="program"
+              placeholder="credits.aleo"
+              value={program}
+              onChange={e => setProgram(e.target.value)}
               disabled={!connected}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="functionName">Function Name</Label>
             <Input
-              id="amount"
-              placeholder="0.0"
+              id="functionName"
+              placeholder="join"
+              value={functionName}
+              onChange={e => setFunctionName(e.target.value)}
+              disabled={!connected}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="inputs">Inputs</Label>
+            <textarea
+              id="inputs"
+              placeholder="Input arguments separated by a newline"
+              value={inputs}
+              onChange={e => setInputs(e.target.value)}
+              disabled={!connected}
+              className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm"
+              rows={4}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fee">Fee</Label>
+            <Input
+              id="fee"
+              placeholder="Fee (in microcredits)"
               type="number"
-              step="0.001"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
+              value={fee}
+              onChange={e => setFee(e.target.value)}
               disabled={!connected}
             />
           </div>
@@ -82,7 +107,13 @@ export function ExecuteTransaction() {
 
         <Button
           onClick={handleExecuteTransaction}
-          disabled={!connected || isExecutingTransaction || !recipient.trim() || !amount.trim()}
+          disabled={
+            !connected ||
+            isExecutingTransaction ||
+            !program.trim() ||
+            !functionName.trim() ||
+            !fee.trim()
+          }
           className="w-full"
         >
           {isExecutingTransaction ? (

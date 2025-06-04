@@ -85,9 +85,14 @@ export function SignMessage() {
             <AlertDescription>
               <div className="space-y-2">
                 <p className="font-medium">Message Signed Successfully!</p>
-                <div className="flex items-center justify-between bg-gray-50 p-2 rounded text-xs font-mono break-all">
-                  <span className="truncate">{signedMessage}</span>
-                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(signedMessage)}>
+                <div className="relative w-full bg-gray-50 p-2 rounded text-xs font-mono">
+                  <div className="pr-8 break-all">{signedMessage}</div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => copyToClipboard(signedMessage)}
+                  >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
