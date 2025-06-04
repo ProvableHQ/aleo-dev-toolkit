@@ -162,7 +162,9 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   // When the adapter changes, disconnect the old one
   useEffect(() => {
     return () => {
-      adapter?.disconnect();
+      if (adapter && adapter.connected) {
+        adapter.disconnect();
+      }
     };
   }, [adapter]);
 

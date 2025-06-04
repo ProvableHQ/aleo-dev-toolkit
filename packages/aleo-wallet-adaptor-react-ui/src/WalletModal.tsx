@@ -9,6 +9,7 @@ import { AleoIcon } from './AleoIcon';
 import { useWallet, Wallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { Network } from '@provablehq/aleo-types';
+import { ProvableLogo } from './ProvableLogo';
 
 export interface WalletModalProps {
   className?: string;
@@ -51,9 +52,12 @@ export const WalletModal: FC<WalletModalProps> = ({
       ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         installedWallets[0]!
       : wallets.find(
-          (wallet: { readyState: WalletReadyState }) =>
-            wallet.readyState === WalletReadyState.LOADABLE,
+          (wallet: { adapter: { name: WalletName } }) => wallet.adapter.name === 'Puzzle Wallet', // TODO: Add Provable Wallet
         ) ||
+          wallets.find(
+            (wallet: { readyState: WalletReadyState }) =>
+              wallet.readyState === WalletReadyState.LOADABLE,
+          ) ||
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           otherWallets[0]!;
   }, [installedWallets, wallets, otherWallets]);
@@ -164,7 +168,7 @@ export const WalletModal: FC<WalletModalProps> = ({
             </button>
             {installedWallets.length ? (
               <>
-                <h1 className="wallet-adapter-modal-title">Connect a wallet on Aleo to continue</h1>
+                <h1 className="wallet-adapter-modal-title">Connect an Aleo wallet</h1>
                 <ul className="wallet-adapter-modal-list">
                   {installedWallets.map(wallet => (
                     <WalletListItem
@@ -209,9 +213,7 @@ export const WalletModal: FC<WalletModalProps> = ({
               </>
             ) : (
               <>
-                <h1 className="wallet-adapter-modal-title">
-                  You'll need a wallet on Aleo to continue
-                </h1>
+                <h1 className="wallet-adapter-modal-title">Get an Aleo wallet to continue</h1>
                 <div className="wallet-adapter-modal-middle">
                   <AleoIcon />
                   <button
@@ -258,6 +260,14 @@ export const WalletModal: FC<WalletModalProps> = ({
                 ) : null}
               </>
             )}
+            <a
+              className="wallet-adapter-modal-footer"
+              href="https://provable.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ProvableLogo />
+            </a>
           </div>
         </div>
         <div className="wallet-adapter-modal-overlay" onMouseDown={handleClose} />

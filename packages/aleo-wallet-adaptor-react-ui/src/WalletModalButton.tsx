@@ -5,7 +5,7 @@ import { Button } from './Button';
 import { useWalletModal } from './useWalletModal';
 
 export const WalletModalButton: FC<ButtonProps> = ({
-  children = 'Select Wallet',
+  children = 'Connect Wallet',
   onClick,
   ...props
 }) => {
