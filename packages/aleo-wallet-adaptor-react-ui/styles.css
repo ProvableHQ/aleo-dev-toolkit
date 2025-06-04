@@ -2,8 +2,10 @@
 
 :root {
   /* Primary Colors (65%) */
-  --primary: #db33ca; /* Main brand color for primary actions */
-  --primary-hover: #c42db8; /* Darker shade for hover states */
+  /* --primary: #db33ca; PINK  */
+  /* --primary-hover: #c42db8;   */
+  --primary: #9565fb; /* Main brand color for primary actions */
+  --primary-hover: #7952ca; /* Darker shade for hover states */
   --background: #0a0606; /* Main background color */
   --surface: #0a0606; /* Surface color for cards/modals */
   --surface-hover: #1a1616; /* Slightly lighter for hover states */
@@ -353,7 +355,7 @@
 
 .wallet-adapter-modal-list-more:focus-visible,
 .wallet-adapter-modal-list-more:focus {
-  outline: 1px solid var(--text);
+  outline: none;
 }
 
 .wallet-adapter-modal-middle {

@@ -7,6 +7,7 @@ import { WalletConnectButton } from './WalletConnectButton';
 import { WalletIcon } from './WalletIcon';
 import { WalletModalButton } from './WalletModalButton';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { CheckIcon, CopyIcon, GenericWalletIcon } from './icons';
 
 export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
   const { address, wallet, disconnect } = useWallet();
@@ -26,7 +27,7 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
     if (base58) {
       await navigator.clipboard.writeText(base58);
       setCopied(true);
-      setTimeout(() => setCopied(false), 400);
+      setTimeout(() => setCopied(false), 1500);
     }
   }, [base58]);
 
@@ -84,10 +85,19 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
         role="menu"
       >
         <li onClick={copyAddress} className="wallet-adapter-dropdown-list-item" role="menuitem">
-          {copied ? 'Copied' : 'Copy address'}
+          {copied ? (
+            <>
+              Copied
+              <CheckIcon />
+            </>
+          ) : (
+            <>
+              Copy address <CopyIcon />
+            </>
+          )}
         </li>
         <li onClick={openModal} className="wallet-adapter-dropdown-list-item" role="menuitem">
-          Change wallet
+          Change wallet <GenericWalletIcon />
         </li>
         <li onClick={disconnect} className="wallet-adapter-dropdown-list-item" role="menuitem">
           Disconnect

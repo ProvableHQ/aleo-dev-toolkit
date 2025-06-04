@@ -56,7 +56,9 @@ export function App() {
         <header>
           <div className="app ">
             <h1>Aleo Wallet Example</h1>
-            <WalletMultiButton />
+            <div className="flex justify-center">
+              <WalletMultiButton />
+            </div>
 
             <WalletInfo />
             <ExecuteTransaction />
