@@ -18,10 +18,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
+    "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
-    "@provablehq/aleo-wallet-standard": "workspace:*",
-    "@provablehq/aleo-types": "workspace:*"
+    "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
+    "@provablehq/aleo-wallet-standard": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0",

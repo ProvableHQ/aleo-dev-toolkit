@@ -50,10 +50,6 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
   }, [disconnect, closeDropdown]);
 
   useEffect(() => {
-    console.log('ACTIVE', active);
-  }, [active]);
-
-  useEffect(() => {
     const listener = (event: MouseEvent | TouchEvent) => {
       const node = ref.current;
 
