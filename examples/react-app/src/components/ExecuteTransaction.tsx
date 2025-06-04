@@ -81,7 +81,7 @@ export function ExecuteTransaction() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="inputs">Inputs</Label>
+            <Label htmlFor="inputs">Inputs (separated by a newline)</Label>
             <textarea
               id="inputs"
               placeholder="Input arguments separated by a newline"

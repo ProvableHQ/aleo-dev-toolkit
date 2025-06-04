@@ -2,12 +2,13 @@ import { useMemo } from 'react';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
-import './App.css';
 import { Network } from '../../../packages/aleo-types/dist';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 import WalletAdapterDemo from './WalletAdapterDemo';
 import { Toaster } from 'sonner';
+import { ThemeProvider } from 'next-themes';
+// Import wallet adapter CSS after our own styles
+import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 export function App() {
   // memoize to avoid re‑instantiating adapters on each render
@@ -29,12 +30,14 @@ export function App() {
   );
 
   return (
-    <AleoWalletProvider wallets={wallets} autoConnect network={Network.TESTNET3}>
-      <WalletModalProvider>
-        <WalletAdapterDemo />
-        <Toaster />
-      </WalletModalProvider>
-    </AleoWalletProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AleoWalletProvider wallets={wallets} autoConnect network={Network.TESTNET3}>
+        <WalletModalProvider>
+          <WalletAdapterDemo />
+          <Toaster />
+        </WalletModalProvider>
+      </AleoWalletProvider>
+    </ThemeProvider>
   );
 }
 
