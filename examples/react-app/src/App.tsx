@@ -5,7 +5,7 @@ import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { Network } from '../../../packages/aleo-types/dist';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
 import WalletAdapterDemo from './WalletAdapterDemo';
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
@@ -31,7 +31,12 @@ export function App() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AleoWalletProvider wallets={wallets} autoConnect network={Network.TESTNET3}>
+      <AleoWalletProvider
+        wallets={wallets}
+        autoConnect
+        network={Network.TESTNET3}
+        onError={error => toast.error(error.message)}
+      >
         <WalletModalProvider>
           <WalletAdapterDemo />
           <Toaster />

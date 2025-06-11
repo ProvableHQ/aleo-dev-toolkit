@@ -43,9 +43,9 @@ export function ConnectSection() {
         </div>
 
         {connected && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
+          <Alert className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            <AlertDescription className="flex items-center justify-between flex-1">
               <span>Wallet Address: {address}</span>
               <Button variant="ghost" size="sm" onClick={() => copyToClipboard(address ?? '')}>
                 <Copy className="h-4 w-4" />
