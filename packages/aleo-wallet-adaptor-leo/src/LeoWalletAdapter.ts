@@ -126,7 +126,8 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
         ) {
           // TODO: Handle wrongNetwork at WalletProvider level?
           throw new WalletConnectionError(
-            'Connection failed: Likely due to a difference in configured network and the selected wallet network',
+            'Connection failed: Likely due to a difference in configured network and the selected wallet network. Configured network: ' +
+              network,
           );
         }
 
