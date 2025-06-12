@@ -1,0 +1,33 @@
+{
+  "name": "@provablehq/aleo-hooks",
+  "version": "0.1.0",
+  "description": "Hooks for Aleo blockchain",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "clean": "rimraf dist",
+    "dev": "tsup --watch",
+    "lint": "eslint src/**/*.ts*",
+    "test": "jest"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.2"
+  },
+  "dependencies": {
+    "@provablehq/aleo-types": "workspace:*",
+    "@provablehq/sdk": "^0.9.0",
+    "@tanstack/react-query": "^5.75.0",
+    "react": "^18.2.0"
+  }
+}
