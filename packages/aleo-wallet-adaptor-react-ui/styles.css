@@ -308,12 +308,17 @@
   border: 1px solid var(--wallet-adapter-border);
   height: 54px;
   padding: 0 16px;
+  transition:
+    background-color 0.2s ease 0.1s,
+    border-color 0.2s ease 0.1s;
 }
 
 .wallet-adapter-modal-list .wallet-adapter-button:hover {
   background: var(--wallet-adapter-surface-hover);
   border-color: var(--wallet-adapter-primary);
-  /* transform: translateY(-1px); */
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .wallet-adapter-modal-list .wallet-adapter-button-end-icon,
