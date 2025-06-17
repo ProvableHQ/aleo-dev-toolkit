@@ -6,7 +6,6 @@ node_modules
 # Build
 dist
 build
-lib
 .next
 out
 
