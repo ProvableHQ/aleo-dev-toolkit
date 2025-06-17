@@ -1,16 +1,21 @@
 import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
-import { WalletReadyState } from './wallet';
+import { WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
 
 /**
  * Wallet adapter interface
  */
-export interface WalletAdapter extends EventEmitter<WalletEvents> {
+export interface WalletAdapterProps<Name extends string = string> {
   /**
    * The wallet name
    */
-  name: string;
+  name: WalletName<Name>;
+
+  /**
+   * The wallet URL
+   */
+  url?: string;
 
   /**
    * The wallet icon
@@ -31,6 +36,11 @@ export interface WalletAdapter extends EventEmitter<WalletEvents> {
    * The supported chains
    */
   chains: AleoChain[];
+
+  /**
+   * The wallet's connected state
+   */
+  connected: boolean;
 
   /**
    * Connect to the wallet
@@ -58,3 +68,6 @@ export interface WalletAdapter extends EventEmitter<WalletEvents> {
    */
   signMessage(message: Uint8Array): Promise<Uint8Array>;
 }
+
+export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &
+  EventEmitter<WalletEvents>;

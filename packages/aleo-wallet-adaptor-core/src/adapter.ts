@@ -3,14 +3,14 @@ import {
   AleoChain,
   StandardWallet,
   WalletAdapter,
-  WalletConnectionError,
   WalletFeatureName,
-  WalletFeatureNotAvailableError,
-  WalletNotConnectedError,
   WalletReadyState,
   EventEmitter,
   WalletEvents,
+  WalletName,
 } from '@provablehq/aleo-wallet-standard';
+import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
+import { WalletConnectionError } from './errors';
 
 /**
  * Base class for Aleo wallet adapters
@@ -22,7 +22,12 @@ export abstract class BaseAleoWalletAdapter
   /**
    * The wallet name
    */
-  abstract name: string;
+  abstract name: WalletName<string>;
+
+  /**
+   * The wallet URL
+   */
+  abstract url?: string;
 
   /**
    * The wallet icon
@@ -32,7 +37,7 @@ export abstract class BaseAleoWalletAdapter
   /**
    * The wallet's ready state
    */
-  private _readyState: WalletReadyState = WalletReadyState.NOT_READY;
+  abstract _readyState: WalletReadyState;
   get readyState(): WalletReadyState {
     return this._readyState;
   }
@@ -61,6 +66,13 @@ export abstract class BaseAleoWalletAdapter
   }
 
   /**
+   * The wallet's connected state
+   */
+  get connected(): boolean {
+    return !!this.account;
+  }
+
+  /**
    * Connect to the wallet
    * @param network The network to connect to
    * @returns The connected account
@@ -76,7 +88,6 @@ export abstract class BaseAleoWalletAdapter
     try {
       const account = await feature.connect(network);
       this.account = account;
-      this.readyState = WalletReadyState.CONNECTED; // emit readyStateChange
       this.emit('connect', account);
       return account;
     } catch (err) {
@@ -99,7 +110,6 @@ export abstract class BaseAleoWalletAdapter
       }
     }
     this.account = undefined;
-    this.readyState = WalletReadyState.READY; // emit readyStateChange
     this.emit('disconnect');
   }
 

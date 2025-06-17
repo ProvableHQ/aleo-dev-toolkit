@@ -85,26 +85,32 @@ export enum WalletFeatureName {
 }
 
 /**
- * Wallet ready state
+ * A wallet's readiness describes a series of states that the wallet can be in,
+ * depending on what kind of wallet it is. An installable wallet (eg. a browser
+ * extension like Puzzle wallet) might be `Installed` if we've found the Puzzle API
+ * in the global scope, or `NotDetected` otherwise. A loadable, zero-install
+ * runtime (eg. Torus Wallet) might simply signal that it's `Loadable`. Use this
+ * metadata to personalize the wallet list for each user (eg. to show their
+ * installed wallets first).
  */
 export enum WalletReadyState {
   /**
-   * User needs to install the wallet
+   * User-installable wallets can typically be detected by scanning for an API
+   * that they've injected into the global context. If such an API is present,
+   * we consider the wallet to have been installed.
    */
-  UNSUPPORTED = 'unsupported',
-
+  INSTALLED = 'Installed',
+  NOT_DETECTED = 'NotDetected',
   /**
-   * Wallet is installed but not ready to connect
+   * Loadable wallets are always available to you. Since you can load them at
+   * any time, it's meaningless to say that they have been detected.
    */
-  NOT_READY = 'not_ready',
-
+  LOADABLE = 'Loadable',
   /**
-   * Wallet is installed and ready to connect
+   * If a wallet is not supported on a given platform (eg. server-rendering, or
+   * mobile) then it will stay in the `Unsupported` state.
    */
-  READY = 'ready',
-
-  /**
-   * Wallet is installed, ready, and already connected
-   */
-  CONNECTED = 'connected',
+  UNSUPPORTED = 'Unsupported',
 }
+
+export type WalletName<T extends string = string> = T & { __brand__: 'WalletName' };

@@ -5,8 +5,16 @@ import {
   TransactionStatus,
   Network,
 } from '@provablehq/aleo-types';
-import { WalletReadyState } from '@provablehq/aleo-wallet-standard';
-import { BaseAleoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-core';
+import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  BaseAleoWalletAdapter,
+  WalletConnectionError,
+  WalletDisconnectionError,
+  WalletError,
+  WalletNotConnectedError,
+  WalletSignMessageError,
+  WalletTransactionError,
+} from '@provablehq/aleo-wallet-adaptor-core';
 import {
   connect,
   disconnect,
@@ -16,51 +24,7 @@ import {
   EventType,
 } from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig } from './types';
-
-// Define custom error classes
-class WalletError extends Error {
-  name = 'WalletError';
-}
-
-class WalletNotConnectedError extends WalletError {
-  name = 'WalletNotConnectedError';
-
-  constructor() {
-    super('Wallet not connected');
-  }
-}
-
-class WalletConnectionError extends WalletError {
-  name = 'WalletConnectionError';
-
-  constructor(message = 'Connection to wallet failed') {
-    super(message);
-  }
-}
-
-class WalletDisconnectionError extends WalletError {
-  name = 'WalletDisconnectionError';
-
-  constructor(message = 'Disconnection failed') {
-    super(message);
-  }
-}
-
-class WalletSignMessageError extends WalletError {
-  name = 'WalletSignMessageError';
-
-  constructor(message = 'Failed to sign message') {
-    super(message);
-  }
-}
-
-class WalletTransactionError extends WalletError {
-  name = 'WalletTransactionError';
-
-  constructor(message = 'Transaction failed') {
-    super(message);
-  }
-}
+import { PuzzleIcon } from './icon';
 
 /**
  * Puzzle wallet adapter
@@ -69,14 +33,17 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * The wallet name
    */
-  readonly name = 'Puzzle Wallet';
+  name = 'Puzzle Wallet' as WalletName<'Puzzle Wallet'>;
+
+  /**
+   * The wallet URL
+   */
+  url = 'https://puzzle.online/wallet';
 
   /**
    * The wallet icon (base64-encoded SVG)
    */
-  readonly icon =
-    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDUwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjI1MCIgY3k9IjI1MCIgcj0iMjUwIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTU2Ljk3MSAxNjUuOTA5QzE1Ni45NzEgMTU0LjMwNiAxNjYuMjg2IDE0NC45OTEgMTc3Ljg5IDE0NC45OTFIMjM0LjQ5OEMyNDYuMTAxIDE0NC45OTEgMjU1LjQxNiAxNTQuMzA2IDI1NS40MTYgMTY1LjkwOVYyMjIuNTE3QzI1NS40MTYgMjM0LjEyMSAyNDYuMTAxIDI0My40MzUgMjM0LjQ5OCAyNDMuNDM1SDE3Ny44OUMxNjYuMjg2IDI0My40MzUgMTU2Ljk3MSAyMzQuMTIxIDE1Ni45NzEgMjIyLjUxN1YxNjUuOTA5WiIgZmlsbD0iIzE5MjdGNSIvPgo8cGF0aCBkPSJNMjQzLjcxMyAyNTUuNzY5QzI0My43MTMgMjQ0LjE2NSAyNTMuMDI4IDIzNC44NSAyNjQuNjMxIDIzNC44NUgzMjEuMjRDMzMyLjg0MyAyMzQuODUgMzQyLjE1OCAyNDQuMTY1IDM0Mi4xNTggMjU1Ljc2OVYzMTIuMzc3QzM0Mi4xNTggMzIzLjk4MSAzMzIuODQzIDMzMy4yOTUgMzIxLjI0IDMzMy4yOTVIMjY0LjYzMUMyNTMuMDI4IDMzMy4yOTUgMjQzLjcxMyAzMjMuOTgxIDI0My43MTMgMzEyLjM3N1YyNTUuNzY5WiIgZmlsbD0iIzE5MjdGNSIvPgo8cGF0aCBkPSJNMTU2Ljk3MSAyNTUuNzY5QzE1Ni45NzEgMjQ0LjE2NSAxNjYuMjg2IDIzNC44NSAxNzcuODkgMjM0Ljg1SDIzNC40OThDMjQ2LjEwMSAyMzQuODUgMjU1LjQxNiAyNDQuMTY1IDI1NS40MTYgMjU1Ljc2OVYzMTIuMzc3QzI1NS40MTYgMzIzLjk4MSAyNDYuMTAxIDMzMy4yOTUgMjM0LjQ5OCAzMzMuMjk1SDE3Ny44OUMxNjYuMjg2IDMzMy4yOTUgMTU2Ljk3MSAzMjMuOTgxIDE1Ni45NzEgMzEyLjM3N1YyNTUuNzY5WiIgZmlsbD0iIzE5MjdGNSIvPgo8cGF0aCBkPSJNMjAwLjMwNyAzNDYuOTUxQzIwMC4zMDcgMzM1LjM0OCAyMDkuNjIyIDMyNi4wMzMgMjIxLjIyNSAzMjYuMDMzSDI3Ny44MzNDMjg5LjQzNyAzMjYuMDMzIDI5OC43NTEgMzM1LjM0OCAyOTguNzUxIDM0Ni45NTFWNDAzLjU1OUMyOTguNzUxIDQxNS4xNjMgMjg5LjQzNyA0MjQuNDc3IDI3Ny44MzMgNDI0LjQ3N0gyMjEuMjI1QzIwOS42MjIgNDI0LjQ3NyAyMDAuMzA3IDQxNS4xNjMgMjAwLjMwNyA0MDMuNTU5VjM0Ni45NTFaIiBmaWxsPSIjMTkyN0Y1Ii8+CjxwYXRoIGQ9Ik0yNDMuNzEzIDE2NS45MDlDMjQzLjcxMyAxNTQuMzA2IDI1My4wMjggMTQ0Ljk5MSAyNjQuNjMxIDE0NC45OTFIMzIxLjI0QzMzMi44NDMgMTQ0Ljk5MSAzNDIuMTU4IDE1NC4zMDYgMzQyLjE1OCAxNjUuOTA5VjIyMi41MTdDMzQyLjE1OCAyMzQuMTIxIDMzMi44NDMgMjQzLjQzNSAzMjEuMjQgMjQzLjQzNUgyNjQuNjMxQzI1My4wMjggMjQzLjQzNSAyNDMuNzEzIDIzNC4xMjEgMjQzLjcxMyAyMjIuNTE3VjE2NS45MDlaIiBmaWxsPSIjMTkyN0Y1Ii8+Cjwvc3ZnPgo=';
-
+  icon = PuzzleIcon;
   /**
    * The window object
    */
@@ -106,6 +73,11 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    * Current network
    */
   private _network: PuzzleNetwork | undefined;
+
+  _readyState: WalletReadyState =
+    typeof window === 'undefined' || typeof document === 'undefined'
+      ? WalletReadyState.UNSUPPORTED
+      : WalletReadyState.NOT_DETECTED;
 
   /**
    * Public key
@@ -137,11 +109,13 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     this._window = window as PuzzleWindow;
 
     if (this._window.puzzle) {
-      this.readyState = WalletReadyState.READY;
+      this.readyState = WalletReadyState.INSTALLED;
     } else {
       // Check if user is on a mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      this.readyState = isMobile ? WalletReadyState.NOT_READY : WalletReadyState.UNSUPPORTED;
+      if (isMobile) {
+        this.readyState = WalletReadyState.LOADABLE;
+      }
     }
   }
 
@@ -152,7 +126,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    */
   async connect(network: Network): Promise<Account> {
     try {
-      if (this.readyState !== WalletReadyState.READY) {
+      if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Puzzle Wallet is not available');
       }
 
@@ -189,7 +163,6 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
       };
 
       this.account = account;
-      this.readyState = WalletReadyState.CONNECTED;
       this.emit('connect', account);
 
       return account;
@@ -207,7 +180,6 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
       await disconnect();
       this._publicKey = '';
       this.account = undefined;
-      this.readyState = WalletReadyState.READY;
       this.emit('disconnect');
     } catch (err: Error | unknown) {
       this.emit('error', err instanceof Error ? err : new Error(String(err)));

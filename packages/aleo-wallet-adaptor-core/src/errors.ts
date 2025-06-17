@@ -70,3 +70,43 @@ export class WalletTransactionTimeoutError extends WalletTransactionError {
     super('Transaction timed out');
   }
 }
+
+export class WalletNotSelectedError extends WalletError {
+  name = 'WalletNotSelectedError';
+
+  constructor() {
+    super('Wallet not selected');
+  }
+}
+
+export class WalletDisconnectionError extends WalletError {
+  name = 'WalletDisconnectionError';
+
+  constructor(message = 'Disconnection failed') {
+    super(message);
+  }
+}
+
+export class WalletSignMessageError extends WalletError {
+  name = 'WalletSignMessageError';
+
+  constructor(message = 'Failed to sign message') {
+    super(message);
+  }
+}
+
+export class WalletNotReadyError extends WalletError {
+  name = 'WalletNotReadyError';
+
+  constructor() {
+    super('Wallet not ready');
+  }
+}
+
+export class MethodNotImplementedError extends WalletError {
+  name = 'MethodNotImplementedError';
+
+  constructor(method: string) {
+    super(`Method not implemented: ${method}`);
+  }
+}

@@ -3,39 +3,36 @@ import { useCallback, useMemo } from 'react';
 import type { ButtonProps } from './Button';
 import { Button } from './Button';
 import { WalletIcon } from './WalletIcon';
-import { Network } from '@provablehq/aleo-types';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 
-export const WalletConnectButton: FC<ButtonProps> = ({
+export const WalletDisconnectButton: FC<ButtonProps> = ({
   children,
   disabled,
   onClick,
-  network,
   ...props
 }) => {
-  const { wallet, connect, connecting, connected } = useWallet();
+  const { wallet, disconnect, disconnecting } = useWallet();
 
   const handleClick: MouseEventHandler<HTMLButtonElement> = useCallback(
     event => {
       if (onClick) onClick(event);
       // eslint-disable-next-line @typescript-eslint/no-empty-function
-      if (!event.defaultPrevented) connect(network || Network.TESTNET3).catch(() => {});
+      if (!event.defaultPrevented) disconnect().catch(() => {});
     },
-    [onClick, connect],
+    [onClick, disconnect],
   );
 
   const content = useMemo(() => {
     if (children) return children;
-    if (connecting) return 'Connecting ...';
-    if (connected) return 'Connected';
-    if (wallet) return 'Connect';
-    return 'Connect Wallet';
-  }, [children, connecting, connected, wallet]);
+    if (disconnecting) return 'Disconnecting ...';
+    if (wallet) return 'Disconnect';
+    return 'Disconnect Wallet';
+  }, [children, disconnecting, wallet]);
 
   return (
     <Button
       className="wallet-adapter-button-trigger"
-      disabled={disabled || !wallet || connecting || connected}
+      disabled={disabled || !wallet}
       startIcon={wallet ? <WalletIcon wallet={wallet} /> : undefined}
       onClick={handleClick}
       {...props}
