@@ -1,4 +1,4 @@
-import { EventEmitter } from '@demox-labs/aleo-wallet-adapter-base';
+import { EventEmitter } from '@provablehq/aleo-wallet-standard';
 import { Network, newProgramManager, ProgramManager } from './types';
 
 export type Config = {
