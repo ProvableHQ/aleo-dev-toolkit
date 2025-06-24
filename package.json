@@ -7,6 +7,8 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "build:examples": "cd examples/react-app && pnpm build && cd ../react-app-hooks && pnpm build",
+    "preview:examples": "cd examples/react-app && pnpm preview && cd ../react-app-hooks && pnpm preview",
     "clean": "turbo run clean",
     "dev": "turbo run dev",
     "dev:example": "pnpm --filter react-app-example dev",
@@ -34,4 +36,4 @@
     "pnpm": ">=10.0.0"
   },
   "packageManager": "pnpm@10.2.0"
-} 
+}
