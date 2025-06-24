@@ -16,7 +16,7 @@ Explore the `examples/` directory for sample projects or refer to the `docs/` di
 
 ## Build
 
-To build all packages:
+To build all packages (will not build example apps):
 
 ```bash
 pnpm build
@@ -24,13 +24,28 @@ pnpm build
 
 This will use Turborepo to build all packages in the correct dependency order.
 
-## Development
+### Running Examples
 
-To start development mode for all packages:
+To run both example applications simultaneously:
 
 ```bash
-pnpm dev
+pnpm examples:dev
 ```
+
+To run individual example applications:
+
+```bash
+# Run the React app example (wallet adapter)
+pnpm adapter-app:dev
+
+# Run the React app with hooks example
+pnpm hooks-app:dev
+```
+
+### Example Applications
+
+- **`examples/react-app/`** - A React application demonstrating wallet adapter integration with UI components
+- **`examples/react-app-hooks/`** - A React application showcasing the use of Aleo hooks for chain data
 
 ## Clean
 
@@ -132,3 +147,7 @@ aleo-dev-toolkit/                          (Monorepo Root)
 
 9. **`docs/`**  
    Documentation and specifications, including the Aleo Wallet Standard specification.
+
+```
+
+```
