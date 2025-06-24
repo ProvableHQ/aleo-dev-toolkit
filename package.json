@@ -7,6 +7,12 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "examples:dev": "concurrently \"pnpm run adapter-app:dev\" \"pnpm run hooks-app:dev\"",
+    "adapter-app:dev": "cd examples/react-app && pnpm dev",
+    "hooks-app:dev": "cd examples/react-app-hooks && pnpm dev",
+    "examples:production": "concurrently \"pnpm run adapter-app:production\" \"pnpm run hooks-app:production\"",
+    "adapter-app:production": "cd examples/react-app && pnpm build && pnpm preview",
+    "hooks-app:production": "cd examples/react-app-hooks && pnpm build && pnpm preview",
     "clean": "turbo run clean",
     "dev": "turbo run dev",
     "dev:example": "pnpm --filter react-app-example dev",
@@ -21,6 +27,7 @@
     "@changesets/cli": "^2.27.1",
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "@typescript-eslint/parser": "^6.16.0",
+    "concurrently": "^8.2.2",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
@@ -34,4 +41,4 @@
     "pnpm": ">=10.0.0"
   },
   "packageManager": "pnpm@10.2.0"
-} 
+}
