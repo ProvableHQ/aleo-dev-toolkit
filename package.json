@@ -7,8 +7,8 @@
   ],
   "scripts": {
     "build": "turbo run build",
-    "build:examples": "cd examples/react-app && pnpm build && cd ../react-app-hooks && pnpm build",
-    "preview:examples": "cd examples/react-app && pnpm preview && cd ../react-app-hooks && pnpm preview",
+    "examples:dev": "cd examples/react-app && pnpm dev && cd ../react-app-hooks && pnpm dev",
+    "examples:production": "cd examples/react-app && pnpm build && pnpm preview && cd ../react-app-hooks && pnpm build  && pnpm preview",
     "clean": "turbo run clean",
     "dev": "turbo run dev",
     "dev:example": "pnpm --filter react-app-example dev",
