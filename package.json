@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "turbo run build --filter=!examples/**",
+    "build": "turbo run build --filter=!react-app-example --filter=!react-app-example-hooks",
     "examples:dev": "concurrently \"pnpm run adapter-app:dev\" \"pnpm run hooks-app:dev\"",
     "adapter-app:dev": "cd examples/react-app && pnpm dev",
     "hooks-app:dev": "cd examples/react-app-hooks && pnpm dev",

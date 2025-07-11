@@ -50,19 +50,19 @@ importers:
     dependencies:
       '@provablehq/aleo-wallet-adaptor-core':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor-core
+        version: link:../../packages/aleo-wallet-adaptor/core
       '@provablehq/aleo-wallet-adaptor-leo':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor-leo
+        version: link:../../packages/aleo-wallet-adaptor/wallets/leo
       '@provablehq/aleo-wallet-adaptor-puzzle':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor-puzzle
+        version: link:../../packages/aleo-wallet-adaptor/wallets/puzzle
       '@provablehq/aleo-wallet-adaptor-react':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor-react
+        version: link:../../packages/aleo-wallet-adaptor/react
       '@provablehq/aleo-wallet-adaptor-react-ui':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor-react-ui
+        version: link:../../packages/aleo-wallet-adaptor/react-ui
       '@puzzlehq/sdk':
         specifier: ^0.2.0
         version: 0.2.7(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(typescript@5.8.3)
@@ -250,14 +250,14 @@ importers:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.3)(typescript@5.8.3)(yaml@2.7.1)
 
-  packages/aleo-wallet-adaptor-core:
+  packages/aleo-wallet-adaptor/core:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
-        version: link:../aleo-types
+        version: link:../../aleo-types
       '@provablehq/aleo-wallet-standard':
         specifier: workspace:*
-        version: link:../aleo-wallet-standard
+        version: link:../../aleo-wallet-standard
     devDependencies:
       rimraf:
         specifier: ^5.0.5
@@ -266,58 +266,17 @@ importers:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.3)(typescript@5.8.3)(yaml@2.7.1)
 
-  packages/aleo-wallet-adaptor-leo:
+  packages/aleo-wallet-adaptor/react:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
-        version: link:../aleo-types
+        version: link:../../aleo-types
       '@provablehq/aleo-wallet-adaptor-core':
         specifier: workspace:*
-        version: link:../aleo-wallet-adaptor-core
+        version: link:../core
       '@provablehq/aleo-wallet-standard':
         specifier: workspace:*
-        version: link:../aleo-wallet-standard
-    devDependencies:
-      tsup:
-        specifier: ^7.0.0
-        version: 7.3.0(@swc/core@1.12.1)(postcss@8.5.3)(typescript@5.8.3)
-      typescript:
-        specifier: ^5.0.0
-        version: 5.8.3
-
-  packages/aleo-wallet-adaptor-puzzle:
-    dependencies:
-      '@provablehq/aleo-types':
-        specifier: workspace:*
-        version: link:../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
-        specifier: workspace:*
-        version: link:../aleo-wallet-adaptor-core
-      '@provablehq/aleo-wallet-standard':
-        specifier: workspace:*
-        version: link:../aleo-wallet-standard
-      '@puzzlehq/sdk-core':
-        specifier: ^1.0.3
-        version: 1.0.3(buffer@6.0.3)
-    devDependencies:
-      tsup:
-        specifier: ^7.0.0
-        version: 7.3.0(@swc/core@1.12.1)(postcss@8.5.3)(typescript@5.8.3)
-      typescript:
-        specifier: ^5.0.0
-        version: 5.8.3
-
-  packages/aleo-wallet-adaptor-react:
-    dependencies:
-      '@provablehq/aleo-types':
-        specifier: workspace:*
-        version: link:../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
-        specifier: workspace:*
-        version: link:../aleo-wallet-adaptor-core
-      '@provablehq/aleo-wallet-standard':
-        specifier: workspace:*
-        version: link:../aleo-wallet-standard
+        version: link:../../aleo-wallet-standard
     devDependencies:
       '@types/react':
         specifier: ^18.2.39
@@ -338,20 +297,20 @@ importers:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.3)(typescript@5.8.3)(yaml@2.7.1)
 
-  packages/aleo-wallet-adaptor-react-ui:
+  packages/aleo-wallet-adaptor/react-ui:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
-        version: link:../aleo-types
+        version: link:../../aleo-types
       '@provablehq/aleo-wallet-adaptor-core':
         specifier: workspace:*
-        version: link:../aleo-wallet-adaptor-core
+        version: link:../core
       '@provablehq/aleo-wallet-adaptor-react':
         specifier: workspace:*
-        version: link:../aleo-wallet-adaptor-react
+        version: link:../react
       '@provablehq/aleo-wallet-standard':
         specifier: workspace:*
-        version: link:../aleo-wallet-standard
+        version: link:../../aleo-wallet-standard
     devDependencies:
       '@types/react':
         specifier: ^18.2.39
@@ -374,6 +333,47 @@ importers:
       tsup:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.3)(typescript@5.8.3)(yaml@2.7.1)
+
+  packages/aleo-wallet-adaptor/wallets/leo:
+    dependencies:
+      '@provablehq/aleo-types':
+        specifier: workspace:*
+        version: link:../../../aleo-types
+      '@provablehq/aleo-wallet-adaptor-core':
+        specifier: workspace:*
+        version: link:../../core
+      '@provablehq/aleo-wallet-standard':
+        specifier: workspace:*
+        version: link:../../../aleo-wallet-standard
+    devDependencies:
+      tsup:
+        specifier: ^7.0.0
+        version: 7.3.0(@swc/core@1.12.1)(postcss@8.5.3)(typescript@5.8.3)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.8.3
+
+  packages/aleo-wallet-adaptor/wallets/puzzle:
+    dependencies:
+      '@provablehq/aleo-types':
+        specifier: workspace:*
+        version: link:../../../aleo-types
+      '@provablehq/aleo-wallet-adaptor-core':
+        specifier: workspace:*
+        version: link:../../core
+      '@provablehq/aleo-wallet-standard':
+        specifier: workspace:*
+        version: link:../../../aleo-wallet-standard
+      '@puzzlehq/sdk-core':
+        specifier: ^1.0.3
+        version: 1.0.4(buffer@6.0.3)
+    devDependencies:
+      tsup:
+        specifier: ^7.0.0
+        version: 7.3.0(@swc/core@1.12.1)(postcss@8.5.3)(typescript@5.8.3)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.8.3
 
   packages/aleo-wallet-standard:
     dependencies:
@@ -1151,11 +1151,6 @@ packages:
   '@provablehq/wasm@0.9.2':
     resolution: {integrity: sha512-BVZEvDZRL44zPCWJLK/WFzZeYrbMCSMTYiC0LL1xVcfcTHD3agi//OnjbM9T7B0sg8Yr/kpDscWIBVYOs0ZFRQ==}
 
-  '@puzzlehq/sdk-core@1.0.3':
-    resolution: {integrity: sha512-nYXunLzYmxNyTARH6lNKD0eW2DZp+XpKCPeJPLvDdIW2jy0rXdDo1L0/CTAF1r09yDjBdoibIvjzwCVljjWinA==}
-    peerDependencies:
-      buffer: ^6.0.3
-
   '@puzzlehq/sdk-core@1.0.4':
     resolution: {integrity: sha512-tL/RzseDfSRaVLCqMg9UIbgVK0+jDEq5QgBwvvboBixEiL1qseYkEN5udX4nsJF3J5YrNm984MKQIt08JZra7A==}
     peerDependencies:
@@ -1171,9 +1166,6 @@ packages:
 
   '@puzzlehq/types@1.0.11':
     resolution: {integrity: sha512-Elk1gs+RxTR3zBGdENpH3TMdp6aQaO17bI+ubfkbAPW6gN4PyYicN4z++TQCCvXwtIarOr0I2K0kLe8yQAIovw==}
-
-  '@puzzlehq/types@1.0.31':
-    resolution: {integrity: sha512-m2VoTfuIs/hNr15MkQbZAtOO2cbf4OsrSyqKEbJ18WCzfYAk5oqbpgaoNDa5e4VAE6mcehtK7sy1VXxXJZqZoQ==}
 
   '@puzzlehq/types@1.0.32':
     resolution: {integrity: sha512-eEkbycnq0CvJLSX08XYqdoxL7/9usyORAGFfawyEENfljTng7P+mKXeSrMF1fulkL7VB0f8aLfk32DezuaeFiQ==}
@@ -4972,26 +4964,13 @@ snapshots:
 
   '@provablehq/wasm@0.9.2': {}
 
-  '@puzzlehq/sdk-core@1.0.3(buffer@6.0.3)':
-    dependencies:
-      '@puzzlehq/types': 1.0.31
-      buffer: 6.0.3
-      debug: 4.4.0
-      events: 3.3.0
-      ws: 8.18.1
-      zod: 3.21.1
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
   '@puzzlehq/sdk-core@1.0.4(buffer@6.0.3)':
     dependencies:
       '@puzzlehq/types': 1.0.32
       buffer: 6.0.3
       debug: 4.4.0
       events: 3.3.0
-      ws: 8.18.1
+      ws: 8.18.2
       zod: 3.21.1
     transitivePeerDependencies:
       - bufferutil
@@ -5074,10 +5053,6 @@ snapshots:
       - utf-8-validate
 
   '@puzzlehq/types@1.0.11':
-    dependencies:
-      zod: 3.21.1
-
-  '@puzzlehq/types@1.0.31':
     dependencies:
       zod: 3.21.1
 
