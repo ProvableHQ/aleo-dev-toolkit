@@ -1,2 +1,8 @@
 packages:
   - 'packages/*'
+  - 'packages/aleo-wallet-adaptor/core'
+  - 'packages/aleo-wallet-adaptor/react'
+  - 'packages/aleo-wallet-adaptor/react-ui'
+  - 'packages/aleo-wallet-adaptor/wallets/leo'
+  - 'packages/aleo-wallet-adaptor/wallets/puzzle'
+  - 'examples/*'
