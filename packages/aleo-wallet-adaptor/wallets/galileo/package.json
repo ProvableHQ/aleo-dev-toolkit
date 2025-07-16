@@ -1,0 +1,26 @@
+{
+  "name": "@provablehq/aleo-wallet-adaptor-galileo",
+  "version": "0.1.0",
+  "description": "Galileo wallet adapter for Aleo",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "@provablehq/aleo-types": "workspace:*",
+    "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
+    "@provablehq/aleo-wallet-standard": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^7.0.0",
+    "typescript": "^5.0.0"
+  }
+}
