@@ -51,6 +51,9 @@ importers:
       '@provablehq/aleo-wallet-adaptor-core':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor/core
+      '@provablehq/aleo-wallet-adaptor-galileo':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/wallets/galileo
       '@provablehq/aleo-wallet-adaptor-leo':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor/wallets/leo
@@ -333,6 +336,25 @@ importers:
       tsup:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.3)(typescript@5.8.3)(yaml@2.7.1)
+
+  packages/aleo-wallet-adaptor/wallets/galileo:
+    dependencies:
+      '@provablehq/aleo-types':
+        specifier: workspace:*
+        version: link:../../../aleo-types
+      '@provablehq/aleo-wallet-adaptor-core':
+        specifier: workspace:*
+        version: link:../../core
+      '@provablehq/aleo-wallet-standard':
+        specifier: workspace:*
+        version: link:../../../aleo-wallet-standard
+    devDependencies:
+      tsup:
+        specifier: ^7.0.0
+        version: 7.3.0(@swc/core@1.12.1)(postcss@8.5.3)(typescript@5.8.3)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.8.3
 
   packages/aleo-wallet-adaptor/wallets/leo:
     dependencies:

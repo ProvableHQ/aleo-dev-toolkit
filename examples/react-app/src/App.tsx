@@ -4,6 +4,7 @@ import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { Network } from '../../../packages/aleo-types/dist';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
+import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-galileo';
 import WalletAdapterDemo from './WalletAdapterDemo';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
@@ -14,6 +15,7 @@ export function App() {
   // memoize to avoid re‑instantiating adapters on each render
   const wallets = useMemo(
     () => [
+      new GalileoWalletAdapter(),
       new PuzzleWalletAdapter({
         appName: 'Aleo Wallet Demo',
         appDescription: 'Demo application for Aleo wallet adapters',
