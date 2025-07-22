@@ -18,6 +18,7 @@ import {
 import {
   AleoTransaction,
   DecryptPermission,
+  LEO_NETWORK_MAP,
   LeoWallet,
   LeoWalletAdapterConfig,
   LeoWindow,
@@ -116,13 +117,14 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        await this._leoWallet?.connect(DecryptPermission.NoDecrypt, network);
+        await this._leoWallet?.connect(DecryptPermission.NoDecrypt, LEO_NETWORK_MAP[network]);
         this._network = network;
       } catch (error: unknown) {
         if (
           error instanceof Object &&
           'name' in error &&
-          error.name === 'InvalidParamsAleoWalletError'
+          (error.name === 'InvalidParamsAleoWalletError' ||
+            error.name !== 'NotGrantedAleoWalletError')
         ) {
           // TODO: Handle wrongNetwork at WalletProvider level?
           throw new WalletConnectionError(
