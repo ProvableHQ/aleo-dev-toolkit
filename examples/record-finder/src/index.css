@@ -117,4 +117,25 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Override WalletMultiButton styling to match theme */
+.wallet-adapter-button-trigger {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  border-radius: var(--radius) !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
+}
+
+.wallet-adapter-button-trigger:hover {
+  background-color: color-mix(in oklch, var(--primary) 90%, transparent) !important;
+}
+
+.wallet-adapter-button-trigger:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
 } 

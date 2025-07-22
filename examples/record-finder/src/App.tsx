@@ -1,18 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
-import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
-import { Network } from '../../../packages/aleo-types/dist';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
 import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-galileo';
-import RecordFinderDemo from './RecordFinderDemo';
-import { toast, Toaster } from 'sonner';
+import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
+import { Network } from '../../../packages/aleo-types/dist';
 import { ThemeProvider } from 'next-themes';
-// Import wallet adapter CSS after our own styles
-import '@provablehq/aleo-wallet-adaptor-react-ui/styles.css';
+import { Toaster, toast } from 'sonner';
+import RecordFinderDemo from './RecordFinderDemo';
+import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 export function App() {
-  // memoize to avoid re‑instantiating adapters on each render
+  const [selectedNetwork, setSelectedNetwork] = useState<Network>(Network.TESTNET3);
+
   const wallets = useMemo(
     () => [
       new GalileoWalletAdapter(),
@@ -28,19 +28,33 @@ export function App() {
         appDescription: 'Find and browse your records from Aleo programs',
       }),
     ],
-    [],
+    []
   );
+
+  const handleNetworkChange = (network: Network) => {
+    setSelectedNetwork(network);
+    toast.success(`Switched to ${network === Network.MAINNET ? 'Mainnet' : 'Testnet'}`);
+  };
+
+  const handleWalletError = (error: any) => {
+    console.error('Wallet Error:', error);
+    const message = error.message || 'Wallet connection failed';
+    toast.error(message);
+  };
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AleoWalletProvider
         wallets={wallets}
         autoConnect
-        network={Network.TESTNET3}
-        onError={error => toast.error(error.message)}
+        network={selectedNetwork}
+        onError={handleWalletError}
       >
         <WalletModalProvider>
-          <RecordFinderDemo />
+          <RecordFinderDemo
+            selectedNetwork={selectedNetwork}
+            onNetworkChange={handleNetworkChange}
+          />
           <Toaster />
         </WalletModalProvider>
       </AleoWalletProvider>
