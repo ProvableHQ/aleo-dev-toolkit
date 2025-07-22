@@ -42,6 +42,13 @@ export interface LeoWalletEvents {
   accountChange(...args: unknown[]): unknown;
 }
 
+export type LeoNetwork = 'mainnet' | 'testnetbeta';
+
+export const LEO_NETWORK_MAP: Record<Network, LeoNetwork> = {
+  [Network.MAINNET]: 'mainnet',
+  [Network.TESTNET3]: 'testnetbeta',
+};
+
 export interface LeoWallet extends EventEmitter<LeoWalletEvents> {
   publicKey?: string;
   isAvailable(): Promise<boolean>;
@@ -65,7 +72,7 @@ export interface LeoWallet extends EventEmitter<LeoWalletEvents> {
   requestTransactionHistory(program: string): Promise<{ transactions: unknown[] }>;
   connect(
     decryptPermission: DecryptPermission,
-    network: Network,
+    network: LeoNetwork,
     programs?: string[],
   ): Promise<void>;
   disconnect(): Promise<void>;
