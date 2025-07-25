@@ -1,9 +1,19 @@
-import { Account, Network } from '@provablehq/aleo-types';
+import {
+  Account,
+  Network,
+  Transaction,
+  TransactionOptions,
+  TransactionStatus,
+} from '@provablehq/aleo-types';
 import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
   WalletConnectionError,
   WalletDisconnectionError,
+  WalletError,
+  WalletNotConnectedError,
+  WalletSignMessageError,
+  WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { GalileoWallet, GalileoWalletAdapterConfig, GalileoWindow } from './types';
 
@@ -101,7 +111,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         const connectResult = await this._galileoWallet?.connect(network);
         this._publicKey = connectResult?.address || '';
         this._network = network;
-        console.log('Galileo Wallet connected to network: ', this._network);
+        console.debug('Galileo Wallet connected to network: ', this._network);
       } catch (error: unknown) {
         throw new WalletConnectionError(
           error instanceof Error ? error.message : 'Connection failed',
@@ -139,6 +149,67 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       this.emit('error', err instanceof Error ? err : new Error(String(err)));
       throw new WalletDisconnectionError(
         err instanceof Error ? err.message : 'Disconnection failed',
+      );
+    }
+  }
+
+  /**
+   * Sign a transaction with Galileo wallet
+   * @param message The message to sign
+   * @returns The signed message
+   */
+  async signMessage(message: Uint8Array): Promise<Uint8Array> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      // Pass only the parameters expected by the Galileo SDK
+      const signature = await this._galileoWallet?.signMessage(message);
+      if (!signature) {
+        throw new WalletSignMessageError('Failed to sign message');
+      }
+
+      return signature;
+    } catch (error: Error | unknown) {
+      throw new WalletSignMessageError(
+        error instanceof Error ? error.message : 'Failed to sign message',
+      );
+    }
+  }
+
+  /**
+   * Execute a transaction with Galileo wallet
+   * @param options Transaction options
+   * @returns The executed transaction
+   */
+  async executeTransaction(options: TransactionOptions): Promise<Transaction> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._galileoWallet?.executeTransaction({
+        ...options,
+        network: this._network,
+      });
+
+      if (!result?.transaction) {
+        throw new WalletTransactionError('Could not create transaction');
+      }
+
+      return {
+        id: result.transaction.id,
+        status: TransactionStatus.PENDING,
+        fee: options.fee,
+      };
+    } catch (error: Error | unknown) {
+      console.error('GalileoWalletAdapter executeTransaction error', error);
+      if (error instanceof WalletError) {
+        throw error;
+      }
+      throw new WalletTransactionError(
+        error instanceof Error ? error.message : 'Failed to execute transaction',
       );
     }
   }

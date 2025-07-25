@@ -193,7 +193,13 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         isConnecting.current = false;
       }
     })();
-  }, [isConnecting, connected, autoConnect, adapter, readyState, setName]);
+  }, [isConnecting, connected, autoConnect, adapter, readyState, setName, network]);
+
+  // Disconnect when network changes
+  // TODO: Reconnect when network changes if already connected if wallet support network change
+  useEffect(() => {
+    disconnect();
+  }, [network]);
 
   // Connect the adapter to the wallet
   const connect = useCallback(async () => {
