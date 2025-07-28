@@ -19,35 +19,38 @@ import {
   AleoTransaction,
   DecryptPermission,
   LEO_NETWORK_MAP,
+  LeoNetwork,
   LeoWallet,
   LeoWalletAdapterConfig,
-  LeoWindow,
-  LeoNetwork,
-} from './types';
+} from '@provablehq/aleo-wallet-adaptor-leo';
+
+export interface FoxWindow extends Window {
+  foxwallet?: { aleo?: LeoWallet };
+}
 
 /**
- * Leo wallet adapter
+ * Fox wallet adapter
  */
-export class LeoWalletAdapter extends BaseAleoWalletAdapter {
+export class FoxWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * The wallet name
    */
-  readonly name = 'Leo Wallet' as WalletName<'Leo Wallet'>;
+  readonly name = 'Fox Wallet' as WalletName<'Fox Wallet'>;
 
   /**
    * The wallet URL
    */
-  url = 'https://app.leo.app';
+  url = 'https://foxwallet.com/downloa';
 
   /**
    * The wallet icon (base64-encoded SVG)
    */
   readonly icon =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFwAAABcCAMAAADUMSJqAAAASFBMVEVjTP////9kTf9GIP/5+P9dRP+ajf9WO//Jwv9fR/9KJv+Ccf9ZP//08/+Xiv9aQf+upf/c2P+Qgf96aP9TNv/Nx/+Fdf+6sv91nL8+AAABCUlEQVRoge2YyQ6EIBBEccVWBHf//09H42FESNRJk+ik3s06vANCQ0oIAAAAf0ps48u8XHKXiYVZsyE5pbxgj8s63RPpTAhZROkZ9QV7nKSRRb7JT0kTyCGHHPInyceAcppyBz0zyQVlDlJzyT1k+XvkZKQ0FEROqmqKoqkU8ctV327fba+45ar7Jp3ilVO/j3pilat2H7WKU06VnVXEKDeNnTWGUX6cioV8izzosgT9ocetuKzKWw5R0OMfdnAtKyPDjVwR9LI48ny5lu6zgm0rztp9EE1cJ9THyDW4fLBNRcghhxxyDvmh+vOxybVdB16p/pzS0sewesz90vJGtfpD3QoAAOCNfADu9hzTpMe3fQAAAABJRU5ErkJggg==';
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDkwMCA5MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI5MDAiIGhlaWdodD0iOTAwIiByeD0iNDUwIiBmaWxsPSJibGFjayIvPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTU3Ny4yNDkgMjE1Ljk3NUM1MzkuOTU2IDE5Ni4yMzIgNTExLjY0NiAxNjEuNTQ5IDUwMC40NjggMTE5Ljg2OEM0OTcuMDIxIDEzMi42MTMgNDk1LjI0NSAxNDUuOTg0IDQ5NS4yNDUgMTU5Ljc3NEM0OTUuMjQ1IDE3MC41MzMgNDk2LjM5NCAxODAuOTggNDk4LjQ4MyAxOTEuMTEzQzQ5OC40ODMgMTkxLjExMyA0OTguNDgzIDE5MS4xMTMgNDk4LjQ4MyAxOTEuMjE3QzQ5OC40ODMgMTkxLjMyMiA0OTguNTg4IDE5MS41MzEgNDk4LjU4OCAxOTEuNjM1QzUwMS40MDggMjA1LjIxNiA1MDYuMDA1IDIxOC4wNjUgNTEyLjE2OCAyMjkuOTc0QzQ5OS4wMDYgMjIwLjI1OCA0ODcuMzA2IDIwOC42NjMgNDc3LjQ4NiAxOTUuNjA1QzQ2NC4zMjMgMjk3LjY2NyA1MDEuNDA4IDQwMy45MDcgNTY5LjIwNiA0NzMuODk4QzY1Ny42ODcgNTc2LjkgNTc2LjEgNzUxLjY2OSA0MzguMjA3IDc0Ny4wNzNDMjQzLjA2OCA3NDguNzQ0IDIwOS42MzkgNDYxLjM2MiAzOTYuODM5IDQxNi4yMzRMMzk2LjczNSA0MTUuNzExQzQ0Ni42NjkgMzk5LjUxOSA0NzAuMDY5IDM2Ny4wMzEgNDc0LjE0MyAzMjQuODI3QzQwMi4wNjMgMzgzLjIyMyAyODguMTk2IDMxMC44MjkgMzExLjgwNSAyMjAuMTU0QzQxLjI0MjUgMzUzLjM0NiAxNDEuNzM3IDc4NS40MTEgNDQ4LjQ0NSA3ODAuMDgzQzU4Mi4wNTUgNzgwLjA4MyA2OTUuMDg1IDY5MS43MDYgNzMyLjE3IDU3MC4yMTRDNzc2LjQ2MyA0MjguNTYxIDcwNC44IDI3Ny42MDkgNTc3LjI0OSAyMTUuOTc1WiIgZmlsbD0iIzEyRkU3NCIvPgo8L3N2Zz4K';
   /**
    * The window object
    */
-  private _window: LeoWindow | undefined;
+  private _window: FoxWindow | undefined;
 
   /**
    * Current network
@@ -65,27 +68,27 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       : WalletReadyState.NOT_DETECTED;
 
   /**
-   * Leo wallet instance
+   * Fox wallet instance
    */
-  private _leoWallet: LeoWallet | undefined;
+  private _foxWallet: LeoWallet | undefined;
 
   /**
-   * Create a new Leo wallet adapter
+   * Create a new Fox wallet adapter
    * @param config Adapter configuration
    */
   constructor(config?: LeoWalletAdapterConfig) {
     super();
-    console.debug('LeoWalletAdapter constructor', config);
+    console.debug('FoxWalletAdapter constructor', config);
     this._network = LEO_NETWORK_MAP[Network.TESTNET3];
     this._checkAvailability();
-    this._leoWallet = this._window?.leoWallet || this._window?.leo;
+    this._foxWallet = this._window?.foxwallet?.aleo;
     if (config?.isMobile) {
       this.url = `https://app.leo.app/browser?url=${config.mobileWebviewUrl}`;
     }
   }
 
   /**
-   * Check if Leo wallet is available
+   * Check if Fox wallet is available
    */
   private _checkAvailability(): void {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -93,9 +96,9 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       return;
     }
 
-    this._window = window as LeoWindow;
+    this._window = window as FoxWindow;
 
-    if (this._window.leoWallet || this._window.leo) {
+    if (this._window.foxwallet?.aleo) {
       this.readyState = WalletReadyState.INSTALLED;
     } else {
       // Check if user is on a mobile device
@@ -107,18 +110,18 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Connect to Leo wallet
+   * Connect to Fox wallet
    * @returns The connected account
    */
   async connect(network: Network): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
-        throw new WalletConnectionError('Leo Wallet is not available');
+        throw new WalletConnectionError('Fox Wallet is not available');
       }
 
       // Call connect and extract address safely
       try {
-        await this._leoWallet?.connect(DecryptPermission.NoDecrypt, LEO_NETWORK_MAP[network]);
+        await this._foxWallet?.connect(DecryptPermission.NoDecrypt, LEO_NETWORK_MAP[network]);
         this._network = LEO_NETWORK_MAP[network];
       } catch (error: unknown) {
         if (
@@ -139,7 +142,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
         );
       }
 
-      this._publicKey = this._leoWallet?.publicKey || '';
+      this._publicKey = this._foxWallet?.publicKey || '';
       if (!this._publicKey) {
         throw new WalletConnectionError('No address returned from wallet');
       }
@@ -159,11 +162,11 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Disconnect from Leo wallet
+   * Disconnect from Fox wallet
    */
   async disconnect(): Promise<void> {
     try {
-      await this._leoWallet?.disconnect();
+      await this._foxWallet?.disconnect();
       this._publicKey = '';
       this.account = undefined;
       this.emit('disconnect');
@@ -176,7 +179,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Sign a transaction with Leo wallet
+   * Sign a transaction with Fox wallet
    * @param options Transaction options
    * @returns The signed transaction
    */
@@ -186,8 +189,8 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     }
 
     try {
-      // Pass only the parameters expected by the Leo SDK
-      const signature = await this._leoWallet?.signMessage(message);
+      // Pass only the parameters expected by the Fox SDK
+      const signature = await this._foxWallet?.signMessage(message);
 
       if (!signature) {
         throw new WalletSignMessageError('Failed to sign message');
@@ -202,7 +205,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Execute a transaction with Leo wallet
+   * Execute a transaction with Fox wallet
    * @param options Transaction options
    * @returns The executed transaction
    */
@@ -226,7 +229,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
         ],
       } as AleoTransaction;
 
-      const result = await this._leoWallet?.requestTransaction(requestData);
+      const result = await this._foxWallet?.requestTransaction(requestData);
 
       if (!result?.transactionId) {
         throw new WalletTransactionError('Could not create transaction');

@@ -47,6 +47,7 @@ export type LeoNetwork = 'mainnet' | 'testnetbeta';
 export const LEO_NETWORK_MAP: Record<Network, LeoNetwork> = {
   [Network.MAINNET]: 'mainnet',
   [Network.TESTNET3]: 'testnetbeta',
+  [Network.CANARY]: 'testnetbeta',
 };
 
 export interface LeoWallet extends EventEmitter<LeoWalletEvents> {
