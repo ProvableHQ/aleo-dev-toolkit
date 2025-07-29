@@ -87,3 +87,16 @@ export interface ChainFeature extends WalletFeature {
    */
   chains: AleoChain[];
 }
+
+/**
+ * Feature for switching networks
+ */
+export interface SwitchNetworkFeature extends WalletFeature {
+  name: 'standard:switch-network';
+
+  /**
+   * Switch the network
+   * @param network The network to switch to
+   */
+  switchNetwork(network: Network): Promise<void>;
+}

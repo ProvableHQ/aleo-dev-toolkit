@@ -5,6 +5,7 @@ import {
   ConnectFeature,
   ExecuteFeature,
   SignFeature,
+  SwitchNetworkFeature,
   WalletFeature,
 } from './features';
 
@@ -68,6 +69,11 @@ export interface WalletFeatures {
   [WalletFeatureName.CHAINS]?: ChainFeature;
 
   /**
+   * The switch network feature
+   */
+  [WalletFeatureName.SWITCH_NETWORK]?: SwitchNetworkFeature;
+
+  /**
    * Other features
    */
   [featureName: string]: WalletFeature | undefined;
@@ -82,6 +88,7 @@ export enum WalletFeatureName {
   SIGN = 'aleo:sign',
   EXECUTE = 'aleo:execute',
   CHAINS = 'standard:chains',
+  SWITCH_NETWORK = 'standard:switch-network',
 }
 
 /**

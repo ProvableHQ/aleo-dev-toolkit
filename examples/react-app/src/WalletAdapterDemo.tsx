@@ -10,11 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { networkToken } from '@/lib/store/global';
+import { networkAtom } from '@/lib/store/global';
 import { Network } from '@provablehq/aleo-types';
 
 export default function WalletAdapterDemo() {
-  const [network, setNetwork] = useAtom(networkToken);
+  const [network, setNetwork] = useAtom(networkAtom);
 
   const handleNetworkChange = (value: string) => {
     setNetwork(value as Network);
@@ -32,7 +32,7 @@ export default function WalletAdapterDemo() {
             </div>
             <div className="absolute right-0 top-1/2 -translate-y-1/2">
               <Select value={network} onValueChange={handleNetworkChange}>
-                <SelectTrigger className="w-32 font-mono text-sm">
+                <SelectTrigger className="w-32 font-mono text-sm bg-white cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

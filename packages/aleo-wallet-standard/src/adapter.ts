@@ -43,6 +43,11 @@ export interface WalletAdapterProps<Name extends string = string> {
   connected: boolean;
 
   /**
+   * The wallet's network
+   */
+  network: Network;
+
+  /**
    * Connect to the wallet
    * @param network The network to connect to
    * @returns The connected account
@@ -67,6 +72,12 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns The signed message
    */
   signMessage(message: Uint8Array): Promise<Uint8Array>;
+
+  /**
+   * Switch the network
+   * @param network The network to switch to
+   */
+  switchNetwork(network: Network): Promise<void>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

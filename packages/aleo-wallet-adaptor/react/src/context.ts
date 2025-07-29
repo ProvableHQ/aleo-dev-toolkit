@@ -47,6 +47,11 @@ export interface WalletContextState {
   autoConnect: boolean;
 
   /**
+   * The current network
+   */
+  network: Network | null;
+
+  /**
    * Select a wallet by name
    * @param name The name of the wallet to select
    */
@@ -71,6 +76,11 @@ export interface WalletContextState {
    * Sign a message
    */
   signMessage: (message: Uint8Array | string) => Promise<Uint8Array | undefined>;
+
+  /**
+   * Switch the network
+   */
+  switchNetwork: (network: Network) => Promise<void>;
 }
 
 /**

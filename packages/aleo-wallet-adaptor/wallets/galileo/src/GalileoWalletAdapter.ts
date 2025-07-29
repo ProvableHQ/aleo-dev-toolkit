@@ -12,6 +12,7 @@ import {
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
+  WalletSwitchNetworkError,
   WalletSignMessageError,
   WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
@@ -45,7 +46,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  private _network: Network;
+  network: Network;
 
   /**
    * Public key
@@ -63,13 +64,18 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   private _galileoWallet: GalileoWallet | undefined;
 
   /**
+   * Network change event listener
+   */
+  private _networkChangeListener?: (network: Network) => void;
+
+  /**
    * Create a new Galileo wallet adapter
    * @param config Adapter configuration
    */
   constructor(config?: GalileoWalletAdapterConfig) {
     super();
     console.debug('GalileoWalletAdapter constructor', config);
-    this._network = Network.TESTNET3;
+    this.network = Network.TESTNET3;
     this._checkAvailability();
   }
 
@@ -110,8 +116,8 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       try {
         const connectResult = await this._galileoWallet?.connect(network);
         this._publicKey = connectResult?.address || '';
-        this._network = network;
-        console.debug('Galileo Wallet connected to network: ', this._network);
+        this.network = network;
+        console.debug('Galileo Wallet connected to network: ', this.network);
       } catch (error: unknown) {
         throw new WalletConnectionError(
           error instanceof Error ? error.message : 'Connection failed',
@@ -121,6 +127,10 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       if (!this._publicKey) {
         throw new WalletConnectionError('No address returned from wallet');
       }
+
+      // Set up network change listener
+      console.debug('Setting up network change listener');
+      this._setupNetworkChangeListener();
 
       const account: Account = {
         address: this._publicKey,
@@ -137,10 +147,39 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
+   * Set up network change listener
+   */
+  private _setupNetworkChangeListener(): void {
+    if (!this._galileoWallet) return;
+
+    this._networkChangeListener = (network: Network) => {
+      console.debug('Galileo Wallet network changed to: ', network);
+      this.network = network;
+      this.emit('networkChange', network);
+    };
+
+    // Listen for network changes from the Galileo wallet
+    this._galileoWallet.on('networkChanged', this._networkChangeListener);
+  }
+
+  /**
+   * Remove network change listener
+   */
+  private _removeNetworkChangeListener(): void {
+    if (this._galileoWallet && this._networkChangeListener) {
+      this._galileoWallet.off('networkChanged', this._networkChangeListener);
+      this._networkChangeListener = undefined;
+    }
+  }
+
+  /**
    * Disconnect from Galileo wallet
    */
   async disconnect(): Promise<void> {
     try {
+      // Remove network change listener
+      this._removeNetworkChangeListener();
+
       await this._galileoWallet?.disconnect();
       this._publicKey = '';
       this.account = undefined;
@@ -191,7 +230,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     try {
       const result = await this._galileoWallet?.executeTransaction({
         ...options,
-        network: this._network,
+        network: this.network,
       });
 
       if (!result?.transaction) {
@@ -211,6 +250,28 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       throw new WalletTransactionError(
         error instanceof Error ? error.message : 'Failed to execute transaction',
       );
+    }
+  }
+
+  /**
+   * Switch the network
+   * @param network The network to switch to
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async switchNetwork(_network: Network): Promise<void> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      await this._galileoWallet?.switchNetwork(_network);
+      this.network = _network;
+    } catch (error: unknown) {
+      throw new WalletSwitchNetworkError(
+        error instanceof Error ? error.message : 'Failed to switch network',
+      );
+    } finally {
+      this.network = _network;
     }
   }
 }

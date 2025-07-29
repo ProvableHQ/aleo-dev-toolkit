@@ -11,10 +11,10 @@ import { ThemeProvider } from 'next-themes';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 import { useAtomValue } from 'jotai';
-import { networkToken } from './lib/store/global';
+import { networkAtom } from './lib/store/global';
 
 export function App() {
-  const network = useAtomValue(networkToken);
+  const network = useAtomValue(networkAtom);
   // memoize to avoid re‑instantiating adapters on each render
   const wallets = useMemo(
     () => [

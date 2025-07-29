@@ -1,3 +1,6 @@
+import { Network } from '@provablehq/aleo-types';
+import { Network as PuzzleNetwork } from '@puzzlehq/sdk-core';
+
 /**
  * Puzzle window interface
  */
@@ -33,3 +36,9 @@ export interface PuzzleWalletAdapterConfig {
    */
   programIdPermissions?: Record<string, string[]>;
 }
+
+export const PUZZLE_NETWORK_MAP: Record<Network, PuzzleNetwork> = {
+  [Network.MAINNET]: PuzzleNetwork.AleoMainnet,
+  [Network.TESTNET3]: PuzzleNetwork.AleoTestnet,
+  [Network.CANARY]: PuzzleNetwork.AleoTestnet,
+};

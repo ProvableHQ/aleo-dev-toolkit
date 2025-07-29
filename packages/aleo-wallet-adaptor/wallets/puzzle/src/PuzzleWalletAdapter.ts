@@ -8,6 +8,7 @@ import {
 import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
+  MethodNotImplementedError,
   WalletConnectionError,
   WalletDisconnectionError,
   WalletError,
@@ -18,12 +19,11 @@ import {
 import {
   connect,
   disconnect,
-  Network as PuzzleNetwork,
   requestCreateEvent,
   requestSignature,
   EventType,
 } from '@puzzlehq/sdk-core';
-import { PuzzleWindow, PuzzleWalletAdapterConfig } from './types';
+import { PuzzleWindow, PuzzleWalletAdapterConfig, PUZZLE_NETWORK_MAP } from './types';
 import { PuzzleIcon } from './icon';
 
 /**
@@ -72,7 +72,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  private _network: PuzzleNetwork | undefined;
+  network: Network = Network.TESTNET3;
 
   _readyState: WalletReadyState =
     typeof window === 'undefined' || typeof document === 'undefined'
@@ -147,8 +147,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletConnectionError('Invalid response from wallet');
       }
 
-      this._network =
-        network === Network.MAINNET ? PuzzleNetwork.AleoMainnet : PuzzleNetwork.AleoTestnet;
+      this.network = network;
 
       const address = (response as { connection: { address: string } }).connection?.address;
 
@@ -234,7 +233,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         fee,
         inputs: options.inputs,
         address: this._publicKey,
-        network: this._network,
+        network: PUZZLE_NETWORK_MAP[this.network],
       };
 
       const result = await requestCreateEvent(requestData);
@@ -260,5 +259,15 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         error instanceof Error ? error.message : 'Failed to execute transaction',
       );
     }
+  }
+
+  /**
+   * Switch the network
+   * @param network The network to switch to
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async switchNetwork(_network: Network): Promise<void> {
+    console.error('Puzzle Wallet does not support switching networks');
+    throw new MethodNotImplementedError('switchNetwork');
   }
 }

@@ -54,6 +54,11 @@ export abstract class BaseAleoWalletAdapter
   account?: Account;
 
   /**
+   * The wallet's network
+   */
+  abstract network: Network;
+
+  /**
    * The wallet's standard interface, if available
    */
   protected _wallet?: StandardWallet;
@@ -143,5 +148,17 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.EXECUTE);
     }
     return feature.executeTransaction(options);
+  }
+
+  async switchNetwork(network: Network): Promise<void> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.SWITCH_NETWORK];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.SWITCH_NETWORK);
+    }
+    await feature.switchNetwork(network);
+    this.emit('networkChange', network);
   }
 }
