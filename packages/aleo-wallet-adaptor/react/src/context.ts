@@ -80,7 +80,7 @@ export interface WalletContextState {
   /**
    * Switch the network
    */
-  switchNetwork: (network: Network) => Promise<void>;
+  switchNetwork: (network: Network) => Promise<boolean>;
 }
 
 /**
