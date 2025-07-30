@@ -10,6 +10,7 @@ import {
   WalletNotReadyError,
   WalletNotSelectedError,
   MethodNotImplementedError,
+  WalletSwitchNetworkError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 
 export interface WalletProviderProps {
@@ -277,6 +278,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       if (!adapter || !('executeTransaction' in adapter))
         throw handleError(new MethodNotImplementedError('executeTransaction'));
 
+      await checkNetwork();
+
       return await adapter.executeTransaction(transaction);
     },
     [adapter, handleError, connected],
@@ -302,21 +305,31 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       if (!connected) throw handleError(new WalletNotConnectedError());
       if (!adapter || !('switchNetwork' in adapter))
         throw handleError(new MethodNotImplementedError('switchNetwork'));
+      let switched = false;
       try {
         isConnecting.current = true;
         setConnecting(true);
         await adapter.switchNetwork(network);
+        switched = true;
       } catch (error: unknown) {
-        // If the wallet fails to switch network, disconnect it
-        console.error('Failed to switch network, disconnecting');
-        disconnect();
+        console.error('Failed to switch network');
       } finally {
         isConnecting.current = false;
         setConnecting(false);
       }
+      return switched;
     },
     [adapter, handleError, connected],
   );
+
+  const checkNetwork = useCallback(async () => {
+    if (adapter && adapter.network !== initialNetwork) {
+      const switchResult = await switchNetwork(initialNetwork);
+      if (!switchResult) {
+        throw handleError(new WalletSwitchNetworkError('Failed to switch network'));
+      }
+    }
+  }, [adapter, initialNetwork, switchNetwork]);
 
   return (
     <WalletContext.Provider
