@@ -53,11 +53,6 @@ export function ConnectSection() {
                 Switch to {neededNetwork}
               </Button>
             )}
-            {/* {connected && (
-              <Badge variant="secondary" className="font-mono text-xs">
-                {address ? truncateAddress(address) : 'No address'}
-              </Badge>
-            )} */}
           </div>
           <WalletMultiButton />
         </div>
