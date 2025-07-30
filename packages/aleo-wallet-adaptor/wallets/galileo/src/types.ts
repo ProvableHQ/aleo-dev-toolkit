@@ -9,6 +9,7 @@ export interface GalileoTransaction extends TransactionOptions {
 
 export interface GalileoWalletEvents {
   networkChanged(network: Network): void;
+  disconnect(): void;
 }
 
 export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
