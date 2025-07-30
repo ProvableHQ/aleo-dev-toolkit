@@ -312,6 +312,10 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         await adapter.switchNetwork(network);
         switched = true;
       } catch (error: unknown) {
+        if (error instanceof MethodNotImplementedError) {
+          await disconnect();
+        }
+
         console.error('Failed to switch network');
       } finally {
         isConnecting.current = false;
