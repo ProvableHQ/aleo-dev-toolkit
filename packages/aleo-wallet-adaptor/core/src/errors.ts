@@ -95,6 +95,14 @@ export class WalletSignMessageError extends WalletError {
   }
 }
 
+export class WalletSwitchNetworkError extends WalletError {
+  name = 'WalletSwitchNetworkError';
+
+  constructor(message = 'Failed to switch network') {
+    super(message);
+  }
+}
+
 export class WalletNotReadyError extends WalletError {
   name = 'WalletNotReadyError';
 

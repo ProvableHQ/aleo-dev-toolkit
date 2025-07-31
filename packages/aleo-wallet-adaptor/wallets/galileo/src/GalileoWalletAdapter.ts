@@ -12,6 +12,7 @@ import {
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
+  WalletSwitchNetworkError,
   WalletSignMessageError,
   WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
@@ -45,7 +46,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  private _network: Network;
+  network: Network;
 
   /**
    * Public key
@@ -69,7 +70,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   constructor(config?: GalileoWalletAdapterConfig) {
     super();
     console.debug('GalileoWalletAdapter constructor', config);
-    this._network = Network.TESTNET3;
+    this.network = Network.TESTNET3;
     this._checkAvailability();
   }
 
@@ -110,8 +111,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       try {
         const connectResult = await this._galileoWallet?.connect(network);
         this._publicKey = connectResult?.address || '';
-        this._network = network;
-        console.debug('Galileo Wallet connected to network: ', this._network);
+        this._onNetworkChange(network);
       } catch (error: unknown) {
         throw new WalletConnectionError(
           error instanceof Error ? error.message : 'Connection failed',
@@ -121,6 +121,8 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       if (!this._publicKey) {
         throw new WalletConnectionError('No address returned from wallet');
       }
+
+      this._setupListeners();
 
       const account: Account = {
         address: this._publicKey,
@@ -141,10 +143,10 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    */
   async disconnect(): Promise<void> {
     try {
+      this._cleanupListeners();
+
       await this._galileoWallet?.disconnect();
-      this._publicKey = '';
-      this.account = undefined;
-      this.emit('disconnect');
+      this._onDisconnect();
     } catch (err: Error | unknown) {
       this.emit('error', err instanceof Error ? err : new Error(String(err)));
       throw new WalletDisconnectionError(
@@ -191,7 +193,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     try {
       const result = await this._galileoWallet?.executeTransaction({
         ...options,
-        network: this._network,
+        network: this.network,
       });
 
       if (!result?.transaction) {
@@ -212,5 +214,66 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         error instanceof Error ? error.message : 'Failed to execute transaction',
       );
     }
+  }
+
+  /**
+   * Switch the network
+   * @param network The network to switch to
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async switchNetwork(_network: Network): Promise<void> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      await this._galileoWallet?.switchNetwork(_network);
+      this._onNetworkChange(_network);
+    } catch (error: unknown) {
+      throw new WalletSwitchNetworkError(
+        error instanceof Error ? error.message : 'Failed to switch network',
+      );
+    }
+  }
+
+  /**
+   * EVENTS HANDLING
+   */
+
+  // Network change listener
+  _onNetworkChange = (network: Network) => {
+    console.debug('Galileo Wallet network changed to: ', network);
+    this.network = network;
+    this.emit('networkChange', network);
+  };
+
+  // Disconnect listener
+  _onDisconnect = () => {
+    console.debug('Galileo Wallet disconnected');
+    this._cleanupListeners();
+    this._publicKey = '';
+    this.account = undefined;
+    this.emit('disconnect');
+  };
+
+  /**
+   * Set up event listeners with structured approach
+   */
+  private _setupListeners(): void {
+    if (!this._galileoWallet) return;
+
+    // Register listeners
+    this._galileoWallet.on('networkChanged', this._onNetworkChange);
+    this._galileoWallet.on('disconnect', this._onDisconnect);
+  }
+
+  /**
+   * Clean up all event listeners
+   */
+  private _cleanupListeners(): void {
+    if (!this._galileoWallet) return;
+
+    this._galileoWallet.off('networkChanged', this._onNetworkChange);
+    this._galileoWallet.off('disconnect', this._onDisconnect);
   }
 }

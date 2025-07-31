@@ -1,22 +1,21 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Wallet, Copy, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useAtomValue } from 'jotai';
+import { networkAtom } from '@/lib/store/global';
 
 export function ConnectSection() {
-  const { connected, address } = useWallet();
+  const neededNetwork = useAtomValue(networkAtom);
+  const { connected, connecting, address, network, switchNetwork } = useWallet();
+  const wrongNetwork = connected && !connecting && network !== neededNetwork;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
-  };
-
-  const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   return (
@@ -31,12 +30,28 @@ export function ConnectSection() {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`h-3 w-3 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-            <span className="font-medium">{connected ? 'Connected' : 'Disconnected'}</span>
-            {connected && (
-              <Badge variant="secondary" className="font-mono text-xs">
-                {address ? truncateAddress(address) : 'No address'}
-              </Badge>
+            <div
+              className={`h-3 w-3 rounded-full ${
+                connected
+                  ? wrongNetwork || connecting
+                    ? 'bg-yellow-500'
+                    : 'bg-green-500'
+                  : 'bg-gray-300'
+              }`}
+            />
+            <span className="font-medium">
+              {connecting
+                ? 'Connecting...'
+                : wrongNetwork
+                  ? `Wallet network: ${network}`
+                  : connected
+                    ? 'Connected'
+                    : 'Disconnected'}
+            </span>
+            {wrongNetwork && (
+              <Button variant="outline" size="sm" onClick={() => switchNetwork(neededNetwork)}>
+                Switch to {neededNetwork}
+              </Button>
             )}
           </div>
           <WalletMultiButton />

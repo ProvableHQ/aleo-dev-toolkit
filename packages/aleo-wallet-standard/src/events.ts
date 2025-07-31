@@ -1,4 +1,4 @@
-import { Account } from '@provablehq/aleo-types';
+import { Account, Network } from '@provablehq/aleo-types';
 import { WalletReadyState } from './wallet';
 import EventEmitter from 'eventemitter3';
 
@@ -24,6 +24,11 @@ export interface WalletEvents {
    * Emitted when the wallet's ready state changes
    */
   readyStateChange(readyState: WalletReadyState): void;
+
+  /**
+   * Emitted when the network is switched
+   */
+  networkChange(network: Network): void;
 
   /**
    * Emitted when an error occurs

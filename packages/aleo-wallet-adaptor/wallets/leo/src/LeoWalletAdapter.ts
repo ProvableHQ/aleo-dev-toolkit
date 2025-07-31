@@ -8,6 +8,7 @@ import {
 import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
+  MethodNotImplementedError,
   WalletConnectionError,
   WalletDisconnectionError,
   WalletError,
@@ -22,7 +23,6 @@ import {
   LeoWallet,
   LeoWalletAdapterConfig,
   LeoWindow,
-  LeoNetwork,
 } from './types';
 
 /**
@@ -52,7 +52,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  private _network: LeoNetwork;
+  network: Network;
 
   /**
    * Public key
@@ -76,7 +76,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   constructor(config?: LeoWalletAdapterConfig) {
     super();
     console.debug('LeoWalletAdapter constructor', config);
-    this._network = LEO_NETWORK_MAP[Network.TESTNET3];
+    this.network = Network.TESTNET3;
     this._checkAvailability();
     this._leoWallet = this._window?.leoWallet || this._window?.leo;
     if (config?.isMobile) {
@@ -119,7 +119,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       // Call connect and extract address safely
       try {
         await this._leoWallet?.connect(DecryptPermission.NoDecrypt, LEO_NETWORK_MAP[network]);
-        this._network = LEO_NETWORK_MAP[network];
+        this.network = network;
       } catch (error: unknown) {
         if (
           error instanceof Object &&
@@ -214,7 +214,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     try {
       const requestData = {
         address: this._publicKey,
-        chainId: this._network,
+        chainId: this.network,
         fee: options.fee ? options.fee : 0.001,
         feePrivate: false,
         transitions: [
@@ -245,5 +245,15 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
         error instanceof Error ? error.message : 'Failed to execute transaction',
       );
     }
+  }
+
+  /**
+   * Switch the network
+   * @param network The network to switch to
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async switchNetwork(_network: Network): Promise<void> {
+    console.error('Leo Wallet does not support switching networks');
+    throw new MethodNotImplementedError('switchNetwork');
   }
 }

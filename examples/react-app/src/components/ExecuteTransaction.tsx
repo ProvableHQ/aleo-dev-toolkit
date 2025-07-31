@@ -7,9 +7,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Send, Copy, CheckCircle, Loader2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { Network } from '@provablehq/aleo-types';
 
 export function ExecuteTransaction() {
-  const { connected, executeTransaction } = useWallet();
+  const { connected, executeTransaction, network } = useWallet();
   const [program, setProgram] = useState('hello_world.aleo');
   const [functionName, setFunctionName] = useState('main');
   const [inputs, setInputs] = useState('1u32\n1u32');
@@ -145,6 +146,18 @@ export function ExecuteTransaction() {
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    window.open(
+                      `https://${network === Network.TESTNET3 ? 'testnet.' : network === Network.CANARY ? 'canary.' : ''}explorer.provable.com/transaction/${transactionHash}`,
+                      '_blank',
+                    );
+                  }}
+                >
+                  See on the explorer
+                </Button>
               </div>
             </AlertDescription>
           </Alert>

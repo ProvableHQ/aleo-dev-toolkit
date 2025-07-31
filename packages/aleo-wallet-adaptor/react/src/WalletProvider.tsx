@@ -10,6 +10,7 @@ import {
   WalletNotReadyError,
   WalletNotSelectedError,
   MethodNotImplementedError,
+  WalletSwitchNetworkError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 
 export interface WalletProviderProps {
@@ -26,23 +27,25 @@ const initialState: {
   adapter: WalletAdapter | null;
   publicKey: string | null;
   connected: boolean;
+  network: Network | null;
 } = {
   wallet: null,
   adapter: null,
   publicKey: null,
   connected: false,
+  network: null,
 };
 
 export const AleoWalletProvider: FC<WalletProviderProps> = ({
   children,
   wallets: adapters,
   autoConnect = false,
-  network = Network.TESTNET3,
+  network: initialNetwork = Network.TESTNET3,
   onError,
   localStorageKey = 'walletName',
 }) => {
   const [name, setName] = useLocalStorage<WalletName | null>(localStorageKey, null);
-  const [{ wallet, adapter, publicKey, connected }, setState] = useState(initialState);
+  const [{ wallet, adapter, publicKey, connected, network }, setState] = useState(initialState);
   const readyState = adapter?.readyState || WalletReadyState.UNSUPPORTED;
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -89,9 +92,19 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       });
     }
 
+    function handleNetworkChange(this: WalletAdapter, network: Network): void {
+      setState(state => ({
+        ...state,
+        network,
+      }));
+    }
+
     adapters.forEach(adapter => adapter.on('readyStateChange', handleReadyStateChange, adapter));
-    return () =>
+    adapters.forEach(adapter => adapter.on('networkChange', handleNetworkChange, adapter));
+    return () => {
       adapters.forEach(adapter => adapter.off('readyStateChange', handleReadyStateChange, adapter));
+      adapters.forEach(adapter => adapter.off('networkChange', handleNetworkChange, adapter));
+    };
   }, [adapters]);
 
   // When the selected wallet changes, initialize the state
@@ -103,6 +116,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         adapter: wallet.adapter,
         connected: wallet.adapter.connected,
         publicKey: wallet.adapter.account?.address ?? null,
+        network: wallet.adapter.network ?? null,
       });
     } else {
       setState(initialState);
@@ -126,6 +140,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       ...state,
       connected: adapter.connected,
       publicKey: adapter.account?.address ?? null,
+      network: adapter.network ?? null,
     }));
   }, [adapter]);
 
@@ -183,7 +198,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = true;
       setConnecting(true);
       try {
-        await adapter.connect(network);
+        await adapter.connect(initialNetwork);
       } catch (error: unknown) {
         // Clear the selected wallet
         setName(null);
@@ -193,13 +208,18 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         isConnecting.current = false;
       }
     })();
-  }, [isConnecting, connected, autoConnect, adapter, readyState, setName, network]);
+  }, [isConnecting, connected, autoConnect, adapter, readyState, setName]);
 
-  // Disconnect when network changes
-  // TODO: Reconnect when network changes if already connected if wallet support network change
   useEffect(() => {
-    disconnect();
-  }, [network]);
+    if (adapter && connected && adapter.network !== initialNetwork) {
+      try {
+        switchNetwork(initialNetwork);
+      } catch (error: unknown) {
+        console.error('Failed to switch network, disconnecting');
+        disconnect();
+      }
+    }
+  }, [initialNetwork]);
 
   // Connect the adapter to the wallet
   const connect = useCallback(async () => {
@@ -220,7 +240,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     isConnecting.current = true;
     setConnecting(true);
     try {
-      await adapter.connect(network);
+      await adapter.connect(initialNetwork);
     } catch (error: unknown) {
       // Clear the selected wallet
       setName(null);
@@ -258,6 +278,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       if (!adapter || !('executeTransaction' in adapter))
         throw handleError(new MethodNotImplementedError('executeTransaction'));
 
+      await checkNetwork();
+
       return await adapter.executeTransaction(transaction);
     },
     [adapter, handleError, connected],
@@ -278,6 +300,41 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const switchNetwork = useCallback(
+    async (network: Network) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('switchNetwork' in adapter))
+        throw handleError(new MethodNotImplementedError('switchNetwork'));
+      let switched = false;
+      try {
+        isConnecting.current = true;
+        setConnecting(true);
+        await adapter.switchNetwork(network);
+        switched = true;
+      } catch (error: unknown) {
+        if (error instanceof MethodNotImplementedError) {
+          await disconnect();
+        }
+
+        console.error('Failed to switch network');
+      } finally {
+        isConnecting.current = false;
+        setConnecting(false);
+      }
+      return switched;
+    },
+    [adapter, handleError, connected],
+  );
+
+  const checkNetwork = useCallback(async () => {
+    if (adapter && adapter.network !== initialNetwork) {
+      const switchResult = await switchNetwork(initialNetwork);
+      if (!switchResult) {
+        throw handleError(new WalletSwitchNetworkError('Failed to switch network'));
+      }
+    }
+  }, [adapter, initialNetwork, switchNetwork]);
+
   return (
     <WalletContext.Provider
       value={{
@@ -288,11 +345,13 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         connected,
         connecting,
         disconnecting,
+        network,
         selectWallet: setName,
         connect,
         disconnect,
         executeTransaction,
         signMessage,
+        switchNetwork,
       }}
     >
       {children}
