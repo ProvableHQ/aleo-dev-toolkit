@@ -12,6 +12,7 @@ import { ThemeProvider } from 'next-themes';
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 import { useAtomValue } from 'jotai';
 import { networkAtom } from './lib/store/global';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 
 export function App() {
   const network = useAtomValue(networkAtom);
@@ -45,6 +46,7 @@ export function App() {
         autoConnect
         network={network}
         onError={error => toast.error(error.message)}
+        decryptPermission={DecryptPermission.OnChainHistory}
       >
         <WalletModalProvider>
           <WalletAdapterDemo />

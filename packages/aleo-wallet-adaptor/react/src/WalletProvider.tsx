@@ -11,6 +11,7 @@ import {
   WalletNotSelectedError,
   MethodNotImplementedError,
   WalletSwitchNetworkError,
+  DecryptPermission,
 } from '@provablehq/aleo-wallet-adaptor-core';
 
 export interface WalletProviderProps {
@@ -20,6 +21,7 @@ export interface WalletProviderProps {
   autoConnect?: boolean;
   onError?: (error: WalletError) => void;
   localStorageKey?: string;
+  decryptPermission?: DecryptPermission;
 }
 
 const initialState: {
@@ -43,6 +45,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   network: initialNetwork = Network.TESTNET3,
   onError,
   localStorageKey = 'walletName',
+  decryptPermission = DecryptPermission.NoDecrypt,
 }) => {
   const [name, setName] = useLocalStorage<WalletName | null>(localStorageKey, null);
   const [{ wallet, adapter, publicKey, connected, network }, setState] = useState(initialState);
@@ -198,7 +201,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = true;
       setConnecting(true);
       try {
-        await adapter.connect(initialNetwork);
+        await adapter.connect(initialNetwork, decryptPermission);
       } catch (error: unknown) {
         // Clear the selected wallet
         setName(null);
@@ -240,7 +243,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     isConnecting.current = true;
     setConnecting(true);
     try {
-      await adapter.connect(initialNetwork);
+      await adapter.connect(initialNetwork, decryptPermission);
     } catch (error: unknown) {
       // Clear the selected wallet
       setName(null);

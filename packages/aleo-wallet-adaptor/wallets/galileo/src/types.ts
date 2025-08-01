@@ -1,5 +1,5 @@
 import { Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
-import { EventEmitter } from '@provablehq/aleo-wallet-standard';
+import { EventEmitter, WalletDecryptPermission } from '@provablehq/aleo-wallet-standard';
 
 export interface GalileoWalletAdapterConfig {}
 
@@ -14,7 +14,10 @@ export interface GalileoWalletEvents {
 
 export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
   publicKey?: string;
-  connect(network: Network): Promise<{ address: string }>;
+  connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+  ): Promise<{ address: string }>;
   disconnect(): Promise<void>;
   signMessage(message: Uint8Array): Promise<Uint8Array>;
   executeTransaction(

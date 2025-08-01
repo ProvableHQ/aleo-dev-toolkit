@@ -5,7 +5,11 @@ import {
   TransactionOptions,
   TransactionStatus,
 } from '@provablehq/aleo-types';
-import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  WalletDecryptPermission,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
   MethodNotImplementedError,
@@ -18,7 +22,6 @@ import {
 } from '@provablehq/aleo-wallet-adaptor-core';
 import {
   AleoTransaction,
-  DecryptPermission,
   LEO_NETWORK_MAP,
   LeoWallet,
   LeoWalletAdapterConfig,
@@ -56,6 +59,11 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
    * Current network
    */
   network: Network = Network.TESTNET3;
+
+  /**
+   * The wallet's decrypt permission
+   */
+  decryptPermission: WalletDecryptPermission = WalletDecryptPermission.NoDecrypt;
 
   /**
    * Public key
@@ -113,7 +121,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
    * Connect to Fox wallet
    * @returns The connected account
    */
-  async connect(network: Network): Promise<Account> {
+  async connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Fox Wallet is not available');
@@ -121,7 +129,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        await this._foxWallet?.connect(DecryptPermission.NoDecrypt, LEO_NETWORK_MAP[network]);
+        await this._foxWallet?.connect(decryptPermission, LEO_NETWORK_MAP[network]);
         this.network = network;
       } catch (error: unknown) {
         if (
@@ -241,6 +249,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
         fee: options.fee,
       };
     } catch (error: Error | unknown) {
+      console.error('Fox Wallet executeTransaction error', error);
       if (error instanceof WalletError) {
         throw error;
       }

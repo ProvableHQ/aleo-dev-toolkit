@@ -5,7 +5,11 @@ import {
   TransactionOptions,
   TransactionStatus,
 } from '@provablehq/aleo-types';
-import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  WalletDecryptPermission,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
   WalletConnectionError,
@@ -47,6 +51,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    * Current network
    */
   network: Network;
+
+  /**
+   * The wallet's decrypt permission
+   */
+  decryptPermission: WalletDecryptPermission = WalletDecryptPermission.NoDecrypt;
 
   /**
    * Public key
@@ -101,7 +110,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    * Connect to Galileo wallet
    * @returns The connected account
    */
-  async connect(network: Network): Promise<Account> {
+  async connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Galileo Wallet is not available');
@@ -109,7 +118,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        const connectResult = await this._galileoWallet?.connect(network);
+        const connectResult = await this._galileoWallet?.connect(network, decryptPermission);
         this._publicKey = connectResult?.address || '';
         this._onNetworkChange(network);
       } catch (error: unknown) {
@@ -129,6 +138,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       };
 
       this.account = account;
+      this.decryptPermission = decryptPermission;
       this.emit('connect', account);
 
       return account;

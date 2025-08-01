@@ -5,7 +5,11 @@ import {
   TransactionStatus,
   Network,
 } from '@provablehq/aleo-types';
-import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  WalletDecryptPermission,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
   MethodNotImplementedError,
@@ -74,6 +78,11 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    */
   network: Network = Network.TESTNET3;
 
+  /**
+   * The wallet's decrypt permission
+   */
+  decryptPermission: WalletDecryptPermission = WalletDecryptPermission.NoDecrypt;
+
   _readyState: WalletReadyState =
     typeof window === 'undefined' || typeof document === 'undefined'
       ? WalletReadyState.UNSUPPORTED
@@ -124,7 +133,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    * @param network The network to connect to
    * @returns The connected account
    */
-  async connect(network: Network): Promise<Account> {
+  async connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Puzzle Wallet is not available');
@@ -148,7 +157,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
       }
 
       this.network = network;
-
+      this.decryptPermission = decryptPermission;
       const address = (response as { connection: { address: string } }).connection?.address;
 
       if (!address) {
@@ -252,6 +261,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         fee: options.fee,
       };
     } catch (error: Error | unknown) {
+      console.error('Puzzle Wallet executeTransaction error', error);
       if (error instanceof WalletError) {
         throw error;
       }
@@ -269,5 +279,14 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   async switchNetwork(_network: Network): Promise<void> {
     console.error('Puzzle Wallet does not support switching networks');
     throw new MethodNotImplementedError('switchNetwork');
+  }
+
+  /**
+   * Decrypt a ciphertext
+   * @param cipherText The ciphertext to decrypt
+   * @returns The decrypted text
+   */
+  async decrypt(cipherText: string): Promise<{ text: string }> {
+    return { text: cipherText };
   }
 }
