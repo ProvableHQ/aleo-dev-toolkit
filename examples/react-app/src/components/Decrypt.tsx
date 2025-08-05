@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Lock, Copy, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
@@ -64,7 +63,6 @@ export const Decrypt = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="cipherText">Record / Cipher text to Decrypt</Label>
           <Textarea
             id="cipherText"
             placeholder="Record / Cipher text to Decrypt"
