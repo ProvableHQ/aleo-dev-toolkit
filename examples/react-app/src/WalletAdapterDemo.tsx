@@ -14,6 +14,7 @@ import {
   DropdownMenuCheckboxItem,
 } from './components/ui/dropdown-menu';
 import { Button } from './components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import { decryptPermissionAtom, networkAtom, autoConnectAtom } from './lib/store/global';
 import { Network } from '@provablehq/aleo-types';
 import { Decrypt } from './components/Decrypt';
@@ -98,9 +99,23 @@ export default function WalletAdapterDemo() {
         </div>
 
         <ConnectSection />
-        <SignMessage />
-        <ExecuteTransaction />
-        <Decrypt />
+
+        <Tabs defaultValue="sign" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 uppercase">
+            <TabsTrigger value="execute">Execute</TabsTrigger>
+            <TabsTrigger value="sign">Sign</TabsTrigger>
+            <TabsTrigger value="decrypt">Decrypt</TabsTrigger>
+          </TabsList>
+          <TabsContent value="sign">
+            <SignMessage />
+          </TabsContent>
+          <TabsContent value="execute">
+            <ExecuteTransaction />
+          </TabsContent>
+          <TabsContent value="decrypt">
+            <Decrypt />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
