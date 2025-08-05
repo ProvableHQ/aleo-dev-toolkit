@@ -123,5 +123,5 @@ export interface DecryptFeature extends WalletFeature {
     programId?: string,
     functionName?: string,
     index?: number,
-  ): Promise<{ text: string }>;
+  ): Promise<string>;
 }

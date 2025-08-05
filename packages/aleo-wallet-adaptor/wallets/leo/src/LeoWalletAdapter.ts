@@ -14,6 +14,8 @@ import {
   BaseAleoWalletAdapter,
   MethodNotImplementedError,
   WalletConnectionError,
+  WalletDecryptionNotAllowedError,
+  WalletDecryptionError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
@@ -148,6 +150,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       }
 
       this._publicKey = this._leoWallet?.publicKey || '';
+      this.decryptPermission = decryptPermission;
       if (!this._publicKey) {
         throw new WalletConnectionError('No address returned from wallet');
       }
@@ -206,6 +209,42 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       throw new WalletSignMessageError(
         error instanceof Error ? error.message : 'Failed to sign message',
       );
+    }
+  }
+
+  async decrypt(
+    cipherText: string,
+    tpk?: string,
+    programId?: string,
+    functionName?: string,
+    index?: number,
+  ) {
+    if (!this._leoWallet || !this._publicKey) {
+      throw new WalletNotConnectedError();
+    }
+    switch (this.decryptPermission) {
+      case WalletDecryptPermission.NoDecrypt:
+        throw new WalletDecryptionNotAllowedError();
+      case WalletDecryptPermission.UponRequest:
+      case WalletDecryptPermission.AutoDecrypt:
+      case WalletDecryptPermission.OnChainHistory: {
+        try {
+          const text = await this._leoWallet.decrypt(
+            cipherText,
+            tpk,
+            programId,
+            functionName,
+            index,
+          );
+          return text.text;
+        } catch (error: Error | unknown) {
+          throw new WalletDecryptionError(
+            error instanceof Error ? error.message : 'Failed to decrypt',
+          );
+        }
+      }
+      default:
+        throw new WalletDecryptionError();
     }
   }
 

@@ -12,8 +12,11 @@ import {
 } from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
+  DecryptPermission,
   MethodNotImplementedError,
   WalletConnectionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
@@ -26,6 +29,7 @@ import {
   requestCreateEvent,
   requestSignature,
   EventType,
+  decrypt as puzzleDecrypt,
 } from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig, PUZZLE_NETWORK_MAP } from './types';
 import { PuzzleIcon } from './icon';
@@ -222,6 +226,31 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     }
   }
 
+  async decrypt(cipherText: string) {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    switch (this.decryptPermission) {
+      case WalletDecryptPermission.NoDecrypt:
+        throw new WalletDecryptionNotAllowedError();
+
+      case WalletDecryptPermission.UponRequest:
+      case DecryptPermission.AutoDecrypt:
+      case DecryptPermission.OnChainHistory: {
+        try {
+          const text = await puzzleDecrypt({ ciphertexts: [cipherText] });
+          return text.plaintexts![0];
+        } catch (error: Error | unknown) {
+          throw new WalletDecryptionError(
+            error instanceof Error ? error.message : 'Failed to decrypt',
+          );
+        }
+      }
+      default:
+        throw new WalletDecryptionError();
+    }
+  }
+
   /**
    * Execute a transaction with Puzzle wallet
    * @param options Transaction options
@@ -279,14 +308,5 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   async switchNetwork(_network: Network): Promise<void> {
     console.error('Puzzle Wallet does not support switching networks');
     throw new MethodNotImplementedError('switchNetwork');
-  }
-
-  /**
-   * Decrypt a ciphertext
-   * @param cipherText The ciphertext to decrypt
-   * @returns The decrypted text
-   */
-  async decrypt(cipherText: string): Promise<{ text: string }> {
-    return { text: cipherText };
   }
 }

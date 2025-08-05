@@ -174,7 +174,7 @@ export abstract class BaseAleoWalletAdapter
     programId?: string,
     functionName?: string,
     index?: number,
-  ): Promise<{ text: string }> {
+  ): Promise<string> {
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }

@@ -14,6 +14,8 @@ import {
   BaseAleoWalletAdapter,
   MethodNotImplementedError,
   WalletConnectionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
@@ -160,6 +162,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
       };
 
       this.account = account;
+      this.decryptPermission = decryptPermission;
       this.emit('connect', account);
 
       return account;
@@ -209,6 +212,42 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
       throw new WalletSignMessageError(
         error instanceof Error ? error.message : 'Failed to sign message',
       );
+    }
+  }
+
+  async decrypt(
+    cipherText: string,
+    tpk?: string,
+    programId?: string,
+    functionName?: string,
+    index?: number,
+  ) {
+    if (!this._foxWallet || !this._publicKey) {
+      throw new WalletNotConnectedError();
+    }
+    switch (this.decryptPermission) {
+      case WalletDecryptPermission.NoDecrypt:
+        throw new WalletDecryptionNotAllowedError();
+      case WalletDecryptPermission.UponRequest:
+      case WalletDecryptPermission.AutoDecrypt:
+      case WalletDecryptPermission.OnChainHistory: {
+        try {
+          const result = await this._foxWallet.decrypt(
+            cipherText,
+            tpk,
+            programId,
+            functionName,
+            index,
+          );
+          return result.toString();
+        } catch (error: Error | unknown) {
+          throw new WalletDecryptionError(
+            error instanceof Error ? error.message : 'Failed to decrypt',
+          );
+        }
+      }
+      default:
+        throw new WalletDecryptionError();
     }
   }
 

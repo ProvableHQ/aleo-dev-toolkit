@@ -20,6 +20,7 @@ export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
   ): Promise<{ address: string }>;
   disconnect(): Promise<void>;
   signMessage(message: Uint8Array): Promise<Uint8Array>;
+  decrypt(cipherText: string): Promise<string>;
   executeTransaction(
     transactionOptions: GalileoTransaction,
   ): Promise<{ transaction?: Transaction }>;

@@ -95,7 +95,7 @@ export interface WalletAdapterProps<Name extends string = string> {
     programId?: string,
     functionName?: string,
     index?: number,
-  ): Promise<{ text: string }>;
+  ): Promise<string>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

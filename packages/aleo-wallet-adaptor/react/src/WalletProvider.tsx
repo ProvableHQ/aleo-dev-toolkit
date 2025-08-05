@@ -224,6 +224,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     }
   }, [initialNetwork]);
 
+  useEffect(() => {
+    if (adapter && connected) {
+      disconnect();
+    }
+  }, [decryptPermission]);
+
   // Connect the adapter to the wallet
   const connect = useCallback(async () => {
     if (isConnecting.current || isDisconnecting.current || connected) return;
@@ -329,6 +335,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const decrypt = useCallback(
+    async (cipherText: string) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('decrypt' in adapter))
+        throw handleError(new MethodNotImplementedError('decrypt'));
+
+      return await adapter.decrypt(cipherText);
+    },
+    [adapter, handleError, connected],
+  );
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -355,6 +372,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         executeTransaction,
         signMessage,
         switchNetwork,
+        decrypt,
       }}
     >
       {children}

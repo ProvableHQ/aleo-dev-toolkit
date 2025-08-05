@@ -19,6 +19,8 @@ import {
   WalletSwitchNetworkError,
   WalletSignMessageError,
   WalletTransactionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { GalileoWallet, GalileoWalletAdapterConfig, GalileoWindow } from './types';
 
@@ -187,6 +189,29 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       throw new WalletSignMessageError(
         error instanceof Error ? error.message : 'Failed to sign message',
       );
+    }
+  }
+
+  async decrypt(cipherText: string) {
+    if (!this._galileoWallet || !this._publicKey) {
+      throw new WalletNotConnectedError();
+    }
+    switch (this.decryptPermission) {
+      case WalletDecryptPermission.NoDecrypt:
+        throw new WalletDecryptionNotAllowedError();
+      case WalletDecryptPermission.UponRequest:
+      case WalletDecryptPermission.AutoDecrypt:
+      case WalletDecryptPermission.OnChainHistory: {
+        try {
+          return await this._galileoWallet.decrypt(cipherText);
+        } catch (error: Error | unknown) {
+          throw new WalletDecryptionError(
+            error instanceof Error ? error.message : 'Failed to decrypt',
+          );
+        }
+      }
+      default:
+        throw new WalletDecryptionError();
     }
   }
 

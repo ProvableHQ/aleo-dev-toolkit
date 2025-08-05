@@ -1,23 +1,33 @@
-import { Wallet } from 'lucide-react';
+import { Wallet, Settings } from 'lucide-react';
 import { useAtom } from 'jotai';
-import { ConnectSection } from '@/components/ConnectSection';
-import { SignMessage } from '@/components/SignMessage';
-import { ExecuteTransaction } from '@/components/ExecuteTransaction';
+import { ConnectSection } from './components/ConnectSection';
+import { SignMessage } from './components/SignMessage';
+import { ExecuteTransaction } from './components/ExecuteTransaction';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { networkAtom } from '@/lib/store/global';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from './components/ui/dropdown-menu';
+import { Button } from './components/ui/button';
+import { decryptPermissionAtom, networkAtom } from './lib/store/global';
 import { Network } from '@provablehq/aleo-types';
+import { Decrypt } from './components/Decrypt';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 
 export default function WalletAdapterDemo() {
   const [network, setNetwork] = useAtom(networkAtom);
+  const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
 
   const handleNetworkChange = (value: string) => {
     setNetwork(value as Network);
+  };
+
+  const handleDecryptPermissionChange = (value: string) => {
+    setDecryptPermission(value as DecryptPermission);
   };
 
   return (
@@ -31,25 +41,53 @@ export default function WalletAdapterDemo() {
               <h1 className="text-3xl font-bold text-gray-900">Wallet Adapter Demo</h1>
             </div>
             <div className="absolute right-0 top-1/2 -translate-y-1/2">
-              <Select value={network} onValueChange={handleNetworkChange}>
-                <SelectTrigger className="w-32 font-mono text-sm bg-white cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={Network.MAINNET}>MAINNET</SelectItem>
-                  <SelectItem value={Network.TESTNET3}>TESTNET3</SelectItem>
-                </SelectContent>
-              </Select>
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Options
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Network</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup value={network} onValueChange={handleNetworkChange}>
+                    <DropdownMenuRadioItem value={Network.MAINNET}>MAINNET</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value={Network.TESTNET3}>TESTNET3</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Decrypt Permission</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={decryptPermission}
+                    onValueChange={handleDecryptPermissionChange}
+                  >
+                    <DropdownMenuRadioItem value={DecryptPermission.NoDecrypt}>
+                      No Decrypt
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value={DecryptPermission.UponRequest}>
+                      Upon Request
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value={DecryptPermission.AutoDecrypt}>
+                      Auto Decrypt
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value={DecryptPermission.OnChainHistory}>
+                      On Chain History
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Test the different features of our ALEO wallet adapter
-          </p>
+          <div className="flex items-center justify-center space-x-2 relative">
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Test the different features of our Aleo wallet adapter
+            </p>
+          </div>
         </div>
 
         <ConnectSection />
         <SignMessage />
         <ExecuteTransaction />
+        <Decrypt />
       </div>
     </div>
   );

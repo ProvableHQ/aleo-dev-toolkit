@@ -81,6 +81,11 @@ export interface WalletContextState {
    * Switch the network
    */
   switchNetwork: (network: Network) => Promise<boolean>;
+
+  /**
+   * Decrypt a ciphertext
+   */
+  decrypt: (cipherText: string) => Promise<string>;
 }
 
 /**

@@ -9,13 +9,13 @@ import WalletAdapterDemo from './WalletAdapterDemo';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 // Import wallet adapter CSS after our own styles
-import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 import { useAtomValue } from 'jotai';
-import { networkAtom } from './lib/store/global';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { decryptPermissionAtom, networkAtom } from './lib/store/global';
+import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 export function App() {
   const network = useAtomValue(networkAtom);
+  const decryptPermission = useAtomValue(decryptPermissionAtom);
   // memoize to avoid re‑instantiating adapters on each render
   const wallets = useMemo(
     () => [
@@ -46,7 +46,7 @@ export function App() {
         autoConnect
         network={network}
         onError={error => toast.error(error.message)}
-        decryptPermission={DecryptPermission.OnChainHistory}
+        decryptPermission={decryptPermission}
       >
         <WalletModalProvider>
           <WalletAdapterDemo />
