@@ -22,6 +22,7 @@ export interface WalletProviderProps {
   onError?: (error: WalletError) => void;
   localStorageKey?: string;
   decryptPermission?: DecryptPermission;
+  programs?: string[];
 }
 
 const initialState: {
@@ -46,6 +47,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   onError,
   localStorageKey = 'walletName',
   decryptPermission = DecryptPermission.NoDecrypt,
+  programs,
 }) => {
   const [name, setName] = useLocalStorage<WalletName | null>(localStorageKey, null);
   const [{ wallet, adapter, publicKey, connected, network }, setState] = useState(initialState);
@@ -201,7 +203,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = true;
       setConnecting(true);
       try {
-        await adapter.connect(initialNetwork, decryptPermission);
+        await adapter.connect(initialNetwork, decryptPermission, programs);
       } catch (error: unknown) {
         // Clear the selected wallet
         setName(null);
@@ -228,7 +230,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     if (adapter && connected) {
       disconnect();
     }
-  }, [decryptPermission]);
+  }, [decryptPermission, programs]);
 
   // Connect the adapter to the wallet
   const connect = useCallback(async () => {
@@ -249,7 +251,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     isConnecting.current = true;
     setConnecting(true);
     try {
-      await adapter.connect(initialNetwork, decryptPermission);
+      await adapter.connect(initialNetwork, decryptPermission, programs);
     } catch (error: unknown) {
       // Clear the selected wallet
       setName(null);

@@ -8,3 +8,7 @@ export const decryptPermissionAtom = atomWithStorage<DecryptPermission>(
   DecryptPermission.NoDecrypt,
 );
 export const autoConnectAtom = atomWithStorage<boolean>('autoConnect', true);
+export const programsAtom = atomWithStorage<string[]>('programs', [
+  'credits.aleo',
+  'hello_world.aleo',
+]);

@@ -120,7 +120,11 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    * Connect to Leo wallet
    * @returns The connected account
    */
-  async connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Leo Wallet is not available');
@@ -128,7 +132,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        await this._leoWallet?.connect(decryptPermission, LEO_NETWORK_MAP[network]);
+        await this._leoWallet?.connect(decryptPermission, LEO_NETWORK_MAP[network], programs);
         this.network = network;
       } catch (error: unknown) {
         if (

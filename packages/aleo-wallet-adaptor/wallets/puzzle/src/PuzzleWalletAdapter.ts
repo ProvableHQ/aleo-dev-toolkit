@@ -73,11 +73,6 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   private _appDescription?: string;
 
   /**
-   * Program ID permissions
-   */
-  private _programIdPermissions: Record<string, string[]>;
-
-  /**
    * Current network
    */
   network: Network = Network.TESTNET3;
@@ -106,7 +101,6 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     this._appName = config?.appName || 'Aleo App';
     this._appIconUrl = config?.appIconUrl;
     this._appDescription = config?.appDescription;
-    this._programIdPermissions = config?.programIdPermissions || {};
     this._checkAvailability();
   }
 
@@ -137,7 +131,11 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    * @param network The network to connect to
    * @returns The connected account
    */
-  async connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Puzzle Wallet is not available');
@@ -151,7 +149,9 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
           iconUrl: this._appIconUrl,
         },
         permissions: {
-          programIds: this._programIdPermissions,
+          programIds: {
+            [PUZZLE_NETWORK_MAP[network]]: programs,
+          },
         },
       });
 

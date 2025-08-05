@@ -55,9 +55,15 @@ export interface WalletAdapterProps<Name extends string = string> {
   /**
    * Connect to the wallet
    * @param network The network to connect to
+   * @param decryptPermission The decrypt permission
+   * @param programs The programs to connect to
    * @returns The connected account
    */
-  connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account>;
+  connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account>;
 
   /**
    * Disconnect from the wallet

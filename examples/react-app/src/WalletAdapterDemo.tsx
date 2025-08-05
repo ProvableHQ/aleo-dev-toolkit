@@ -1,5 +1,6 @@
-import { Wallet, Settings } from 'lucide-react';
+import { Wallet, Settings, Plus, X } from 'lucide-react';
 import { useAtom } from 'jotai';
+import { useState } from 'react';
 import { ConnectSection } from './components/ConnectSection';
 import { SignMessage } from './components/SignMessage';
 import { ExecuteTransaction } from './components/ExecuteTransaction';
@@ -14,8 +15,14 @@ import {
   DropdownMenuCheckboxItem,
 } from './components/ui/dropdown-menu';
 import { Button } from './components/ui/button';
+import { Input } from './components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
-import { decryptPermissionAtom, networkAtom, autoConnectAtom } from './lib/store/global';
+import {
+  decryptPermissionAtom,
+  networkAtom,
+  autoConnectAtom,
+  programsAtom,
+} from './lib/store/global';
 import { Network } from '@provablehq/aleo-types';
 import { Decrypt } from './components/Decrypt';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
@@ -24,6 +31,8 @@ export default function WalletAdapterDemo() {
   const [network, setNetwork] = useAtom(networkAtom);
   const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
   const [autoConnect, setAutoConnect] = useAtom(autoConnectAtom);
+  const [programs, setPrograms] = useAtom(programsAtom);
+  const [newProgram, setNewProgram] = useState('');
 
   const handleNetworkChange = (value: string) => {
     setNetwork(value as Network);
@@ -35,6 +44,17 @@ export default function WalletAdapterDemo() {
 
   const handleAutoConnectChange = (checked: boolean) => {
     setAutoConnect(checked);
+  };
+
+  const handleAddProgram = () => {
+    if (newProgram.trim() && !programs.includes(newProgram.trim())) {
+      setPrograms([...programs, newProgram.trim()]);
+      setNewProgram('');
+    }
+  };
+
+  const handleRemoveProgram = (programToRemove: string) => {
+    setPrograms(programs.filter(p => p !== programToRemove));
   };
 
   return (
@@ -80,6 +100,46 @@ export default function WalletAdapterDemo() {
                       Onchain History
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Programs</DropdownMenuLabel>
+                  <div className="px-2 py-1.5">
+                    <div className="flex gap-1 mb-2">
+                      <Input
+                        placeholder="Enter program name"
+                        value={newProgram}
+                        onChange={e => setNewProgram(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            handleAddProgram();
+                          }
+                        }}
+                        className="h-8 text-sm"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleAddProgram}
+                        disabled={!newProgram.trim() || programs.includes(newProgram.trim())}
+                        className="h-8 px-2"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {programs.map(program => (
+                        <div key={program} className="flex items-center justify-between text-sm">
+                          <span className="truncate">{program}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveProgram(program)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem
                     checked={autoConnect}

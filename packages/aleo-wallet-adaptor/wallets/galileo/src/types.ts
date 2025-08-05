@@ -17,6 +17,7 @@ export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
   connect(
     network: Network,
     decryptPermission: WalletDecryptPermission,
+    programs?: string[],
   ): Promise<{ address: string }>;
   disconnect(): Promise<void>;
   signMessage(message: Uint8Array): Promise<Uint8Array>;

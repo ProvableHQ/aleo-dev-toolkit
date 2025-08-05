@@ -112,7 +112,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    * Connect to Galileo wallet
    * @returns The connected account
    */
-  async connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Galileo Wallet is not available');
@@ -120,7 +124,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        const connectResult = await this._galileoWallet?.connect(network, decryptPermission);
+        const connectResult = await this._galileoWallet?.connect(
+          network,
+          decryptPermission,
+          programs,
+        );
         this._publicKey = connectResult?.address || '';
         this._onNetworkChange(network);
       } catch (error: unknown) {

@@ -86,9 +86,15 @@ export abstract class BaseAleoWalletAdapter
   /**
    * Connect to the wallet
    * @param network The network to connect to
+   * @param decryptPermission The decrypt permission
+   * @param programs The programs to connect to
    * @returns The connected account
    */
-  async connect(network: Network, decryptPermission: WalletDecryptPermission): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     if (!this._wallet) {
       throw new WalletConnectionError('No wallet provider found');
     }
@@ -97,7 +103,7 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
     }
     try {
-      const account = await feature.connect(network, decryptPermission);
+      const account = await feature.connect(network, decryptPermission, programs);
       this.account = account;
       this.emit('connect', account);
       return account;
