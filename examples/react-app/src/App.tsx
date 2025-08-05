@@ -10,12 +10,13 @@ import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 // Import wallet adapter CSS after our own styles
 import { useAtomValue } from 'jotai';
-import { decryptPermissionAtom, networkAtom } from './lib/store/global';
+import { autoConnectAtom, decryptPermissionAtom, networkAtom } from './lib/store/global';
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 export function App() {
   const network = useAtomValue(networkAtom);
   const decryptPermission = useAtomValue(decryptPermissionAtom);
+  const autoConnect = useAtomValue(autoConnectAtom);
   // memoize to avoid re‑instantiating adapters on each render
   const wallets = useMemo(
     () => [
@@ -43,7 +44,7 @@ export function App() {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AleoWalletProvider
         wallets={wallets}
-        autoConnect
+        autoConnect={autoConnect}
         network={network}
         onError={error => toast.error(error.message)}
         decryptPermission={decryptPermission}

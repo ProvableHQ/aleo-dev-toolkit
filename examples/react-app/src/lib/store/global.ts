@@ -7,3 +7,4 @@ export const decryptPermissionAtom = atomWithStorage<DecryptPermission>(
   'decryptPermission',
   DecryptPermission.NoDecrypt,
 );
+export const autoConnectAtom = atomWithStorage<boolean>('autoConnect', true);

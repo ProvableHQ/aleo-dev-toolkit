@@ -11,9 +11,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem,
 } from './components/ui/dropdown-menu';
 import { Button } from './components/ui/button';
-import { decryptPermissionAtom, networkAtom } from './lib/store/global';
+import { decryptPermissionAtom, networkAtom, autoConnectAtom } from './lib/store/global';
 import { Network } from '@provablehq/aleo-types';
 import { Decrypt } from './components/Decrypt';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
@@ -21,6 +22,7 @@ import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 export default function WalletAdapterDemo() {
   const [network, setNetwork] = useAtom(networkAtom);
   const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
+  const [autoConnect, setAutoConnect] = useAtom(autoConnectAtom);
 
   const handleNetworkChange = (value: string) => {
     setNetwork(value as Network);
@@ -28,6 +30,10 @@ export default function WalletAdapterDemo() {
 
   const handleDecryptPermissionChange = (value: string) => {
     setDecryptPermission(value as DecryptPermission);
+  };
+
+  const handleAutoConnectChange = (checked: boolean) => {
+    setAutoConnect(checked);
   };
 
   return (
@@ -70,9 +76,16 @@ export default function WalletAdapterDemo() {
                       Auto Decrypt
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value={DecryptPermission.OnChainHistory}>
-                      On Chain History
+                      Onchain History
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={autoConnect}
+                    onCheckedChange={handleAutoConnectChange}
+                  >
+                    Auto Connect
+                  </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
