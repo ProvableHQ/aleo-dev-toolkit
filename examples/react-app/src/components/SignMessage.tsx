@@ -95,12 +95,12 @@ export function SignMessage() {
             <AlertDescription className="dark:text-slate-200">
               <div className="space-y-2">
                 <p className="font-medium dark:text-slate-100">Message Signed Successfully!</p>
-                <div className="relative w-full bg-gray-50 dark:bg-slate-700 p-2 rounded text-xs font-mono border dark:border-slate-600 transition-all duration-300">
-                  <div className="pr-8 break-all dark:text-slate-200">{signedMessage}</div>
+                <div className="relative w-full bg-muted p-2 rounded text-xs font-mono border border-border transition-all duration-300">
+                  <div className="pr-8 break-all text-foreground">{signedMessage}</div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 dark:hover:bg-slate-600 dark:text-slate-300 transition-all duration-200"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-muted text-muted-foreground transition-all duration-200"
                     onClick={() => copyToClipboard(signedMessage)}
                   >
                     <Copy className="h-4 w-4" />

@@ -120,10 +120,8 @@ export const Decrypt = () => {
             <AlertDescription className="dark:text-slate-200">
               <div className="space-y-2">
                 <p className="font-medium dark:text-slate-100">Data Decrypted Successfully!</p>
-                <div className="relative w-full bg-gray-50 dark:bg-slate-700 p-3 rounded text-xs font-mono max-h-60 overflow-auto border dark:border-slate-600 transition-all duration-300">
-                  <pre className="whitespace-pre-wrap break-all dark:text-slate-200">
-                    {decryptedData}
-                  </pre>
+                <div className="relative w-full bg-muted p-3 rounded text-xs font-mono max-h-60 overflow-auto border dark:border-slate-600 transition-all duration-300">
+                  <pre className="whitespace-pre-wrap break-all">{decryptedData}</pre>
                   <Button
                     variant="ghost"
                     size="sm"

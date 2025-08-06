@@ -159,7 +159,7 @@ export function ExecuteTransaction() {
                 <p className="font-medium dark:text-slate-100">
                   Transaction Executed Successfully!
                 </p>
-                <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700 p-2 rounded text-xs font-mono break-all border dark:border-slate-600 transition-all duration-300">
+                <div className="flex items-center justify-between bg-muted p-2 rounded text-xs font-mono break-all border dark:border-slate-600 transition-all duration-300">
                   <span className="truncate dark:text-slate-200">Tx Hash: {transactionHash}</span>
                   <Button
                     variant="ghost"
