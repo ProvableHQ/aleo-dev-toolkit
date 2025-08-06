@@ -59,9 +59,9 @@ export default function WalletAdapterDemo() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 min-w-[782px] relative overflow-hidden">
+    <div className="min-h-screen  p-4 min-w-[782px] relative overflow-hidden">
       {/* Background decoration for dark mode */}
-      <div className="absolute inset-0 dark:bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
+      <div className="absolute inset-0 dark:bg-[radial-gradient(circle_at_50%_50%,var(--primary-glow,rgba(59,130,246,0.1)),transparent_50%)] pointer-events-none" />
 
       <div className="mx-auto max-w-4xl space-y-8 relative z-10">
         {/* Header */}
@@ -69,10 +69,10 @@ export default function WalletAdapterDemo() {
           <div className="relative">
             <div className="flex items-center justify-center space-x-2">
               <div className="relative">
-                <Wallet className="h-8 w-8 text-primary dark:text-blue-400 transition-colors duration-300" />
-                <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+                <Wallet className="h-8 w-8 text-primary transition-colors duration-300" />
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-blue-400 transition-colors duration-300">
+              <h1 className="text-3xl font-bold text-foreground transition-colors duration-300">
                 Wallet Adapter Demo
               </h1>
             </div>

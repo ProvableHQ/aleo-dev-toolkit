@@ -19,12 +19,12 @@ export function ConnectSection() {
   };
 
   return (
-    <Card className="dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30">
+    <Card className="transition-all duration-300 ">
       <CardHeader className="dark:border-b dark:border-slate-700/50">
         <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
           <div className="relative">
-            <Wallet className="h-5 w-5 text-primary dark:text-blue-400 transition-colors duration-300" />
-            <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+            <Wallet className="h-5 w-5 text-primary transition-colors duration-300" />
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
           </div>
           <span>Wallet Connection</span>
         </CardTitle>

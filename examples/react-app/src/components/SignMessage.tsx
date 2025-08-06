@@ -46,8 +46,8 @@ export function SignMessage() {
       <CardHeader className="dark:border-b dark:border-slate-700/50">
         <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
           <div className="relative">
-            <MessageSquare className="h-5 w-5 text-primary dark:text-blue-400 transition-colors duration-300" />
-            <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+            <MessageSquare className="h-5 w-5 text-primary transition-colors duration-300" />
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
           </div>
           <span>Sign Message</span>
         </CardTitle>
@@ -74,7 +74,7 @@ export function SignMessage() {
         <Button
           onClick={handleSignMessage}
           disabled={!connected || isSigningMessage || !message.trim()}
-          className="w-full dark:hover:bg-blue-600 dark:focus:bg-blue-600 transition-all duration-200"
+          className="w-full hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200"
         >
           {isSigningMessage ? (
             <>
