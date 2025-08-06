@@ -40,17 +40,26 @@ export function SignMessage() {
   };
 
   return (
-    <Card className={!connected ? 'opacity-50' : ''}>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <MessageSquare className="h-5 w-5" />
+    <Card
+      className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
+    >
+      <CardHeader className="dark:border-b dark:border-slate-700/50">
+        <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
+          <div className="relative">
+            <MessageSquare className="h-5 w-5 text-primary transition-colors duration-300" />
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+          </div>
           <span>Sign Message</span>
         </CardTitle>
-        <CardDescription>Sign a custom message with your connected wallet</CardDescription>
+        <CardDescription className="dark:text-slate-300 transition-colors duration-300">
+          Sign a custom message with your connected wallet
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="message">Message to Sign</Label>
+          <Label htmlFor="message" className="dark:text-slate-200 transition-colors duration-300">
+            Message to Sign
+          </Label>
           <Textarea
             id="message"
             placeholder="Enter your message here..."
@@ -58,13 +67,14 @@ export function SignMessage() {
             onChange={e => setMessage(e.target.value)}
             disabled={!connected}
             rows={3}
+            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
           />
         </div>
 
         <Button
           onClick={handleSignMessage}
           disabled={!connected || isSigningMessage || !message.trim()}
-          className="w-full"
+          className="w-full hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200"
         >
           {isSigningMessage ? (
             <>
@@ -80,17 +90,17 @@ export function SignMessage() {
         </Button>
 
         {signedMessage && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert className="dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
+            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
+            <AlertDescription className="dark:text-slate-200">
               <div className="space-y-2">
-                <p className="font-medium">Message Signed Successfully!</p>
-                <div className="relative w-full bg-gray-50 p-2 rounded text-xs font-mono">
-                  <div className="pr-8 break-all">{signedMessage}</div>
+                <p className="font-medium dark:text-slate-100">Message Signed Successfully!</p>
+                <div className="relative w-full bg-muted p-2 rounded text-xs font-mono border border-border transition-all duration-300">
+                  <div className="pr-8 break-all text-foreground">{signedMessage}</div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-muted text-muted-foreground transition-all duration-200"
                     onClick={() => copyToClipboard(signedMessage)}
                   >
                     <Copy className="h-4 w-4" />

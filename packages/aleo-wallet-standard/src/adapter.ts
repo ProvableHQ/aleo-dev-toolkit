@@ -1,6 +1,6 @@
 import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
-import { WalletName, WalletReadyState } from './wallet';
+import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
 
 /**
@@ -48,11 +48,22 @@ export interface WalletAdapterProps<Name extends string = string> {
   network: Network;
 
   /**
+   * The wallet's decrypt permission
+   */
+  decryptPermission: WalletDecryptPermission;
+
+  /**
    * Connect to the wallet
    * @param network The network to connect to
+   * @param decryptPermission The decrypt permission
+   * @param programs The programs to connect to
    * @returns The connected account
    */
-  connect(network: Network): Promise<Account>;
+  connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account>;
 
   /**
    * Disconnect from the wallet
@@ -78,6 +89,19 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @param network The network to switch to
    */
   switchNetwork(network: Network): Promise<void>;
+
+  /**
+   * Decrypt a ciphertext
+   * @param cipherText The ciphertext to decrypt
+   * @returns The decrypted text
+   */
+  decrypt(
+    cipherText: string,
+    tpk?: string,
+    programId?: string,
+    functionName?: string,
+    index?: number,
+  ): Promise<string>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

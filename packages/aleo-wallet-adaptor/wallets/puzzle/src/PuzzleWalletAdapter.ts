@@ -5,11 +5,18 @@ import {
   TransactionStatus,
   Network,
 } from '@provablehq/aleo-types';
-import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  WalletDecryptPermission,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
+  DecryptPermission,
   MethodNotImplementedError,
   WalletConnectionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
@@ -22,6 +29,7 @@ import {
   requestCreateEvent,
   requestSignature,
   EventType,
+  decrypt as puzzleDecrypt,
 } from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig, PUZZLE_NETWORK_MAP } from './types';
 import { PuzzleIcon } from './icon';
@@ -65,14 +73,14 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   private _appDescription?: string;
 
   /**
-   * Program ID permissions
-   */
-  private _programIdPermissions: Record<string, string[]>;
-
-  /**
    * Current network
    */
   network: Network = Network.TESTNET3;
+
+  /**
+   * The wallet's decrypt permission
+   */
+  decryptPermission: WalletDecryptPermission = WalletDecryptPermission.NoDecrypt;
 
   _readyState: WalletReadyState =
     typeof window === 'undefined' || typeof document === 'undefined'
@@ -93,7 +101,6 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     this._appName = config?.appName || 'Aleo App';
     this._appIconUrl = config?.appIconUrl;
     this._appDescription = config?.appDescription;
-    this._programIdPermissions = config?.programIdPermissions || {};
     this._checkAvailability();
   }
 
@@ -124,7 +131,11 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    * @param network The network to connect to
    * @returns The connected account
    */
-  async connect(network: Network): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Puzzle Wallet is not available');
@@ -138,7 +149,9 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
           iconUrl: this._appIconUrl,
         },
         permissions: {
-          programIds: this._programIdPermissions,
+          programIds: {
+            [PUZZLE_NETWORK_MAP[network]]: programs,
+          },
         },
       });
 
@@ -148,7 +161,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
       }
 
       this.network = network;
-
+      this.decryptPermission = decryptPermission;
       const address = (response as { connection: { address: string } }).connection?.address;
 
       if (!address) {
@@ -213,6 +226,31 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     }
   }
 
+  async decrypt(cipherText: string) {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    switch (this.decryptPermission) {
+      case WalletDecryptPermission.NoDecrypt:
+        throw new WalletDecryptionNotAllowedError();
+
+      case WalletDecryptPermission.UponRequest:
+      case DecryptPermission.AutoDecrypt:
+      case DecryptPermission.OnChainHistory: {
+        try {
+          const text = await puzzleDecrypt({ ciphertexts: [cipherText] });
+          return text.plaintexts![0];
+        } catch (error: Error | unknown) {
+          throw new WalletDecryptionError(
+            error instanceof Error ? error.message : 'Failed to decrypt',
+          );
+        }
+      }
+      default:
+        throw new WalletDecryptionError();
+    }
+  }
+
   /**
    * Execute a transaction with Puzzle wallet
    * @param options Transaction options
@@ -252,6 +290,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         fee: options.fee,
       };
     } catch (error: Error | unknown) {
+      console.error('Puzzle Wallet executeTransaction error', error);
       if (error instanceof WalletError) {
         throw error;
       }

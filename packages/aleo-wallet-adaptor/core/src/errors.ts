@@ -111,6 +111,21 @@ export class WalletNotReadyError extends WalletError {
   }
 }
 
+export class WalletDecryptionNotAllowedError extends WalletError {
+  name = 'WalletDecryptionNotAllowedError';
+
+  constructor() {
+    super('Decryption not allowed');
+  }
+}
+export class WalletDecryptionError extends WalletError {
+  name = 'WalletDecryptionError';
+
+  constructor(message = 'Failed to decrypt') {
+    super(message);
+  }
+}
+
 export class MethodNotImplementedError extends WalletError {
   name = 'MethodNotImplementedError';
 

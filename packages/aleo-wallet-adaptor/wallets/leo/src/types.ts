@@ -1,5 +1,5 @@
 import { Network } from '@provablehq/aleo-types';
-import { EventEmitter } from '@provablehq/aleo-wallet-standard';
+import { EventEmitter, WalletDecryptPermission } from '@provablehq/aleo-wallet-standard';
 
 /**
  * Leo wallet adapter configuration
@@ -72,7 +72,7 @@ export interface LeoWallet extends EventEmitter<LeoWalletEvents> {
   requestRecordPlaintexts(program: string): Promise<{ records: unknown[] }>;
   requestTransactionHistory(program: string): Promise<{ transactions: unknown[] }>;
   connect(
-    decryptPermission: DecryptPermission,
+    decryptPermission: WalletDecryptPermission,
     network: LeoNetwork,
     programs?: string[],
   ): Promise<void>;
@@ -82,13 +82,6 @@ export interface LeoWallet extends EventEmitter<LeoWalletEvents> {
 export interface LeoWindow extends Window {
   leoWallet?: LeoWallet;
   leo?: LeoWallet;
-}
-
-export enum DecryptPermission {
-  NoDecrypt = 'NO_DECRYPT', // The App cannot decrypt any records
-  UponRequest = 'DECRYPT_UPON_REQUEST',
-  AutoDecrypt = 'AUTO_DECRYPT', // The App can decrypt any requested records
-  OnChainHistory = 'ON_CHAIN_HISTORY', // The App can request on-chain record plaintexts and transaction ids
 }
 
 export interface AleoTransaction {

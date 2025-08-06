@@ -8,43 +8,42 @@ import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import WalletAdapterDemo from './WalletAdapterDemo';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
+import { useAtomValue } from 'jotai';
+import {
+  autoConnectAtom,
+  decryptPermissionAtom,
+  networkAtom,
+  programsAtom,
+} from './lib/store/global';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
-import { useAtomValue } from 'jotai';
-import { networkAtom } from './lib/store/global';
 
 export function App() {
   const network = useAtomValue(networkAtom);
+  const decryptPermission = useAtomValue(decryptPermissionAtom);
+  const autoConnect = useAtomValue(autoConnectAtom);
+  const programs = useAtomValue(programsAtom);
+
   // memoize to avoid re‑instantiating adapters on each render
   const wallets = useMemo(
     () => [
       new GalileoWalletAdapter(),
-      new PuzzleWalletAdapter({
-        appName: 'Aleo Wallet Demo',
-        appDescription: 'Demo application for Aleo wallet adapters',
-        programIdPermissions: {
-          AleoTestnet: ['hello_world.aleo'],
-        },
-      }),
-      new LeoWalletAdapter({
-        appName: 'Aleo Wallet Demo',
-        appDescription: 'Demo application for Aleo wallet adapters',
-      }),
-      new FoxWalletAdapter({
-        appName: 'Aleo Wallet Demo',
-        appDescription: 'Demo application for Aleo wallet adapters',
-      }),
+      new PuzzleWalletAdapter(),
+      new LeoWalletAdapter(),
+      new FoxWalletAdapter(),
     ],
     [],
   );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <AleoWalletProvider
         wallets={wallets}
-        autoConnect
+        autoConnect={autoConnect}
         network={network}
         onError={error => toast.error(error.message)}
+        decryptPermission={decryptPermission}
+        programs={programs}
       >
         <WalletModalProvider>
           <WalletAdapterDemo />

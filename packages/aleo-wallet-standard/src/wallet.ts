@@ -3,6 +3,7 @@ import {
   AccountsFeature,
   ChainFeature,
   ConnectFeature,
+  DecryptFeature,
   ExecuteFeature,
   SignFeature,
   SwitchNetworkFeature,
@@ -74,6 +75,11 @@ export interface WalletFeatures {
   [WalletFeatureName.SWITCH_NETWORK]?: SwitchNetworkFeature;
 
   /**
+   * The decrypt feature
+   */
+  [WalletFeatureName.DECRYPT]?: DecryptFeature;
+
+  /**
    * Other features
    */
   [featureName: string]: WalletFeature | undefined;
@@ -89,6 +95,7 @@ export enum WalletFeatureName {
   EXECUTE = 'aleo:execute',
   CHAINS = 'standard:chains',
   SWITCH_NETWORK = 'standard:switch-network',
+  DECRYPT = 'standard:decrypt',
 }
 
 /**
@@ -121,3 +128,10 @@ export enum WalletReadyState {
 }
 
 export type WalletName<T extends string = string> = T & { __brand__: 'WalletName' };
+
+export enum WalletDecryptPermission {
+  NoDecrypt = 'NO_DECRYPT', // The dapp cannot decrypt any records
+  UponRequest = 'DECRYPT_UPON_REQUEST', // The dapp can decrypt records upon request
+  AutoDecrypt = 'AUTO_DECRYPT', // The dapp can decrypt any requested records
+  OnChainHistory = 'ON_CHAIN_HISTORY', // The dapp can request on-chain record plain texts and transaction ids, but cannot decrypt them
+}

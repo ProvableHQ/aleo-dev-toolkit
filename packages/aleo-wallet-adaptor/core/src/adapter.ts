@@ -8,6 +8,7 @@ import {
   EventEmitter,
   WalletEvents,
   WalletName,
+  WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
 import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
 import { WalletConnectionError } from './errors';
@@ -59,6 +60,11 @@ export abstract class BaseAleoWalletAdapter
   abstract network: Network;
 
   /**
+   * The wallet's decrypt permission
+   */
+  abstract decryptPermission: WalletDecryptPermission;
+
+  /**
    * The wallet's standard interface, if available
    */
   protected _wallet?: StandardWallet;
@@ -80,9 +86,15 @@ export abstract class BaseAleoWalletAdapter
   /**
    * Connect to the wallet
    * @param network The network to connect to
+   * @param decryptPermission The decrypt permission
+   * @param programs The programs to connect to
    * @returns The connected account
    */
-  async connect(network: Network): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     if (!this._wallet) {
       throw new WalletConnectionError('No wallet provider found');
     }
@@ -91,7 +103,7 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
     }
     try {
-      const account = await feature.connect(network);
+      const account = await feature.connect(network, decryptPermission, programs);
       this.account = account;
       this.emit('connect', account);
       return account;
@@ -160,5 +172,22 @@ export abstract class BaseAleoWalletAdapter
     }
     await feature.switchNetwork(network);
     this.emit('networkChange', network);
+  }
+
+  async decrypt(
+    cipherText: string,
+    tpk?: string,
+    programId?: string,
+    functionName?: string,
+    index?: number,
+  ): Promise<string> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.DECRYPT];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.DECRYPT);
+    }
+    return feature.decrypt(cipherText, tpk, programId, functionName, index);
   }
 }

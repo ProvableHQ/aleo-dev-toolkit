@@ -5,11 +5,17 @@ import {
   TransactionOptions,
   TransactionStatus,
 } from '@provablehq/aleo-types';
-import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  WalletDecryptPermission,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
   MethodNotImplementedError,
   WalletConnectionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
@@ -18,7 +24,6 @@ import {
 } from '@provablehq/aleo-wallet-adaptor-core';
 import {
   AleoTransaction,
-  DecryptPermission,
   LEO_NETWORK_MAP,
   LeoWallet,
   LeoWalletAdapterConfig,
@@ -56,6 +61,11 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
    * Current network
    */
   network: Network = Network.TESTNET3;
+
+  /**
+   * The wallet's decrypt permission
+   */
+  decryptPermission: WalletDecryptPermission = WalletDecryptPermission.NoDecrypt;
 
   /**
    * Public key
@@ -113,7 +123,11 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
    * Connect to Fox wallet
    * @returns The connected account
    */
-  async connect(network: Network): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Fox Wallet is not available');
@@ -121,7 +135,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        await this._foxWallet?.connect(DecryptPermission.NoDecrypt, LEO_NETWORK_MAP[network]);
+        await this._foxWallet?.connect(decryptPermission, LEO_NETWORK_MAP[network], programs);
         this.network = network;
       } catch (error: unknown) {
         if (
@@ -152,6 +166,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
       };
 
       this.account = account;
+      this.decryptPermission = decryptPermission;
       this.emit('connect', account);
 
       return account;
@@ -204,6 +219,42 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
     }
   }
 
+  async decrypt(
+    cipherText: string,
+    tpk?: string,
+    programId?: string,
+    functionName?: string,
+    index?: number,
+  ) {
+    if (!this._foxWallet || !this._publicKey) {
+      throw new WalletNotConnectedError();
+    }
+    switch (this.decryptPermission) {
+      case WalletDecryptPermission.NoDecrypt:
+        throw new WalletDecryptionNotAllowedError();
+      case WalletDecryptPermission.UponRequest:
+      case WalletDecryptPermission.AutoDecrypt:
+      case WalletDecryptPermission.OnChainHistory: {
+        try {
+          const result = await this._foxWallet.decrypt(
+            cipherText,
+            tpk,
+            programId,
+            functionName,
+            index,
+          );
+          return result.toString();
+        } catch (error: Error | unknown) {
+          throw new WalletDecryptionError(
+            error instanceof Error ? error.message : 'Failed to decrypt',
+          );
+        }
+      }
+      default:
+        throw new WalletDecryptionError();
+    }
+  }
+
   /**
    * Execute a transaction with Fox wallet
    * @param options Transaction options
@@ -241,6 +292,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
         fee: options.fee,
       };
     } catch (error: Error | unknown) {
+      console.error('Fox Wallet executeTransaction error', error);
       if (error instanceof WalletError) {
         throw error;
       }

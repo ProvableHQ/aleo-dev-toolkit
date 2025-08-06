@@ -5,7 +5,11 @@ import {
   TransactionOptions,
   TransactionStatus,
 } from '@provablehq/aleo-types';
-import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  WalletDecryptPermission,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
   WalletConnectionError,
@@ -15,6 +19,8 @@ import {
   WalletSwitchNetworkError,
   WalletSignMessageError,
   WalletTransactionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { GalileoWallet, GalileoWalletAdapterConfig, GalileoWindow } from './types';
 
@@ -47,6 +53,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    * Current network
    */
   network: Network;
+
+  /**
+   * The wallet's decrypt permission
+   */
+  decryptPermission: WalletDecryptPermission = WalletDecryptPermission.NoDecrypt;
 
   /**
    * Public key
@@ -101,7 +112,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    * Connect to Galileo wallet
    * @returns The connected account
    */
-  async connect(network: Network): Promise<Account> {
+  async connect(
+    network: Network,
+    decryptPermission: WalletDecryptPermission,
+    programs?: string[],
+  ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Galileo Wallet is not available');
@@ -109,7 +124,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
 
       // Call connect and extract address safely
       try {
-        const connectResult = await this._galileoWallet?.connect(network);
+        const connectResult = await this._galileoWallet?.connect(
+          network,
+          decryptPermission,
+          programs,
+        );
         this._publicKey = connectResult?.address || '';
         this._onNetworkChange(network);
       } catch (error: unknown) {
@@ -129,6 +148,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       };
 
       this.account = account;
+      this.decryptPermission = decryptPermission;
       this.emit('connect', account);
 
       return account;
@@ -177,6 +197,29 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       throw new WalletSignMessageError(
         error instanceof Error ? error.message : 'Failed to sign message',
       );
+    }
+  }
+
+  async decrypt(cipherText: string) {
+    if (!this._galileoWallet || !this._publicKey) {
+      throw new WalletNotConnectedError();
+    }
+    switch (this.decryptPermission) {
+      case WalletDecryptPermission.NoDecrypt:
+        throw new WalletDecryptionNotAllowedError();
+      case WalletDecryptPermission.UponRequest:
+      case WalletDecryptPermission.AutoDecrypt:
+      case WalletDecryptPermission.OnChainHistory: {
+        try {
+          return await this._galileoWallet.decrypt(cipherText);
+        } catch (error: Error | unknown) {
+          throw new WalletDecryptionError(
+            error instanceof Error ? error.message : 'Failed to decrypt',
+          );
+        }
+      }
+      default:
+        throw new WalletDecryptionError();
     }
   }
 
