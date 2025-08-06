@@ -19,27 +19,43 @@ export function ConnectSection() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Wallet className="h-5 w-5" />
+    <Card className="dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30">
+      <CardHeader className="dark:border-b dark:border-slate-700/50">
+        <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
+          <div className="relative">
+            <Wallet className="h-5 w-5 text-primary dark:text-blue-400 transition-colors duration-300" />
+            <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+          </div>
           <span>Wallet Connection</span>
         </CardTitle>
-        <CardDescription>Connect your wallet to access the different features</CardDescription>
+        <CardDescription className="dark:text-slate-300 transition-colors duration-300">
+          Connect your wallet to access the different features
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div
-              className={`h-3 w-3 rounded-full ${
-                connected
-                  ? wrongNetwork || connecting
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
-                  : 'bg-gray-300'
-              }`}
-            />
-            <span className="font-medium">
+            <div className="relative">
+              <div
+                className={`h-3 w-3 rounded-full transition-all duration-300 ${
+                  connected
+                    ? wrongNetwork || connecting
+                      ? 'bg-yellow-500 dark:bg-yellow-400'
+                      : 'bg-green-500 dark:bg-green-400'
+                    : 'bg-gray-300 dark:bg-slate-600'
+                }`}
+              />
+              <div
+                className={`absolute inset-0 rounded-full blur-sm transition-all duration-300 ${
+                  connected
+                    ? wrongNetwork || connecting
+                      ? 'bg-yellow-500/30 dark:bg-yellow-400/30'
+                      : 'bg-green-500/30 dark:bg-green-400/30'
+                    : 'bg-gray-300/30 dark:bg-slate-600/30'
+                }`}
+              />
+            </div>
+            <span className="font-medium dark:text-slate-200 transition-colors duration-300">
               {connecting
                 ? 'Connecting...'
                 : wrongNetwork
@@ -49,7 +65,12 @@ export function ConnectSection() {
                     : 'Disconnected'}
             </span>
             {wrongNetwork && (
-              <Button variant="outline" size="sm" onClick={() => switchNetwork(neededNetwork)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => switchNetwork(neededNetwork)}
+                className="dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:border-slate-500 transition-all duration-200"
+              >
                 Switch to {neededNetwork}
               </Button>
             )}
@@ -58,11 +79,16 @@ export function ConnectSection() {
         </div>
 
         {connected && (
-          <Alert className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 shrink-0" />
-            <AlertDescription className="flex items-center justify-between flex-1">
-              <span>Wallet Address: {address}</span>
-              <Button variant="ghost" size="sm" onClick={() => copyToClipboard(address ?? '')}>
+          <Alert className="flex items-center gap-2 dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
+            <CheckCircle className="h-4 w-4 shrink-0 text-green-500 dark:text-green-400" />
+            <AlertDescription className="flex items-center justify-between flex-1 dark:text-slate-200">
+              <span className="font-mono text-sm">Wallet Address: {address}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(address ?? '')}
+                className="dark:hover:bg-slate-700 dark:text-slate-300 transition-all duration-200"
+              >
                 <Copy className="h-4 w-4" />
               </Button>
             </AlertDescription>

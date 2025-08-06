@@ -51,50 +51,70 @@ export function ExecuteTransaction() {
   };
 
   return (
-    <Card className={!connected ? 'opacity-50' : ''}>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Send className="h-5 w-5" />
+    <Card
+      className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
+    >
+      <CardHeader className="dark:border-b dark:border-slate-700/50">
+        <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
+          <div className="relative">
+            <Send className="h-5 w-5 text-primary dark:text-blue-400 transition-colors duration-300" />
+            <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+          </div>
           <span>Execute Transaction</span>
         </CardTitle>
-        <CardDescription>Send a transaction using your connected wallet</CardDescription>
+        <CardDescription className="dark:text-slate-300 transition-colors duration-300">
+          Send a transaction using your connected wallet
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="program">Program ID</Label>
+            <Label htmlFor="program" className="dark:text-slate-200 transition-colors duration-300">
+              Program ID
+            </Label>
             <Input
               id="program"
               placeholder="credits.aleo"
               value={program}
               onChange={e => setProgram(e.target.value)}
               disabled={!connected}
+              className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="functionName">Function Name</Label>
+            <Label
+              htmlFor="functionName"
+              className="dark:text-slate-200 transition-colors duration-300"
+            >
+              Function Name
+            </Label>
             <Input
               id="functionName"
               placeholder="join"
               value={functionName}
               onChange={e => setFunctionName(e.target.value)}
               disabled={!connected}
+              className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="inputs">Inputs (separated by a newline)</Label>
+            <Label htmlFor="inputs" className="dark:text-slate-200 transition-colors duration-300">
+              Inputs (separated by a newline)
+            </Label>
             <textarea
               id="inputs"
               placeholder="Input arguments separated by a newline"
               value={inputs}
               onChange={e => setInputs(e.target.value)}
               disabled={!connected}
-              className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm"
+              className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
               rows={4}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="fee">Fee</Label>
+            <Label htmlFor="fee" className="dark:text-slate-200 transition-colors duration-300">
+              Fee
+            </Label>
             <Input
               id="fee"
               placeholder="Fee (in microcredits)"
@@ -102,6 +122,7 @@ export function ExecuteTransaction() {
               value={fee}
               onChange={e => setFee(e.target.value)}
               disabled={!connected}
+              className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
             />
           </div>
         </div>
@@ -115,7 +136,7 @@ export function ExecuteTransaction() {
             !functionName.trim() ||
             !fee.trim()
           }
-          className="w-full"
+          className="w-full dark:hover:bg-blue-600 dark:focus:bg-blue-600 transition-all duration-200"
         >
           {isExecutingTransaction ? (
             <>
@@ -131,17 +152,20 @@ export function ExecuteTransaction() {
         </Button>
 
         {transactionHash && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert className="dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
+            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
+            <AlertDescription className="dark:text-slate-200">
               <div className="space-y-2">
-                <p className="font-medium">Transaction Executed Successfully!</p>
-                <div className="flex items-center justify-between bg-gray-50 p-2 rounded text-xs font-mono break-all">
-                  <span className="truncate">Tx Hash: {transactionHash}</span>
+                <p className="font-medium dark:text-slate-100">
+                  Transaction Executed Successfully!
+                </p>
+                <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700 p-2 rounded text-xs font-mono break-all border dark:border-slate-600 transition-all duration-300">
+                  <span className="truncate dark:text-slate-200">Tx Hash: {transactionHash}</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => copyToClipboard(transactionHash)}
+                    className="dark:hover:bg-slate-600 dark:text-slate-300 transition-all duration-200"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -155,6 +179,7 @@ export function ExecuteTransaction() {
                       '_blank',
                     );
                   }}
+                  className="dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:border-slate-500 transition-all duration-200"
                 >
                   See on the explorer
                 </Button>

@@ -53,13 +53,20 @@ export const Decrypt = () => {
   };
 
   return (
-    <Card className={!connected ? 'opacity-50' : ''}>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Lock className="h-5 w-5" />
+    <Card
+      className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
+    >
+      <CardHeader className="dark:border-b dark:border-slate-700/50">
+        <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
+          <div className="relative">
+            <Lock className="h-5 w-5 text-primary dark:text-blue-400 transition-colors duration-300" />
+            <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+          </div>
           <span>Decrypt Data</span>
         </CardTitle>
-        <CardDescription>Decrypt cipher text using your connected wallet</CardDescription>
+        <CardDescription className="dark:text-slate-300 transition-colors duration-300">
+          Decrypt cipher text using your connected wallet
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -70,13 +77,14 @@ export const Decrypt = () => {
             onChange={e => setCipherText(e.target.value)}
             disabled={!connected}
             rows={4}
+            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
           />
         </div>
 
         <Button
           onClick={handleDecrypt}
           disabled={!connected || isDecrypting || !cipherText.trim()}
-          className="w-full"
+          className="w-full dark:hover:bg-blue-600 dark:focus:bg-blue-600 transition-all duration-200"
         >
           {isDecrypting ? (
             <>
@@ -92,11 +100,14 @@ export const Decrypt = () => {
         </Button>
 
         {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert
+            variant="destructive"
+            className="dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-200 transition-all duration-300"
+          >
+            <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400" />
+            <AlertDescription className="dark:text-red-200">
               <div className="space-y-2">
-                <p className="font-medium">Decryption Failed</p>
+                <p className="font-medium dark:text-red-100">Decryption Failed</p>
                 <p className="text-sm">{error}</p>
               </div>
             </AlertDescription>
@@ -104,17 +115,19 @@ export const Decrypt = () => {
         )}
 
         {decryptedData && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert className="dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
+            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
+            <AlertDescription className="dark:text-slate-200">
               <div className="space-y-2">
-                <p className="font-medium">Data Decrypted Successfully!</p>
-                <div className="relative w-full bg-gray-50 dark:bg-gray-900 p-3 rounded text-xs font-mono max-h-60 overflow-auto">
-                  <pre className="whitespace-pre-wrap break-all">{decryptedData}</pre>
+                <p className="font-medium dark:text-slate-100">Data Decrypted Successfully!</p>
+                <div className="relative w-full bg-gray-50 dark:bg-slate-700 p-3 rounded text-xs font-mono max-h-60 overflow-auto border dark:border-slate-600 transition-all duration-300">
+                  <pre className="whitespace-pre-wrap break-all dark:text-slate-200">
+                    {decryptedData}
+                  </pre>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-2"
+                    className="absolute right-2 top-2 dark:hover:bg-slate-600 dark:text-slate-300 transition-all duration-200"
                     onClick={() => copyToClipboard(decryptedData)}
                   >
                     <Copy className="h-4 w-4" />

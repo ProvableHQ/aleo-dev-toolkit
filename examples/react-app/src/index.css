@@ -75,37 +75,37 @@
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --background: oklch(0.08 0.02 260);
+  --foreground: oklch(0.98 0.005 250);
+  --card: oklch(0.12 0.025 260);
+  --card-foreground: oklch(0.98 0.005 250);
+  --popover: oklch(0.15 0.03 260);
+  --popover-foreground: oklch(0.98 0.005 250);
+  --primary: oklch(0.85 0.15 250);
+  --primary-foreground: oklch(0.12 0.025 260);
+  --secondary: oklch(0.18 0.035 260);
+  --secondary-foreground: oklch(0.95 0.01 250);
+  --muted: oklch(0.18 0.035 260);
+  --muted-foreground: oklch(0.65 0.05 250);
+  --accent: oklch(0.18 0.035 260);
+  --accent-foreground: oklch(0.95 0.01 250);
+  --destructive: oklch(0.65 0.25 25);
+  --border: oklch(0.25 0.04 260);
+  --input: oklch(0.25 0.04 260);
+  --ring: oklch(0.85 0.15 250 / 0.3);
+  --chart-1: oklch(0.6 0.25 260);
+  --chart-2: oklch(0.7 0.18 180);
+  --chart-3: oklch(0.75 0.2 80);
+  --chart-4: oklch(0.65 0.28 300);
+  --chart-5: oklch(0.68 0.25 20);
+  --sidebar: oklch(0.12 0.025 260);
+  --sidebar-foreground: oklch(0.98 0.005 250);
+  --sidebar-primary: oklch(0.6 0.25 260);
+  --sidebar-primary-foreground: oklch(0.98 0.005 250);
+  --sidebar-accent: oklch(0.18 0.035 260);
+  --sidebar-accent-foreground: oklch(0.95 0.01 250);
+  --sidebar-border: oklch(0.25 0.04 260);
+  --sidebar-ring: oklch(0.85 0.15 250 / 0.3);
 }
 
 @layer base {
@@ -113,6 +113,104 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
+}
+
+/* Enhanced dark mode transitions */
+* {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Ensure dark mode text colors work properly */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: inherit;
+}
+
+/* Specific rule for header title in dark mode */
+.dark .text-3xl.font-bold {
+  color: oklch(0.85 0.15 250) !important;
+}
+
+/* Improved dark mode gradients */
+.dark .bg-gradient-to-br {
+  background: linear-gradient(
+    135deg,
+    oklch(0.08 0.02 260) 0%,
+    oklch(0.12 0.025 260) 50%,
+    oklch(0.15 0.03 260) 100%
+  );
+}
+
+/* Enhanced card shadows for dark mode */
+.dark .shadow-lg {
+  box-shadow:
+    0 10px 25px -3px oklch(0 0 0 / 0.4),
+    0 4px 6px -2px oklch(0 0 0 / 0.2);
+}
+
+.dark .shadow-md {
+  box-shadow:
+    0 4px 6px -1px oklch(0 0 0 / 0.3),
+    0 2px 4px -1px oklch(0 0 0 / 0.2);
+}
+
+/* Improved button hover states for dark mode */
+.dark .hover\:bg-secondary:hover {
+  background-color: oklch(0.22 0.04 260);
+}
+
+.dark .hover\:bg-accent:hover {
+  background-color: oklch(0.22 0.04 260);
+}
+
+/* Enhanced focus states for dark mode */
+.dark .focus-visible\:ring-2:focus-visible {
+  box-shadow: 0 0 0 2px oklch(0.85 0.15 250 / 0.4);
+}
+
+/* Improved input styling for dark mode */
+.dark input,
+.dark textarea {
+  background-color: oklch(0.15 0.03 260);
+  border-color: oklch(0.25 0.04 260);
+}
+
+.dark input:focus,
+.dark textarea:focus {
+  border-color: oklch(0.85 0.15 250);
+  box-shadow: 0 0 0 1px oklch(0.85 0.15 250 / 0.3);
+}
+
+/* Enhanced dropdown styling for dark mode */
+.dark [data-radix-popper-content-wrapper] {
+  background-color: oklch(0.15 0.03 260);
+  border: 1px solid oklch(0.25 0.04 260);
+  box-shadow: 0 10px 25px -3px oklch(0 0 0 / 0.4);
+}
+
+/* Improved scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: oklch(0.12 0.025 260);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.25 0.04 260);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.3 0.05 260);
 }
