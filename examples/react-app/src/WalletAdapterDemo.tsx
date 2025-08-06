@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ConnectSection } from './components/ConnectSection';
 import { SignMessage } from './components/SignMessage';
 import { ExecuteTransaction } from './components/ExecuteTransaction';
+// import { ThemeToggle } from './components/ThemeToggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,16 +59,19 @@ export default function WalletAdapterDemo() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 min-w-[782px]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 min-w-[782px]">
       <div className="mx-auto max-w-4xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="relative">
             <div className="flex items-center justify-center space-x-2">
               <Wallet className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-gray-900">Wallet Adapter Demo</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                Wallet Adapter Demo
+              </h1>
             </div>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+              {/* <ThemeToggle /> */}
               <DropdownMenu>
                 <DropdownMenuTrigger>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -152,7 +156,7 @@ export default function WalletAdapterDemo() {
             </div>
           </div>
           <div className="flex items-center justify-center space-x-2 relative">
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Test the different features of our Aleo wallet adapter
             </p>
           </div>

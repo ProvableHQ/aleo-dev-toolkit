@@ -36,7 +36,7 @@ export function App() {
   );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <AleoWalletProvider
         wallets={wallets}
         autoConnect={autoConnect}
