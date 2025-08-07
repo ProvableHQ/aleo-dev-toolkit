@@ -300,6 +300,28 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
+   * Request records from Leo wallet
+   * @param program The program to request records from
+   * @param includePlaintext Whether to include plaintext on each record
+   * @returns The records
+   */
+  async requestRecords(program: string, includePlaintext: boolean): Promise<unknown[]> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = includePlaintext
+        ? await this._leoWallet?.requestRecordPlaintexts(program)
+        : await this._leoWallet?.requestRecords(program);
+
+      return result?.records || [];
+    } catch (error: Error | unknown) {
+      throw new WalletError(error instanceof Error ? error.message : 'Failed to request records');
+    }
+  }
+
+  /**
    * Switch the network
    * @param network The network to switch to
    */

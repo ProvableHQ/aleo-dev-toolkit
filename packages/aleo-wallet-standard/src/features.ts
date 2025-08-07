@@ -131,3 +131,15 @@ export interface DecryptFeature extends WalletFeature {
     index?: number,
   ): Promise<string>;
 }
+
+export interface RequestRecordsFeature extends WalletFeature {
+  name: 'standard:request-records';
+
+  /**
+   * Request records
+   * @param program The program to request records from
+   * @param includePlaintext Whether to include plaintext on each record, default is false
+   * @returns The records
+   */
+  requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
+}

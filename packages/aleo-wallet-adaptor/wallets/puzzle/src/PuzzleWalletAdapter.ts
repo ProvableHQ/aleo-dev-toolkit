@@ -30,6 +30,7 @@ import {
   requestSignature,
   EventType,
   decrypt as puzzleDecrypt,
+  getRecords,
 } from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig, PUZZLE_NETWORK_MAP } from './types';
 import { PuzzleIcon } from './icon';
@@ -297,6 +298,33 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
       throw new WalletTransactionError(
         error instanceof Error ? error.message : 'Failed to execute transaction',
       );
+    }
+  }
+
+  /**
+   * Request records from Leo wallet
+   * @param program The program to request records from
+   * @param includePlaintext Whether to include plaintext on each record
+   * @returns The records
+   */
+  async requestRecords(program: string): Promise<unknown[]> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await getRecords({
+        filter: {
+          programIds: [program],
+          status: 'All',
+        },
+        address: this._publicKey,
+        network: PUZZLE_NETWORK_MAP[this.network],
+      });
+
+      return result?.records || [];
+    } catch (error: Error | unknown) {
+      throw new WalletError(error instanceof Error ? error.message : 'Failed to request records');
     }
   }
 
