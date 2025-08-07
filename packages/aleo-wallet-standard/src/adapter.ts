@@ -102,6 +102,14 @@ export interface WalletAdapterProps<Name extends string = string> {
     functionName?: string,
     index?: number,
   ): Promise<string>;
+
+  /**
+   * Request records
+   * @param program The program to request records from
+   * @param includePlaintext Whether to include plaintext on each record
+   * @returns The records
+   */
+  requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

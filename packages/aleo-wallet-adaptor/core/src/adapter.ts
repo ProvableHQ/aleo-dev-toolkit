@@ -190,4 +190,16 @@ export abstract class BaseAleoWalletAdapter
     }
     return feature.decrypt(cipherText, tpk, programId, functionName, index);
   }
+
+  async requestRecords(program: string, includePlaintext: boolean): Promise<unknown[]> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.REQUEST_RECORDS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_RECORDS);
+    }
+
+    return feature.requestRecords(program, includePlaintext);
+  }
 }

@@ -5,6 +5,7 @@ import {
   ConnectFeature,
   DecryptFeature,
   ExecuteFeature,
+  RequestRecordsFeature,
   SignFeature,
   SwitchNetworkFeature,
   WalletFeature,
@@ -80,6 +81,11 @@ export interface WalletFeatures {
   [WalletFeatureName.DECRYPT]?: DecryptFeature;
 
   /**
+   * The request records feature
+   */
+  [WalletFeatureName.REQUEST_RECORDS]?: RequestRecordsFeature;
+
+  /**
    * Other features
    */
   [featureName: string]: WalletFeature | undefined;
@@ -96,6 +102,7 @@ export enum WalletFeatureName {
   CHAINS = 'standard:chains',
   SWITCH_NETWORK = 'standard:switch-network',
   DECRYPT = 'standard:decrypt',
+  REQUEST_RECORDS = 'standard:request-records',
 }
 
 /**

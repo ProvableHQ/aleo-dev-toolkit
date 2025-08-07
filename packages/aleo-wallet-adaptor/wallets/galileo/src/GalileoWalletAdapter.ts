@@ -21,6 +21,7 @@ import {
   WalletTransactionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
+  MethodNotImplementedError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { GalileoWallet, GalileoWalletAdapterConfig, GalileoWindow } from './types';
 
@@ -277,6 +278,16 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         error instanceof Error ? error.message : 'Failed to switch network',
       );
     }
+  }
+
+  /**
+   * Request records from Galileo wallet
+   * @param program The program to request records from
+   * @returns The records
+   */
+  async requestRecords(): Promise<unknown[]> {
+    console.error('Galileo Wallet does not support request records');
+    throw new MethodNotImplementedError('requestRecords');
   }
 
   /**

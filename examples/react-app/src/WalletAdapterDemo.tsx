@@ -27,6 +27,7 @@ import {
 import { Network } from '@provablehq/aleo-types';
 import { Decrypt } from './components/Decrypt';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import Records from './components/Records';
 
 export default function WalletAdapterDemo() {
   const [network, setNetwork] = useAtom(networkAtom);
@@ -206,7 +207,7 @@ export default function WalletAdapterDemo() {
         <ConnectSection />
 
         <Tabs defaultValue="sign" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 uppercase dark:bg-slate-800 dark:border-slate-700">
+          <TabsList className="grid w-full grid-cols-4 uppercase dark:bg-slate-800 dark:border-slate-700">
             <TabsTrigger
               value="execute"
               className="dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-slate-200"
@@ -225,6 +226,12 @@ export default function WalletAdapterDemo() {
             >
               Decrypt
             </TabsTrigger>
+            <TabsTrigger
+              value="records"
+              className="dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-slate-200"
+            >
+              Records
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="sign">
             <SignMessage />
@@ -234,6 +241,9 @@ export default function WalletAdapterDemo() {
           </TabsContent>
           <TabsContent value="decrypt">
             <Decrypt />
+          </TabsContent>
+          <TabsContent value="records">
+            <Records />
           </TabsContent>
         </Tabs>
       </div>

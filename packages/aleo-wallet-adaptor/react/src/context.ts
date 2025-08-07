@@ -86,6 +86,11 @@ export interface WalletContextState {
    * Decrypt a ciphertext
    */
   decrypt: (cipherText: string) => Promise<string>;
+
+  /**
+   * Request records
+   */
+  requestRecords: (program: string, includePlaintext?: boolean) => Promise<unknown[]>;
 }
 
 /**
