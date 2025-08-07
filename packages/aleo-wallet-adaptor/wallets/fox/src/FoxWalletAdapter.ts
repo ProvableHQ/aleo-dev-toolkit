@@ -303,7 +303,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Request records from Leo wallet
+   * Request records from Fox wallet
    * @param program The program to request records from
    * @param includePlaintext Whether to include plaintext on each record
    * @returns The records

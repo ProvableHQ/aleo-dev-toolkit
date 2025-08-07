@@ -26,6 +26,7 @@ export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
     transactionOptions: GalileoTransaction,
   ): Promise<{ transaction?: Transaction }>;
   switchNetwork(network: Network): Promise<void>;
+  requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
 }
 
 export interface GalileoWindow extends Window {
