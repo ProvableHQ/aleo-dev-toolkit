@@ -4,15 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MessageSquare, Copy, CheckCircle, Loader2 } from 'lucide-react';
+import { MessageSquare, Copy, CheckCircle, Loader2, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { HookCodeModal } from './HookCodeModal';
 
 export function SignMessage() {
   const { connected, signMessage } = useWallet();
   const [message, setMessage] = useState('');
   const [signedMessage, setSignedMessage] = useState('');
   const [isSigningMessage, setIsSigningMessage] = useState(false);
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   const handleSignMessage = async () => {
     if (!message.trim()) {
@@ -44,12 +46,23 @@ export function SignMessage() {
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
     >
       <CardHeader className="dark:border-b dark:border-slate-700/50">
-        <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
-          <div className="relative">
-            <MessageSquare className="h-5 w-5 text-primary transition-colors duration-300" />
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+        <CardTitle className="flex items-center justify-between dark:text-slate-100">
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <MessageSquare className="h-5 w-5 text-primary transition-colors duration-300" />
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+            </div>
+            <span>Sign Message</span>
           </div>
-          <span>Sign Message</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCodeModalOpen(true)}
+            className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
+          >
+            <Code className="h-4 w-4" />
+            Code
+          </Button>
         </CardTitle>
         <CardDescription className="dark:text-slate-300 transition-colors duration-300">
           Sign a custom message with your connected wallet
@@ -111,6 +124,11 @@ export function SignMessage() {
           </Alert>
         )}
       </CardContent>
+      <HookCodeModal
+        isOpen={isCodeModalOpen}
+        onClose={() => setIsCodeModalOpen(false)}
+        action="signMessage"
+      />
     </Card>
   );
 }
