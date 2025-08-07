@@ -1,10 +1,11 @@
-import { Wallet, Settings, Plus, X } from 'lucide-react';
+import { Wallet, Settings, Plus, X, Code } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 import { ConnectSection } from './components/ConnectSection';
 import { SignMessage } from './components/SignMessage';
 import { ExecuteTransaction } from './components/ExecuteTransaction';
 import { ThemeToggle } from './components/ThemeToggle';
+import { CodeModal } from './components/CodeModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuCheckboxItem,
+  DropdownMenuItem,
 } from './components/ui/dropdown-menu';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
@@ -35,6 +37,7 @@ export default function WalletAdapterDemo() {
   const [autoConnect, setAutoConnect] = useAtom(autoConnectAtom);
   const [programs, setPrograms] = useAtom(programsAtom);
   const [newProgram, setNewProgram] = useState('');
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   const handleNetworkChange = (value: string) => {
     setNetwork(value as Network);
@@ -79,6 +82,7 @@ export default function WalletAdapterDemo() {
             </div>
             <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center space-x-2">
               <ThemeToggle />
+
               <DropdownMenu>
                 <DropdownMenuTrigger>
                   <Button
@@ -193,6 +197,15 @@ export default function WalletAdapterDemo() {
                   >
                     Auto Connect
                   </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator className="dark:bg-slate-700" />
+
+                  <DropdownMenuItem
+                    onClick={() => setIsCodeModalOpen(true)}
+                    className="gap-2 bg-primary  text-primary-foreground hover:bg-primary/90 transition-colors duration-200 w-full"
+                  >
+                    <Code className="h-4 w-4 text-primary-foreground" />
+                    Get the Code
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -247,6 +260,7 @@ export default function WalletAdapterDemo() {
           </TabsContent>
         </Tabs>
       </div>
+      <CodeModal isOpen={isCodeModalOpen} onClose={() => setIsCodeModalOpen(false)} />
     </div>
   );
 }

@@ -11,7 +11,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       variant="outline"
       size="sm"
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-      className={`relative overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 rounded-full w-9 ${className}`}
+      className={`relative overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 rounded-full w-8 ${className}`}
     >
       <motion.div
         initial={false}
