@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Send, Copy, CheckCircle, Loader2, Zap, Code } from 'lucide-react';
+import { Send, Copy, CheckCircle, Loader2, Zap, Code, Code2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Network } from '@provablehq/aleo-types';
 import { HookCodeModal } from '../HookCodeModal';
 import { ProgramAutocomplete } from '../ProgramAutocomplete';
+import { FunctionSelector } from '../FunctionSelector';
+import { ProgramCodeModal } from '../ProgramCodeModal';
+import { parseLeoProgramFunctionNames } from '@/lib/utils';
+import { useProgram } from '@provablehq/aleo-hooks';
 
 export function ExecuteTransaction() {
   const { connected, executeTransaction, network } = useWallet();
@@ -20,6 +24,35 @@ export function ExecuteTransaction() {
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [isExecutingTransaction, setIsExecutingTransaction] = useState(false);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [isProgramCodeModalOpen, setIsProgramCodeModalOpen] = useState(false);
+  const [programCode, setProgramCode] = useState<string>('');
+
+  // Use the useProgram hook to fetch program data
+  const { program: programData, programIsLoading, programIsError } = useProgram(program);
+
+  // Parse program code to get function names and count
+  const functionNames = parseLeoProgramFunctionNames(programCode);
+  const functionCount = functionNames.length;
+
+  // Update program code when program data is fetched
+  useEffect(() => {
+    if (programData && typeof programData === 'string') {
+      setProgramCode(programData);
+    }
+  }, [programData]);
+
+  // Reset function name when program changes
+  useEffect(() => {
+    if (functionNames.length > 0 && !functionNames.includes(functionName)) {
+      setFunctionName(functionNames[0]);
+    }
+  }, [functionNames, functionName]);
+
+  useEffect(() => {
+    if (programIsError) {
+      setProgramCode('');
+    }
+  }, [programIsError]);
 
   const handleExecuteTransaction = async () => {
     if (!program.trim() || !functionName.trim() || !fee.trim()) {
@@ -92,13 +125,45 @@ export function ExecuteTransaction() {
             <Label htmlFor="program" className="dark:text-slate-200 transition-colors duration-300">
               Program ID
             </Label>
-            <ProgramAutocomplete
-              value={program}
-              onChange={setProgram}
-              onAdd={handleProgramAdd}
-              disabled={!connected}
-            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <ProgramAutocomplete
+                  value={program}
+                  onChange={setProgram}
+                  onAdd={handleProgramAdd}
+                  disabled={!connected}
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsProgramCodeModalOpen(true)}
+                disabled={!connected || !programCode}
+                className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
+              >
+                <Code2 className="h-4 w-4" />
+              </Button>
+            </div>
+            {programIsLoading && (
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading program code...</span>
+              </div>
+            )}
+            {programIsError && (
+              <div className="text-sm text-red-600 dark:text-red-400">Program not found</div>
+            )}
+            {!programIsError && programCode && functionNames.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <Code2 className="h-4 w-4" />
+                <span>
+                  Found {functionCount} function{functionCount !== 1 ? 's' : ''}
+                  {functionNames.length > 0 && `: ${functionNames.join(', ')}`}
+                </span>
+              </div>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label
               htmlFor="functionName"
@@ -106,13 +171,12 @@ export function ExecuteTransaction() {
             >
               Function Name
             </Label>
-            <Input
-              id="functionName"
-              placeholder="join"
+            <FunctionSelector
               value={functionName}
-              onChange={e => setFunctionName(e.target.value)}
+              onChange={setFunctionName}
+              functionNames={functionNames}
               disabled={!connected}
-              className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
+              placeholder="Enter function name"
             />
           </div>
           <div className="space-y-2">
@@ -210,6 +274,13 @@ export function ExecuteTransaction() {
         isOpen={isCodeModalOpen}
         onClose={() => setIsCodeModalOpen(false)}
         action="executeTransaction"
+      />
+      <ProgramCodeModal
+        isOpen={isProgramCodeModalOpen}
+        onClose={() => setIsProgramCodeModalOpen(false)}
+        programCode={programCode}
+        programName={program}
+        functionNames={functionNames}
       />
     </Card>
   );

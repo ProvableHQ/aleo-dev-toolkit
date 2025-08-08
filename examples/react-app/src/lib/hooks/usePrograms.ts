@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Network } from '@provablehq/aleo-types';
-
-const ENDPOINT_CANARY = 'https://explorer-backend-api-canary.stg.infra.provable.com/v2/canary';
-const ENDPOINT_TESTNET = 'https://explorer-backend-api-testnet.stg.infra.provable.com/v2/testnet';
-const ENDPOINT_MAINNET = 'https://explorer-backend-api-mainnet.prd.infra.provable.com/v2/mainnet';
+import { PROVABLE_API_CANARY, PROVABLE_API_MAINNET, PROVABLE_API_TESTNET } from '../constants';
 
 interface Program {
   id: string;
@@ -15,13 +12,13 @@ interface Program {
 const getNetworkEndpoint = (network: Network): string => {
   switch (network) {
     case Network.MAINNET:
-      return ENDPOINT_MAINNET;
+      return PROVABLE_API_MAINNET;
     case Network.TESTNET3:
-      return ENDPOINT_TESTNET;
+      return PROVABLE_API_TESTNET;
     case Network.CANARY:
-      return ENDPOINT_CANARY;
+      return PROVABLE_API_CANARY;
     default:
-      return ENDPOINT_TESTNET;
+      return PROVABLE_API_TESTNET;
   }
 };
 
