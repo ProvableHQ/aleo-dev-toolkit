@@ -21,7 +21,6 @@ import {
   WalletTransactionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
-  MethodNotImplementedError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { GalileoWallet, GalileoWalletAdapterConfig, GalileoWindow } from './types';
 
@@ -283,11 +282,21 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Request records from Galileo wallet
    * @param program The program to request records from
+   * @param includePlaintext Whether to include plaintext on each record
    * @returns The records
    */
-  async requestRecords(): Promise<unknown[]> {
-    console.error('Galileo Wallet does not support request records');
-    throw new MethodNotImplementedError('requestRecords');
+  async requestRecords(program: string, includePlaintext: boolean): Promise<unknown[]> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._galileoWallet?.requestRecords(program, includePlaintext);
+
+      return result || [];
+    } catch (error: Error | unknown) {
+      throw new WalletError(error instanceof Error ? error.message : 'Failed to request records');
+    }
   }
 
   /**
