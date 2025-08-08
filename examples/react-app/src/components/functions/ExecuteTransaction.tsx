@@ -158,7 +158,6 @@ export function ExecuteTransaction() {
                 <Code2 className="h-4 w-4" />
                 <span>
                   Found {functionCount} function{functionCount !== 1 ? 's' : ''}
-                  {functionNames.length > 0 && `: ${functionNames.join(', ')}`}
                 </span>
               </div>
             )}
