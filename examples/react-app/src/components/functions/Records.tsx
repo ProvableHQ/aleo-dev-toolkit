@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Database, Copy, CheckCircle, Loader2, AlertCircle, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { HookCodeModal } from './HookCodeModal';
+import { HookCodeModal } from '../HookCodeModal';
+import { ProgramAutocomplete } from '../ProgramAutocomplete';
 
 export default function Records() {
   const { connected, requestRecords } = useWallet();
@@ -53,6 +53,12 @@ export default function Records() {
     toast.success('Copied to clipboard');
   };
 
+  const handleProgramAdd = (programId?: string) => {
+    if (programId) {
+      setProgramId(programId);
+    }
+  };
+
   return (
     <Card
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
@@ -86,14 +92,11 @@ export default function Records() {
           <Label htmlFor="programId" className="dark:text-slate-200 transition-colors duration-300">
             Program ID
           </Label>
-          <Input
-            id="programId"
-            type="text"
-            placeholder="Enter program ID (e.g., credits.aleo)"
+          <ProgramAutocomplete
             value={programId}
-            onChange={e => setProgramId(e.target.value)}
+            onChange={setProgramId}
+            onAdd={handleProgramAdd}
             disabled={!connected || loading}
-            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
           />
         </div>
 

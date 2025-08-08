@@ -8,7 +8,8 @@ import { Send, Copy, CheckCircle, Loader2, Zap, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Network } from '@provablehq/aleo-types';
-import { HookCodeModal } from './HookCodeModal';
+import { HookCodeModal } from '../HookCodeModal';
+import { ProgramAutocomplete } from '../ProgramAutocomplete';
 
 export function ExecuteTransaction() {
   const { connected, executeTransaction, network } = useWallet();
@@ -52,6 +53,12 @@ export function ExecuteTransaction() {
     toast.success('Copied to clipboard');
   };
 
+  const handleProgramAdd = (programId?: string) => {
+    if (programId) {
+      setProgram(programId);
+    }
+  };
+
   return (
     <Card
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
@@ -85,13 +92,11 @@ export function ExecuteTransaction() {
             <Label htmlFor="program" className="dark:text-slate-200 transition-colors duration-300">
               Program ID
             </Label>
-            <Input
-              id="program"
-              placeholder="credits.aleo"
+            <ProgramAutocomplete
               value={program}
-              onChange={e => setProgram(e.target.value)}
+              onChange={setProgram}
+              onAdd={handleProgramAdd}
               disabled={!connected}
-              className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
             />
           </div>
           <div className="space-y-2">

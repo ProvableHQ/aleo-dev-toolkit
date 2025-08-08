@@ -265,7 +265,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     try {
       const requestData = {
         address: this._publicKey,
-        chainId: this.network,
+        chainId: LEO_NETWORK_MAP[this.network],
         fee: options.fee ? options.fee : 0.001,
         feePrivate: false,
         transitions: [
