@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, Copy, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Lock, Copy, CheckCircle, Loader2, AlertCircle, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { HookCodeModal } from './HookCodeModal';
 
 export const Decrypt = () => {
   const { connected, decrypt } = useWallet();
@@ -13,6 +14,7 @@ export const Decrypt = () => {
   const [decryptedData, setDecryptedData] = useState<string>('');
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [error, setError] = useState<string>('');
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   const handleDecrypt = async () => {
     if (!cipherText.trim()) {
@@ -57,12 +59,23 @@ export const Decrypt = () => {
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
     >
       <CardHeader className="dark:border-b dark:border-slate-700/50">
-        <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
-          <div className="relative">
-            <Lock className="h-5 w-5 text-primary transition-colors duration-300" />
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+        <CardTitle className="flex items-center justify-between dark:text-slate-100">
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <Lock className="h-5 w-5 text-primary transition-colors duration-300" />
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+            </div>
+            <span>Decrypt Data</span>
           </div>
-          <span>Decrypt Data</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCodeModalOpen(true)}
+            className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
+          >
+            <Code className="h-4 w-4" />
+            Code
+          </Button>
         </CardTitle>
         <CardDescription className="dark:text-slate-300 transition-colors duration-300">
           Decrypt cipher text using your connected wallet
@@ -136,6 +149,11 @@ export const Decrypt = () => {
           </Alert>
         )}
       </CardContent>
+      <HookCodeModal
+        isOpen={isCodeModalOpen}
+        onClose={() => setIsCodeModalOpen(false)}
+        action="decrypt"
+      />
     </Card>
   );
 };

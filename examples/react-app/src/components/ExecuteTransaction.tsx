@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Send, Copy, CheckCircle, Loader2, Zap } from 'lucide-react';
+import { Send, Copy, CheckCircle, Loader2, Zap, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Network } from '@provablehq/aleo-types';
+import { HookCodeModal } from './HookCodeModal';
 
 export function ExecuteTransaction() {
   const { connected, executeTransaction, network } = useWallet();
@@ -17,6 +18,7 @@ export function ExecuteTransaction() {
   const [fee, setFee] = useState('100000');
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [isExecutingTransaction, setIsExecutingTransaction] = useState(false);
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   const handleExecuteTransaction = async () => {
     if (!program.trim() || !functionName.trim() || !fee.trim()) {
@@ -55,12 +57,23 @@ export function ExecuteTransaction() {
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
     >
       <CardHeader className="dark:border-b dark:border-slate-700/50">
-        <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
-          <div className="relative">
-            <Send className="h-5 w-5 text-primary transition-colors duration-300" />
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+        <CardTitle className="flex items-center justify-between dark:text-slate-100">
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <Send className="h-5 w-5 text-primary transition-colors duration-300" />
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+            </div>
+            <span>Execute Transaction</span>
           </div>
-          <span>Execute Transaction</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCodeModalOpen(true)}
+            className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
+          >
+            <Code className="h-4 w-4" />
+            Code
+          </Button>
         </CardTitle>
         <CardDescription className="dark:text-slate-300 transition-colors duration-300">
           Send a transaction using your connected wallet
@@ -188,6 +201,11 @@ export function ExecuteTransaction() {
           </Alert>
         )}
       </CardContent>
+      <HookCodeModal
+        isOpen={isCodeModalOpen}
+        onClose={() => setIsCodeModalOpen(false)}
+        action="executeTransaction"
+      />
     </Card>
   );
 }

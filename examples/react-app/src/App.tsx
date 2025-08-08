@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
@@ -18,22 +17,18 @@ import {
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
+const wallets = [
+  new GalileoWalletAdapter(),
+  new PuzzleWalletAdapter(),
+  new LeoWalletAdapter(),
+  new FoxWalletAdapter(),
+];
+
 export function App() {
   const network = useAtomValue(networkAtom);
   const decryptPermission = useAtomValue(decryptPermissionAtom);
   const autoConnect = useAtomValue(autoConnectAtom);
   const programs = useAtomValue(programsAtom);
-
-  // memoize to avoid re‑instantiating adapters on each render
-  const wallets = useMemo(
-    () => [
-      new GalileoWalletAdapter(),
-      new PuzzleWalletAdapter(),
-      new LeoWalletAdapter(),
-      new FoxWalletAdapter(),
-    ],
-    [],
-  );
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
