@@ -51,6 +51,7 @@ export function ExecuteTransaction() {
   useEffect(() => {
     if (programIsError) {
       setProgramCode('');
+      setFunctionName('');
     }
   }, [programIsError]);
 
