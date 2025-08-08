@@ -8,7 +8,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   return (
     <Button
-      variant="outline"
+      variant="secondary"
       size="sm"
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
       className={`relative overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 rounded-full w-8 ${className}`}
@@ -16,7 +16,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       <motion.div
         initial={false}
         animate={{
-          rotate: resolvedTheme === 'light' ? 0 : 180,
+          rotate: resolvedTheme === 'dark' ? 0 : 180,
           scale: 1,
         }}
         transition={{
@@ -30,8 +30,8 @@ export function ThemeToggle({ className }: { className?: string }) {
         <motion.div
           initial={false}
           animate={{
-            opacity: resolvedTheme === 'light' ? 1 : 0,
-            y: resolvedTheme === 'light' ? 0 : -10,
+            opacity: resolvedTheme === 'dark' ? 1 : 0,
+            y: resolvedTheme === 'dark' ? 0 : -10,
           }}
           transition={{ duration: 0.2 }}
           className="absolute inset-0 flex items-center justify-center"
@@ -41,8 +41,8 @@ export function ThemeToggle({ className }: { className?: string }) {
         <motion.div
           initial={false}
           animate={{
-            opacity: resolvedTheme === 'dark' ? 1 : 0,
-            y: resolvedTheme === 'dark' ? 0 : 10,
+            opacity: resolvedTheme === 'light' ? 1 : 0,
+            y: resolvedTheme === 'light' ? 0 : 10,
           }}
           transition={{ duration: 0.2 }}
           className="absolute inset-0 flex items-center justify-center"

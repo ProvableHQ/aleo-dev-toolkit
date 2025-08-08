@@ -1,4 +1,4 @@
-import { Wallet, Settings, Plus, X, Code } from 'lucide-react';
+import { Wallet, Settings, X, Code } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 import { ConnectSection } from './components/ConnectSection';
@@ -6,6 +6,7 @@ import { SignMessage } from './components/SignMessage';
 import { ExecuteTransaction } from './components/ExecuteTransaction';
 import { ThemeToggle } from './components/ThemeToggle';
 import { CodeModal } from './components/CodeModal';
+import { ProgramAutocomplete } from './components/ProgramAutocomplete';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +19,6 @@ import {
   DropdownMenuItem,
 } from './components/ui/dropdown-menu';
 import { Button } from './components/ui/button';
-import { Input } from './components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import {
   decryptPermissionAtom,
@@ -51,9 +51,10 @@ export default function WalletAdapterDemo() {
     setAutoConnect(checked);
   };
 
-  const handleAddProgram = () => {
-    if (newProgram.trim() && !programs.includes(newProgram.trim())) {
-      setPrograms([...programs, newProgram.trim()]);
+  const handleAddProgram = (programId?: string) => {
+    const programToAdd = programId || newProgram.trim();
+    if (programToAdd && !programs.includes(programToAdd)) {
+      setPrograms([...programs, programToAdd]);
       setNewProgram('');
     }
   };
@@ -86,7 +87,7 @@ export default function WalletAdapterDemo() {
               <DropdownMenu>
                 <DropdownMenuTrigger>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
                   >
@@ -96,7 +97,7 @@ export default function WalletAdapterDemo() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 dark:border-slate-700 dark:bg-slate-800"
+                  className="w-60 dark:border-slate-700 dark:bg-slate-800"
                 >
                   <DropdownMenuLabel className="dark:text-slate-200">Network</DropdownMenuLabel>
                   <DropdownMenuRadioGroup value={network} onValueChange={handleNetworkChange}>
@@ -110,7 +111,7 @@ export default function WalletAdapterDemo() {
                       value={Network.TESTNET3}
                       className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
                     >
-                      TESTNET3
+                      TESTNET
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
                   <DropdownMenuSeparator className="dark:bg-slate-700" />
@@ -150,27 +151,15 @@ export default function WalletAdapterDemo() {
                   <DropdownMenuLabel className="dark:text-slate-200">Programs</DropdownMenuLabel>
                   <div className="px-2 py-1.5">
                     <div className="flex gap-1 mb-2">
-                      <Input
-                        placeholder="Enter program name"
+                      <ProgramAutocomplete
                         value={newProgram}
-                        onChange={e => setNewProgram(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            handleAddProgram();
-                          }
-                        }}
-                        className="h-8 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400"
+                        onChange={setNewProgram}
+                        onAdd={handleAddProgram}
+                        disabled={false}
+                        selectedPrograms={programs}
                       />
-                      <Button
-                        size="sm"
-                        onClick={handleAddProgram}
-                        disabled={!newProgram.trim() || programs.includes(newProgram.trim())}
-                        className="h-8 px-2 dark:hover:bg-slate-700"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
                     </div>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
                       {programs.map(program => (
                         <div
                           key={program}
