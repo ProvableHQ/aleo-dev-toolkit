@@ -48,9 +48,6 @@ importers:
 
   examples/react-app:
     dependencies:
-      '@provablehq/aleo-hooks':
-        specifier: workspace:*
-        version: link:../../packages/aleo-hooks
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../packages/aleo-types

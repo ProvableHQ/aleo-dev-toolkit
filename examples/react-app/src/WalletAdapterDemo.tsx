@@ -95,60 +95,55 @@ export default function WalletAdapterDemo() {
                     Options
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-60 dark:border-slate-700 dark:bg-slate-800"
-                >
-                  <DropdownMenuLabel className="dark:text-slate-200">Network</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuLabel>Network</DropdownMenuLabel>
                   <DropdownMenuRadioGroup value={network} onValueChange={handleNetworkChange}>
                     <DropdownMenuRadioItem
                       value={Network.MAINNET}
-                      className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                      className="hover:bg-accent focus:bg-accent"
                     >
                       MAINNET
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
                       value={Network.TESTNET3}
-                      className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                      className="hover:bg-accent focus:bg-accent"
                     >
                       TESTNET
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
-                  <DropdownMenuSeparator className="dark:bg-slate-700" />
-                  <DropdownMenuLabel className="dark:text-slate-200">
-                    Decrypt Permission
-                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Decrypt Permission</DropdownMenuLabel>
                   <DropdownMenuRadioGroup
                     value={decryptPermission}
                     onValueChange={handleDecryptPermissionChange}
                   >
                     <DropdownMenuRadioItem
                       value={DecryptPermission.NoDecrypt}
-                      className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                      className="hover:bg-accent focus:bg-accent"
                     >
                       No Decrypt
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
                       value={DecryptPermission.UponRequest}
-                      className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                      className="hover:bg-accent focus:bg-accent"
                     >
                       Upon Request
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
                       value={DecryptPermission.AutoDecrypt}
-                      className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                      className="hover:bg-accent focus:bg-accent"
                     >
                       Auto Decrypt
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
                       value={DecryptPermission.OnChainHistory}
-                      className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                      className="hover:bg-accent focus:bg-accent"
                     >
                       Onchain History
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
-                  <DropdownMenuSeparator className="dark:bg-slate-700" />
-                  <DropdownMenuLabel className="dark:text-slate-200">Programs</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Programs</DropdownMenuLabel>
                   <div className="px-2 py-1.5">
                     <div className="flex gap-1 mb-2">
                       <ProgramAutocomplete
@@ -161,16 +156,13 @@ export default function WalletAdapterDemo() {
                     </div>
                     <div className="space-y-1 max-h-40 overflow-y-auto">
                       {programs.map(program => (
-                        <div
-                          key={program}
-                          className="flex items-center justify-between text-sm dark:text-slate-300"
-                        >
+                        <div key={program} className="flex items-center justify-between text-sm">
                           <span className="truncate">{program}</span>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleRemoveProgram(program)}
-                            className="h-6 w-6 p-0 dark:hover:bg-slate-700"
+                            className="h-6 w-6 p-0"
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -178,15 +170,15 @@ export default function WalletAdapterDemo() {
                       ))}
                     </div>
                   </div>
-                  <DropdownMenuSeparator className="dark:bg-slate-700" />
+                  <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem
                     checked={autoConnect}
                     onCheckedChange={handleAutoConnectChange}
-                    className="dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                    className="hover:bg-accent focus:bg-accent"
                   >
                     Auto Connect
                   </DropdownMenuCheckboxItem>
-                  <DropdownMenuSeparator className="dark:bg-slate-700" />
+                  <DropdownMenuSeparator />
 
                   <DropdownMenuItem
                     onClick={() => setIsCodeModalOpen(true)}
@@ -200,7 +192,7 @@ export default function WalletAdapterDemo() {
             </div>
           </div>
           <div className="flex items-center justify-center space-x-2 relative">
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto transition-colors duration-300">
+            <p className="text-muted-foreground max-w-2xl mx-auto transition-colors duration-300">
               Test the different features of our Aleo wallet adapter
             </p>
           </div>
@@ -209,28 +201,28 @@ export default function WalletAdapterDemo() {
         <ConnectSection />
 
         <Tabs defaultValue="execute" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 uppercase dark:bg-slate-800 dark:border-slate-700">
+          <TabsList className="grid w-full grid-cols-4 uppercase">
             <TabsTrigger
               value="execute"
-              className="dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-slate-200"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               Execute
             </TabsTrigger>
             <TabsTrigger
               value="sign"
-              className="dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-slate-200"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               Sign
             </TabsTrigger>
             <TabsTrigger
               value="decrypt"
-              className="dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-slate-200"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               Decrypt
             </TabsTrigger>
             <TabsTrigger
               value="records"
-              className="dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-slate-200"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               Records
             </TabsTrigger>

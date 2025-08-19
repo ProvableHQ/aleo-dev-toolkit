@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Network } from '@provablehq/aleo-types';
-import { PROVABLE_API_CANARY, PROVABLE_API_MAINNET, PROVABLE_API_TESTNET } from '../constants';
+import { getAPIEndpoint } from '../utils/api';
 
 interface Program {
   id: string;
@@ -9,21 +9,8 @@ interface Program {
   version?: string;
 }
 
-const getNetworkEndpoint = (network: Network): string => {
-  switch (network) {
-    case Network.MAINNET:
-      return PROVABLE_API_MAINNET;
-    case Network.TESTNET3:
-      return PROVABLE_API_TESTNET;
-    case Network.CANARY:
-      return PROVABLE_API_CANARY;
-    default:
-      return PROVABLE_API_TESTNET;
-  }
-};
-
 const fetchPrograms = async (network: Network): Promise<Program[]> => {
-  const endpoint = getNetworkEndpoint(network);
+  const endpoint = getAPIEndpoint(network);
   const response = await fetch(`${endpoint}/programs/summary`);
 
   if (!response.ok) {
