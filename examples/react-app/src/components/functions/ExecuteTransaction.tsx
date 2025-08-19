@@ -13,7 +13,7 @@ import { ProgramAutocomplete } from '../ProgramAutocomplete';
 import { FunctionSelector } from '../FunctionSelector';
 import { ProgramCodeModal } from '../ProgramCodeModal';
 import { parseLeoProgramFunctionNames } from '@/lib/utils';
-import { useProgram } from '@provablehq/aleo-hooks';
+import { useProgram } from '@/lib/hooks/useProgram';
 
 export function ExecuteTransaction() {
   const { connected, executeTransaction, network } = useWallet();
@@ -28,7 +28,11 @@ export function ExecuteTransaction() {
   const [programCode, setProgramCode] = useState<string>('');
 
   // Use the useProgram hook to fetch program data
-  const { program: programData, programIsLoading, programIsError } = useProgram(program);
+  const {
+    data: programData,
+    isLoading: programIsLoading,
+    error: programIsError,
+  } = useProgram(program, network || undefined);
 
   // Parse program code to get function names and count
   const functionNames = parseLeoProgramFunctionNames(programCode);
@@ -37,7 +41,7 @@ export function ExecuteTransaction() {
   // Update program code when program data is fetched
   useEffect(() => {
     if (programData && typeof programData === 'string') {
-      setProgramCode(programData);
+      setProgramCode(JSON.parse(programData).program);
     }
   }, [programData]);
 
