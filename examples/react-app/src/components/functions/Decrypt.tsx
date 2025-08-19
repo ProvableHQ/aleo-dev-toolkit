@@ -58,8 +58,8 @@ export const Decrypt = () => {
     <Card
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
     >
-      <CardHeader className="dark:border-b dark:border-slate-700/50">
-        <CardTitle className="flex items-center justify-between dark:text-slate-100">
+      <CardHeader className="border-b border-border/50">
+        <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="relative">
               <Lock className="h-5 w-5 text-primary transition-colors duration-300" />
@@ -77,7 +77,7 @@ export const Decrypt = () => {
             Code
           </Button>
         </CardTitle>
-        <CardDescription className="dark:text-slate-300 transition-colors duration-300">
+        <CardDescription className="transition-colors duration-300">
           Decrypt cipher text using your connected wallet
         </CardDescription>
       </CardHeader>
@@ -90,7 +90,7 @@ export const Decrypt = () => {
             onChange={e => setCipherText(e.target.value)}
             disabled={!connected}
             rows={4}
-            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
+            className="transition-all duration-300"
           />
         </div>
 
@@ -113,37 +113,30 @@ export const Decrypt = () => {
         </Button>
 
         {error && (
-          <Alert
-            variant="destructive"
-            className="dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-200 transition-all duration-300"
-          >
-            <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400" />
-            <AlertDescription className="dark:text-red-200">
-              <div className="space-y-2">
-                <p className="font-medium dark:text-red-100">Decryption Failed</p>
-                <p className="text-sm">{error}</p>
-              </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <p className="font-medium">Error decrypting data</p>
+              <p className="text-sm mt-1">{error}</p>
             </AlertDescription>
           </Alert>
         )}
 
         {decryptedData && (
-          <Alert className="dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
+          <Alert>
             <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-            <AlertDescription className="dark:text-slate-200">
-              <div className="space-y-2">
-                <p className="font-medium dark:text-slate-100">Data Decrypted Successfully!</p>
-                <div className="relative w-full bg-muted p-3 rounded text-xs font-mono max-h-60 overflow-auto border dark:border-slate-600 transition-all duration-300">
-                  <pre className="whitespace-pre-wrap break-all">{decryptedData}</pre>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-2 dark:hover:bg-slate-600 dark:text-slate-300 transition-all duration-200"
-                    onClick={() => copyToClipboard(decryptedData)}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+            <AlertDescription>
+              <p className="font-medium">Data Decrypted Successfully!</p>
+              <div className="relative bg-muted p-3 rounded border mt-2">
+                <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{decryptedData}</pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(decryptedData)}
+                  className="absolute right-2 top-2 transition-all duration-200"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
               </div>
             </AlertDescription>
           </Alert>

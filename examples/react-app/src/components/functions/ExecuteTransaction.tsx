@@ -101,8 +101,8 @@ export function ExecuteTransaction() {
     <Card
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
     >
-      <CardHeader className="dark:border-b dark:border-slate-700/50">
-        <CardTitle className="flex items-center justify-between dark:text-slate-100">
+      <CardHeader className="border-b border-border/50">
+        <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="relative">
               <Send className="h-5 w-5 text-primary transition-colors duration-300" />
@@ -120,14 +120,14 @@ export function ExecuteTransaction() {
             Code
           </Button>
         </CardTitle>
-        <CardDescription className="dark:text-slate-300 transition-colors duration-300">
+        <CardDescription className="transition-colors duration-300">
           Send a transaction using your connected wallet
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="program" className="dark:text-slate-200 transition-colors duration-300">
+            <Label htmlFor="program" className="transition-colors duration-300">
               Program ID
             </Label>
             <div className="flex gap-2">
@@ -150,16 +150,14 @@ export function ExecuteTransaction() {
               </Button>
             </div>
             {programIsLoading && (
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Loading program code...</span>
               </div>
             )}
-            {programIsError && (
-              <div className="text-sm text-red-600 dark:text-red-400">Program not found</div>
-            )}
+            {programIsError && <div className="text-sm text-destructive">Program not found</div>}
             {!programIsError && programCode && functionNames.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Code2 className="h-4 w-4" />
                 <span>
                   Found {functionCount} function{functionCount !== 1 ? 's' : ''}
@@ -169,10 +167,7 @@ export function ExecuteTransaction() {
           </div>
 
           <div className="space-y-2">
-            <Label
-              htmlFor="functionName"
-              className="dark:text-slate-200 transition-colors duration-300"
-            >
+            <Label htmlFor="functionName" className="transition-colors duration-300">
               Function Name
             </Label>
             <FunctionSelector
@@ -184,7 +179,7 @@ export function ExecuteTransaction() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="inputs" className="dark:text-slate-200 transition-colors duration-300">
+            <Label htmlFor="inputs" className="transition-colors duration-300">
               Inputs (separated by a newline)
             </Label>
             <textarea
@@ -193,12 +188,12 @@ export function ExecuteTransaction() {
               value={inputs}
               onChange={e => setInputs(e.target.value)}
               disabled={!connected}
-              className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
+              className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all duration-300"
               rows={4}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="fee" className="dark:text-slate-200 transition-colors duration-300">
+            <Label htmlFor="fee" className="transition-colors duration-300">
               Fee
             </Label>
             <Input
@@ -208,7 +203,7 @@ export function ExecuteTransaction() {
               value={fee}
               onChange={e => setFee(e.target.value)}
               disabled={!connected}
-              className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400 transition-all duration-300"
+              className="transition-all duration-300"
             />
           </div>
         </div>
@@ -238,20 +233,18 @@ export function ExecuteTransaction() {
         </Button>
 
         {transactionHash && (
-          <Alert className="dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
+          <Alert>
             <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-            <AlertDescription className="dark:text-slate-200">
+            <AlertDescription>
               <div className="space-y-2">
-                <p className="font-medium dark:text-slate-100">
-                  Transaction Executed Successfully!
-                </p>
-                <div className="flex items-center justify-between bg-muted p-2 rounded text-xs font-mono break-all border dark:border-slate-600 transition-all duration-300">
-                  <span className="truncate dark:text-slate-200">Tx Hash: {transactionHash}</span>
+                <p className="font-medium">Transaction Executed Successfully!</p>
+                <div className="flex items-center justify-between bg-muted p-2 rounded text-xs font-mono break-all border">
+                  <span className="truncate">Tx Hash: {transactionHash}</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => copyToClipboard(transactionHash)}
-                    className="dark:hover:bg-slate-600 dark:text-slate-300 transition-all duration-200"
+                    className="transition-all duration-200"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -265,7 +258,7 @@ export function ExecuteTransaction() {
                       '_blank',
                     );
                   }}
-                  className="dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:border-slate-500 transition-all duration-200"
+                  className="transition-all duration-200"
                 >
                   See on the explorer
                 </Button>

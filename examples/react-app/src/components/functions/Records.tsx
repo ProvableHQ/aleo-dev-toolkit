@@ -63,8 +63,8 @@ export default function Records() {
     <Card
       className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
     >
-      <CardHeader className="dark:border-b dark:border-slate-700/50">
-        <CardTitle className="flex items-center justify-between dark:text-slate-100">
+      <CardHeader className="border-b border-border/50">
+        <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="relative">
               <Database className="h-5 w-5 text-primary transition-colors duration-300" />
@@ -82,14 +82,14 @@ export default function Records() {
             Code
           </Button>
         </CardTitle>
-        <CardDescription className="dark:text-slate-300 transition-colors duration-300">
+        <CardDescription className="transition-colors duration-300">
           Fetch records from a specific program using your connected wallet. Output will differ
           depending on the connected wallet.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="programId" className="dark:text-slate-200 transition-colors duration-300">
+          <Label htmlFor="programId" className="transition-colors duration-300">
             Program ID
           </Label>
           <ProgramAutocomplete
@@ -100,25 +100,23 @@ export default function Records() {
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="includePlaintext"
-            checked={includePlaintext}
-            onCheckedChange={(checked: boolean | 'indeterminate') =>
-              setIncludePlaintext(checked === true)
-            }
-            disabled={!connected || loading}
-            className="dark:border-slate-600 dark:data-[state=checked]:bg-primary dark:data-[state=checked]:border-primary"
-          />
-          <div className="grid gap-1.5 leading-none">
-            <Label
-              htmlFor="includePlaintext"
-              className="text-sm font-medium dark:text-slate-200 transition-colors duration-300"
-            >
-              Include plaintext on each record
-            </Label>
-            <p className="text-xs text-muted-foreground dark:text-slate-400">
-              Not all wallets support this option
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="includePlaintext"
+                checked={includePlaintext}
+                onCheckedChange={(checked: boolean | 'indeterminate') =>
+                  setIncludePlaintext(checked === true)
+                }
+                disabled={!connected || loading}
+              />
+              <Label htmlFor="includePlaintext" className="text-sm font-medium">
+                Include plaintext on each record
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Note: Some wallets may not support this feature
             </p>
           </div>
         </div>
@@ -142,54 +140,47 @@ export default function Records() {
         </Button>
 
         {error && (
-          <Alert
-            variant="destructive"
-            className="dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-200 transition-all duration-300"
-          >
-            <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400" />
-            <AlertDescription className="dark:text-red-200">
-              <div className="space-y-2">
-                <p className="font-medium dark:text-red-100">Failed to Fetch Records</p>
-                <p className="text-sm">{error}</p>
-              </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <p className="font-medium">Error fetching records</p>
+              <p className="text-sm mt-1">{error}</p>
             </AlertDescription>
           </Alert>
         )}
 
-        {records.length > 0 && !error && (
-          <Alert className="dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
+        {records.length > 0 && (
+          <Alert>
             <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-            <AlertDescription className="dark:text-slate-200">
-              <div className="space-y-2">
-                <p className="font-medium dark:text-slate-100">Records Fetched Successfully!</p>
-                <div className="space-y-2">
-                  {records.map((record, index) => (
-                    <div
-                      key={index}
-                      className="relative w-full bg-muted p-3 rounded text-xs font-mono max-h-60 overflow-auto border dark:border-slate-600 transition-all duration-300"
+            <AlertDescription>
+              <p className="font-medium">Records Fetched Successfully!</p>
+              <div className="space-y-2 mt-2">
+                {records.map((record, index) => (
+                  <div
+                    key={index}
+                    className="relative w-full bg-muted  p-3 rounded text-xs font-mono max-h-60 overflow-auto border  transition-all duration-300"
+                  >
+                    <pre className="whitespace-pre-wrap break-all">
+                      {JSON.stringify(record, null, 2)}
+                    </pre>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-2  transition-all duration-200"
+                      onClick={() => copyToClipboard(JSON.stringify(record, null, 2))}
                     >
-                      <pre className="whitespace-pre-wrap break-all">
-                        {JSON.stringify(record, null, 2)}
-                      </pre>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-2 top-2 dark:hover:bg-slate-600 dark:text-slate-300 transition-all duration-200"
-                        onClick={() => copyToClipboard(JSON.stringify(record, null, 2))}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             </AlertDescription>
           </Alert>
         )}
 
         {records.length === 0 && !loading && !error && connected && (
-          <Alert className="dark:bg-slate-800/50 dark:border-slate-700/50 transition-all duration-300">
-            <AlertDescription className="dark:text-slate-200">
+          <Alert>
+            <AlertDescription>
               <p className="text-sm">
                 No records found. Enter a program ID and click "Fetch Records" to get started.
               </p>
