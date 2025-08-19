@@ -11,4 +11,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    exclude: ['@provablehq/wasm'],
+    include: ['@provablehq/sdk'],
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
 });

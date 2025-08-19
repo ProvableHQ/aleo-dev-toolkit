@@ -31,6 +31,8 @@ import {
   EventType,
   decrypt as puzzleDecrypt,
   getRecords,
+  getEvent,
+  EventStatus,
 } from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig, PUZZLE_NETWORK_MAP } from './types';
 import { PuzzleIcon } from './icon';
@@ -285,9 +287,25 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletTransactionError('Could not create transaction');
       }
 
+      let event;
+
+      while (!event || event.event.status === EventStatus.Creating) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+        event = await getEvent({
+          id: result.eventId,
+          address: this._publicKey,
+          network: PUZZLE_NETWORK_MAP[this.network],
+        });
+      }
+
       return {
-        id: result.eventId,
-        status: TransactionStatus.PENDING,
+        id: event.event.transactionId!,
+        status:
+          event.event.status === EventStatus.Settled
+            ? TransactionStatus.CONFIRMED
+            : event.event.status === EventStatus.Failed
+              ? TransactionStatus.FAILED
+              : TransactionStatus.PENDING,
         fee: options.fee,
       };
     } catch (error: Error | unknown) {

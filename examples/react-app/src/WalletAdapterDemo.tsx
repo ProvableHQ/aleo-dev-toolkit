@@ -2,8 +2,8 @@ import { Wallet, Settings, X, Code } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 import { ConnectSection } from './components/ConnectSection';
-import { SignMessage } from './components/SignMessage';
-import { ExecuteTransaction } from './components/ExecuteTransaction';
+import { SignMessage } from './components/functions/SignMessage';
+import { ExecuteTransaction } from './components/functions/ExecuteTransaction';
 import { ThemeToggle } from './components/ThemeToggle';
 import { CodeModal } from './components/CodeModal';
 import { ProgramAutocomplete } from './components/ProgramAutocomplete';
@@ -27,9 +27,9 @@ import {
   programsAtom,
 } from './lib/store/global';
 import { Network } from '@provablehq/aleo-types';
-import { Decrypt } from './components/Decrypt';
+import { Decrypt } from './components/functions/Decrypt';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
-import Records from './components/Records';
+import Records from './components/functions/Records';
 
 export default function WalletAdapterDemo() {
   const [network, setNetwork] = useAtom(networkAtom);
@@ -208,7 +208,7 @@ export default function WalletAdapterDemo() {
 
         <ConnectSection />
 
-        <Tabs defaultValue="sign" className="w-full">
+        <Tabs defaultValue="execute" className="w-full">
           <TabsList className="grid w-full grid-cols-4 uppercase dark:bg-slate-800 dark:border-slate-700">
             <TabsTrigger
               value="execute"
