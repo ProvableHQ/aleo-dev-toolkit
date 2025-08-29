@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -12,20 +12,25 @@ import { HookCodeModal } from '../HookCodeModal';
 import { ProgramAutocomplete } from '../ProgramAutocomplete';
 import { FunctionSelector } from '../FunctionSelector';
 import { ProgramCodeModal } from '../ProgramCodeModal';
-import { parseLeoProgramFunctionNames } from '@/lib/utils';
+import { parseInputs, parseLeoProgramFunctions } from '@/lib/utils';
 import { useProgram } from '@/lib/hooks/useProgram';
+import { functionNameAtom, programAtom, useDynamicInputsAtom } from '@/lib/store/global';
+import { useAtom } from 'jotai';
 
 export function ExecuteTransaction() {
   const { connected, executeTransaction, network } = useWallet();
-  const [program, setProgram] = useState('hello_world.aleo');
-  const [functionName, setFunctionName] = useState('main');
-  const [inputs, setInputs] = useState('1u32\n1u32');
+  const [program, setProgram] = useAtom(programAtom);
+  const [functionName, setFunctionName] = useAtom(functionNameAtom);
+  const [inputs, setInputs] = useState('');
+  const [dynamicInputValues, setDynamicInputValues] = useState<string[]>([]);
   const [fee, setFee] = useState('100000');
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [isExecutingTransaction, setIsExecutingTransaction] = useState(false);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isProgramCodeModalOpen, setIsProgramCodeModalOpen] = useState(false);
   const [programCode, setProgramCode] = useState<string>('');
+  const [useDynamicInputs, setUseDynamicInputs] = useAtom(useDynamicInputsAtom);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Use the useProgram hook to fetch program data
   const {
@@ -34,9 +39,32 @@ export function ExecuteTransaction() {
     error: programIsError,
   } = useProgram(program, network || undefined);
 
-  // Parse program code to get function names and count
-  const functionNames = parseLeoProgramFunctionNames(programCode);
+  // Parse program code to get function information - memoized to prevent re-renders
+  const functions = useMemo(() => {
+    if (!programCode) return [];
+    return parseLeoProgramFunctions(programCode);
+  }, [programCode]);
+
+  const functionNames = useMemo(() => functions.map(f => f.name), [functions]);
   const functionCount = functionNames.length;
+
+  // Get current function info - memoized to prevent re-renders
+  const currentFunction = useMemo(() => {
+    return functions.find(f => f.name === functionName);
+  }, [functions, functionName]);
+
+  useEffect(() => {
+    if (functionNames.length > 0 && isLoading) {
+      setIsLoading(false);
+    }
+  }, [functionNames, isLoading]);
+
+  // Only log when currentFunction actually changes
+  useEffect(() => {
+    if (programCode && functionNames.length > 0 && functionName && !currentFunction) {
+      setUseDynamicInputs(false);
+    }
+  }, [currentFunction, functionNames, functionName, programCode]);
 
   // Update program code when program data is fetched
   useEffect(() => {
@@ -45,17 +73,43 @@ export function ExecuteTransaction() {
     }
   }, [programData]);
 
-  // Reset function name when program changes
   useEffect(() => {
-    if (functionNames.length > 0 && !functionNames.includes(functionName)) {
+    if (!isLoading) {
+      setFunctionName('');
+      setProgramCode('');
+    }
+  }, [program]);
+
+  // Reset function name when program changes, but allow custom function names
+  useEffect(() => {
+    if (functionNames.length > 0 && !functionName) {
+      // Only reset if functionName is empty, not if it's a custom name
       setFunctionName(functionNames[0]);
     }
   }, [functionNames, functionName]);
+
+  // Initialize inputs when function changes
+  useEffect(() => {
+    if (!isLoading) {
+      return;
+    }
+    if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
+      // Initialize with empty values for dynamic inputs when we have a known function
+      const emptyValues = currentFunction.inputs.map(() => '');
+      setDynamicInputValues(emptyValues);
+      setInputs('');
+    } else if (useDynamicInputs && !currentFunction && functionName.trim()) {
+      // For custom function names, clear the dynamic inputs since we don't know the structure
+      setDynamicInputValues([]);
+      setInputs('');
+    }
+  }, [currentFunction, useDynamicInputs, functionName, program, isLoading]);
 
   useEffect(() => {
     if (programIsError) {
       setProgramCode('');
       setFunctionName('');
+      setUseDynamicInputs(false);
     }
   }, [programIsError]);
 
@@ -66,10 +120,16 @@ export function ExecuteTransaction() {
     }
     setIsExecutingTransaction(true);
     try {
-      const inputArray = inputs
-        .split('\n')
-        .map(arg => arg.trim())
-        .filter(arg => arg.length > 0);
+      let inputArray: string[];
+
+      if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
+        // Use the dynamic input values directly for known functions
+        inputArray = dynamicInputValues.filter(value => value.trim() !== '');
+      } else {
+        // Use the manual textarea parsing for custom functions or when dynamic inputs are disabled
+        inputArray = parseInputs(inputs);
+      }
+
       const tx = await executeTransaction({
         program: program.trim(),
         function: functionName.trim(),
@@ -179,18 +239,79 @@ export function ExecuteTransaction() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="inputs" className="transition-colors duration-300">
-              Inputs (separated by a newline)
-            </Label>
-            <textarea
-              id="inputs"
-              placeholder="Input arguments separated by a newline"
-              value={inputs}
-              onChange={e => setInputs(e.target.value)}
-              disabled={!connected}
-              className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all duration-300"
-              rows={4}
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="inputs" className="transition-colors duration-300">
+                Inputs
+              </Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="useDynamicInputs"
+                  disabled={!!programIsError}
+                  checked={useDynamicInputs}
+                  onChange={e => setUseDynamicInputs(e.target.checked)}
+                  className="rounded border-input"
+                />
+                <Label htmlFor="useDynamicInputs" className="text-sm">
+                  Use dynamic inputs
+                </Label>
+              </div>
+            </div>
+
+            {useDynamicInputs && currentFunction && currentFunction.inputs.length > 0 ? (
+              <div className="space-y-3">
+                {currentFunction.inputs.map((input, index) => (
+                  <div key={index} className="space-y-1">
+                    <Label className="text-sm font-medium">
+                      {input.name}{' '}
+                      <span className="text-xs text-muted-foreground">
+                        ({input.type}.{input.visibility})
+                      </span>
+                    </Label>
+                    <Input
+                      placeholder={`Enter ${input.name} value`}
+                      value={dynamicInputValues[index] || ''}
+                      onChange={e => {
+                        const newValues = [...dynamicInputValues];
+                        newValues[index] = e.target.value;
+                        setDynamicInputValues(newValues);
+                        // Also update the inputs string for compatibility
+                        setInputs(newValues.join('\n'));
+                      }}
+                      disabled={!connected}
+                      className="transition-all duration-300"
+                    />
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  Inputs are automatically parsed from the program code. You can still edit them
+                  manually.
+                </p>
+              </div>
+            ) : useDynamicInputs && !currentFunction && functionName.trim() ? (
+              <div className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  Custom function "{functionName}" - use manual inputs below since function
+                  signature is unknown.
+                </div>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  id="inputs"
+                  placeholder="Input arguments separated by a newline"
+                  value={inputs}
+                  onChange={e => setInputs(e.target.value)}
+                  disabled={!connected}
+                  className="w-full rounded border border-input px-3 py-2 text-sm shadow-sm transition-all duration-300"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Input arguments separated by a newline. Objects and arrays can span multiple
+                  lines.
+                </p>
+              </>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="fee" className="transition-colors duration-300">
