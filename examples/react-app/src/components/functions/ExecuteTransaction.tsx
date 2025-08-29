@@ -31,6 +31,7 @@ export function ExecuteTransaction() {
   const [programCode, setProgramCode] = useState<string>('');
   const [useDynamicInputs, setUseDynamicInputs] = useAtom(useDynamicInputsAtom);
   const [isLoading, setIsLoading] = useState(true);
+  const [wasManuallyCleared, setWasManuallyCleared] = useState(false);
 
   // Use the useProgram hook to fetch program data
   const {
@@ -77,16 +78,17 @@ export function ExecuteTransaction() {
     if (!isLoading) {
       setFunctionName('');
       setProgramCode('');
+      setWasManuallyCleared(false);
     }
   }, [program]);
 
   // Reset function name when program changes, but allow custom function names
   useEffect(() => {
-    if (functionNames.length > 0 && !functionName) {
-      // Only reset if functionName is empty, not if it's a custom name
+    if (functionNames.length > 0 && !functionName && !isLoading && !wasManuallyCleared) {
+      // Only reset if functionName is empty, we're not loading, and it wasn't manually cleared
       setFunctionName(functionNames[0]);
     }
-  }, [functionNames, functionName]);
+  }, [functionNames, functionName, isLoading, wasManuallyCleared]);
 
   // Initialize inputs when function changes
   useEffect(() => {
@@ -232,7 +234,14 @@ export function ExecuteTransaction() {
             </Label>
             <FunctionSelector
               value={functionName}
-              onChange={setFunctionName}
+              onChange={value => {
+                setFunctionName(value);
+                if (value === '') {
+                  setWasManuallyCleared(true);
+                } else {
+                  setWasManuallyCleared(false);
+                }
+              }}
               functionNames={functionNames}
               disabled={!connected}
               placeholder="Enter function name"
