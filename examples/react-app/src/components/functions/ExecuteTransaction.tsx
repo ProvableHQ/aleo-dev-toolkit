@@ -54,8 +54,8 @@ export function ExecuteTransaction() {
 
   // Only log when currentFunction actually changes
   useEffect(() => {
-    if (currentFunction) {
-      console.log('Current function:', currentFunction);
+    if (programCode && !currentFunction) {
+      setUseDynamicInputs(false);
     }
   }, [currentFunction]);
 
@@ -66,9 +66,10 @@ export function ExecuteTransaction() {
     }
   }, [programData]);
 
-  // Reset function name when program changes
+  // Reset function name when program changes, but allow custom function names
   useEffect(() => {
-    if (functionNames.length > 0 && !functionNames.includes(functionName)) {
+    if (functionNames.length > 0 && !functionName) {
+      // Only reset if functionName is empty, not if it's a custom name
       setFunctionName(functionNames[0]);
     }
   }, [functionNames, functionName]);
@@ -80,12 +81,16 @@ export function ExecuteTransaction() {
       setDynamicInputValues(['1u32', '1u32']);
       setInputs('1u32\n1u32');
     } else if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
-      // Initialize with empty values for dynamic inputs
+      // Initialize with empty values for dynamic inputs when we have a known function
       const emptyValues = currentFunction.inputs.map(() => '');
       setDynamicInputValues(emptyValues);
       setInputs('');
+    } else if (useDynamicInputs && !currentFunction && functionName.trim()) {
+      // For custom function names, clear the dynamic inputs since we don't know the structure
+      setDynamicInputValues([]);
+      setInputs('');
     }
-  }, [currentFunction, useDynamicInputs]);
+  }, [currentFunction, useDynamicInputs, functionName, program]);
 
   useEffect(() => {
     if (programIsError) {
@@ -104,11 +109,11 @@ export function ExecuteTransaction() {
     try {
       let inputArray: string[];
 
-      if (useDynamicInputs && currentFunction) {
-        // Use the dynamic input values directly
+      if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
+        // Use the dynamic input values directly for known functions
         inputArray = dynamicInputValues.filter(value => value.trim() !== '');
       } else {
-        // Use the manual textarea parsing
+        // Use the manual textarea parsing for custom functions or when dynamic inputs are disabled
         inputArray = parseInputs(inputs);
       }
 
@@ -269,6 +274,13 @@ export function ExecuteTransaction() {
                   Inputs are automatically parsed from the program code. You can still edit them
                   manually.
                 </p>
+              </div>
+            ) : useDynamicInputs && !currentFunction && functionName.trim() ? (
+              <div className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  Custom function "{functionName}" - use manual input below since function signature
+                  is unknown.
+                </div>
               </div>
             ) : (
               <>
