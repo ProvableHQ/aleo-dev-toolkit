@@ -124,7 +124,19 @@ export const FunctionSelector = ({
               <X className="h-3 w-3" />
             </Button>
           )}
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsOpen(!isOpen)}
+            className="h-5 w-5 p-0 hover:bg-accent"
+            type="button"
+          >
+            <ChevronDown
+              className={`h-3 w-3 text-muted-foreground transition-transform duration-200 ${
+                isOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </Button>
         </div>
       </div>
 
