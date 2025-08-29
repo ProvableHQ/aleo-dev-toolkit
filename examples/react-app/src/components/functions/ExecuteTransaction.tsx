@@ -14,13 +14,13 @@ import { FunctionSelector } from '../FunctionSelector';
 import { ProgramCodeModal } from '../ProgramCodeModal';
 import { parseInputs, parseLeoProgramFunctions } from '@/lib/utils';
 import { useProgram } from '@/lib/hooks/useProgram';
-import { useDynamicInputsAtom } from '@/lib/store/global';
+import { functionNameAtom, programAtom, useDynamicInputsAtom } from '@/lib/store/global';
 import { useAtom } from 'jotai';
 
 export function ExecuteTransaction() {
   const { connected, executeTransaction, network } = useWallet();
-  const [program, setProgram] = useState('hello_world.aleo');
-  const [functionName, setFunctionName] = useState('main');
+  const [program, setProgram] = useAtom(programAtom);
+  const [functionName, setFunctionName] = useAtom(functionNameAtom);
   const [inputs, setInputs] = useState('');
   const [dynamicInputValues, setDynamicInputValues] = useState<string[]>([]);
   const [fee, setFee] = useState('100000');
@@ -30,6 +30,7 @@ export function ExecuteTransaction() {
   const [isProgramCodeModalOpen, setIsProgramCodeModalOpen] = useState(false);
   const [programCode, setProgramCode] = useState<string>('');
   const [useDynamicInputs, setUseDynamicInputs] = useAtom(useDynamicInputsAtom);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Use the useProgram hook to fetch program data
   const {
@@ -52,12 +53,18 @@ export function ExecuteTransaction() {
     return functions.find(f => f.name === functionName);
   }, [functions, functionName]);
 
+  useEffect(() => {
+    if (functionNames.length > 0 && isLoading) {
+      setIsLoading(false);
+    }
+  }, [functionNames, isLoading]);
+
   // Only log when currentFunction actually changes
   useEffect(() => {
-    if (programCode && !currentFunction) {
+    if (programCode && functionNames.length > 0 && functionName && !currentFunction) {
       setUseDynamicInputs(false);
     }
-  }, [currentFunction]);
+  }, [currentFunction, functionNames, functionName, programCode]);
 
   // Update program code when program data is fetched
   useEffect(() => {
@@ -65,6 +72,13 @@ export function ExecuteTransaction() {
       setProgramCode(JSON.parse(programData).program);
     }
   }, [programData]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setFunctionName('');
+      setProgramCode('');
+    }
+  }, [program]);
 
   // Reset function name when program changes, but allow custom function names
   useEffect(() => {
@@ -76,11 +90,10 @@ export function ExecuteTransaction() {
 
   // Initialize inputs when function changes
   useEffect(() => {
-    // For the example program inputs
-    if (program === 'hello_world.aleo') {
-      setDynamicInputValues(['1u32', '1u32']);
-      setInputs('1u32\n1u32');
-    } else if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
+    if (!isLoading) {
+      return;
+    }
+    if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
       // Initialize with empty values for dynamic inputs when we have a known function
       const emptyValues = currentFunction.inputs.map(() => '');
       setDynamicInputValues(emptyValues);
@@ -90,7 +103,7 @@ export function ExecuteTransaction() {
       setDynamicInputValues([]);
       setInputs('');
     }
-  }, [currentFunction, useDynamicInputs, functionName, program]);
+  }, [currentFunction, useDynamicInputs, functionName, program, isLoading]);
 
   useEffect(() => {
     if (programIsError) {
@@ -278,8 +291,8 @@ export function ExecuteTransaction() {
             ) : useDynamicInputs && !currentFunction && functionName.trim() ? (
               <div className="space-y-3">
                 <div className="text-sm text-muted-foreground">
-                  Custom function "{functionName}" - use manual input below since function signature
-                  is unknown.
+                  Custom function "{functionName}" - use manual inputs below since function
+                  signature is unknown.
                 </div>
               </div>
             ) : (

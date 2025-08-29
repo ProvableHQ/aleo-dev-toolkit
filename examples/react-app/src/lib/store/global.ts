@@ -19,4 +19,8 @@ export const programsAtom = atomWithStorage<string[]>('programs', [
 /**
  * UI state
  */
+
+// Execute Transaction state
+export const programAtom = atomWithStorage<string>('program', 'hello_world.aleo');
+export const functionNameAtom = atomWithStorage<string>('functionName', 'main');
 export const useDynamicInputsAtom = atomWithStorage<boolean>('useDynamicInputs', true);
