@@ -5,17 +5,19 @@ import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { useAtomValue } from 'jotai';
 import { networkAtom } from '../store/wallet.js';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function WalletConnector() {
   const neededNetwork = useAtomValue(networkAtom);
   const { connected, connecting, address, network, switchNetwork } = useWallet();
   const wrongNetwork = connected && !connecting && network !== neededNetwork;
+  const loggedAddressRef = useRef(null);
 
-  // Log the address whenever it changes (connect/disconnect/load)
+  // Log the address only once per unique address
   useEffect(() => {
-    if (connected && address) {
+    if (connected && address && address !== loggedAddressRef.current) {
       console.log('Aleo address:', address);
+      loggedAddressRef.current = address;
     }
   }, [connected, address]);
 
