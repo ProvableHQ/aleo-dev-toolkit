@@ -13,11 +13,17 @@ export default function WalletConnector() {
   const wrongNetwork = connected && !connecting && network !== neededNetwork;
   const loggedAddressRef = useRef(null);
 
-  // Log the address only once per unique address
+  // Log the address only once per unique address with 1 second delay
   useEffect(() => {
     if (connected && address && address !== loggedAddressRef.current) {
-      console.log('Aleo address:', address);
-      loggedAddressRef.current = address;
+      const timer = setTimeout(() => {
+        console.log('Aleo address:', address);
+        loggedAddressRef.current = address;
+        // Dispatch custom event to notify MainScreen
+        window.dispatchEvent(new CustomEvent('walletReady', { detail: { address } }));
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
   }, [connected, address]);
 

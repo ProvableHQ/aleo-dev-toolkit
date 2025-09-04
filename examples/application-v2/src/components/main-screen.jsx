@@ -6,7 +6,7 @@ import aleoLogo from "../assets/aleo-provable.svg";
 import kyaLogo from "../assets/kya.svg";
 import faceLogo from "../assets/face.svg";
 import { importIdentityParameters } from "../utils/exportUtils.js";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import WalletConnector from "./WalletConnector.jsx";
 
 export default function MainScreen({
@@ -15,7 +15,18 @@ export default function MainScreen({
   onModelImport,
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isWalletReady, setIsWalletReady] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Listen for wallet ready event
+  useEffect(() => {
+    const handleWalletReady = () => {
+      setIsWalletReady(true);
+    };
+
+    window.addEventListener('walletReady', handleWalletReady);
+    return () => window.removeEventListener('walletReady', handleWalletReady);
+  }, []);
 
   const handleFileSelect = async (file) => {
     try {
@@ -117,13 +128,18 @@ export default function MainScreen({
                     console.log("User clicked: START WITH PASSPORT VERIFICATION");
                     onVerificationChoice("passport");
                   }}
-                  className="flex h-[42px] w-[353px] cursor-pointer items-center justify-between rounded-full bg-gray-200 px-4 text-sm font-medium text-gray-900 hover:bg-gray-300"
+                  disabled={!isWalletReady}
+                  className={`flex h-[42px] w-[353px] items-center justify-between rounded-full px-4 text-sm font-medium transition-all ${
+                    isWalletReady 
+                      ? "cursor-pointer bg-gray-200 text-gray-900 hover:bg-gray-300" 
+                      : "cursor-not-allowed bg-gray-500 text-gray-600 opacity-50"
+                  }`}
                 >
                   <div className="flex w-full items-center">
                     <img src={faceLogo} alt="Face Logo" className="h-5 w-5" />
                     <span className="w-full">START WITH PASSPORT VERIFICATION</span>
                   </div>
-                  <span className="text-gray-400">›</span>
+                  <span className={isWalletReady ? "text-gray-400" : "text-gray-500"}>›</span>
                 </Button>
 
               </div>
