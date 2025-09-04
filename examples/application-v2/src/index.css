@@ -205,3 +205,38 @@ p {
     background: #8b8f91;
   }
 }
+
+/* Custom wallet button styles to match the app design */
+.wallet-multi-button-container .wallet-adapter-button {
+  background: rgb(37 99 235);
+  color: white;
+  border-radius: 9999px;
+  height: 42px;
+  width: 353px;
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.wallet-multi-button-container .wallet-adapter-button:hover {
+  background: rgb(29 78 216);
+}
+
+.wallet-multi-button-container .wallet-adapter-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wallet-multi-button-container .wallet-adapter-button.wallet-adapter-button-connected {
+  background: rgb(22 163 74);
+}
+
+.wallet-multi-button-container .wallet-adapter-button.wallet-adapter-button-connected:hover {
+  background: rgb(21 128 61);
+}

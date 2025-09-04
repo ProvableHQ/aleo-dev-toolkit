@@ -51,6 +51,33 @@ importers:
       '@amplitude/analytics-browser':
         specifier: ^2.20.1
         version: 2.23.5
+      '@provablehq/aleo-types':
+        specifier: workspace:*
+        version: link:../../packages/aleo-types
+      '@provablehq/aleo-wallet-adaptor-core':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/core
+      '@provablehq/aleo-wallet-adaptor-fox':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/wallets/fox
+      '@provablehq/aleo-wallet-adaptor-galileo':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/wallets/galileo
+      '@provablehq/aleo-wallet-adaptor-leo':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/wallets/leo
+      '@provablehq/aleo-wallet-adaptor-puzzle':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/wallets/puzzle
+      '@provablehq/aleo-wallet-adaptor-react':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/react
+      '@provablehq/aleo-wallet-adaptor-react-ui':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/react-ui
+      '@provablehq/aleo-wallet-standard':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-standard
       '@provablehq/sdk':
         specifier: ^0.9.3
         version: 0.9.7
@@ -96,6 +123,9 @@ importers:
       comlink:
         specifier: ^4.4.2
         version: 4.4.2
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.1
       face-api.js:
         specifier: ^0.22.2
         version: 0.22.2
@@ -108,6 +138,9 @@ importers:
       lucide-react:
         specifier: ^0.525.0
         version: 0.525.0(react@19.1.1)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react:
         specifier: ^19.0.0
         version: 19.1.1
@@ -117,6 +150,9 @@ importers:
       react-sketch-canvas:
         specifier: ^6.2.0
         version: 6.2.0(react@19.1.1)
+      sonner:
+        specifier: ^2.0.5
+        version: 2.0.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
@@ -13064,6 +13100,11 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
+  next-themes@0.4.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
+
   no-case@3.0.4:
     dependencies:
       lower-case: 2.0.2
@@ -13898,6 +13939,11 @@ snapshots:
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  sonner@2.0.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
 
   source-map-js@1.2.1: {}
 
