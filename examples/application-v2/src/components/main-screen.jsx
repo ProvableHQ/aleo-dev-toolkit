@@ -1,0 +1,175 @@
+"use client";
+
+import { Smile, Target, X, Square, Lock, Settings, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import aleoLogo from "../assets/aleo-provable.svg";
+import kyaLogo from "../assets/kya.svg";
+import faceLogo from "../assets/face.svg";
+import { importIdentityParameters } from "../utils/exportUtils.js";
+import { useState, useRef } from "react";
+import WalletConnector from "./WalletConnector.jsx";
+
+export default function MainScreen({
+  onVerificationChoice,
+  onOptionsClick,
+  onModelImport,
+}) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = async (file) => {
+    try {
+      const result = await importIdentityParameters(file);
+      if (result.success) {
+        onModelImport(result);
+      } else {
+        alert(`Failed to import model: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`Error importing model: ${error.message}`);
+    }
+  };
+
+  const handleFileInputChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type === "application/json" || file.name.endsWith(".json")) {
+        handleFileSelect(file);
+      } else {
+        alert("Please select a valid JSON model file");
+      }
+    }
+  };
+
+  const handleUploadAreaClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <>
+      <div className="bg-constellation flex h-dvh flex-col text-white">
+        {/* Header with controls */}
+        <div className="flex w-full items-start justify-between p-6 md:mx-auto md:max-w-4xl">
+          <div className="text-left text-[14px] text-gray-600">
+            <p>BROUGHT TO YOU BY:</p>
+            <p className="text-gray-500">ALEO & PROVABLE</p>
+          </div>
+          <div className="flex space-x-2">
+            <img src={aleoLogo} alt="Aleo Logo" className="h-12 w-26" />
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-10 sm:gap-2">
+          <div className="flex flex-1 flex-col justify-end px-6 sm:justify-center">
+            <div className="mx-auto text-center">
+              {/* zPass Logo */}
+              <div className="mb-5">
+                <h1 className="text-5xl font-bold tracking-wider md:text-7xl">
+                  <img
+                    src={kyaLogo}
+                    alt="KYC Logo"
+                    className="mx-auto h-10 w-40"
+                  />
+                </h1>
+              </div>
+
+              <span className="text-[16px] uppercase">zPass</span>
+
+              {/* Description */}
+              <div className="mt-4 mb-8">
+                <p className="gradient-white text-sm leading-relaxed text-gray-300">
+                  A DEMO OF ALEO ZKML VERIFICATION.
+                </p>
+                <p className="gradient-white text-sm leading-relaxed text-gray-300">
+                  TRAIN A MODEL • CREATE & VERIFY A PROOF
+                </p>
+              </div>
+
+              {/* Wallet Connector */}
+              <WalletConnector />
+
+              {/* Verification Buttons */}
+              <div className="mx-auto mb-8 w-full space-y-4">
+                <Button
+                  onClick={() => {
+                    console.log("User clicked: START WITH PASSPORT VERIFICATION");
+                    onVerificationChoice("passport");
+                  }}
+                  className="flex h-[42px] w-[353px] cursor-pointer items-center justify-between rounded-full bg-gray-200 px-4 text-sm font-medium text-gray-900 hover:bg-gray-300"
+                >
+                  <div className="flex w-full items-center">
+                    <img src={faceLogo} alt="Face Logo" className="h-5 w-5" />
+                    <span className="w-full">START WITH PASSPORT VERIFICATION</span>
+                  </div>
+                  <span className="text-gray-400">›</span>
+                </Button>
+
+              </div>
+
+              <span className="mb-4 text-sm text-gray-400">OR</span>
+
+              {/* Drag & Drop Area */}
+              <div
+                className={`mx-auto mt-6 w-full max-w-md cursor-pointer rounded-lg border-2 border-dashed p-4 transition-colors ${
+                  isDragOver
+                    ? "bg-opacity-10 border-blue-400 bg-blue-50"
+                    : "border-opacity-50 border-gray-600 hover:border-gray-500"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={handleUploadAreaClick}
+              >
+                <p className="text-xs text-gray-400 uppercase">
+                  {isDragOver
+                    ? "Drop your model file here"
+                    : "Open a trained model"}
+                </p>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+          {/* Options Button - Fixed at bottom center */}
+          <div className="pb-5 sm:pb-15">
+            <Button
+              onClick={onOptionsClick}
+              size="icon"
+              className="h-12 w-12 rounded-full border border-gray-600 bg-[#282b2f] text-white shadow-lg hover:bg-zinc-700"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

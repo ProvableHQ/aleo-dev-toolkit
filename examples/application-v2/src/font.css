@@ -1,0 +1,225 @@
+@font-face {
+    font-family: "PPSupplyMono";
+    src: url("/font/PPSupplyMono-Ultralight.ttf") format("truetype");
+    font-weight: 200; /* Ultralight */
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "PPSupplyMono";
+    src: url("/font/PPSupplyMono-Light.ttf") format("truetype");
+    font-weight: 300; /* Light */
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "PPSupplyMono";
+    src: url("/font/PPSupplyMono-Regular.ttf") format("truetype");
+    font-weight: 400; /* Regular */
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "PPSupplyMono";
+    src: url("/font/PPSupplyMono-Medium.ttf") format("truetype");
+    font-weight: 500; /* Medium */
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "PPSupplyMono";
+    src: url("/font/PPSupplyMono-Bold.ttf") format("truetype");
+    font-weight: 700; /* Bold */
+    font-style: normal;
+}
+
+/* InnovatorGrotesk Font Family */
+
+/* Thin (100) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-Thin.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-Thin.otf") format("opentype");
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-ThinItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-ThinItalic.otf") format("opentype");
+    font-weight: 100;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* ExtraLight (200) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-ExtraLight.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-ExtraLight.otf") format("opentype");
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-ExtraLightItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-ExtraLightItalic.otf") format("opentype");
+    font-weight: 200;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Light (300) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-Light.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-Light.otf") format("opentype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-LightItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-LightItalic.otf") format("opentype");
+    font-weight: 300;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Regular (400) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-Regular.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-RegularItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-RegularItalic.otf") format("opentype");
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Medium (500) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-Medium.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-Medium.otf") format("opentype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-MediumItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-MediumItalic.otf") format("opentype");
+    font-weight: 500;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* SemiBold (600) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-SemiBold.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-SemiBold.otf") format("opentype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-SemiBoldItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-SemiBoldItalic.otf") format("opentype");
+    font-weight: 600;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Bold (700) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-Bold.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-Bold.otf") format("opentype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-BoldItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-BoldItalic.otf") format("opentype");
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* ExtraBold (800) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-ExtraBold.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-ExtraBold.otf") format("opentype");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-ExtraBoldItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-ExtraBoldItalic.otf") format("opentype");
+    font-weight: 800;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Black (900) */
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-Black.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-Black.otf") format("opentype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InnovatorGrotesk";
+    src:
+        url("/font/InnovatorGrotesk-BlackItalic.woff2") format("woff2"),
+        url("/font/InnovatorGrotesk-BlackItalic.otf") format("opentype");
+    font-weight: 900;
+    font-style: italic;
+    font-display: swap;
+}
