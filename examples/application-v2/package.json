@@ -43,6 +43,7 @@
     "comlink": "^4.4.2",
     "eventemitter3": "^5.0.1",
     "face-api.js": "^0.22.2",
+    "form-data": "^4.0.4",
     "jotai": "^2.12.5",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.525.0",

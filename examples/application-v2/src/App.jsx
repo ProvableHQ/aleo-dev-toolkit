@@ -4,12 +4,14 @@ import MainScreen from "@/components/main-screen";
 import FaceVerificationScreen from "@/components/face-verification-screen";
 import PassportVerificationScreen from "@/components/passport-verification-screen";
 import KycVerificationScreen from "@/components/KycVerificationScreen";
+import DirectKycVerification from "@/components/DirectKycVerification";
 import OptionsScreen from "@/components/options-screen";
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState("loading");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [importedModelData, setImportedModelData] = useState(null);
+  const [capturedPassportImage, setCapturedPassportImage] = useState(null);
   const [, setLoadedResources] = useState(null);
 
   const handleLoadingComplete = (resources) => {
@@ -59,10 +61,11 @@ export default function App() {
     }, 300);
   };
 
-  const handleKycStart = () => {
+  const handleDirectKyc = (capturedImage) => {
+    setCapturedPassportImage(capturedImage);
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentScreen("kyc-verification");
+      setCurrentScreen("direct-kyc");
       setIsTransitioning(false);
     }, 300);
   };
@@ -101,13 +104,14 @@ export default function App() {
         {currentScreen === "passport-verification" && (
           <PassportVerificationScreen
             onBack={handleBack}
-            onKycStart={handleKycStart}
+            onKycStart={handleDirectKyc}
           />
         )}
-        {currentScreen === "kyc-verification" && (
-          <KycVerificationScreen
+        {currentScreen === "direct-kyc" && (
+          <DirectKycVerification
             onBack={handleBack}
             onSuccess={handleKycSuccess}
+            capturedImage={capturedPassportImage}
           />
         )}
         {currentScreen === "options" && <OptionsScreen onBack={handleBack} />}

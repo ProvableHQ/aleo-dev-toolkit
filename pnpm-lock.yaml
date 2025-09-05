@@ -135,6 +135,9 @@ importers:
       face-api.js:
         specifier: ^0.22.2
         version: 0.22.2
+      form-data:
+        specifier: ^4.0.4
+        version: 4.0.4
       jotai:
         specifier: ^2.12.5
         version: 2.12.5(@types/react@19.1.12)(react@19.1.1)

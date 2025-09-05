@@ -254,10 +254,12 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
 
         <div className="mt-8">
           <ActionButton
-            onClick={() => {
-              console.log("Continue with passport verification - starting KYC");
-              if (onKycStart) {
-                onKycStart();
+            onClick={async () => {
+              console.log("Continue with passport verification - uploading to Sumsub");
+              if (capturedImage && onKycStart) {
+                // You could upload directly here:
+                // await uploadToSumsub(capturedImage);
+                onKycStart(capturedImage); // Pass the captured image
               }
             }}
             disabled={!hasCaptured}
