@@ -6,65 +6,115 @@ import { defineConfig, loadEnv } from "vite";
 
 // Simple API proxy plugin for development
 function apiProxyPlugin(env) {
+  const handleApiRoute = async (req, res, routePath, handlerPath) => {
+    try {
+      // Load environment variables into process.env for the serverless function
+      Object.assign(process.env, env);
+      
+      // Import the serverless function
+      const absolutePath = path.resolve(__dirname, handlerPath);
+      const { default: handler } = await import(absolutePath);
+      
+      // Parse request data first
+      let requestBody = {};
+      let requestQuery = {};
+      
+      if (req.method === 'GET') {
+        // Parse query parameters from URL
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        url.searchParams.forEach((value, key) => {
+          requestQuery[key] = value;
+        });
+      } else {
+        // Parse body for POST requests
+        requestBody = await new Promise((resolve) => {
+          let body = '';
+          req.on('data', chunk => {
+            body += chunk.toString();
+          });
+          req.on('end', () => {
+            try {
+              resolve(JSON.parse(body));
+            } catch {
+              resolve({});
+            }
+          });
+        });
+      }
+
+      // Create a mock Next.js-style req/res for the handler
+      const mockReq = {
+        method: req.method,
+        query: requestQuery,
+        body: requestBody,
+        headers: req.headers
+      };
+
+      const mockRes = {
+        status: (code) => {
+          res.statusCode = code;
+          return mockRes;
+        },
+        json: (data) => {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(data));
+        },
+        setHeader: (name, value) => {
+          res.setHeader(name, value);
+        },
+        send: (data) => {
+          res.end(data);
+        }
+      };
+
+      await handler(mockReq, mockRes);
+    } catch (error) {
+      console.error(`API proxy error for ${routePath}:`, error);
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'Internal server error' }));
+    }
+  };
+
   return {
     name: 'api-proxy',
     configureServer(server) {
+      // Handle /api/prove route
       server.middlewares.use('/api/prove', async (req, res, next) => {
         if (req.method !== 'POST') {
           res.statusCode = 405;
           res.end('Method not allowed');
           return;
         }
+        await handleApiRoute(req, res, '/api/prove', './api/prove.js');
+      });
 
-        try {
-          // Load environment variables into process.env for the serverless function
-          Object.assign(process.env, env);
-          
-          // Import the serverless function
-          const { default: handler } = await import('./api/prove.js');
-          
-          // Create a mock Next.js-style req/res for the handler
-          const mockReq = {
-            method: req.method,
-            body: await new Promise((resolve) => {
-              let body = '';
-              req.on('data', chunk => {
-                body += chunk.toString();
-              });
-              req.on('end', () => {
-                try {
-                  resolve(JSON.parse(body));
-                } catch {
-                  resolve({});
-                }
-              });
-            })
-          };
-
-          const mockRes = {
-            status: (code) => {
-              res.statusCode = code;
-              return mockRes;
-            },
-            json: (data) => {
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify(data));
-            },
-            setHeader: (name, value) => {
-              res.setHeader(name, value);
-            },
-            send: (data) => {
-              res.end(data);
-            }
-          };
-
-          await handler(mockReq, mockRes);
-        } catch (error) {
-          console.error('API proxy error:', error);
-          res.statusCode = 500;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Internal server error' }));
+      // Handle KYC API routes
+      server.middlewares.use('/api/kyc/initialize', async (req, res, next) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method not allowed');
+          return;
         }
+        await handleApiRoute(req, res, '/api/kyc/initialize', './api/kyc/initialize.js');
+      });
+
+      server.middlewares.use('/api/kyc/status', async (req, res, next) => {
+        if (req.method !== 'GET') {
+          res.statusCode = 405;
+          res.end('Method not allowed');
+          return;
+        }
+        await handleApiRoute(req, res, '/api/kyc/status', './api/kyc/status.js');
+      });
+
+      server.middlewares.use('/api/kyc/webhook', async (req, res, next) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method not allowed');
+          return;
+        }
+        await handleApiRoute(req, res, '/api/kyc/webhook', './api/kyc/webhook.js');
       });
     }
   };

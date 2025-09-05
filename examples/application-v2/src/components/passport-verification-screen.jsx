@@ -85,7 +85,7 @@ const PassportCapture = ({
   );
 };
 
-export default function PassportVerificationScreen({ onBack }) {
+export default function PassportVerificationScreen({ onBack, onKycStart }) {
   const [isReady, setIsReady] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [hasCaptured, setHasCaptured] = useState(false);
@@ -255,8 +255,10 @@ export default function PassportVerificationScreen({ onBack }) {
         <div className="mt-8">
           <ActionButton
             onClick={() => {
-              // Placeholder functionality - will be implemented later
-              console.log("Continue with passport verification");
+              console.log("Continue with passport verification - starting KYC");
+              if (onKycStart) {
+                onKycStart();
+              }
             }}
             disabled={!hasCaptured}
             variant="primary"

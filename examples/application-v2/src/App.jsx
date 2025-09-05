@@ -3,6 +3,7 @@ import LoadingScreen from "@/components/loading-screen";
 import MainScreen from "@/components/main-screen";
 import FaceVerificationScreen from "@/components/face-verification-screen";
 import PassportVerificationScreen from "@/components/passport-verification-screen";
+import KycVerificationScreen from "@/components/KycVerificationScreen";
 import OptionsScreen from "@/components/options-screen";
 
 export default function App() {
@@ -58,6 +59,22 @@ export default function App() {
     }, 300);
   };
 
+  const handleKycStart = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentScreen("kyc-verification");
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  const handleKycSuccess = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentScreen("main");
+      setIsTransitioning(false);
+    }, 300);
+  };
+
   return (
     <div className="h-dvh text-white">
       <div
@@ -84,6 +101,13 @@ export default function App() {
         {currentScreen === "passport-verification" && (
           <PassportVerificationScreen
             onBack={handleBack}
+            onKycStart={handleKycStart}
+          />
+        )}
+        {currentScreen === "kyc-verification" && (
+          <KycVerificationScreen
+            onBack={handleBack}
+            onSuccess={handleKycSuccess}
           />
         )}
         {currentScreen === "options" && <OptionsScreen onBack={handleBack} />}
