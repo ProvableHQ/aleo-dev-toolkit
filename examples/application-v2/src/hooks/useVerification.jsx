@@ -121,13 +121,13 @@ export const STEP_CONFIGS = {
     },
     descriptions: {
       [VERIFICATION_STEPS.INITIAL]:
-        "FIRST LET'S CAPTURE YOUR FACE. POSITION YOUR FACE IN THE CIRCLE AND TAKE A PHOTO.",
+        "CAPTURE SAMPLE 2/3. YOUR PASSPORT PHOTO IS ALREADY SAMPLE 1. POSITION YOUR FACE IN THE CIRCLE AND TAKE A PHOTO.",
       [VERIFICATION_STEPS.REPEAT1]:
-        "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE ONE MORE TIME. PRESS BACK TO EDIT YOUR ORIGINAL.",
+        "CAPTURE SAMPLE 3/3. TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE ONE MORE TIME. PRESS BACK TO EDIT YOUR PREVIOUS PHOTO.",
       [VERIFICATION_STEPS.REPEAT2]:
         "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE A FINAL TIME. PRESS BACK TO EDIT YOUR ORIGINAL.",
       [VERIFICATION_STEPS.CONFIRM]:
-        "IS THE BELOW CORRECT TO TRAIN THE VERIFICATION MODEL? YOUR PASSPORT PHOTO WILL BE USED AS THE THIRD TRAINING IMAGE.",
+        "IS THE BELOW CORRECT TO TRAIN THE VERIFICATION MODEL? PASSPORT PHOTO (SAMPLE 1) + 2 FACE PHOTOS (SAMPLES 2&3).",
       [VERIFICATION_STEPS.CREATE_PROOF]: "VERIFY YOUR FACE TO CONTINUE",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "CREATING PROOF AUTHORIZATION",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "FACE VERIFICATION",
@@ -189,6 +189,65 @@ export const useVerification = (verificationType, importedModelData = null, capt
       setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
     }
   }, [importedModelData]);
+
+  // Initialize passport photo for similarity checking when KYA workflow starts
+  useEffect(() => {
+    const initializePassportBaseline = async () => {
+      if (
+        verificationType === VERIFICATION_TYPES.FACE && 
+        capturedPassportImage && 
+        acceptedCanonicalHashes.length === 0 && 
+        acceptedFaceDescriptors.length === 0
+      ) {
+        console.log("[dup-guard] Initializing passport photo as baseline for similarity checks");
+        
+        try {
+          // Process passport image to extract face features
+          const passportResult = await processFaceImageToPCAVector(capturedPassportImage);
+          if (passportResult.success && passportResult.descriptor) {
+            console.log("[dup-guard] Passport face descriptor extracted successfully");
+            
+            // Add passport face descriptor to baselines
+            const descArray = Array.isArray(passportResult.descriptor) 
+              ? passportResult.descriptor 
+              : Array.from(passportResult.descriptor);
+            setAcceptedFaceDescriptors([descArray]);
+            
+            // Try to compute canonical hash from passport if landmarks are available
+            if (passportResult.landmarks && hasUsableLandmarks(passportResult.landmarks)) {
+              const canonHash = await computeCanonicalAHashFromInput(
+                capturedPassportImage, 
+                passportResult.landmarks
+              );
+              if (canonHash) {
+                setAcceptedCanonicalHashes([canonHash]);
+                console.log("[dup-guard] Passport canonical hash computed and added");
+              }
+            }
+            
+            console.log("[dup-guard] Passport baseline initialization complete");
+            
+            // Also add passport as the first sample in the training data
+            if (samples.length === 0) {
+              const passportSample = {
+                image: capturedPassportImage,
+                imageDataUrl: capturedPassportImage,
+                dataUrl: capturedPassportImage
+              };
+              setSamples([passportSample]);
+              console.log("[dup-guard] Passport added as first sample (sample 1/3)");
+            }
+          } else {
+            console.log("[dup-guard] Could not extract face features from passport photo");
+          }
+        } catch (error) {
+          console.error("[dup-guard] Error initializing passport baseline:", error);
+        }
+      }
+    };
+    
+    initializePassportBaseline();
+  }, [verificationType, capturedPassportImage, acceptedCanonicalHashes.length, acceptedFaceDescriptors.length, samples.length]);
 
   const {
     captureRef,
@@ -535,15 +594,17 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
     const sample = await getCapture();
 
+    // For face verification with passport, passport is already at index 0
+    // So INITIAL (sample 2) goes to index 1, REPEAT1 (sample 3) goes to index 2
     const sampleIndex =
       currentStep === VERIFICATION_STEPS.INITIAL
-        ? 0
+        ? (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage ? 1 : 0)
         : currentStep === VERIFICATION_STEPS.REPEAT1
-          ? 1
+          ? (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage ? 2 : 1)
           : currentStep === VERIFICATION_STEPS.REPEAT2
-            ? 2
+            ? (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage ? 3 : 2)
             : currentStep === VERIFICATION_STEPS.CONFIRM
-              ? 3
+              ? (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage ? 4 : 3)
               : 0;
 
     // --- Duplicate check before accepting sample ---
@@ -639,10 +700,11 @@ export const useVerification = (verificationType, importedModelData = null, capt
         }
       }
 
-      console.log("[accept] stored counts", {
+      console.log(`[accept] stored sample at index ${sampleIndex}`, {
         samples: (samples?.length ?? 0) + (samples[sampleIndex] ? 0 : 1),
         canon: newCanonical ? acceptedCanonicalHashes.length + 1 : acceptedCanonicalHashes.length,
-        descs: newDesc ? acceptedFaceDescriptors.length + 1 : acceptedFaceDescriptors.length
+        descs: newDesc ? acceptedFaceDescriptors.length + 1 : acceptedFaceDescriptors.length,
+        step: currentStep
       });
     }
               
@@ -897,25 +959,14 @@ export const useVerification = (verificationType, importedModelData = null, capt
   const startTraining = async () => {
     console.log("Starting training with collected data...");
 
-    let trainingData = [...samples];
-
-    // For face verification, add the passport image as the third training sample
-    if (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage) {
-      console.log("Adding passport image as third training sample");
-      
-      // Convert the passport image dataURL to the format expected by the training system
-      const passportSample = {
-        image: capturedPassportImage,
-        imageDataUrl: capturedPassportImage,
-        dataUrl: capturedPassportImage
-      };
-      
-      trainingData.push(passportSample);
-      console.log(`Training data now includes ${trainingData.length} samples (2 face + 1 passport)`);
-    }
+    // For face verification with passport image, samples array already contains:
+    // [0] = passport photo (added during initialization)  
+    // [1] = first face photo (added during INITIAL step)
+    // [2] = second face photo (added during REPEAT1 step)
+    console.log(`Training with ${samples.length} samples:`, samples.map((s, i) => `Sample ${i+1}: ${s.image ? 'image present' : 'no image'}`));
 
     // Remove redundant processing - augmentation will be done once inside startTrainingWithCollectedData
-    await startTrainingWithCollectedData(trainingData);
+    await startTrainingWithCollectedData(samples);
     setCurrentStep(VERIFICATION_STEPS.COMPLETE);
   };
 

@@ -308,9 +308,18 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
         <div className="flex flex-1 flex-col items-center justify-between px-6">
           <div className="mb-8 flex w-full max-w-md flex-1 flex-col items-center justify-center rounded-lg p-6">
             <div className="mb-4 flex justify-center space-x-6">
-              {faces.map((face, index) => (
+              {capturedPassportImage && (
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg">
+                  <img
+                    src={capturedPassportImage}
+                    alt="Passport (Sample 1)"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
+              {faces.slice(1).map((face, index) => (
                 <div
-                  key={index}
+                  key={index + 1}
                   className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full"
                 >
                   <SamplePreview
@@ -321,19 +330,10 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
                   />
                 </div>
               ))}
-              {capturedPassportImage && (
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg">
-                  <img
-                    src={capturedPassportImage}
-                    alt="Passport"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              )}
             </div>
             {capturedPassportImage && (
               <div className="text-xs text-gray-400 text-center">
-                2 face photos + 1 passport photo
+                1 passport photo (sample 1) + 2 face photos (samples 2&3)
               </div>
             )}
           </div>
