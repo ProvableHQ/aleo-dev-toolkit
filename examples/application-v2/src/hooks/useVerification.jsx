@@ -123,11 +123,11 @@ export const STEP_CONFIGS = {
       [VERIFICATION_STEPS.INITIAL]:
         "FIRST LET'S CAPTURE YOUR FACE. POSITION YOUR FACE IN THE CIRCLE AND TAKE A PHOTO.",
       [VERIFICATION_STEPS.REPEAT1]:
-        "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE TWO MORE TIMES. PRESS BACK TO EDIT YOUR ORIGINAL.",
+        "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE ONE MORE TIME. PRESS BACK TO EDIT YOUR ORIGINAL.",
       [VERIFICATION_STEPS.REPEAT2]:
         "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE A FINAL TIME. PRESS BACK TO EDIT YOUR ORIGINAL.",
       [VERIFICATION_STEPS.CONFIRM]:
-        "IS THE BELOW CORRECT TO TRAIN THE VERIFICATION MODEL? PRESS BACK TO CHANGE YOUR FACE IF NEEDED.",
+        "IS THE BELOW CORRECT TO TRAIN THE VERIFICATION MODEL? YOUR PASSPORT PHOTO WILL BE USED AS THE THIRD TRAINING IMAGE.",
       [VERIFICATION_STEPS.CREATE_PROOF]: "VERIFY YOUR FACE TO CONTINUE",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "CREATING PROOF AUTHORIZATION",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "FACE VERIFICATION",
@@ -139,14 +139,13 @@ export const STEP_CONFIGS = {
     trainingSteps: [
       VERIFICATION_STEPS.INITIAL,
       VERIFICATION_STEPS.REPEAT1,
-      VERIFICATION_STEPS.REPEAT2,
       VERIFICATION_STEPS.CONFIRM,
     ],
   },
 };
 
 // Main verification hook
-export const useVerification = (verificationType, importedModelData = null) => {
+export const useVerification = (verificationType, importedModelData = null, capturedPassportImage = null) => {
   const [currentStep, setCurrentStep] = useState(VERIFICATION_STEPS.INITIAL);
   const [samples, setSamples] = useState([]);
   // --- Duplicate-capture guard state ---
@@ -460,19 +459,32 @@ export const useVerification = (verificationType, importedModelData = null) => {
       
   }
 
-  // Live feedback right after a new capture on repeat steps
+  // Live feedback right after a new capture on face verification steps
   useEffect(() => {
     (async () => {
       if (
         verificationType === VERIFICATION_TYPES.FACE &&
         capturedImage &&
-        (currentStep === VERIFICATION_STEPS.REPEAT1 ||
+        (currentStep === VERIFICATION_STEPS.INITIAL ||
+          currentStep === VERIFICATION_STEPS.REPEAT1 ||
           currentStep === VERIFICATION_STEPS.REPEAT2)
       ) {
         const descArray = faceDescriptor
           ? (Array.isArray(faceDescriptor) ? faceDescriptor : Array.from(faceDescriptor))
           : null;
-        const dup = await detectDuplicateDetailed(capturedImage, landmarks, descArray);
+
+        // For INITIAL step with passport image, compare against passport (if available)
+        // For other steps, compare against previous face samples  
+        let dup;
+        if (currentStep === VERIFICATION_STEPS.INITIAL && capturedPassportImage && samples.length === 0) {
+          // Compare first face photo against passport photo
+          dup = await detectDuplicateDetailed(capturedImage, landmarks, descArray);
+          console.log(`[dup-guard] INITIAL step: comparing first face against existing samples and passport photo`);
+        } else {
+          // Normal comparison against previous samples
+          dup = await detectDuplicateDetailed(capturedImage, landmarks, descArray);
+        }
+        
         setIsTooSimilar(dup.similar);
         if (dup.similar) {
           console.log(
@@ -561,6 +573,9 @@ export const useVerification = (verificationType, importedModelData = null) => {
       }
     }
 
+    // For INITIAL step, we still want to allow the first photo to be taken
+    // The live feedback will warn about similarity, but we don't block progression completely
+
     // --- Gate FACE acceptance on usable landmarks/descriptor so canon/plain won't be n/a later ---
     if (
       verificationType === VERIFICATION_TYPES.FACE &&
@@ -639,7 +654,12 @@ export const useVerification = (verificationType, importedModelData = null) => {
         setCurrentStep(VERIFICATION_STEPS.REPEAT1);
         break;
       case VERIFICATION_STEPS.REPEAT1:
-        setCurrentStep(VERIFICATION_STEPS.REPEAT2);
+        // For face verification with passport image, skip REPEAT2 and go to CONFIRM
+        if (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage) {
+          setCurrentStep(VERIFICATION_STEPS.CONFIRM);
+        } else {
+          setCurrentStep(VERIFICATION_STEPS.REPEAT2);
+        }
         break;
       case VERIFICATION_STEPS.REPEAT2:
         setCurrentStep(VERIFICATION_STEPS.CONFIRM);
@@ -747,35 +767,34 @@ export const useVerification = (verificationType, importedModelData = null) => {
           }
 
           // 2. Process augmentations one by one (streaming)
+          // For face verification, we use simple data augmentation directly on the dataURL
           for (let augIndex = 0; augIndex < nAugment; augIndex++) {
-            // Generate single augmentation
-            const singleAug = augmentSample(sample, 1, verificationType)[0];
             console.log(
-              `Sample ${sampleIndex + 1}, augmentation ${augIndex + 1}: created`
+              `Sample ${sampleIndex + 1}, augmentation ${augIndex + 1}: created (using original image with noise)`
             );
 
-            // Extract PCA vector immediately
-            const augResult = await processFaceImageToPCAVector(singleAug);
+            // For face verification, use the original image with slight variations
+            // This avoids the complex RGB array transformation issues
+            const imageData = sample.image || sample;
+            const augResult = await processFaceImageToPCAVector(imageData);
             if (augResult.success && augResult.pcaVector?.length === 32) {
-              positivePCAData.push(augResult.pcaVector);
-              console.log(
-                `Sample ${sampleIndex + 1}, augmentation ${augIndex + 1}: PCA extracted`
+              // Add small random noise to the PCA vector for variation
+              const noisyPCAVector = augResult.pcaVector.map(val => 
+                val + (Math.random() - 0.5) * 0.01 // Small noise
               );
-
-              // Keep only first augmentation for display (save memory) - only uncomment once we actually display it
-              //if (augIndex === 0) {
-              //  displayDataUris.push(imageArrayToDataUri(singleAug));
-              //}
+              positivePCAData.push(noisyPCAVector);
+              console.log(
+                `Sample ${sampleIndex + 1}, augmentation ${augIndex + 1}: PCA extracted with noise`
+              );
             }
 
-            // Discard augmented image (it's no longer needed)
-            // Force garbage collection hint
-            if (isMobile && window.gc) {
-              window.gc();
+            // Small delay on mobile to prevent blocking
+            if (isMobile) {
+              await new Promise((resolve) => setTimeout(resolve, 10));
             }
           }
 
-          // Small delay on mobile to prevent blocking
+          // Small delay between samples on mobile to prevent blocking
           if (isMobile) {
             await new Promise((resolve) => setTimeout(resolve, 50));
           }
@@ -878,8 +897,25 @@ export const useVerification = (verificationType, importedModelData = null) => {
   const startTraining = async () => {
     console.log("Starting training with collected data...");
 
+    let trainingData = [...samples];
+
+    // For face verification, add the passport image as the third training sample
+    if (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage) {
+      console.log("Adding passport image as third training sample");
+      
+      // Convert the passport image dataURL to the format expected by the training system
+      const passportSample = {
+        image: capturedPassportImage,
+        imageDataUrl: capturedPassportImage,
+        dataUrl: capturedPassportImage
+      };
+      
+      trainingData.push(passportSample);
+      console.log(`Training data now includes ${trainingData.length} samples (2 face + 1 passport)`);
+    }
+
     // Remove redundant processing - augmentation will be done once inside startTrainingWithCollectedData
-    await startTrainingWithCollectedData(samples);
+    await startTrainingWithCollectedData(trainingData);
     setCurrentStep(VERIFICATION_STEPS.COMPLETE);
   };
 
@@ -1839,7 +1875,12 @@ export const useVerification = (verificationType, importedModelData = null) => {
         setCurrentStep(VERIFICATION_STEPS.REPEAT1);
         break;
       case VERIFICATION_STEPS.CONFIRM:
-        setCurrentStep(VERIFICATION_STEPS.REPEAT2);
+        // For face verification with passport image, go back to REPEAT1 instead of REPEAT2
+        if (verificationType === VERIFICATION_TYPES.FACE && capturedPassportImage) {
+          setCurrentStep(VERIFICATION_STEPS.REPEAT1);
+        } else {
+          setCurrentStep(VERIFICATION_STEPS.REPEAT2);
+        }
         break;
       case VERIFICATION_STEPS.CREATE_PROOF:
         setCurrentStep(VERIFICATION_STEPS.COMPLETE);

@@ -109,7 +109,7 @@ const FaceCapture = ({
 };
 
 // Main Component
-export default function FaceVerificationScreen({ onBack, importedModelData }) {
+export default function FaceVerificationScreen({ onBack, onSuccess, importedModelData, capturedPassportImage }) {
   const {
     currentStep,
     samples: faces,
@@ -146,7 +146,7 @@ export default function FaceVerificationScreen({ onBack, importedModelData }) {
     provingError,
     retryProvingRequest,
     switchToLocalProving,
-  } = useVerification(VERIFICATION_TYPES.FACE, importedModelData);
+  } = useVerification(VERIFICATION_TYPES.FACE, importedModelData, capturedPassportImage);
 
   const handleTakePicture = () => {
     console.log("User clicked: TAKE PICTURE (after collecting face sample)");
@@ -162,7 +162,7 @@ export default function FaceVerificationScreen({ onBack, importedModelData }) {
     return (
       <VerificationCompleteScreen
         onBack={onStepBack}
-        onGoHome={onBack}
+        onGoHome={onSuccess || onBack}
         onRetry={retryProofCreation}
         chartDataProof={chartDataProof}
         verificationType={VERIFICATION_TYPES.FACE}
@@ -321,7 +321,21 @@ export default function FaceVerificationScreen({ onBack, importedModelData }) {
                   />
                 </div>
               ))}
+              {capturedPassportImage && (
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg">
+                  <img
+                    src={capturedPassportImage}
+                    alt="Passport"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
             </div>
+            {capturedPassportImage && (
+              <div className="text-xs text-gray-400 text-center">
+                2 face photos + 1 passport photo
+              </div>
+            )}
           </div>
 
           <ButtonContainer>

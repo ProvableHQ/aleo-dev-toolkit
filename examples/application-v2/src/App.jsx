@@ -73,7 +73,16 @@ export default function App() {
   const handleKycSuccess = () => {
     setIsTransitioning(true);
     setTimeout(() => {
+      setCurrentScreen("face-verification");
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  const handleKyaSuccess = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
       setCurrentScreen("main");
+      setCapturedPassportImage(null); // Clear passport image
       setIsTransitioning(false);
     }, 300);
   };
@@ -98,7 +107,9 @@ export default function App() {
         {currentScreen === "face-verification" && (
           <FaceVerificationScreen
             onBack={handleBack}
+            onSuccess={handleKyaSuccess}
             importedModelData={importedModelData}
+            capturedPassportImage={capturedPassportImage}
           />
         )}
         {currentScreen === "passport-verification" && (
