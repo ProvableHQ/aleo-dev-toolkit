@@ -13,6 +13,7 @@ import {
   CreatingAuthorizationScreen,
   GeneratingProofScreen,
   ProofGeneratedScreen,
+  ComputingHashesScreen,
   SamplePreview,
   ButtonContainer,
   SamplesPreview,
@@ -146,6 +147,9 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     provingError,
     retryProvingRequest,
     switchToLocalProving,
+    handleContinueFromHash,
+    computedHash,
+    isComputingHash,
   } = useVerification(VERIFICATION_TYPES.FACE, importedModelData, capturedPassportImage);
 
   const handleTakePicture = () => {
@@ -270,6 +274,19 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
           </ButtonContainer>
         </div>
       </ScreenLayout>
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.COMPUTING_HASHES) {
+    console.log("🧪 Rendering ComputingHashesScreen with:", { currentStep, computedHash, isComputingHash });
+    return (
+      <ComputingHashesScreen
+        onBack={onStepBack}
+        verificationType={VERIFICATION_TYPES.FACE}
+        computedHash={computedHash}
+        isComputing={isComputingHash}
+        onContinue={handleContinueFromHash}
+      />
     );
   }
 

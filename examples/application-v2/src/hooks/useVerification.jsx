@@ -35,7 +35,7 @@ import {
 } from "../components/signature/signature-utils.jsx";
 import { useGenericCapture } from "./useGenericCapture.jsx";
 import { exportIdentityParameters } from "../utils/exportUtils.js";
-import { runAleoHashPerformanceTest } from "../utils/aleoHashTest.js";
+import { runAleoHashPerformanceTest, bhp1024HashToFieldOfI64 } from "../utils/aleoHashTest.js";
 
 // Import enhanced utilities to eliminate code duplication
 import { processFaceImageToPCAVector } from "../utils/faceUtils.js";
@@ -60,6 +60,7 @@ export const VERIFICATION_STEPS = {
   CONFIRM: "confirm",
   VERIFYING: "verifying",
   COMPLETE: "complete",
+  COMPUTING_HASHES: "computing-hashes",
   CREATE_PROOF: "create-proof",
   CREATING_AUTHORIZATION: "creating-authorization",
   GENERATING_PROOF: "generating-proof",
@@ -113,6 +114,7 @@ export const STEP_CONFIGS = {
       [VERIFICATION_STEPS.REPEAT1]: "Repeat Face",
       [VERIFICATION_STEPS.REPEAT2]: "Repeat Face",
       [VERIFICATION_STEPS.CONFIRM]: "Confirm Face",
+      [VERIFICATION_STEPS.COMPUTING_HASHES]: "Computing model hashes",
       [VERIFICATION_STEPS.CREATE_PROOF]: "Create a Proof",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "Creating Authorization...",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "Generating Proof...",
@@ -129,6 +131,7 @@ export const STEP_CONFIGS = {
         "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE A FINAL TIME. PRESS BACK TO EDIT YOUR ORIGINAL.",
       [VERIFICATION_STEPS.CONFIRM]:
         "IS THE BELOW CORRECT TO TRAIN THE VERIFICATION MODEL? PASSPORT PHOTO (SAMPLE 1) + 2 FACE PHOTOS (SAMPLES 2&3).",
+      [VERIFICATION_STEPS.COMPUTING_HASHES]: "COMPUTING MODEL HASH USING ALEO BHP1024...",
       [VERIFICATION_STEPS.CREATE_PROOF]: "VERIFY YOUR FACE TO CONTINUE",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "CREATING PROOF AUTHORIZATION",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "FACE VERIFICATION",
@@ -179,6 +182,10 @@ export const useVerification = (verificationType, importedModelData = null, capt
   ]);
   const [provingError, setProvingError] = useState(null);
   const [lastProcessedFeatures, setLastProcessedFeatures] = useState(null);
+  
+  // Hash computation state
+  const [computedHash, setComputedHash] = useState(null);
+  const [isComputingHash, setIsComputingHash] = useState(false);
 
   // Handle imported model data
   useEffect(() => {
@@ -971,13 +978,49 @@ export const useVerification = (verificationType, importedModelData = null, capt
     setCurrentStep(VERIFICATION_STEPS.COMPLETE);
   };
 
+  // Compute model hash using Aleo BHP1024
+  const computeModelHash = async () => {
+    try {
+      setIsComputingHash(true);
+      console.log("🔗 Computing model hash using BHP1024...");
+      
+      // Compute hash of 0i64 as requested
+      const hashResult = await bhp1024HashToFieldOfI64(0);
+      
+      if (hashResult.success) {
+        setComputedHash(hashResult.result);
+        console.log("✅ Model hash computed:", hashResult.result);
+      } else {
+        console.error("❌ Failed to compute model hash:", hashResult.error);
+        setComputedHash("Error computing hash");
+      }
+    } catch (error) {
+      console.error("❌ Error in computeModelHash:", error);
+      setComputedHash("Error computing hash");
+    } finally {
+      setIsComputingHash(false);
+    }
+  };
+
+  // Handle continue from hash computation screen
+  const handleContinueFromHash = () => {
+    setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
+  };
+
   const handleConfirm = () => {
     setCurrentStep(VERIFICATION_STEPS.VERIFYING);
     startTraining();
   };
 
   const handleContinueToProof = () => {
-    setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
+    // For face verification, go to hash computation first, then to proof creation
+    if (verificationType === VERIFICATION_TYPES.FACE) {
+      setCurrentStep(VERIFICATION_STEPS.COMPUTING_HASHES);
+      // Start computing the hash automatically
+      computeModelHash();
+    } else {
+      setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
+    }
   };
 
   const getProgressDots = () => {
@@ -2131,6 +2174,10 @@ export const useVerification = (verificationType, importedModelData = null, capt
     handleContinue,
     handleConfirm,
     handleContinueToProof,
+    handleContinueFromHash,
+    computedHash,
+    isComputingHash,
+    computeModelHash,
     getProgressDots,
     setCurrentStep,
     onStepBack,

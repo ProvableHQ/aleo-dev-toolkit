@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Home, RefreshCw } from "lucide-react";
+import { Check, Home, RefreshCw, Hash } from "lucide-react";
 import { useMemo } from "react";
 import {
   ActionButton,
@@ -700,6 +700,97 @@ export const ProofGeneratedScreen = ({
         </ButtonContainer>
       </div>
     </div>
+  );
+};
+
+export const ComputingHashesScreen = ({ 
+  onBack,
+  verificationType, 
+  computedHash, 
+  isComputing, 
+  onContinue 
+}) => {
+  console.log("🖥️ ComputingHashesScreen rendering:", { verificationType, computedHash, isComputing });
+  console.log("🖥️ ComputingHashesScreen props:", { onBack: !!onBack, onContinue: !!onContinue });
+  
+  const stepConfig = {
+    signature: {
+      title: "Computing Signature Hash",
+      icon: <FingerprintIcon className="self-center" width={20} height={20} />,
+    },
+    face: {
+      title: "Computing Face Hash", 
+      icon: <FaceIcon className="self-center" width={20} height={20} />,
+    },
+  };
+
+  const config = stepConfig[verificationType];
+  console.log("🔧 Config:", config);
+
+  return (
+    <ScreenLayout onBack={onBack} title="Computing model hashes">
+      <div className="mx-auto flex h-full w-[360px] max-w-md flex-1 flex-col items-center justify-between text-center">
+        <div className="mb-8 w-full max-w-md rounded-2xl bg-white bg-opacity-5 p-6">
+          <div className="flex flex-col items-center gap-5">
+            <div className="flex w-full flex-row items-center justify-center gap-3">
+              <Hash className="h-6 w-6 text-white" />
+              <span className="text-white text-lg font-bold">
+                Computing Model Hash
+              </span>
+            </div>
+
+            {isComputing ? (
+              <div className="flex w-full flex-col items-center justify-center gap-4">
+                <div className="animate-spin">
+                  <Hash className="h-12 w-12 text-white opacity-60" />
+                </div>
+                <span className="text-sm text-white opacity-70">
+                  Computing BHP1024 hash of 0i64...
+                </span>
+              </div>
+            ) : computedHash ? (
+              <div className="flex w-full flex-col gap-3">
+                <div className="text-sm text-white opacity-70">
+                  Model Hash (BHP1024)
+                </div>
+                <div className="break-all rounded-lg bg-black bg-opacity-20 p-4 font-mono text-sm text-white">
+                  {computedHash}
+                </div>
+                <CopyButton 
+                  value={computedHash}
+                  className="text-sm"
+                >
+                  Copy Hash
+                </CopyButton>
+              </div>
+            ) : (
+              <div className="text-sm text-white opacity-70">
+                Ready to compute hash...
+              </div>
+            )}
+          </div>
+        </div>
+
+        {!isComputing && computedHash && (
+          <div className="mb-5 flex flex-col items-center justify-center gap-4">
+            <ActionButton onClick={onContinue} variant="primary">
+              Continue
+            </ActionButton>
+          </div>
+        )}
+
+        <div
+          style={{
+            backgroundImage: `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(appVersionFooter)}")`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            width: "337px",
+            height: "102px",
+            margin: "0 auto",
+          }}
+        />
+      </div>
+    </ScreenLayout>
   );
 };
 
