@@ -8,6 +8,7 @@ import faceLogo from "../assets/face.svg";
 import { importIdentityParameters } from "../utils/exportUtils.js";
 import { useState, useRef, useEffect } from "react";
 import WalletConnector from "./WalletConnector.jsx";
+import { runAleoHashPerformanceTest } from "../utils/aleoHashTest.js";
 
 export default function MainScreen({
   onVerificationChoice,
@@ -174,8 +175,20 @@ export default function MainScreen({
               />
             </div>
           </div>
-          {/* Options Button - Fixed at bottom center */}
-          <div className="pb-5 sm:pb-15">
+          {/* Test Buttons - Fixed at bottom center */}
+          <div className="pb-5 sm:pb-15 flex flex-col items-center space-y-3">
+            <Button
+              onClick={() => {
+                console.log("🧪 Manual Aleo SDK test triggered");
+                runAleoHashPerformanceTest().catch(error => {
+                  console.error("Aleo SDK test failed:", error);
+                });
+              }}
+              size="sm"
+              className="h-8 px-4 rounded-full border border-blue-600 bg-blue-600 text-white shadow-lg hover:bg-blue-700 text-xs"
+            >
+              Test Aleo SDK
+            </Button>
             <Button
               onClick={onOptionsClick}
               size="icon"

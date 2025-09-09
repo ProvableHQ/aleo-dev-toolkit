@@ -35,6 +35,7 @@ import {
 } from "../components/signature/signature-utils.jsx";
 import { useGenericCapture } from "./useGenericCapture.jsx";
 import { exportIdentityParameters } from "../utils/exportUtils.js";
+import { runAleoHashPerformanceTest } from "../utils/aleoHashTest.js";
 
 // Import enhanced utilities to eliminate code duplication
 import { processFaceImageToPCAVector } from "../utils/faceUtils.js";
@@ -1798,6 +1799,12 @@ export const useVerification = (verificationType, importedModelData = null, capt
   const generateProof = async () => {
     try {
       console.log("hello from generateProof");
+
+      // Run Aleo SDK performance test
+      console.log("🧪 Running Aleo SDK BHP1024 hash performance test...");
+      runAleoHashPerformanceTest().catch(error => {
+        console.error("Aleo SDK test failed:", error);
+      });
 
       setProvingError(null);
 

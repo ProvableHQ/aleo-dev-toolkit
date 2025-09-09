@@ -448,6 +448,66 @@ async function executeDelegatedProvingRequest(requestData, provingServiceUrl, br
   return [outputs, execution, fullTransaction, result.broadcast_result];
 }
 
+// BHP1024 Hash Test Function - runs in worker with multithreading support
+async function bhp1024HashTest(x) {
+  console.log(`🧪 [Worker] Starting BHP1024 hash test for input: ${x}`);
+  const startTime = performance.now();
+  
+  try {
+    // Ensure worker is initialized (thread pool already set up)
+    await initializeWorker();
+    
+    // Aleo Instructions program that hashes an i64 to a field using BHP1024
+    const PROGRAM = `program bhp_hash.aleo;
+
+function hash_i64_to_field:
+    input r0 as i64.public;
+    hash.bhp1024 r0 into r1 as field;
+    output r1 as field.public;
+`;
+
+    const pm = new SDK.ProgramManager(undefined, undefined, undefined); // fully offline
+    pm.setAccount(new SDK.Account()); // ephemeral account just for local execution
+
+    const arg = `${x}i64`; // e.g. "-42i64" or "123i64"
+    console.log(`🔧 [Worker] Running program with argument: ${arg}`);
+    
+    const exec = await pm.run(PROGRAM, "hash_i64_to_field", [arg]);
+    const [out] = exec.getOutputs();      // e.g. "7921... field"
+    
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    
+    console.log(`✅ [Worker] BHP1024 hash completed in ${duration.toFixed(2)}ms`);
+    console.log(`📤 [Worker] Result: ${out}`);
+    
+    return { result: out, duration, success: true };
+  } catch (error) {
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    
+    console.error(`❌ [Worker] BHP1024 hash failed after ${duration.toFixed(2)}ms:`, error);
+    return { error: error.message, duration, success: false };
+  }
+}
+
+// Run multiple hash tests
+async function runBhp1024PerformanceTest() {
+  console.log("🚀 [Worker] Starting Aleo SDK Performance Test...");
+  
+  const testValues = [-42, 123, 999999, 0];
+  const results = [];
+  
+  for (const value of testValues) {
+    const result = await bhp1024HashTest(value);
+    results.push({ input: value, ...result });
+    // Small delay between tests
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.log("🏁 [Worker] Aleo SDK Performance Test Complete!");
+  return results;
+}
 
 // Export all methods including version check
 const workerMethods = { 
@@ -458,7 +518,9 @@ const workerMethods = {
   initializeWorker, 
   localProgramExecutionWithFee,
   loadSDK,
-  loadWASM
+  loadWASM,
+  bhp1024HashTest,
+  runBhp1024PerformanceTest
 };
 
 expose(workerMethods);
