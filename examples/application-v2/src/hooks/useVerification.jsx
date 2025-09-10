@@ -35,7 +35,7 @@ import {
 } from "../components/signature/signature-utils.jsx";
 import { useGenericCapture } from "./useGenericCapture.jsx";
 import { exportIdentityParameters } from "../utils/exportUtils.js";
-import { runAleoHashPerformanceTest, bhp1024HashToFieldOfI64 } from "../utils/aleoHashTest.js";
+import { runAleoHashPerformanceTest, bhp1024HashToFieldOfI64, mlpFaceHashTest } from "../utils/aleoHashTest.js";
 import { computeCompleteModelHash, analyzeModelStructure } from "../utils/modelHashUtils.js";
 
 // Import enhanced utilities to eliminate code duplication
@@ -187,6 +187,8 @@ export const useVerification = (verificationType, importedModelData = null, capt
   // Hash computation state
   const [computedHash, setComputedHash] = useState(null);
   const [isComputingHash, setIsComputingHash] = useState(false);
+  const [mlpInferenceResult, setMlpInferenceResult] = useState(null);
+  const [isComputingInference, setIsComputingInference] = useState(false);
 
   // Handle imported model data
   useEffect(() => {
@@ -1041,6 +1043,112 @@ export const useVerification = (verificationType, importedModelData = null, capt
     }
   };
 
+  // Compute MLP face hash inference using sklearn_mlp_face_hash_3.aleo
+  const computeMlpFaceHashInference = async () => {
+    try {
+      setIsComputingInference(true);
+      console.log("🧠 Computing MLP face hash inference using sklearn_mlp_face_hash_3.aleo...");
+      
+      // Check if we have a trained model and face data
+      if (!trainedModel) {
+        console.warn("⚠️ No trained model available for MLP inference");
+        setMlpInferenceResult("No trained model available");
+        return;
+      }
+
+      // Get face features from the passport image or captured images
+      let faceFeatures = null;
+      let imageSource = null;
+
+      // Try passport image first
+      if (capturedPassportImage) {
+        console.log("🖼️ Using passport image for face features...");
+        imageSource = capturedPassportImage;
+        const passportResult = await processFaceImageToPCAVector(capturedPassportImage);
+        if (passportResult.success && passportResult.pcaVector?.length === 32) {
+          faceFeatures = passportResult.pcaVector;
+          console.log("✅ Passport face features extracted:", faceFeatures.slice(0, 5), "...");
+        }
+      }
+
+      // If no passport features, try the latest captured image
+      if (!faceFeatures && capturedImage) {
+        console.log("🖼️ Using captured image for face features...");
+        imageSource = capturedImage;
+        const capturedResult = await processFaceImageToPCAVector(capturedImage);
+        if (capturedResult.success && capturedResult.pcaVector?.length === 32) {
+          faceFeatures = capturedResult.pcaVector;
+          console.log("✅ Captured image face features extracted:", faceFeatures.slice(0, 5), "...");
+        }
+      }
+
+      // If no face features available, try using the faceDescriptor directly
+      if (!faceFeatures && faceDescriptor) {
+        console.log("🖼️ Using stored face descriptor...");
+        const descriptorArray = Array.isArray(faceDescriptor) ? faceDescriptor : Array.from(faceDescriptor);
+        const descriptorResult = await processFaceImageToPCAVector(descriptorArray);
+        if (descriptorResult.success && descriptorResult.pcaVector?.length === 32) {
+          faceFeatures = descriptorResult.pcaVector;
+          console.log("✅ Face descriptor features extracted:", faceFeatures.slice(0, 5), "...");
+        }
+      }
+
+      if (!faceFeatures) {
+        console.warn("⚠️ No face features available for MLP inference");
+        setMlpInferenceResult("No face features available");
+        return;
+      }
+
+      // Normalize features using model scaler if available
+      let normalizedFeatures = faceFeatures;
+      if (modelScaler && modelScaler.transform) {
+        try {
+          const normalizedArray = modelScaler.transform([faceFeatures]);
+          normalizedFeatures = Array.isArray(normalizedArray) ? normalizedArray[0] : normalizedArray;
+          console.log("✅ Features normalized using model scaler");
+        } catch (scalerError) {
+          console.warn("⚠️ Scaler transform failed, using raw features:", scalerError);
+          normalizedFeatures = faceFeatures;
+        }
+      }
+
+      // Convert to fixed point for Aleo
+      const fixedPointFeatures = toFixedPoint(normalizedFeatures);
+      console.log("✅ Features converted to fixed point:", fixedPointFeatures.slice(0, 5), "...");
+
+      // Prepare Aleo input using the trained model (same as in Aleo execution)
+      const aleoInputArray = await prepareAleoInput(fixedPointFeatures);
+      if (!aleoInputArray) {
+        console.error("❌ Failed to prepare Aleo input for MLP inference");
+        setMlpInferenceResult("Failed to prepare Aleo input");
+        return;
+      }
+
+      console.log("✅ Aleo input prepared, calling mlpFaceHashTest...");
+      console.log("📊 Input array length:", aleoInputArray.length);
+
+      // Call the MLP face hash test function
+      const inferenceResult = await mlpFaceHashTest(aleoInputArray);
+
+      if (inferenceResult.success) {
+        setMlpInferenceResult(inferenceResult.result);
+        console.log("✅ MLP face hash inference completed successfully!");
+        console.log(`📊 Results:`, inferenceResult.result);
+        console.log(`⏱️ Duration: ${inferenceResult.duration}ms`);
+        console.log(`⏱️ Total Duration: ${inferenceResult.totalDuration}ms`);
+      } else {
+        console.error("❌ MLP face hash inference failed:", inferenceResult.error);
+        setMlpInferenceResult(`Error: ${inferenceResult.error}`);
+      }
+      
+    } catch (error) {
+      console.error("❌ Error in computeMlpFaceHashInference:", error);
+      setMlpInferenceResult(`Error: ${error.message}`);
+    } finally {
+      setIsComputingInference(false);
+    }
+  };
+
   // Handle continue from hash computation screen
   const handleContinueFromHash = () => {
     setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
@@ -1055,8 +1163,9 @@ export const useVerification = (verificationType, importedModelData = null, capt
     // For face verification, go to hash computation first, then to proof creation
     if (verificationType === VERIFICATION_TYPES.FACE) {
       setCurrentStep(VERIFICATION_STEPS.COMPUTING_HASHES);
-      // Start computing the hash automatically
+      // Start computing both the model hash and MLP face hash inference
       computeModelHash();
+      computeMlpFaceHashInference();
     } else {
       setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
     }
@@ -2217,6 +2326,9 @@ export const useVerification = (verificationType, importedModelData = null, capt
     computedHash,
     isComputingHash,
     computeModelHash,
+    mlpInferenceResult,
+    isComputingInference,
+    computeMlpFaceHashInference,
     getProgressDots,
     setCurrentStep,
     onStepBack,

@@ -525,6 +525,42 @@ function hash_i64_to_field:
   }
 }
 
+// MLP Face Hash Test Function - computes the full main function of sklearn_mlp_face_hash_3.aleo
+async function mlpFaceHashTest(inputs) {
+  console.log(`🧪 [Worker] Starting MLP Face Hash test for inputs:`, inputs);
+  const startTime = performance.now();
+
+  try {
+    // Ensure worker is initialized (thread pool already set up)
+    await initializeWorker();
+
+    // Import the MLP face program from variables.js
+    const { mlp_face_program_hash_only } = await import('../variables.js');
+    
+    const pm = new SDK.ProgramManager(undefined, undefined, undefined); // fully offline
+    pm.setAccount(new SDK.Account()); // ephemeral account just for local execution
+
+    console.log(`🔧 [Worker] Running MLP face program with inputs:`, inputs);
+
+    const exec = await pm.run(mlp_face_program_hash_only, 'main', inputs);
+    const outputs = exec.getOutputs(); // Get all outputs
+
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+
+    console.log(`✅ [Worker] MLP Face Hash completed in ${duration.toFixed(2)}ms`);
+    console.log(`📤 [Worker] Results:`, outputs);
+
+    return { result: outputs, duration, success: true };
+  } catch (error) {
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+
+    console.error(`❌ [Worker] MLP Face Hash failed after ${duration.toFixed(2)}ms:`, error);
+    return { error: error.message, duration, success: false };
+  }
+}
+
 // Run multiple hash tests
 async function runBhp1024PerformanceTest() {
   console.log('🚀 [Worker] Starting Aleo SDK Performance Test...');
@@ -554,6 +590,7 @@ const workerMethods = {
   loadSDK,
   loadWASM,
   bhp1024HashTest,
+  mlpFaceHashTest,
   runBhp1024PerformanceTest,
 };
 

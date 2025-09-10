@@ -32,6 +32,38 @@ export async function bhp1024HashToFieldOfI64(x) {
   }
 }
 
+export async function mlpFaceHashTest(inputs) {
+  console.log(`🧪 Starting MLP Face Hash test for inputs: ${inputs.length} items (via AleoWorker)`);
+  const startTime = performance.now();
+
+  try {
+    // Get the worker instance and ensure it's initialized
+    const worker = AleoWorker();
+    await getWorkerInitialization();
+
+    console.log(`🔧 Sending MLP face hash request to worker`);
+
+    // Call the worker method
+    const result = await worker.mlpFaceHashTest(inputs);
+
+    const endTime = performance.now();
+    const totalDuration = endTime - startTime;
+
+    console.log(
+      `✅ MLP Face Hash via worker completed in ${totalDuration.toFixed(2)}ms (worker: ${result.duration?.toFixed(2)}ms)`,
+    );
+    console.log(`📤 Results:`, result.result);
+
+    return { ...result, totalDuration };
+  } catch (error) {
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+
+    console.error(`❌ MLP Face Hash via worker failed after ${duration.toFixed(2)}ms:`, error);
+    return { error: error.message, duration, success: false };
+  }
+}
+
 // Test function that can be called from anywhere
 export async function runAleoHashPerformanceTest() {
   console.log('🚀 Starting Aleo SDK Performance Test (via AleoWorker)...');
