@@ -36,6 +36,7 @@ import {
 import { useGenericCapture } from "./useGenericCapture.jsx";
 import { exportIdentityParameters } from "../utils/exportUtils.js";
 import { runAleoHashPerformanceTest, bhp1024HashToFieldOfI64 } from "../utils/aleoHashTest.js";
+import { computeCompleteModelHash, analyzeModelStructure } from "../utils/modelHashUtils.js";
 
 // Import enhanced utilities to eliminate code duplication
 import { processFaceImageToPCAVector } from "../utils/faceUtils.js";
@@ -131,7 +132,7 @@ export const STEP_CONFIGS = {
         "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE A FINAL TIME. PRESS BACK TO EDIT YOUR ORIGINAL.",
       [VERIFICATION_STEPS.CONFIRM]:
         "IS THE BELOW CORRECT TO TRAIN THE VERIFICATION MODEL? PASSPORT PHOTO (SAMPLE 1) + 2 FACE PHOTOS (SAMPLES 2&3).",
-      [VERIFICATION_STEPS.COMPUTING_HASHES]: "COMPUTING MODEL HASH USING ALEO BHP1024...",
+      [VERIFICATION_STEPS.COMPUTING_HASHES]: "COMPUTING TRAINED MODEL PARAMETERS HASH USING ALEO BHP1024...",
       [VERIFICATION_STEPS.CREATE_PROOF]: "VERIFY YOUR FACE TO CONTINUE",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "CREATING PROOF AUTHORIZATION",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "FACE VERIFICATION",
@@ -978,25 +979,63 @@ export const useVerification = (verificationType, importedModelData = null, capt
     setCurrentStep(VERIFICATION_STEPS.COMPLETE);
   };
 
-  // Compute model hash using Aleo BHP1024
+  // Compute model hash using Aleo BHP1024 from trained model parameters
   const computeModelHash = async () => {
     try {
       setIsComputingHash(true);
-      console.log("🔗 Computing model hash using BHP1024...");
+      console.log("🔗 Computing model hash using trained ML model parameters...");
       
-      // Compute hash of 0i64 as requested
-      const hashResult = await bhp1024HashToFieldOfI64(0);
+      // Check if we have a trained model
+      if (!trainedModel) {
+        console.warn("⚠️ No trained model available, using fallback hash");
+        const fallbackResult = await bhp1024HashToFieldOfI64(0);
+        if (fallbackResult.success) {
+          setComputedHash(fallbackResult.result);
+          console.log("✅ Fallback model hash computed:", fallbackResult.result);
+        } else {
+          throw new Error("Failed to compute fallback hash");
+        }
+        return;
+      }
+      
+      // Analyze model structure for debugging
+      console.log("🔍 Analyzing trained model structure...");
+      const modelStructure = await analyzeModelStructure(trainedModel);
+      console.log("📊 Model structure:", modelStructure);
+      
+      // Compute hash from actual model parameters
+      console.log("⚙️ Extracting key parameters and computing hash...");
+      const hashResult = await computeCompleteModelHash(trainedModel);
       
       if (hashResult.success) {
-        setComputedHash(hashResult.result);
-        console.log("✅ Model hash computed:", hashResult.result);
+        setComputedHash(hashResult.modelHash);
+        console.log("✅ Model parameters hash computed successfully!");
+        console.log(`📊 Hash: ${hashResult.modelHash}`);
+        console.log(`📊 Parameters used: ${hashResult.parameterCount}`);
+        console.log(`📊 Combined value: ${hashResult.combinedValue}`);
+        console.log(`⏱️ Duration: ${hashResult.duration}ms`);
       } else {
-        console.error("❌ Failed to compute model hash:", hashResult.error);
-        setComputedHash("Error computing hash");
+        console.error("❌ Failed to compute model parameters hash:", hashResult.error);
+        setComputedHash("Error computing model hash");
       }
+      
     } catch (error) {
       console.error("❌ Error in computeModelHash:", error);
-      setComputedHash("Error computing hash");
+      
+      // Fallback to simple hash if model hash fails
+      console.log("🔄 Attempting fallback hash computation...");
+      try {
+        const fallbackResult = await bhp1024HashToFieldOfI64(0);
+        if (fallbackResult.success) {
+          setComputedHash(`${fallbackResult.result} (fallback)`);
+          console.log("✅ Fallback hash computed:", fallbackResult.result);
+        } else {
+          setComputedHash("Error computing hash");
+        }
+      } catch (fallbackError) {
+        console.error("❌ Fallback hash also failed:", fallbackError);
+        setComputedHash("Error computing hash");
+      }
     } finally {
       setIsComputingHash(false);
     }

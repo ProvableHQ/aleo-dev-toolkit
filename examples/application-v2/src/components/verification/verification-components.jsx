@@ -745,7 +745,7 @@ export const ComputingHashesScreen = ({
                   <Hash className="h-12 w-12 text-white opacity-60" />
                 </div>
                 <span className="text-sm text-white opacity-70">
-                  Computing BHP1024 hash of 0i64...
+                  Computing BHP1024 hash of trained model parameters...
                 </span>
               </div>
             ) : computedHash ? (
