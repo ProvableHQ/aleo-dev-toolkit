@@ -79,7 +79,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-standard
       '@provablehq/sdk':
-        specifier: ^0.9.3
+        specifier: ^0.9.7
         version: 0.9.7
       '@radix-ui/react-label':
         specifier: ^2.1.7
