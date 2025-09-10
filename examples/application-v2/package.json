@@ -24,7 +24,7 @@
     "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-react-ui": "workspace:*",
     "@provablehq/aleo-wallet-standard": "workspace:*",
-    "@provablehq/sdk": "^0.9.3",
+    "@provablehq/sdk": "^0.9.7",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
