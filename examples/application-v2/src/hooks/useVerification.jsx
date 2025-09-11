@@ -1131,9 +1131,16 @@ export const useVerification = (verificationType, importedModelData = null, capt
       const inferenceResult = await mlpFaceHashTest(aleoInputArray);
 
       if (inferenceResult.success) {
-        setMlpInferenceResult(inferenceResult.result);
+        // Extract only the field value (hash) from the result array
+        const resultArray = inferenceResult.result;
+        const hashField = Array.isArray(resultArray) && resultArray.length >= 3 
+          ? resultArray[2] // The field value is typically the 3rd element
+          : resultArray;
+        
+        setMlpInferenceResult(hashField);
         console.log("✅ MLP face hash inference completed successfully!");
         console.log(`📊 Results:`, inferenceResult.result);
+        console.log(`📊 Hash Field:`, hashField);
         console.log(`⏱️ Duration: ${inferenceResult.duration}ms`);
         console.log(`⏱️ Total Duration: ${inferenceResult.totalDuration}ms`);
       } else {
@@ -1985,6 +1992,57 @@ export const useVerification = (verificationType, importedModelData = null, capt
     setProgressInterval(interval);
   };
 
+  // Fixed generateProof function
+  const generateProof = async () => {
+    try {
+      console.log("hello from generateProof");
+
+      setProvingError(null);
+
+      if (!trainedModel) {
+        alert("Please train a model first before using verification mode");
+        return;
+      }
+
+      setProofRunCount((prev) => prev + 1);
+      const runs = proof_run_count;
+
+      // Set expected runtime based on verification type
+      let expected_runtime;
+      if (isDelegatedProving) {
+        if (verificationType === VERIFICATION_TYPES.FACE) {
+          expected_runtime = 18;
+        } else {
+          expected_runtime = 13;
+        }
+      } else if (verificationType === VERIFICATION_TYPES.SIGNATURE) {
+        expected_runtime = runs == 0 ? 180 : 120;
+      } else if (runs == 0) {
+        expected_runtime = 180;
+      } else if (runs > 0) {
+        expected_runtime = 130;
+      }
+      setExpectedRuntime(expected_runtime);
+
+      // For face verification, reuse the captured image data instead of re-processing webcam
+      if (verificationType === VERIFICATION_TYPES.FACE) {
+        // Get the same image that was used for TensorFlow inference
+        if (capturedImage) {
+          setProofSample(capturedImage);
+          processStoredImageForAleo(capturedImage);
+        } else {
+          console.error("No captured image available for proof generation");
+          return;
+        }
+      } else {
+        // For signature, continue with existing flow
+        processImageAndPredict(false);
+      }
+    } catch (error) {
+      console.error("Failed to execute Aleo code:", error);
+    }
+  };
+
   // Simplified using enhanced utilities
   const processStoredImageForAleo = async (imageDataUrl, forceLocalProving = false) => {
     try {
@@ -2267,13 +2325,14 @@ export const useVerification = (verificationType, importedModelData = null, capt
     handleContinueFromHash,
     computedHash: mlpInferenceResult,
     isComputingHash: isComputingInference,
-    computeModelHash: computeMlpFaceHashInference,
+    computeModelHash,
     mlpInferenceResult,
     isComputingInference,
     computeMlpFaceHashInference,
     getProgressDots,
     setCurrentStep,
     onStepBack,
+    generateProof,
     resetVerification,
     downloadTrainedModel,
     retryProofCreation,
