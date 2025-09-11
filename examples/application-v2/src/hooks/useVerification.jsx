@@ -1986,63 +1986,6 @@ export const useVerification = (verificationType, importedModelData = null, capt
     setProgressInterval(interval);
   };
 
-  // Fixed generateProof function
-  const generateProof = async () => {
-    try {
-      console.log("hello from generateProof");
-
-      // Run Aleo SDK performance test
-      console.log("🧪 Running Aleo SDK BHP1024 hash performance test...");
-      runAleoHashPerformanceTest().catch(error => {
-        console.error("Aleo SDK test failed:", error);
-      });
-
-      setProvingError(null);
-
-      if (!trainedModel) {
-        alert("Please train a model first before using verification mode");
-        return;
-      }
-
-      setProofRunCount((prev) => prev + 1);
-      const runs = proof_run_count;
-
-      // Set expected runtime based on verification type
-      let expected_runtime;
-      if (isDelegatedProving) {
-        if (verificationType === VERIFICATION_TYPES.FACE) {
-          expected_runtime = 18;
-        } else {
-          expected_runtime = 13;
-        }
-      } else if (verificationType === VERIFICATION_TYPES.SIGNATURE) {
-        expected_runtime = runs == 0 ? 180 : 120;
-      } else if (runs == 0) {
-        expected_runtime = 180;
-      } else if (runs > 0) {
-        expected_runtime = 130;
-      }
-      setExpectedRuntime(expected_runtime);
-
-      // For face verification, reuse the captured image data instead of re-processing webcam
-      if (verificationType === VERIFICATION_TYPES.FACE) {
-        // Get the same image that was used for TensorFlow inference
-        if (capturedImage) {
-          setProofSample(capturedImage);
-          processStoredImageForAleo(capturedImage);
-        } else {
-          console.error("No captured image available for proof generation");
-          return;
-        }
-      } else {
-        // For signature, continue with existing flow
-        processImageAndPredict(false);
-      }
-    } catch (error) {
-      console.error("Failed to execute Aleo code:", error);
-    }
-  };
-
   // Simplified using enhanced utilities
   const processStoredImageForAleo = async (imageDataUrl, forceLocalProving = false) => {
     try {
@@ -2332,7 +2275,6 @@ export const useVerification = (verificationType, importedModelData = null, capt
     getProgressDots,
     setCurrentStep,
     onStepBack,
-    generateProof,
     resetVerification,
     downloadTrainedModel,
     retryProofCreation,
