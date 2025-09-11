@@ -794,6 +794,245 @@ export const ComputingHashesScreen = ({
   );
 };
 
+// Creating Hash Authorization Screen Component
+export const CreatingHashAuthorizationScreen = ({ verificationType }) => {
+  const verificationTypeConfig = {
+    signature: "SIGNATURE HASH COMPUTATION",
+    face: "FACE HASH COMPUTATION",
+  };
+
+  return (
+    <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
+        <div className="mx-auto max-w-md pt-20 text-center">
+          <span className="font-innovator gradient-white mb-4 inline-block w-full text-[26px] font-bold">
+            Creating Hash Authorization...
+          </span>
+          <span className="block w-full text-center text-[13px] text-gray-400">
+            {verificationTypeConfig[verificationType]}
+          </span>
+        </div>
+      </div>
+
+      <div className="relative z-10 space-y-2 px-6 pb-5 text-center text-[10px] text-gray-500 sm:pb-15">
+        <div className="gradient-white mb-4 text-center text-base text-[10px] tracking-widest">
+          <div className="flex flex-row items-center justify-center gap-2">
+            <span>CREATING HASH PROOF AUTHORIZATION</span>
+            <div className="gradient-white flex justify-center space-x-1">
+              <div
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                style={{ animationDelay: "0ms" }}
+              ></div>
+              <div
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                style={{ animationDelay: "150ms" }}
+              ></div>
+              <div
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                style={{ animationDelay: "300ms" }}
+              ></div>
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            backgroundImage: `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(appVersionFooter)}")`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            width: "337px",
+            height: "102px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            margin: "0 auto",
+          }}
+        ></div>
+      </div>
+    </div>
+  );
+};
+
+// Generating Hash Proof Screen Component
+export const GeneratingHashProofScreen = ({
+  hashProofProgress,
+  expectedRuntime,
+  verificationType,
+  hashProvingError,
+  onRetryHashProving,
+}) => {
+  const remainingSeconds = Math.ceil(
+    ((100 - hashProofProgress) * expectedRuntime) / 100
+  );
+
+  // Special handling for 99% case
+  const getProgressText = () => {
+    if (hashProofProgress >= 99.0) {
+      return "Expecting hash results momentarily...";
+    } else {
+      return `${hashProofProgress.toFixed(1)}% • ABOUT ${remainingSeconds} SECONDS REMAINING`;
+    }
+  };
+
+  const verificationTypeConfig = {
+    signature: "SIGNATURE HASH COMPUTATION",
+    face: "FACE HASH COMPUTATION",
+  };
+
+  if (hashProvingError) {
+    return (
+      <div className="bg-constellation relative flex h-dvh flex-col overflow-hidden text-white">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
+          <div className="mx-auto max-w-md pt-20 text-center">
+            <span className="font-innovator gradient-white mb-4 inline-block w-full text-[26px] font-bold">
+              Hash Proving Error
+            </span>
+            <span className="mb-6 block w-full text-center text-[13px] text-gray-400">
+              {verificationTypeConfig[verificationType]}
+            </span>
+
+            {/* Error Display */}
+            <div className="mb-8 max-h-[60vh] overflow-y-auto rounded-lg border border-red-600 bg-red-900/20 p-4 text-left">
+              <div className="mb-2 flex items-center">
+                <div className="mr-2 h-2 w-2 rounded-full bg-red-500"></div>
+                <span className="text-sm font-medium text-red-300">
+                  Hash Delegated Proving Failed
+                </span>
+              </div>
+              <p className="mb-4 text-sm text-red-200">
+                {hashProvingError.message.length > 40 
+                  ? `${hashProvingError.message.substring(0, 40)}...` 
+                  : hashProvingError.message}
+              </p>
+              <details className="text-xs text-red-300">
+                <summary className="cursor-pointer hover:text-red-200">
+                  Technical Details
+                </summary>
+                <div className="mt-2 max-h-48 overflow-y-auto">
+                  <p className="font-mono text-red-400 break-words">
+                    {hashProvingError.message}
+                  </p>
+                  {hashProvingError.originalError && (
+                    <p className="mt-2 font-mono text-red-400 break-words">
+                      {hashProvingError.originalError}
+                    </p>
+                  )}
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 space-y-4 px-6 pb-5 sm:pb-15">
+          <div className="mx-auto flex max-w-md flex-col gap-3">
+            {hashProvingError.canRetry && (
+              <ActionButton onClick={onRetryHashProving} variant="outline">
+                Retry Hash Proving Request
+              </ActionButton>
+            )}
+          </div>
+
+          <div
+            style={{
+              backgroundImage: `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(appVersionFooter)}")`,
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "cover",
+              width: "337px",
+              height: "102px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "0 auto",
+            }}
+          ></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
+        <div className="mx-auto max-w-md pt-20 text-center">
+          <span className="font-innovator gradient-white mb-4 inline-block w-full text-[26px] font-bold">
+            Generating Hash Proof...
+          </span>
+          <span className="block w-full text-center text-[13px] text-gray-400">
+            {verificationTypeConfig[verificationType]}
+          </span>
+        </div>
+      </div>
+
+      <div className="relative z-10 space-y-2 px-6 pb-5 text-center text-[10px] text-gray-500 sm:pb-15">
+        <div className="mb-4">
+          <span className="text-white">
+            {getProgressText()}
+          </span>
+        </div>
+        <div
+          style={{
+            backgroundImage: `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(appVersionFooter)}")`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            width: "337px",
+            height: "102px",
+            // center the div
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            margin: "0 auto",
+          }}
+        ></div>
+      </div>
+    </div>
+  );
+};
+
+// Hash Proof Generated Screen Component
+export const HashProofGeneratedScreen = ({
+  setCurrentStep,
+  verificationType,
+  computedHash,
+}) => {
+  const verificationTypeConfig = {
+    signature: "SIGNATURE",
+    face: "FACE",
+  };
+
+  return (
+    <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6">
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <span className="gradient-green font-innovator mb-4 text-[26px] font-bold">
+            Hash Proof Generated
+          </span>
+          <p className="mb-8 text-[13px] text-white">
+            {verificationTypeConfig[verificationType]} MODEL HASH COMPUTED
+          </p>
+          {computedHash && (
+            <div className="mb-4 max-w-md break-all rounded-lg bg-black bg-opacity-20 p-4 font-mono text-xs text-white">
+              {computedHash}
+            </div>
+          )}
+        </div>
+
+        <ButtonContainer>
+          <div className="gradient-white mb-2 text-center text-base text-[10px] tracking-widest">
+            COMPLETE
+          </div>
+          <div className="bg-success mx-auto mb-4 h-0.5 w-[337px] opacity-40" />
+
+          <ActionButton
+            onClick={() => setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF)}
+            variant="primary"
+          >
+            CONTINUE
+          </ActionButton>
+        </ButtonContainer>
+      </div>
+    </div>
+  );
+};
+
 export const ButtonContainer = ({ children }) => {
   return (
     <div className="mb-5 flex flex-col items-center justify-center gap-4 sm:mb-15">

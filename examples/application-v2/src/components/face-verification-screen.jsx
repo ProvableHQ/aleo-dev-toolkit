@@ -14,6 +14,9 @@ import {
   GeneratingProofScreen,
   ProofGeneratedScreen,
   ComputingHashesScreen,
+  CreatingHashAuthorizationScreen,
+  GeneratingHashProofScreen,
+  HashProofGeneratedScreen,
   SamplePreview,
   ButtonContainer,
   SamplesPreview,
@@ -150,6 +153,12 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     handleContinueFromHash,
     computedHash,
     isComputingHash,
+    hashProofText,
+    isGeneratingHashProof,
+    hashProofProgress,
+    hashProvingError,
+    hashProvingFinished,
+    computeHashWithDelegatedProving,
   } = useVerification(VERIFICATION_TYPES.FACE, importedModelData, capturedPassportImage);
 
   const handleTakePicture = () => {
@@ -160,6 +169,18 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
   const handleTryAgain = () => {
     clearFace();
   };
+
+  const handleRetryHashProving = () => {
+    console.log("🔄 Retrying hash proving request...");
+    computeHashWithDelegatedProving();
+  };
+
+  // Handle transition from hash proof generation to next step
+  useEffect(() => {
+    if (currentStep === VERIFICATION_STEPS.GENERATING_HASH_PROOF && hashProvingFinished) {
+      setCurrentStep(VERIFICATION_STEPS.HASH_PROOF_GENERATED);
+    }
+  }, [currentStep, hashProvingFinished, setCurrentStep]);
 
   // Render different screens based on currentStep
   if (currentStep === VERIFICATION_STEPS.VERIFICATION_COMPLETE) {
@@ -286,6 +307,36 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
         computedHash={computedHash}
         isComputing={isComputingHash}
         onContinue={handleContinueFromHash}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.CREATING_HASH_AUTHORIZATION) {
+    return (
+      <CreatingHashAuthorizationScreen
+        verificationType={VERIFICATION_TYPES.FACE}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.GENERATING_HASH_PROOF) {
+    return (
+      <GeneratingHashProofScreen
+        hashProofProgress={hashProofProgress}
+        expectedRuntime={15} // Expected runtime for hash computation
+        verificationType={VERIFICATION_TYPES.FACE}
+        hashProvingError={hashProvingError}
+        onRetryHashProving={handleRetryHashProving}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.HASH_PROOF_GENERATED) {
+    return (
+      <HashProofGeneratedScreen
+        setCurrentStep={setCurrentStep}
+        verificationType={VERIFICATION_TYPES.FACE}
+        computedHash={computedHash}
       />
     );
   }
