@@ -1163,8 +1163,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
     // For face verification, go to hash computation first, then to proof creation
     if (verificationType === VERIFICATION_TYPES.FACE) {
       setCurrentStep(VERIFICATION_STEPS.COMPUTING_HASHES);
-      // Start computing both the model hash and MLP face hash inference
-      computeModelHash();
+      // Start computing MLP face hash inference only
       computeMlpFaceHashInference();
     } else {
       setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
@@ -2266,9 +2265,9 @@ export const useVerification = (verificationType, importedModelData = null, capt
     handleConfirm,
     handleContinueToProof,
     handleContinueFromHash,
-    computedHash,
-    isComputingHash,
-    computeModelHash,
+    computedHash: mlpInferenceResult,
+    isComputingHash: isComputingInference,
+    computeModelHash: computeMlpFaceHashInference,
     mlpInferenceResult,
     isComputingInference,
     computeMlpFaceHashInference,
