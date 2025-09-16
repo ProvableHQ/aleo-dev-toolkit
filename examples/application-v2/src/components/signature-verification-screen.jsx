@@ -14,6 +14,7 @@ import {
   CreatingAuthorizationScreen,
   GeneratingProofScreen,
   ProofGeneratedScreen,
+  RegisteringAddressScreen,
   ButtonContainer,
   SamplePreview,
   SamplesPreview,
@@ -118,6 +119,20 @@ export default function SignatureVerificationScreen({
         provingError={provingError}
         onRetryProving={retryProvingRequest}
         onSwitchToLocal={switchToLocalProving}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.REGISTERING_ADDRESS) {
+    return (
+      <RegisteringAddressScreen
+        onBack={onStepBack}
+        verificationType={VERIFICATION_TYPES.SIGNATURE}
+        onSuccess={() => setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF)}
+        onError={(error) => {
+          console.error('Address registration failed:', error);
+          // Stay on the same step to show error
+        }}
       />
     );
   }

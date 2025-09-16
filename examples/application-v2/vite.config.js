@@ -125,6 +125,16 @@ function apiProxyPlugin(env) {
         }
         await handleApiRoute(req, res, '/api/kyc/upload-document', './api/kyc/upload-document.js');
       });
+
+      // Handle Rust server proxy routes
+      server.middlewares.use('/api/rust/verify', async (req, res, next) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method not allowed');
+          return;
+        }
+        await handleApiRoute(req, res, '/api/rust/verify', './api/rust/verify.js');
+      });
     }
   };
 }

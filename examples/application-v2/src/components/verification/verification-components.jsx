@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Home, RefreshCw, Hash } from "lucide-react";
-import { useMemo } from "react";
+import { Check, Home, RefreshCw, Hash, ExternalLink } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import {
   ActionButton,
   CopyButton,
@@ -1022,11 +1023,194 @@ export const HashProofGeneratedScreen = ({
           <div className="bg-success mx-auto mb-4 h-0.5 w-[337px] opacity-40" />
 
           <ActionButton
-            onClick={() => setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF)}
+            onClick={() => setCurrentStep(VERIFICATION_STEPS.REGISTERING_ADDRESS)}
             variant="primary"
           >
             CONTINUE
           </ActionButton>
+        </ButtonContainer>
+      </div>
+    </div>
+  );
+};
+
+export const RegisteringAddressScreen = ({ 
+  onBack,
+  verificationType, 
+  onSuccess,
+  onError 
+}) => {
+  const { address, connected } = useWallet();
+  const [isRegistering, setIsRegistering] = useState(true);
+  const [error, setError] = useState(null);
+  const [transactionId, setTransactionId] = useState(null);
+
+  useEffect(() => {
+    const registerAddress = async () => {
+      try {
+        // Get wallet address from wallet adapter
+        if (!connected || !address) {
+          throw new Error('No wallet connected. Please connect your wallet first.');
+        }
+
+        console.log('Registering address:', address);
+
+        // Call the local proxy to the Rust server /verify endpoint
+        const response = await fetch('/api/rust/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address: address
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Parse the transaction ID from the response
+          let txId = result.transaction_id;
+          if (typeof txId === 'string' && txId.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(txId);
+              txId = parsed.id || txId;
+            } catch (e) {
+              // If parsing fails, use the original value
+            }
+          }
+          setTransactionId(txId);
+          console.log('Address registered successfully:', result);
+          setIsRegistering(false);
+        } else {
+          throw new Error(result.error || 'Failed to register address');
+        }
+      } catch (err) {
+        console.error('Error registering address:', err);
+        setError(err.message);
+        setIsRegistering(false);
+        onError && onError(err);
+      }
+    };
+
+    registerAddress();
+  }, [onSuccess, onError]);
+
+  const verificationTypeConfig = {
+    signature: "SIGNATURE",
+    face: "FACE",
+  };
+
+  return (
+    <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6">
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <span className="gradient-green font-innovator mb-4 text-[26px] font-bold">
+            {isRegistering ? "Registering Address" : error ? "Registration Failed" : "Registration Successful"}
+          </span>
+          <p className="mb-8 text-[13px] text-white text-center">
+            {isRegistering 
+              ? "REGISTERING YOUR WALLET ADDRESS ON THE BLOCKCHAIN..."
+              : error 
+                ? error
+                : "YOUR WALLET ADDRESS HAS BEEN SUCCESSFULLY REGISTERED"
+            }
+          </p>
+          
+          {isRegistering && (
+            <div className="mb-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            </div>
+          )}
+
+          {!isRegistering && !error && transactionId && (
+            <div className="mb-4">
+              <div className="flex items-center justify-center">
+                <Check className="h-8 w-8 text-green-500" />
+              </div>
+            </div>
+          )}
+
+          {transactionId && (
+            <div className="mb-4 max-w-md rounded-lg bg-black bg-opacity-20 p-4">
+              <div className="mb-2 text-xs text-gray-300">Transaction ID:</div>
+              <div className="break-all font-mono text-xs text-white">
+                {transactionId}
+              </div>
+              <a
+                href={`https://testnet.explorer.provable.com/transaction/${transactionId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View on Block Explorer
+              </a>
+            </div>
+          )}
+        </div>
+
+        <ButtonContainer>
+          {error ? (
+            <>
+              <ActionButton
+                onClick={onBack}
+                variant="secondary"
+              >
+                BACK
+              </ActionButton>
+              <ActionButton
+                onClick={() => {
+                  setError(null);
+                  setIsRegistering(true);
+                  // Retry registration
+                  const registerAddress = async () => {
+                    try {
+                      if (!connected || !address) {
+                        throw new Error('No wallet connected. Please connect your wallet first.');
+                      }
+                      const response = await fetch('/api/rust/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ address: address })
+                      });
+                      const result = await response.json();
+                      if (result.success) {
+                        // Parse the transaction ID from the response
+                        let txId = result.transaction_id;
+                        if (typeof txId === 'string' && txId.startsWith('{')) {
+                          try {
+                            const parsed = JSON.parse(txId);
+                            txId = parsed.id || txId;
+                          } catch (e) {
+                            // If parsing fails, use the original value
+                          }
+                        }
+                        setTransactionId(txId);
+                        setIsRegistering(false);
+                      } else {
+                        throw new Error(result.error || 'Failed to register address');
+                      }
+                    } catch (err) {
+                      setError(err.message);
+                      setIsRegistering(false);
+                    }
+                  };
+                  registerAddress();
+                }}
+                variant="primary"
+              >
+                RETRY
+              </ActionButton>
+            </>
+          ) : !isRegistering && !error && transactionId ? (
+            <ActionButton
+              onClick={() => onSuccess && onSuccess()}
+              variant="primary"
+            >
+              CONTINUE
+            </ActionButton>
+          ) : null}
         </ButtonContainer>
       </div>
     </div>

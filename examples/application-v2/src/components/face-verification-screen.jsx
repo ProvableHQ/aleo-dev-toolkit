@@ -17,6 +17,7 @@ import {
   CreatingHashAuthorizationScreen,
   GeneratingHashProofScreen,
   HashProofGeneratedScreen,
+  RegisteringAddressScreen,
   SamplePreview,
   ButtonContainer,
   SamplesPreview,
@@ -337,6 +338,20 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
         setCurrentStep={setCurrentStep}
         verificationType={VERIFICATION_TYPES.FACE}
         computedHash={computedHash}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.REGISTERING_ADDRESS) {
+    return (
+      <RegisteringAddressScreen
+        onBack={onStepBack}
+        verificationType={VERIFICATION_TYPES.FACE}
+        onSuccess={() => setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF)}
+        onError={(error) => {
+          console.error('Address registration failed:', error);
+          // Stay on the same step to show error
+        }}
       />
     );
   }
