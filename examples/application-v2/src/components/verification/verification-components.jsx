@@ -1038,7 +1038,8 @@ export const RegisteringAddressScreen = ({
   onBack,
   verificationType,
   onSuccess,
-  onError
+  onError,
+  computedHash
 }) => {
   const { address, connected } = useWallet();
   const [isRegistering, setIsRegistering] = useState(true);
@@ -1065,15 +1066,21 @@ export const RegisteringAddressScreen = ({
         console.log('Registering address:', address);
         hasRegisteredRef.current = address; // Mark this address as being registered
 
-        // Call the local proxy to the Rust server /verify endpoint
-        const response = await fetch('/api/rust/verify', {
+        // Determine which endpoint to use based on whether we have a computed hash
+        const endpoint = computedHash ? '/api/rust/register-address-kya' : '/api/rust/verify';
+        const requestBody = computedHash 
+          ? { address: address, kya_hash: computedHash }
+          : { address: address };
+
+        console.log('Using endpoint:', endpoint, 'with body:', requestBody);
+
+        // Call the appropriate endpoint
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            address: address
-          })
+          body: JSON.stringify(requestBody)
         });
 
         const result = await response.json();
@@ -1183,10 +1190,17 @@ export const RegisteringAddressScreen = ({
                       if (!connected || !address) {
                         throw new Error('No wallet connected. Please connect your wallet first.');
                       }
-                      const response = await fetch('/api/rust/verify', {
+                      
+                      // Use the same endpoint logic for retry
+                      const endpoint = computedHash ? '/api/rust/register-address-kya' : '/api/rust/verify';
+                      const requestBody = computedHash 
+                        ? { address: address, kya_hash: computedHash }
+                        : { address: address };
+                        
+                      const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ address: address })
+                        body: JSON.stringify(requestBody)
                       });
                       const result = await response.json();
                       if (result.success) {

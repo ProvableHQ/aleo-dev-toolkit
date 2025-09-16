@@ -352,6 +352,7 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
           console.error('Address registration failed:', error);
           // Stay on the same step to show error
         }}
+        computedHash={computedHash}
       />
     );
   }

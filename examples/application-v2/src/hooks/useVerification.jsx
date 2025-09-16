@@ -1408,7 +1408,12 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
   // Handle continue from hash computation screen
   const handleContinueFromHash = () => {
-    setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
+    // For face verification, go to address registration after hash computation
+    if (verificationType === VERIFICATION_TYPES.FACE) {
+      setCurrentStep(VERIFICATION_STEPS.REGISTERING_ADDRESS);
+    } else {
+      setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
+    }
   };
 
   const handleConfirm = () => {

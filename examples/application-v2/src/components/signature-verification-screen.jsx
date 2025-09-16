@@ -133,6 +133,7 @@ export default function SignatureVerificationScreen({
           console.error('Address registration failed:', error);
           // Stay on the same step to show error
         }}
+        computedHash={null}
       />
     );
   }

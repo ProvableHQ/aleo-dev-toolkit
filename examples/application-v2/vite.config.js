@@ -135,6 +135,15 @@ function apiProxyPlugin(env) {
         }
         await handleApiRoute(req, res, '/api/rust/verify', './api/rust/verify.js');
       });
+
+      server.middlewares.use('/api/rust/register-address-kya', async (req, res, next) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method not allowed');
+          return;
+        }
+        await handleApiRoute(req, res, '/api/rust/register-address-kya', './api/rust/register-address-kya.js');
+      });
     }
   };
 }
