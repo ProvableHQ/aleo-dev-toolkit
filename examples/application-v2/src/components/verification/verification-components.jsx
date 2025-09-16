@@ -1080,13 +1080,16 @@ export const RegisteringAddressScreen = ({
 
         if (result.success) {
           // Parse the transaction ID from the response
-          let txId = result.transaction_id;
+          let txId = result.transactionId || result.transaction_id;
+          console.log('Raw transaction ID:', txId);
+          
           if (typeof txId === 'string' && txId.startsWith('{')) {
             try {
               const parsed = JSON.parse(txId);
               txId = parsed.id || txId;
+              console.log('Parsed transaction ID:', txId);
             } catch (e) {
-              // If parsing fails, use the original value
+              console.log('Failed to parse transaction ID, using original:', txId);
             }
           }
           setTransactionId(txId);
@@ -1112,6 +1115,14 @@ export const RegisteringAddressScreen = ({
     signature: "SIGNATURE",
     face: "FACE",
   };
+
+  // Debug logging
+  console.log('RegisteringAddressScreen render state:', {
+    isRegistering,
+    error,
+    transactionId,
+    shouldShowButtons: !isRegistering && !error
+  });
 
   return (
     <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
@@ -1149,15 +1160,6 @@ export const RegisteringAddressScreen = ({
               <div className="break-all font-mono text-xs text-white">
                 {transactionId}
               </div>
-              <a
-                href={`https://testnet.explorer.provable.com/transaction/${transactionId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline"
-              >
-                <ExternalLink className="h-3 w-3" />
-                View on Block Explorer
-              </a>
             </div>
           )}
         </div>
@@ -1189,7 +1191,7 @@ export const RegisteringAddressScreen = ({
                       const result = await response.json();
                       if (result.success) {
                         // Parse the transaction ID from the response
-                        let txId = result.transaction_id;
+                        let txId = result.transactionId || result.transaction_id;
                         if (typeof txId === 'string' && txId.startsWith('{')) {
                           try {
                             const parsed = JSON.parse(txId);
@@ -1215,13 +1217,25 @@ export const RegisteringAddressScreen = ({
                 RETRY
               </ActionButton>
             </>
-          ) : !isRegistering && !error && transactionId ? (
-            <ActionButton
-              onClick={() => onSuccess && onSuccess()}
-              variant="primary"
-            >
-              CONTINUE
-            </ActionButton>
+          ) : !isRegistering && !error ? (
+            <>
+              <ActionButton
+                onClick={() => onSuccess && onSuccess()}
+                variant="primary"
+              >
+                CONTINUE
+              </ActionButton>
+              {transactionId && (
+                <ActionButton
+                  onClick={() => window.open(`https://testnet.explorer.provable.com/transaction/${transactionId}`, '_blank')}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  VIEW IN BLOCK EXPLORER
+                </ActionButton>
+              )}
+            </>
           ) : null}
         </ButtonContainer>
       </div>
