@@ -45,6 +45,25 @@ const PassportCapture = ({
             }}
           />
 
+          {/* Passport overlay - only show during capture */}
+          {isCapturing && !hasCaptured && (
+            <div className="absolute inset-0 pointer-events-none flex flex-col justify-end p-4">
+              {/* Passport document outline */}
+              <div className="absolute inset-4 border-2 border-white/30 rounded-sm"></div>
+
+              {/* MRZ (Machine Readable Zone) lines at bottom */}
+              <div className="bg-black/20 p-2 text-white font-mono text-xs leading-tight">
+                <div className="flex justify-center mb-1">
+                  <span className="text-white/60 text-[10px]">↓ ALIGN PASSPORT HERE ↓</span>
+                </div>
+                <div className="border-t border-white/30 pt-2 space-y-1">
+                  <div className="tracking-wider">P&lt;USADOE&lt;&lt;JOHN&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+                  <div className="tracking-wider">1234567890USA9001011M2501017&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;04</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {hasCaptured && capturedImage && (
             <img
               src={capturedImage}
