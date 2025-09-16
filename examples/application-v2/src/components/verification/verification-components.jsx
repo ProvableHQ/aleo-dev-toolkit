@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Home, RefreshCw, Hash, ExternalLink } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import {
   ActionButton,
@@ -1034,18 +1034,21 @@ export const HashProofGeneratedScreen = ({
   );
 };
 
-export const RegisteringAddressScreen = ({ 
+export const RegisteringAddressScreen = ({
   onBack,
-  verificationType, 
+  verificationType,
   onSuccess,
-  onError 
+  onError
 }) => {
   const { address, connected } = useWallet();
   const [isRegistering, setIsRegistering] = useState(true);
   const [error, setError] = useState(null);
   const [transactionId, setTransactionId] = useState(null);
+  const hasRegisteredRef = useRef(null); // Use ref to persist across StrictMode remounts
 
   useEffect(() => {
+    console.log('RegisteringAddressScreen useEffect triggered. address:', address, 'connected:', connected, 'hasRegistered:', hasRegisteredRef.current);
+
     const registerAddress = async () => {
       try {
         // Get wallet address from wallet adapter
@@ -1053,7 +1056,14 @@ export const RegisteringAddressScreen = ({
           throw new Error('No wallet connected. Please connect your wallet first.');
         }
 
+        // Guard against duplicate registrations for the same address
+        if (hasRegisteredRef.current === address) {
+          console.log('Registration already in progress or completed for:', address);
+          return;
+        }
+
         console.log('Registering address:', address);
+        hasRegisteredRef.current = address; // Mark this address as being registered
 
         // Call the local proxy to the Rust server /verify endpoint
         const response = await fetch('/api/rust/verify', {
@@ -1093,8 +1103,10 @@ export const RegisteringAddressScreen = ({
       }
     };
 
-    registerAddress();
-  }, [onSuccess, onError]);
+    if (address && connected) {
+      registerAddress();
+    }
+  }, [address, connected]); // Only re-run when address or connection status changes
 
   const verificationTypeConfig = {
     signature: "SIGNATURE",
