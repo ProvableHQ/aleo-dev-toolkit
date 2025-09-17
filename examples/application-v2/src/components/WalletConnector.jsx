@@ -6,7 +6,27 @@ import { useAtomValue } from 'jotai';
 import { networkAtom } from '../store/wallet.js';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
-import { BHP256, Field, Plaintext } from '@provablehq/sdk';
+import { BHP256, Plaintext } from '@provablehq/sdk';
+
+// helper: bytes -> LSB-first bits (Leo's circuit bit convention)
+function bytesToBitsLE(bytes) {
+  const bits = [];
+  for (const b of bytes) for (let i = 0; i < 8; i++) bits.push(((b >> i) & 1) === 1);
+  return bits;
+}
+
+// helper: get canonical circuit bits from Plaintext, regardless of SDK shape
+function plaintextToBitsLE(pt) {
+  const fns = [
+    'toBitsLE', 'to_bits_le', 'toBitsLe', 'toBitsLittleEndian', 'to_le_bits'
+  ];
+  for (const name of fns) {
+    if (typeof pt?.[name] === 'function') return pt[name]();
+  }
+  const toBytes = pt?.toBytes ?? pt?.to_bytes;
+  if (typeof toBytes === 'function') return bytesToBitsLE(toBytes.call(pt));
+  throw new Error('Plaintext has no toBits* or toBytes method in this SDK build.');
+}
 
 export default function WalletConnector() {
   const neededNetwork = useAtomValue(networkAtom);
@@ -21,31 +41,16 @@ export default function WalletConnector() {
         console.log('Aleo address:', address);
         
         try {
-          console.log('Original address:', address);
-          
-          // Try direct conversion from address string to boolean array
-          const encoder = new TextEncoder();
-          const addressBytes = encoder.encode(address);
-          
-          console.log('Address bytes:', addressBytes);
-          
-          // Convert bytes to boolean array (each byte becomes 8 bits)
-          const booleanArray = [];
-          for (let i = 0; i < addressBytes.length; i++) {
-            const byte = addressBytes[i];
-            for (let bit = 7; bit >= 0; bit--) {
-              booleanArray.push(((byte >> bit) & 1) === 1);
-            }
-          }
-          
-          console.log('Boolean array length:', booleanArray.length);
-          console.log('First 10 booleans:', booleanArray.slice(0, 10));
-          console.log('Is boolean array:', Array.isArray(booleanArray) && booleanArray.every(b => typeof b === 'boolean'));
-          
-          // Hash the boolean array using BHP256
-          const bhp256Hasher = new BHP256();
-          const addressHash = bhp256Hasher.hash(booleanArray);
-          console.log('BHP256::hash_to_field(address):', addressHash.toString());
+          // Parse as Leo address literal and extract canonical circuit bits
+          const pt = Plaintext.fromString(address);   // e.g., "aleo1u..."
+          const bitsLE = plaintextToBitsLE(pt);
+
+          const bhp = new BHP256();
+          const mappingKey =
+            bhp.hashToField?.(bitsLE) ??
+            bhp.hash_to_field?.(bitsLE) ??
+            bhp.hash(bitsLE);
+          console.log('BHP256::hash_to_field(address):', mappingKey.toString());
         } catch (error) {
           console.error('Error hashing address with BHP256:', error);
         }
