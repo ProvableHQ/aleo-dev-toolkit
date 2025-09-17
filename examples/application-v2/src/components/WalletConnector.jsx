@@ -34,10 +34,10 @@ export default function WalletConnector() {
   const wrongNetwork = connected && !connecting && network !== neededNetwork;
   const loggedAddressRef = useRef(null);
 
-  // Log the address only once per unique address with 1 second delay
+  // Log the address only once per unique address and check whitelist status
   useEffect(() => {
     if (connected && address && address !== loggedAddressRef.current) {
-      const timer = setTimeout(async () => {
+      const checkWhitelistStatus = async () => {
         console.log('Aleo address:', address);
         
         try {
@@ -51,16 +51,64 @@ export default function WalletConnector() {
             bhp.hash_to_field?.(bitsLE) ??
             bhp.hash(bitsLE);
           console.log('BHP256::hash_to_field(address):', mappingKey.toString());
+          
+          // Call both API endpoints in parallel
+          const [whitelistResponse, kyaHashResponse] = await Promise.all([
+            fetch(`https://api.explorer.provable.com/v1/testnet/program/zpass_kya_demo_v1.aleo/mapping/whitelisted/${mappingKey.toString()}`)
+              .then(res => res.text())
+              .then(text => {
+                try {
+                  return JSON.parse(text);
+                } catch {
+                  return text;
+                }
+              })
+              .catch(() => null),
+            fetch(`https://api.explorer.provable.com/v1/testnet/program/zpass_kya_demo_v1.aleo/mapping/kya_hashes/${mappingKey.toString()}`)
+              .then(res => res.text())
+              .then(text => {
+                try {
+                  return JSON.parse(text);
+                } catch {
+                  return text;
+                }
+              })
+              .catch(() => null)
+          ]);
+          
+          // Parse responses
+          const isWhitelisted = whitelistResponse === true || whitelistResponse === "true";
+          const registeredHash = kyaHashResponse && kyaHashResponse !== "null" && kyaHashResponse !== null ? kyaHashResponse : null;
+          
+          console.log('Whitelist status:', isWhitelisted);
+          console.log('Registered hash:', registeredHash);
+          
+          loggedAddressRef.current = address;
+          // Dispatch custom event to notify MainScreen with whitelist data
+          window.dispatchEvent(new CustomEvent('walletReady', { 
+            detail: { 
+              address, 
+              isWhitelisted, 
+              registeredHash,
+              mappingKey: mappingKey.toString()
+            } 
+          }));
         } catch (error) {
-          console.error('Error hashing address with BHP256:', error);
+          console.error('Error checking whitelist status:', error);
+          loggedAddressRef.current = address;
+          // Dispatch event even on error, but with null values
+          window.dispatchEvent(new CustomEvent('walletReady', { 
+            detail: { 
+              address, 
+              isWhitelisted: null, 
+              registeredHash: null,
+              mappingKey: null
+            } 
+          }));
         }
-        
-        loggedAddressRef.current = address;
-        // Dispatch custom event to notify MainScreen
-        window.dispatchEvent(new CustomEvent('walletReady', { detail: { address } }));
-      }, 3000);
+      };
       
-      return () => clearTimeout(timer);
+      checkWhitelistStatus();
     }
   }, [connected, address]);
 

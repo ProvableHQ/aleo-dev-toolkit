@@ -17,11 +17,14 @@ export default function MainScreen({
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isWalletReady, setIsWalletReady] = useState(false);
+  const [walletData, setWalletData] = useState(null);
   const fileInputRef = useRef(null);
 
   // Listen for wallet ready event
   useEffect(() => {
-    const handleWalletReady = () => {
+    const handleWalletReady = (event) => {
+      const { address, isWhitelisted, registeredHash, mappingKey } = event.detail;
+      setWalletData({ address, isWhitelisted, registeredHash, mappingKey });
       setIsWalletReady(true);
     };
 
@@ -124,14 +127,32 @@ export default function MainScreen({
 
               {/* Verification Buttons */}
               <div className="mx-auto mb-8 w-full space-y-4">
+                {/* Show whitelist status if available */}
+                {walletData && walletData.isWhitelisted !== null && (
+                  <div className="mb-4 p-3 bg-gray-800/50 rounded-lg">
+                    <div className="text-sm text-gray-300">
+                      {walletData.isWhitelisted ? (
+                        <span className="text-green-400">✓ Address whitelisted</span>
+                      ) : (
+                        <span className="text-red-400">✗ Address not whitelisted</span>
+                      )}
+                    </div>
+                    {walletData.registeredHash && (
+                      <div className="text-sm text-gray-300 mt-1">
+                        <span className="text-blue-400">Registered hash: {walletData.registeredHash}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <Button
                   onClick={() => {
                     console.log("User clicked: START WITH PASSPORT VERIFICATION");
                     onVerificationChoice("passport");
                   }}
-                  disabled={!isWalletReady}
+                  disabled={!isWalletReady || (walletData && walletData.isWhitelisted !== null && walletData.registeredHash !== null)}
                   className={`flex h-[42px] w-[353px] items-center justify-between rounded-full px-4 text-sm font-medium transition-all ${
-                    isWalletReady 
+                    isWalletReady && (!walletData || walletData.isWhitelisted === null || walletData.registeredHash === null)
                       ? "cursor-pointer bg-gray-200 text-gray-900 hover:bg-gray-300" 
                       : "cursor-not-allowed bg-gray-500 text-gray-600 opacity-50"
                   }`}
@@ -140,7 +161,7 @@ export default function MainScreen({
                     <img src={faceLogo} alt="Face Logo" className="h-5 w-5" />
                     <span className="w-full">START WITH PASSPORT VERIFICATION</span>
                   </div>
-                  <span className={isWalletReady ? "text-gray-400" : "text-gray-500"}>›</span>
+                  <span className={isWalletReady && (!walletData || walletData.isWhitelisted === null || walletData.registeredHash === null) ? "text-gray-400" : "text-gray-500"}>›</span>
                 </Button>
 
               </div>
