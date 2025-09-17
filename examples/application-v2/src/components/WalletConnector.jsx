@@ -6,6 +6,7 @@ import { useAtomValue } from 'jotai';
 import { networkAtom } from '../store/wallet.js';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
+import { BHP256, Field, Plaintext } from '@provablehq/sdk';
 
 export default function WalletConnector() {
   const neededNetwork = useAtomValue(networkAtom);
@@ -16,8 +17,39 @@ export default function WalletConnector() {
   // Log the address only once per unique address with 1 second delay
   useEffect(() => {
     if (connected && address && address !== loggedAddressRef.current) {
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
         console.log('Aleo address:', address);
+        
+        try {
+          console.log('Original address:', address);
+          
+          // Try direct conversion from address string to boolean array
+          const encoder = new TextEncoder();
+          const addressBytes = encoder.encode(address);
+          
+          console.log('Address bytes:', addressBytes);
+          
+          // Convert bytes to boolean array (each byte becomes 8 bits)
+          const booleanArray = [];
+          for (let i = 0; i < addressBytes.length; i++) {
+            const byte = addressBytes[i];
+            for (let bit = 7; bit >= 0; bit--) {
+              booleanArray.push(((byte >> bit) & 1) === 1);
+            }
+          }
+          
+          console.log('Boolean array length:', booleanArray.length);
+          console.log('First 10 booleans:', booleanArray.slice(0, 10));
+          console.log('Is boolean array:', Array.isArray(booleanArray) && booleanArray.every(b => typeof b === 'boolean'));
+          
+          // Hash the boolean array using BHP256
+          const bhp256Hasher = new BHP256();
+          const addressHash = bhp256Hasher.hash(booleanArray);
+          console.log('BHP256::hash_to_field(address):', addressHash.toString());
+        } catch (error) {
+          console.error('Error hashing address with BHP256:', error);
+        }
+        
         loggedAddressRef.current = address;
         // Dispatch custom event to notify MainScreen
         window.dispatchEvent(new CustomEvent('walletReady', { detail: { address } }));
