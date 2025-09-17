@@ -347,7 +347,10 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
       <RegisteringAddressScreen
         onBack={onStepBack}
         verificationType={VERIFICATION_TYPES.FACE}
-        onSuccess={() => setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF)}
+        onSuccess={() => {
+          console.log('Address registration successful - redirecting to home');
+          onSuccess && onSuccess();
+        }}
         onError={(error) => {
           console.error('Address registration failed:', error);
           // Stay on the same step to show error
