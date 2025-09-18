@@ -1149,7 +1149,20 @@ export const RegisteringAddressScreen = ({
           
           {isRegistering && (
             <div className="mb-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              <div className="flex justify-center space-x-1">
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                  style={{ animationDelay: "0ms" }}
+                ></div>
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                  style={{ animationDelay: "150ms" }}
+                ></div>
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                  style={{ animationDelay: "300ms" }}
+                ></div>
+              </div>
             </div>
           )}
 
