@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ScreenLayout, ActionButton } from "./signature/sig-components";
 import {
   useVerification,
@@ -13,10 +13,6 @@ import {
   CreatingAuthorizationScreen,
   GeneratingProofScreen,
   ProofGeneratedScreen,
-  ComputingHashesScreen,
-  CreatingHashAuthorizationScreen,
-  GeneratingHashProofScreen,
-  HashProofGeneratedScreen,
   RegisteringAddressScreen,
   SamplePreview,
   ButtonContainer,
@@ -153,16 +149,17 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     provingError,
     retryProvingRequest,
     switchToLocalProving,
-    handleContinueFromHash,
     computedHash,
-    isComputingHash,
-    hashProofText,
-    isGeneratingHashProof,
-    hashProofProgress,
-    hashProvingError,
-    hashProvingFinished,
-    computeHashWithDelegatedProving,
   } = useVerification(VERIFICATION_TYPES.FACE, importedModelData, capturedPassportImage);
+
+  // State for model hash from TrainingScreen
+  const [modelHash, setModelHash] = useState(null);
+
+  // Handle model hash computed from TrainingScreen
+  const handleModelHashComputed = (hash) => {
+    console.log("📊 Model hash received from TrainingScreen:", hash);
+    setModelHash(hash);
+  };
 
   const handleTakePicture = () => {
     console.log("User clicked: TAKE PICTURE (after collecting face sample)");
@@ -173,17 +170,6 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     clearFace();
   };
 
-  const handleRetryHashProving = () => {
-    console.log("🔄 Retrying hash proving request...");
-    computeHashWithDelegatedProving();
-  };
-
-  // Handle transition from hash proof generation to next step
-  useEffect(() => {
-    if (currentStep === VERIFICATION_STEPS.GENERATING_HASH_PROOF && hashProvingFinished) {
-      setCurrentStep(VERIFICATION_STEPS.HASH_PROOF_GENERATED);
-    }
-  }, [currentStep, hashProvingFinished, setCurrentStep]);
 
   // Render different screens based on currentStep
   if (currentStep === VERIFICATION_STEPS.VERIFICATION_COMPLETE) {
@@ -301,48 +287,6 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     );
   }
 
-  if (currentStep === VERIFICATION_STEPS.COMPUTING_HASHES) {
-    console.log("🧪 Rendering ComputingHashesScreen with:", { currentStep, computedHash, isComputingHash });
-    return (
-      <ComputingHashesScreen
-        onBack={onStepBack}
-        verificationType={VERIFICATION_TYPES.FACE}
-        computedHash={computedHash}
-        isComputing={isComputingHash}
-        onContinue={handleContinueFromHash}
-      />
-    );
-  }
-
-  if (currentStep === VERIFICATION_STEPS.CREATING_HASH_AUTHORIZATION) {
-    return (
-      <CreatingHashAuthorizationScreen
-        verificationType={VERIFICATION_TYPES.FACE}
-      />
-    );
-  }
-
-  if (currentStep === VERIFICATION_STEPS.GENERATING_HASH_PROOF) {
-    return (
-      <GeneratingHashProofScreen
-        hashProofProgress={hashProofProgress}
-        expectedRuntime={15} // Expected runtime for hash computation
-        verificationType={VERIFICATION_TYPES.FACE}
-        hashProvingError={hashProvingError}
-        onRetryHashProving={handleRetryHashProving}
-      />
-    );
-  }
-
-  if (currentStep === VERIFICATION_STEPS.HASH_PROOF_GENERATED) {
-    return (
-      <HashProofGeneratedScreen
-        setCurrentStep={setCurrentStep}
-        verificationType={VERIFICATION_TYPES.FACE}
-        computedHash={computedHash}
-      />
-    );
-  }
 
   if (currentStep === VERIFICATION_STEPS.REGISTERING_ADDRESS) {
     return (
@@ -357,7 +301,7 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
           console.error('Address registration failed:', error);
           // Stay on the same step to show error
         }}
-        computedHash={computedHash}
+        computedHash={modelHash || computedHash}
       />
     );
   }
@@ -374,6 +318,7 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
         modelScaler={modelScaler}
         capturedImage={capturedImage}
         faceDescriptor={faceDescriptor}
+        onModelHashComputed={handleModelHashComputed}
       />
     );
   }

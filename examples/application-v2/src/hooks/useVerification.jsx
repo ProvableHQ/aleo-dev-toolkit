@@ -62,10 +62,6 @@ export const VERIFICATION_STEPS = {
   CONFIRM: "confirm",
   VERIFYING: "verifying",
   COMPLETE: "complete",
-  COMPUTING_HASHES: "computing-hashes",
-  CREATING_HASH_AUTHORIZATION: "creating-hash-authorization",
-  GENERATING_HASH_PROOF: "generating-hash-proof",
-  HASH_PROOF_GENERATED: "hash-proof-generated",
   REGISTERING_ADDRESS: "registering-address",
   CREATE_PROOF: "create-proof",
   CREATING_AUTHORIZATION: "creating-authorization",
@@ -122,10 +118,6 @@ export const STEP_CONFIGS = {
       [VERIFICATION_STEPS.REPEAT1]: "Repeat Face",
       [VERIFICATION_STEPS.REPEAT2]: "Repeat Face",
       [VERIFICATION_STEPS.CONFIRM]: "Confirm Face",
-      [VERIFICATION_STEPS.COMPUTING_HASHES]: "Computing model hashes",
-      [VERIFICATION_STEPS.CREATING_HASH_AUTHORIZATION]: "Creating Hash Authorization...",
-      [VERIFICATION_STEPS.GENERATING_HASH_PROOF]: "Generating Hash Proof...",
-      [VERIFICATION_STEPS.HASH_PROOF_GENERATED]: "Hash Proof Generated",
       [VERIFICATION_STEPS.REGISTERING_ADDRESS]: "Registering Address",
       [VERIFICATION_STEPS.CREATE_PROOF]: "Create a Proof",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "Creating Authorization...",
@@ -143,10 +135,6 @@ export const STEP_CONFIGS = {
         "TO TRAIN THE MODEL, PLEASE CAPTURE YOUR FACE A FINAL TIME. PRESS BACK TO EDIT YOUR ORIGINAL.",
       [VERIFICATION_STEPS.CONFIRM]:
         "IS THE BELOW CORRECT TO TRAIN THE VERIFICATION MODEL? PASSPORT PHOTO (SAMPLE 1) + 2 FACE PHOTOS (SAMPLES 2&3).",
-      [VERIFICATION_STEPS.COMPUTING_HASHES]: "COMPUTING TRAINED MODEL PARAMETERS HASH USING ALEO BHP1024...",
-      [VERIFICATION_STEPS.CREATING_HASH_AUTHORIZATION]: "CREATING HASH PROOF AUTHORIZATION",
-      [VERIFICATION_STEPS.GENERATING_HASH_PROOF]: "GENERATING MODEL HASH PROOF",
-      [VERIFICATION_STEPS.HASH_PROOF_GENERATED]: "MODEL HASH PROOF GENERATED",
       [VERIFICATION_STEPS.REGISTERING_ADDRESS]: "REGISTERING YOUR WALLET ADDRESS ON THE BLOCKCHAIN...",
       [VERIFICATION_STEPS.CREATE_PROOF]: "VERIFY YOUR FACE TO CONTINUE",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "CREATING PROOF AUTHORIZATION",
@@ -205,13 +193,6 @@ export const useVerification = (verificationType, importedModelData = null, capt
   const [mlpInferenceResult, setMlpInferenceResult] = useState(null);
   const [isComputingInference, setIsComputingInference] = useState(false);
   
-  // Hash computation delegated proving state
-  const [hashProofText, setHashProofText] = useState("");
-  const [isGeneratingHashProof, setIsGeneratingHashProof] = useState(false);
-  const [hashProofProgress, setHashProofProgress] = useState(0);
-  const [hashProofInterval, setHashProofInterval] = useState(null);
-  const [hashProvingError, setHashProvingError] = useState(null);
-  const [hashProvingFinished, setHashProvingFinished] = useState(false);
 
   // Handle imported model data
   useEffect(() => {
@@ -1066,356 +1047,9 @@ export const useVerification = (verificationType, importedModelData = null, capt
     }
   };
 
-  // Compute MLP face hash inference using sklearn_mlp_face_hash_3.aleo
-  const computeMlpFaceHashInference = async () => {
-    try {
-      setIsComputingInference(true);
-      console.log("🧠 Computing MLP face hash inference using sklearn_mlp_face_hash_3.aleo...");
-      
-      // Check if we have a trained model and face data
-      if (!trainedModel) {
-        console.warn("⚠️ No trained model available for MLP inference");
-        setMlpInferenceResult("No trained model available");
-        return;
-      }
 
-      // Get face features from the passport image or captured images
-      let faceFeatures = null;
-      let imageSource = null;
 
-      // Try passport image first
-      if (capturedPassportImage) {
-        console.log("🖼️ Using passport image for face features...");
-        imageSource = capturedPassportImage;
-        const passportResult = await processFaceImageToPCAVector(capturedPassportImage);
-        if (passportResult.success && passportResult.pcaVector?.length === 32) {
-          faceFeatures = passportResult.pcaVector;
-          console.log("✅ Passport face features extracted:", faceFeatures.slice(0, 5), "...");
-        }
-      }
 
-      // If no passport features, try the latest captured image
-      if (!faceFeatures && capturedImage) {
-        console.log("🖼️ Using captured image for face features...");
-        imageSource = capturedImage;
-        const capturedResult = await processFaceImageToPCAVector(capturedImage);
-        if (capturedResult.success && capturedResult.pcaVector?.length === 32) {
-          faceFeatures = capturedResult.pcaVector;
-          console.log("✅ Captured image face features extracted:", faceFeatures.slice(0, 5), "...");
-        }
-      }
-
-      // If no face features available, try using the faceDescriptor directly
-      if (!faceFeatures && faceDescriptor) {
-        console.log("🖼️ Using stored face descriptor...");
-        const descriptorArray = Array.isArray(faceDescriptor) ? faceDescriptor : Array.from(faceDescriptor);
-        const descriptorResult = await processFaceImageToPCAVector(descriptorArray);
-        if (descriptorResult.success && descriptorResult.pcaVector?.length === 32) {
-          faceFeatures = descriptorResult.pcaVector;
-          console.log("✅ Face descriptor features extracted:", faceFeatures.slice(0, 5), "...");
-        }
-      }
-
-      if (!faceFeatures) {
-        console.warn("⚠️ No face features available for MLP inference");
-        setMlpInferenceResult("No face features available");
-        return;
-      }
-
-      // Normalize features using model scaler if available
-      let normalizedFeatures = faceFeatures;
-      if (modelScaler && modelScaler.transform) {
-        try {
-          const normalizedArray = modelScaler.transform([faceFeatures]);
-          normalizedFeatures = Array.isArray(normalizedArray) ? normalizedArray[0] : normalizedArray;
-          console.log("✅ Features normalized using model scaler");
-        } catch (scalerError) {
-          console.warn("⚠️ Scaler transform failed, using raw features:", scalerError);
-          normalizedFeatures = faceFeatures;
-        }
-      }
-
-      // Convert to fixed point for Aleo
-      const fixedPointFeatures = toFixedPoint(normalizedFeatures);
-      console.log("✅ Features converted to fixed point:", fixedPointFeatures.slice(0, 5), "...");
-
-      // Prepare Aleo input using the trained model (same as in Aleo execution)
-      const aleoInputArray = await prepareAleoInput(fixedPointFeatures);
-      if (!aleoInputArray) {
-        console.error("❌ Failed to prepare Aleo input for MLP inference");
-        setMlpInferenceResult("Failed to prepare Aleo input");
-        return;
-      }
-
-      console.log("✅ Aleo input prepared, calling mlpFaceHashTest...");
-      console.log("📊 Input array length:", aleoInputArray.length);
-
-      // Call the MLP face hash test function
-      const inferenceResult = await mlpFaceHashTest(aleoInputArray);
-
-      if (inferenceResult.success) {
-        // Extract only the field value (hash) from the result array
-        const resultArray = inferenceResult.result;
-        const hashField = Array.isArray(resultArray) && resultArray.length >= 3 
-          ? resultArray[2] // The field value is typically the 3rd element
-          : resultArray;
-        
-        setMlpInferenceResult(hashField);
-        console.log("✅ MLP face hash inference completed successfully!");
-        console.log(`📊 Results:`, inferenceResult.result);
-        console.log(`📊 Hash Field:`, hashField);
-        console.log(`⏱️ Duration: ${inferenceResult.duration}ms`);
-        console.log(`⏱️ Total Duration: ${inferenceResult.totalDuration}ms`);
-      } else {
-        console.error("❌ MLP face hash inference failed:", inferenceResult.error);
-        setMlpInferenceResult(`Error: ${inferenceResult.error}`);
-      }
-      
-    } catch (error) {
-      console.error("❌ Error in computeMlpFaceHashInference:", error);
-      setMlpInferenceResult(`Error: ${error.message}`);
-    } finally {
-      setIsComputingInference(false);
-    }
-  };
-
-  // Compute hash using delegated proving
-  const computeHashWithDelegatedProving = async () => {
-    try {
-      console.log("🚀 Starting hash computation with delegated proving...");
-      
-      // Check if we have a trained model
-      if (!trainedModel) {
-        console.warn("⚠️ No trained model available for hash computation");
-        setHashProvingError("No trained model available");
-        return;
-      }
-
-      // Prepare Aleo input for hash computation
-      const aleoInputArray = await prepareAleoInputForHash();
-      if (!aleoInputArray) {
-        console.error("❌ Failed to prepare Aleo input for hash computation");
-        setHashProvingError("Failed to prepare Aleo input");
-        return;
-      }
-
-      const model = mlp_face_program_hash_only;
-      let result, executionResponse, fullTransaction, broadcastResult;
-
-      if (isDelegatedProving) {
-        let requestData;
-        try {
-          // Phase 1: Create authorization (show bouncing dots)
-          setCurrentStep(VERIFICATION_STEPS.CREATING_HASH_AUTHORIZATION);
-          
-          requestData = await aleoWorker.buildDelegatedProvingRequest(
-            model,
-            "main",
-            aleoInputArray,
-            privateKey,
-            shouldBroadcastLocalTx
-          );
-          
-          // Phase 2: Execute proving request (show countdown)
-          setCurrentStep(VERIFICATION_STEPS.GENERATING_HASH_PROOF);
-          startHashProofProgress(15); // Expected runtime for hash computation
-          
-          [result, executionResponse, fullTransaction, broadcastResult] =
-            await aleoWorker.executeDelegatedProvingRequest(
-              requestData,
-              provingServiceUrl,
-              shouldBroadcastLocalTx
-            );
-        } catch (error) {
-          console.error("❌ Hash delegated proving failed:", error);
-          
-          clearInterval(hashProofInterval);
-          setHashProofInterval(null);
-          setIsGeneratingHashProof(false);
-          
-          let errorMessage = "An unexpected error occurred during hash computation";
-          if (error.message.includes("proving service")) {
-            errorMessage = "The proving service is unavailable for hash computation. Please try again.";
-          } else if (error.message.includes("network") || error.message.includes("fetch")) {
-            errorMessage = "Could not connect to the proving service for hash computation.";
-          } else {
-            errorMessage = error.message;
-          }
-          
-          setHashProvingError({
-            message: errorMessage,
-            originalError: errorMessage !== error.message ? error.message : null,
-            canRetry: true,
-          });
-          return;
-        }
-      } else {
-        // Local proving for hash computation
-        setCurrentStep(VERIFICATION_STEPS.GENERATING_HASH_PROOF);
-        startHashProofProgress(30); // Expected runtime for local hash computation
-        
-        [result, executionResponse, fullTransaction, broadcastResult] =
-          await aleoWorker.localProgramExecutionWithFee(
-            model,
-            "main",
-            aleoInputArray,
-            privateKey,
-            0.01,
-            0,
-            shouldBroadcastLocalTx
-          );
-      }
-
-      console.log("Hash computation result:", result);
-      console.log("Hash execution response:", executionResponse);
-      
-      setHashProofText(executionResponse);
-      setHashProvingFinished(true);
-      setComputedHash(executionResponse);
-      
-      // Extract hash from execution response
-      const json = typeof executionResponse === "string" 
-        ? JSON.parse(executionResponse) 
-        : executionResponse;
-      const transitions = json.execution?.transitions ?? json.transitions;
-      if (transitions && transitions[0] && transitions[0].outputs) {
-        const outputs = transitions[0].outputs;
-        const hashOutput = outputs[outputs.length - 1]; // Last output is typically the hash
-        if (hashOutput && hashOutput.value) {
-          setMlpInferenceResult(hashOutput.value);
-          console.log("✅ Hash extracted from execution response:", hashOutput.value);
-        }
-      }
-      
-    } catch (error) {
-      console.error("❌ Error in computeHashWithDelegatedProving:", error);
-      setHashProvingError({
-        message: error.message,
-        canRetry: true,
-      });
-    } finally {
-      setIsGeneratingHashProof(false);
-    }
-  };
-
-  // Prepare Aleo input specifically for hash computation
-  const prepareAleoInputForHash = async () => {
-    if (!trainedModel) {
-      console.error("No trained model available for hash computation");
-      return null;
-    }
-
-    try {
-      console.log("=== Preparing Aleo Input for Hash Computation ===");
-
-      // Get the same face features that will be used for inference
-      let faceFeatures = null;
-
-      // Try passport image first
-      if (capturedPassportImage) {
-        console.log("🖼️ Using passport image for hash computation...");
-        const passportResult = await processFaceImageToPCAVector(capturedPassportImage);
-        if (passportResult.success && passportResult.pcaVector?.length === 32) {
-          faceFeatures = passportResult.pcaVector;
-          console.log("✅ Passport face features extracted for hash:", faceFeatures.slice(0, 5), "...");
-        }
-      }
-
-      // If no passport features, try the latest captured image
-      if (!faceFeatures && capturedImage) {
-        console.log("🖼️ Using captured image for hash computation...");
-        const capturedResult = await processFaceImageToPCAVector(capturedImage);
-        if (capturedResult.success && capturedResult.pcaVector?.length === 32) {
-          faceFeatures = capturedResult.pcaVector;
-          console.log("✅ Captured image face features extracted for hash:", faceFeatures.slice(0, 5), "...");
-        }
-      }
-
-      // If no face features available, try using the faceDescriptor directly
-      if (!faceFeatures && faceDescriptor) {
-        console.log("🖼️ Using stored face descriptor for hash computation...");
-        const descriptorArray = Array.isArray(faceDescriptor) ? faceDescriptor : Array.from(faceDescriptor);
-        const descriptorResult = await processFaceImageToPCAVector(descriptorArray);
-        if (descriptorResult.success && descriptorResult.pcaVector?.length === 32) {
-          faceFeatures = descriptorResult.pcaVector;
-          console.log("✅ Face descriptor features extracted for hash:", faceFeatures.slice(0, 5), "...");
-        }
-      }
-
-      if (!faceFeatures) {
-        console.warn("⚠️ No face features available for hash computation, using dummy features");
-        faceFeatures = new Array(32).fill(0);
-      }
-
-      // Normalize features using model scaler if available (same as inference)
-      let normalizedFeatures = faceFeatures;
-      if (modelScaler && modelScaler.transform) {
-        try {
-          const normalizedArray = modelScaler.transform([faceFeatures]);
-          normalizedFeatures = Array.isArray(normalizedArray) ? normalizedArray[0] : normalizedArray;
-          console.log("✅ Features normalized using model scaler for hash");
-        } catch (scalerError) {
-          console.warn("⚠️ Scaler transform failed for hash, using raw features:", scalerError);
-          normalizedFeatures = faceFeatures;
-        }
-      }
-
-      // Convert to fixed point for Aleo (same as inference)
-      const fixedPointFeatures = toFixedPoint(normalizedFeatures);
-      console.log("✅ Features converted to fixed point for hash:", fixedPointFeatures.slice(0, 5), "...");
-
-      // Now use the same prepareAleoInput function as inference, but with the hash-only program
-      const aleoInputArray = await prepareAleoInput(fixedPointFeatures);
-      if (!aleoInputArray) {
-        console.error("❌ Failed to prepare Aleo input for hash computation");
-        return null;
-      }
-
-      console.log("=== Aleo Input for Hash Computation Complete ===");
-      console.log("aleoInputArray length:", aleoInputArray.length);
-      return aleoInputArray;
-    } catch (error) {
-      console.error("Error preparing Aleo input for hash computation:", error);
-      return null;
-    }
-  };
-
-  // Start hash proof progress animation
-  const startHashProofProgress = (expectedRuntime) => {
-    setIsGeneratingHashProof(true);
-    setHashProofProgress(0);
-
-    const intervalTime = 150;
-    const expectedRuntimeInMilliseconds = expectedRuntime * 1000;
-    const increment = (intervalTime / expectedRuntimeInMilliseconds) * 100;
-
-    const interval = setInterval(() => {
-      setHashProofProgress((oldProgress) => {
-        var newProgress = oldProgress + increment;
-        if (newProgress >= 99) {
-          newProgress = 99;
-        }
-        if (newProgress >= 100 || hashProvingFinished) {
-          clearInterval(interval);
-          setIsGeneratingHashProof(false);
-          return 100;
-        }
-        return Math.round(newProgress * 10) / 10;
-      });
-    }, intervalTime);
-
-    setHashProofInterval(interval);
-  };
-
-  // Handle continue from hash computation screen
-  const handleContinueFromHash = () => {
-    // For face verification, go to address registration after hash computation
-    if (verificationType === VERIFICATION_TYPES.FACE) {
-      setCurrentStep(VERIFICATION_STEPS.REGISTERING_ADDRESS);
-    } else {
-      setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
-    }
-  };
 
   const handleConfirm = () => {
     setCurrentStep(VERIFICATION_STEPS.VERIFYING);
@@ -1423,18 +1057,8 @@ export const useVerification = (verificationType, importedModelData = null, capt
   };
 
   const handleContinueToProof = () => {
-    // For face verification, go to hash computation first, then to proof creation
-    if (verificationType === VERIFICATION_TYPES.FACE) {
-      setCurrentStep(VERIFICATION_STEPS.COMPUTING_HASHES);
-      // Use delegated proving for hash computation if enabled, otherwise use local computation
-      if (isDelegatedProving) {
-        computeHashWithDelegatedProving();
-      } else {
-        computeMlpFaceHashInference();
-      }
-    } else {
-      setCurrentStep(VERIFICATION_STEPS.REGISTERING_ADDRESS);
-    }
+    // For both face and signature verification, go directly to address registration
+    setCurrentStep(VERIFICATION_STEPS.REGISTERING_ADDRESS);
   };
 
   const getProgressDots = () => {
@@ -2592,20 +2216,11 @@ export const useVerification = (verificationType, importedModelData = null, capt
     handleContinue,
     handleConfirm,
     handleContinueToProof,
-    handleContinueFromHash,
     computedHash: mlpInferenceResult,
     isComputingHash: isComputingInference,
     computeModelHash,
     mlpInferenceResult,
     isComputingInference,
-    computeMlpFaceHashInference,
-    // Hash computation delegated proving
-    hashProofText,
-    isGeneratingHashProof,
-    hashProofProgress,
-    hashProvingError,
-    hashProvingFinished,
-    computeHashWithDelegatedProving,
     getProgressDots,
     setCurrentStep,
     onStepBack,

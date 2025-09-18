@@ -104,6 +104,7 @@ export default function TrainingModelScreen({
   modelScaler,
   capturedImage,
   faceDescriptor,
+  onModelHashComputed,
 }) {
   // Estimate time remaining (default 10s, update as epochs progress)
   const [eta, setEta] = useState(10);
@@ -180,6 +181,11 @@ export default function TrainingModelScreen({
       const { modelHash: computedHash } = await computeModelHashFromAleoInputs(aleoInputArray);
       setModelHash(computedHash.toString());
       console.log("✅ Model hash computed:", computedHash.toString());
+      
+      // Notify parent component about the computed hash
+      if (onModelHashComputed) {
+        onModelHashComputed(computedHash.toString());
+      }
       
     } catch (error) {
       console.error("❌ Error computing model hash:", error);
