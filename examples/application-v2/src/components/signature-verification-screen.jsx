@@ -43,6 +43,8 @@ export default function SignatureVerificationScreen({
     stopCapturing: stopDrawing,
     clearCapture: clearSignature,
     currentEpoch,
+    trainedModel,
+    modelScaler,
     resetVerification,
     handleContinue,
     handleConfirm,
@@ -190,6 +192,10 @@ export default function SignatureVerificationScreen({
         onContinue={handleContinueToProof}
         signatures={signatures}
         verificationType={VERIFICATION_TYPES.SIGNATURE}
+        trainedModel={trainedModel}
+        modelScaler={modelScaler}
+        capturedImage={null}
+        faceDescriptor={null}
       />
     );
   }

@@ -133,6 +133,8 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     faceDescriptor,
     mlpPrediction,
     isTooSimilar,
+    trainedModel,
+    modelScaler,
     resetVerification,
     startCapturing,
     capture,
@@ -368,6 +370,10 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
         onContinue={handleContinueToProof}
         faces={faces}
         verificationType={VERIFICATION_TYPES.FACE}
+        trainedModel={trainedModel}
+        modelScaler={modelScaler}
+        capturedImage={capturedImage}
+        faceDescriptor={faceDescriptor}
       />
     );
   }

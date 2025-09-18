@@ -5,6 +5,7 @@ import { VERIFICATION_TYPES } from "../../hooks/useVerification.jsx";
 import { Download } from "lucide-react";
 import { cn } from "@/lib/utils.js";
 import { appVersionFooter } from "./app-version-footer.jsx";
+import { computeModelHashFromAleoInputs } from "../../utils/model-hash-utils.js";
 
 // Fixed positions for up to 6 signatures (percentages for top/left)
 const SIGNATURE_POSITIONS = [
@@ -99,11 +100,20 @@ export default function TrainingModelScreen({
   signatures = [],
   verificationType,
   isTraining = false,
+  trainedModel,
+  modelScaler,
+  capturedImage,
+  faceDescriptor,
 }) {
   // Estimate time remaining (default 10s, update as epochs progress)
   const [eta, setEta] = useState(10);
   const lastEpochRef = useRef(currentEpoch);
   const lastTimeRef = useRef(Date.now());
+  
+  // Model hash computation state
+  const [modelHash, setModelHash] = useState(null);
+  const [isComputingHash, setIsComputingHash] = useState(false);
+  const [hashError, setHashError] = useState(null);
 
   useEffect(() => {
     if (isTraining && currentEpoch > lastEpochRef.current) {
@@ -119,6 +129,214 @@ export default function TrainingModelScreen({
       lastTimeRef.current = now;
     }
   }, [currentEpoch, totalEpochs, isTraining]);
+
+  // Compute model hash when training is complete
+  useEffect(() => {
+    if (!isTraining && trainedModel && !modelHash && !isComputingHash) {
+      computeModelHash();
+    }
+  }, [isTraining, trainedModel, modelHash, isComputingHash]);
+
+  // Function to compute model hash using only model weights
+  const computeModelHash = async () => {
+    try {
+      setIsComputingHash(true);
+      setHashError(null);
+      console.log("🔗 Computing model hash on Training Complete screen...");
+      
+      if (!trainedModel) {
+        throw new Error("No trained model available");
+      }
+
+      // Extract raw model weights directly (same as useVerification)
+      const modelWeights = trainedModel.getWeights();
+      const [inputDim, hiddenDim] = modelWeights[0].shape;
+      const [, outputDim] = modelWeights[2].shape;
+
+      const layer1Weights = await modelWeights[0].data();
+      const layer1Biases = await modelWeights[1].data();
+      const layer2Weights = await modelWeights[2].data();
+      const layer2Biases = await modelWeights[3].data();
+
+      console.log("📊 Model architecture:", { inputDim, hiddenDim, outputDim });
+      console.log("📊 Raw weights shapes:", {
+        layer1Weights: layer1Weights.length,
+        layer1Biases: layer1Biases.length,
+        layer2Weights: layer2Weights.length,
+        layer2Biases: layer2Biases.length
+      });
+
+      // Create Aleo input array using raw weights and same scaling as useVerification
+      const aleoInputArray = await prepareAleoInputFromRawWeights(
+        layer1Weights, layer1Biases, layer2Weights, layer2Biases,
+        inputDim, hiddenDim, outputDim, verificationType
+      );
+      
+      if (!aleoInputArray) {
+        throw new Error("Failed to prepare Aleo input from model weights");
+      }
+
+      // Compute model hash using the same function as in useVerification
+      const { modelHash: computedHash } = await computeModelHashFromAleoInputs(aleoInputArray);
+      setModelHash(computedHash.toString());
+      console.log("✅ Model hash computed:", computedHash.toString());
+      
+    } catch (error) {
+      console.error("❌ Error computing model hash:", error);
+      setHashError(error.message);
+    } finally {
+      setIsComputingHash(false);
+    }
+  };
+
+  // Helper function to prepare Aleo input from raw weights (exact copy of useVerification logic)
+  const prepareAleoInputFromRawWeights = async (
+    layer1Weights, layer1Biases, layer2Weights, layer2Biases,
+    inputDim, hiddenDim, outputDim, verificationType
+  ) => {
+    try {
+      const int_type = "i64";
+
+      // Scaling factors (exact same as useVerification)
+      const scale1 = 16; // w₁
+      const scale2 = scale1; // w₂  (=256)
+      const bias1Scale = scale1 * scale1; // 256
+      const bias2Scale = scale1 * bias1Scale; // 4096
+
+      // Use zeros for face features (same as useVerification but with zeros)
+      const scaledFeatures = new Array(inputDim).fill(0);
+
+      const scaledLayer1Biases = Array.from(layer1Biases).map((b) =>
+        Math.round(b * bias1Scale)
+      );
+      const scaledLayer2Biases = Array.from(layer2Biases).map((b) =>
+        Math.round(b * bias2Scale)
+      );
+
+      const inputValues = [];
+      inputValues.push(...scaledFeatures);
+
+      // Add layer 1 weights and biases (exact same logic as useVerification)
+      for (let n = 0; n < hiddenDim; n++) {
+        for (let i = 0; i < inputDim; i++) {
+          const idx = i * hiddenDim + n;
+          inputValues.push(Math.round(layer1Weights[idx] * scale1));
+        }
+        inputValues.push(scaledLayer1Biases[n]);
+      }
+
+      // Add layer 2 weights and biases (exact same logic as useVerification)
+      for (let h = 0; h < hiddenDim; h++) {
+        const idx = h * outputDim + 0;
+        inputValues.push(Math.round(layer2Weights[idx] * scale2));
+      }
+      inputValues.push(scaledLayer2Biases[0]);
+
+      for (let h = 0; h < hiddenDim; h++) {
+        const idx = h * outputDim + 1;
+        inputValues.push(Math.round(layer2Weights[idx] * scale2));
+      }
+      inputValues.push(scaledLayer2Biases[1]);
+
+      console.log("📊 Total input values:", inputValues.length);
+      console.log("📊 First few values:", inputValues.slice(0, 10));
+
+      // Create structs exactly like useVerification
+      const structs = [];
+      let valueIndex = 0;
+
+      if (verificationType === VERIFICATION_TYPES.SIGNATURE) {
+        // Signature: 20 -> 11 -> 2 architecture
+        for (let structIdx = 0; structIdx < 3; structIdx++) {
+          const structFields = {};
+          for (let fieldIdx = 0; fieldIdx < 18; fieldIdx++) {
+            const fieldName = `x${fieldIdx}`;
+            structFields[fieldName] =
+              valueIndex < inputValues.length ? inputValues[valueIndex] : 0;
+            valueIndex++;
+          }
+          structs.push({ type: "Struct0", fields: structFields });
+        }
+
+        for (let structIdx = 0; structIdx < 13; structIdx++) {
+          const structFields = {};
+          for (let fieldIdx = 0; fieldIdx < 17; fieldIdx++) {
+            const fieldName = `x${fieldIdx}`;
+            structFields[fieldName] =
+              valueIndex < inputValues.length ? inputValues[valueIndex] : 0;
+            valueIndex++;
+          }
+          structs.push({ type: "Struct1", fields: structFields });
+        }
+
+        const aleoInputArray = structs.map((struct) => {
+          const fieldStrings = Object.entries(struct.fields)
+            .map(([key, value]) => `${key}: ${value}${int_type}`)
+            .join(", ");
+          return `{${fieldStrings}}`;
+        });
+
+        return aleoInputArray;
+      } else if (verificationType === VERIFICATION_TYPES.FACE) {
+        // Face: 32 -> 17 -> 2 architecture
+        const aleoInputArray = [];
+        for (let structIdx = 0; structIdx < 5; structIdx++) {
+          const struct2Fields = [];
+
+          // First 8 fields are Struct0 (struct1_0 to struct1_7)
+          for (let i = 0; i < 8; i++) {
+            const x0 =
+              valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+            const x1 =
+              valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+            struct2Fields.push(
+              `struct1_${i}: {x0: ${x0}${int_type}, x1: ${x1}${int_type}}`
+            );
+          }
+
+          // Next 24 fields are Struct1 (struct1_8 to struct1_31)
+          for (let i = 8; i < 32; i++) {
+            const x0 =
+              valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+            struct2Fields.push(`struct1_${i}: {x0: ${x0}${int_type}}`);
+          }
+
+          aleoInputArray.push(`{${struct2Fields.join(", ")}}`);
+        }
+
+        // Create 11 Struct3 objects (struct0_5 to struct0_15)
+        for (let structIdx = 0; structIdx < 11; structIdx++) {
+          const struct3Fields = [];
+
+          // First 7 fields are Struct0 (struct1_0 to struct1_6)
+          for (let i = 0; i < 7; i++) {
+            const x0 =
+              valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+            const x1 =
+              valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+            struct3Fields.push(
+              `struct1_${i}: {x0: ${x0}${int_type}, x1: ${x1}${int_type}}`
+            );
+          }
+
+          // Next 25 fields are Struct1 (struct1_7 to struct1_31)
+          for (let i = 7; i < 32; i++) {
+            const x0 =
+              valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+            struct3Fields.push(`struct1_${i}: {x0: ${x0}${int_type}}`);
+          }
+
+          aleoInputArray.push(`{${struct3Fields.join(", ")}}`);
+        }
+
+        console.log("📊 Created Aleo input array with", aleoInputArray.length, "structs");
+        return aleoInputArray;
+      }
+    } catch (error) {
+      console.error("Error preparing Aleo input from raw weights:", error);
+      return null;
+    }
+  };
 
   const description = isTraining
     ? `${verificationType === VERIFICATION_TYPES.SIGNATURE ? "SIGNATURE" : "FACE PROFILE"} VERIFICATION`
@@ -179,6 +397,35 @@ export default function TrainingModelScreen({
         />
         {!isTraining ? (
           <>
+            {/* Model Hash Display */}
+            <div className="mb-6 w-full max-w-md">
+              <div className="gradient-white mb-2 text-center text-xs tracking-widest uppercase">
+                MODEL HASH
+              </div>
+              <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                {isComputingHash ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "0ms" }}></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "150ms" }}></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "300ms" }}></div>
+                    <span className="text-xs text-white/70 ml-2">Computing...</span>
+                  </div>
+                ) : hashError ? (
+                  <div className="text-xs text-red-400 text-center">
+                    Error: {hashError}
+                  </div>
+                ) : modelHash ? (
+                  <div className="text-xs text-white/90 font-mono break-all text-center">
+                    {modelHash}
+                  </div>
+                ) : (
+                  <div className="text-xs text-white/50 text-center">
+                    No model hash available
+                  </div>
+                )}
+              </div>
+            </div>
+            
             <ActionButton
               onClick={onDownloadModel}
               variant="outline"
