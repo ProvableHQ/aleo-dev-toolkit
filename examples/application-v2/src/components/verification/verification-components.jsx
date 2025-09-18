@@ -1046,6 +1046,11 @@ export const RegisteringAddressScreen = ({
   const [error, setError] = useState(null);
   const [transactionId, setTransactionId] = useState(null);
   const hasRegisteredRef = useRef(null); // Use ref to persist across StrictMode remounts
+  
+  // Timer state for tracking registration duration
+  const [registrationStartTime, setRegistrationStartTime] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timerIntervalRef = useRef(null);
 
   useEffect(() => {
     console.log('RegisteringAddressScreen useEffect triggered. address:', address, 'connected:', connected, 'hasRegistered:', hasRegisteredRef.current);
@@ -1065,6 +1070,18 @@ export const RegisteringAddressScreen = ({
 
         console.log('Registering address:', address);
         hasRegisteredRef.current = address; // Mark this address as being registered
+
+        // Start timer for registration duration
+        const startTime = Date.now();
+        setRegistrationStartTime(startTime);
+        setElapsedSeconds(0);
+        
+        // Start timer interval to update elapsed seconds every second
+        timerIntervalRef.current = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          setElapsedSeconds(elapsed);
+          console.log(`Registration in progress: ${elapsed} seconds elapsed`);
+        }, 1000);
 
         // Determine which endpoint to use based on whether we have a computed hash
         const endpoint = computedHash ? '/api/rust/register-address-kya' : '/api/rust/verify';
@@ -1101,12 +1118,30 @@ export const RegisteringAddressScreen = ({
           }
           setTransactionId(txId);
           console.log('Address registered successfully:', result);
+          
+          // Stop timer and log final duration
+          if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+          }
+          const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
+          console.log(`✅ Registration completed successfully in ${finalElapsed} seconds`);
+          
           setIsRegistering(false);
         } else {
           throw new Error(result.error || 'Failed to register address');
         }
       } catch (err) {
         console.error('Error registering address:', err);
+        
+        // Stop timer and log final duration
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
+        }
+        const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
+        console.log(`❌ Registration failed after ${finalElapsed} seconds:`, err.message);
+        
         setError(err.message);
         setIsRegistering(false);
         onError && onError(err);
@@ -1117,6 +1152,16 @@ export const RegisteringAddressScreen = ({
       registerAddress();
     }
   }, [address, connected]); // Only re-run when address or connection status changes
+
+  // Cleanup timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const verificationTypeConfig = {
     signature: "SIGNATURE",
@@ -1204,6 +1249,18 @@ export const RegisteringAddressScreen = ({
                         throw new Error('No wallet connected. Please connect your wallet first.');
                       }
                       
+                      // Start timer for retry registration
+                      const startTime = Date.now();
+                      setRegistrationStartTime(startTime);
+                      setElapsedSeconds(0);
+                      
+                      // Start timer interval to update elapsed seconds every second
+                      timerIntervalRef.current = setInterval(() => {
+                        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                        setElapsedSeconds(elapsed);
+                        console.log(`Registration retry in progress: ${elapsed} seconds elapsed`);
+                      }, 1000);
+                      
                       // Use the same endpoint logic for retry
                       const endpoint = computedHash ? '/api/rust/register-address-kya' : '/api/rust/verify';
                       const requestBody = computedHash 
@@ -1228,11 +1285,28 @@ export const RegisteringAddressScreen = ({
                           }
                         }
                         setTransactionId(txId);
+                        
+                        // Stop timer and log final duration for retry
+                        if (timerIntervalRef.current) {
+                          clearInterval(timerIntervalRef.current);
+                          timerIntervalRef.current = null;
+                        }
+                        const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
+                        console.log(`✅ Registration retry completed successfully in ${finalElapsed} seconds`);
+                        
                         setIsRegistering(false);
                       } else {
                         throw new Error(result.error || 'Failed to register address');
                       }
                     } catch (err) {
+                      // Stop timer and log final duration for retry error
+                      if (timerIntervalRef.current) {
+                        clearInterval(timerIntervalRef.current);
+                        timerIntervalRef.current = null;
+                      }
+                      const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
+                      console.log(`❌ Registration retry failed after ${finalElapsed} seconds:`, err.message);
+                      
                       setError(err.message);
                       setIsRegistering(false);
                     }
