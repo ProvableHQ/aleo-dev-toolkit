@@ -13,6 +13,7 @@ import {
 } from "../augmentation.js";
 import { trainingDatasets } from "../trainingData.js";
 import { trainMLPModel } from "../tensorflow_training.js";
+import { computeModelHashFromAleoInputs } from "../utils/model-hash-utils.js";
 import * as tf from "@tensorflow/tfjs";
 import {
   processImage,
@@ -1650,6 +1651,16 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
         console.log("=== Aleo Input Preparation Complete ===");
         console.log("aleoInputArray", aleoInputArray);
+        
+        try {
+          const { modelHash, chunks } = await computeModelHashFromAleoInputs(aleoInputArray);
+          console.log("model_hash (off-chain):", modelHash.toString());
+          // If you also log chunk hashes:
+          // chunks.forEach((c, i) => console.log(`chunk[${i}]`, c.toString()));
+        } catch (e) {
+          console.error("Error computing model hash off-chain:", e);
+        }
+        
         return aleoInputArray;
       }
     } catch (error) {
