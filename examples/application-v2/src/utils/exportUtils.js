@@ -1,5 +1,7 @@
 // utils/exportUtils.js
 import * as tf from '@tensorflow/tfjs';
+import { computeModelHashFromAleoInputs } from './model-hash-utils.js';
+import { VERIFICATION_TYPES } from '../hooks/useVerification.jsx';
 
 export const exportIdentityParameters = async (trainedModel, modelScaler, labelMapping, verificationType) => {
     try {
@@ -142,5 +144,217 @@ export const importIdentityParameters = async (file) => {
             success: false,
             error: error.message
         };
+    }
+};
+
+/**
+ * Compute model hash from imported JSON model data
+ * This function replicates the same logic used in training to compute the model hash
+ * 
+ * @param {Object} identityData - The imported JSON model data
+ * @returns {Promise<Object>} Hash computation result
+ */
+export const computeModelHashFromImportedData = async (identityData) => {
+    try {
+        console.log("🔗 Computing model hash from imported JSON data...");
+        
+        const { modelWeights, metadata } = identityData;
+        const [inputDim, hiddenDim, outputDim] = metadata.architecture;
+        const verificationType = identityData.verificationType === 'signature' ? VERIFICATION_TYPES.SIGNATURE : VERIFICATION_TYPES.FACE;
+        
+        // Extract weights from the imported data
+        const layer1Weights = modelWeights.layer1.weights;
+        const layer1Biases = modelWeights.layer1Bias.weights;
+        const layer2Weights = modelWeights.layer2.weights;
+        const layer2Biases = modelWeights.layer2Bias.weights;
+        
+        console.log("📊 Model architecture:", { inputDim, hiddenDim, outputDim });
+        console.log("📊 Raw weights shapes:", {
+            layer1Weights: layer1Weights.length,
+            layer1Biases: layer1Biases.length,
+            layer2Weights: layer2Weights.length,
+            layer2Biases: layer2Biases.length
+        });
+        
+        // Prepare Aleo input array using the same logic as in training
+        const aleoInputArray = await prepareAleoInputFromRawWeights(
+            layer1Weights, layer1Biases, layer2Weights, layer2Biases,
+            inputDim, hiddenDim, outputDim, verificationType
+        );
+        
+        if (!aleoInputArray) {
+            throw new Error("Failed to prepare Aleo input from imported model weights");
+        }
+        
+        // Compute model hash using the same function as in training
+        const { modelHash: computedHash } = await computeModelHashFromAleoInputs(aleoInputArray);
+        const hashString = computedHash.toString();
+        
+        console.log("✅ Model hash computed from imported data:", hashString);
+        
+        return {
+            success: true,
+            modelHash: hashString,
+            verificationType: verificationType
+        };
+        
+    } catch (error) {
+        console.error("❌ Error computing model hash from imported data:", error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
+
+/**
+ * Prepare Aleo input array from raw weights (copied from training-screen.jsx)
+ * This function replicates the exact same logic used during training
+ */
+const prepareAleoInputFromRawWeights = async (
+    layer1Weights, layer1Biases, layer2Weights, layer2Biases,
+    inputDim, hiddenDim, outputDim, verificationType
+) => {
+    try {
+        const int_type = "i64";
+
+        // Scaling factors (exact same as useVerification)
+        const scale1 = 16; // w₁
+        const scale2 = scale1; // w₂  (=256)
+        const bias1Scale = scale1 * scale1; // 256
+        const bias2Scale = scale1 * bias1Scale; // 4096
+
+        // Use zeros for face features (same as useVerification but with zeros)
+        const scaledFeatures = new Array(inputDim).fill(0);
+
+        const scaledLayer1Biases = Array.from(layer1Biases).map((b) =>
+            Math.round(b * bias1Scale)
+        );
+        const scaledLayer2Biases = Array.from(layer2Biases).map((b) =>
+            Math.round(b * bias2Scale)
+        );
+
+        const inputValues = [];
+        inputValues.push(...scaledFeatures);
+
+        // Add layer 1 weights and biases (exact same logic as useVerification)
+        for (let n = 0; n < hiddenDim; n++) {
+            for (let i = 0; i < inputDim; i++) {
+                const idx = i * hiddenDim + n;
+                inputValues.push(Math.round(layer1Weights[idx] * scale1));
+            }
+            inputValues.push(scaledLayer1Biases[n]);
+        }
+
+        // Add layer 2 weights and biases (exact same logic as useVerification)
+        for (let h = 0; h < hiddenDim; h++) {
+            const idx = h * outputDim + 0;
+            inputValues.push(Math.round(layer2Weights[idx] * scale2));
+        }
+        inputValues.push(scaledLayer2Biases[0]);
+
+        for (let h = 0; h < hiddenDim; h++) {
+            const idx = h * outputDim + 1;
+            inputValues.push(Math.round(layer2Weights[idx] * scale2));
+        }
+        inputValues.push(scaledLayer2Biases[1]);
+
+        console.log("📊 Total input values:", inputValues.length);
+        console.log("📊 First few values:", inputValues.slice(0, 10));
+
+        // Create structs exactly like useVerification
+        const structs = [];
+        let valueIndex = 0;
+
+        if (verificationType === VERIFICATION_TYPES.SIGNATURE) {
+            // Signature: 20 -> 11 -> 2 architecture
+            for (let structIdx = 0; structIdx < 3; structIdx++) {
+                const structFields = {};
+                for (let fieldIdx = 0; fieldIdx < 18; fieldIdx++) {
+                    const fieldName = `x${fieldIdx}`;
+                    structFields[fieldName] =
+                        valueIndex < inputValues.length ? inputValues[valueIndex] : 0;
+                    valueIndex++;
+                }
+                structs.push({ type: "Struct0", fields: structFields });
+            }
+
+            for (let structIdx = 0; structIdx < 13; structIdx++) {
+                const structFields = {};
+                for (let fieldIdx = 0; fieldIdx < 17; fieldIdx++) {
+                    const fieldName = `x${fieldIdx}`;
+                    structFields[fieldName] =
+                        valueIndex < inputValues.length ? inputValues[valueIndex] : 0;
+                    valueIndex++;
+                }
+                structs.push({ type: "Struct1", fields: structFields });
+            }
+
+            const aleoInputArray = structs.map((struct) => {
+                const fieldStrings = Object.entries(struct.fields)
+                    .map(([key, value]) => `${key}: ${value}${int_type}`)
+                    .join(", ");
+                return `{${fieldStrings}}`;
+            });
+
+            return aleoInputArray;
+        } else if (verificationType === VERIFICATION_TYPES.FACE) {
+            // Face: 32 -> 17 -> 2 architecture
+            const aleoInputArray = [];
+            for (let structIdx = 0; structIdx < 5; structIdx++) {
+                const struct2Fields = [];
+
+                // First 8 fields are Struct0 (struct1_0 to struct1_7)
+                for (let i = 0; i < 8; i++) {
+                    const x0 =
+                        valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+                    const x1 =
+                        valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+                    struct2Fields.push(
+                        `struct1_${i}: {x0: ${x0}${int_type}, x1: ${x1}${int_type}}`
+                    );
+                }
+
+                // Next 24 fields are Struct1 (struct1_8 to struct1_31)
+                for (let i = 8; i < 32; i++) {
+                    const x0 =
+                        valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+                    struct2Fields.push(`struct1_${i}: {x0: ${x0}${int_type}}`);
+                }
+
+                aleoInputArray.push(`{${struct2Fields.join(", ")}}`);
+            }
+
+            // Create 11 Struct3 objects (struct0_5 to struct0_15)
+            for (let structIdx = 0; structIdx < 11; structIdx++) {
+                const struct3Fields = [];
+
+                // First 7 fields are Struct0 (struct1_0 to struct1_6)
+                for (let i = 0; i < 7; i++) {
+                    const x0 =
+                        valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+                    const x1 =
+                        valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+                    struct3Fields.push(
+                        `struct1_${i}: {x0: ${x0}${int_type}, x1: ${x1}${int_type}}`
+                    );
+                }
+
+                // Next 25 fields are Struct1 (struct1_7 to struct1_31)
+                for (let i = 7; i < 32; i++) {
+                    const x0 =
+                        valueIndex < inputValues.length ? inputValues[valueIndex++] : 0;
+                    struct3Fields.push(`struct1_${i}: {x0: ${x0}${int_type}}`);
+                }
+
+                aleoInputArray.push(`{${struct3Fields.join(", ")}}`);
+            }
+
+            console.log("📊 Created Aleo input array with", aleoInputArray.length, "structs");
+            return aleoInputArray;
+        }
+    } catch (error) {
+        console.error("Error preparing Aleo input from raw weights:", error);
+        return null;
     }
 };

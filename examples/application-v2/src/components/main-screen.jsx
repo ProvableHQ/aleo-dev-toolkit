@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import aleoLogo from "../assets/aleo-provable.svg";
 import kyaLogo from "../assets/kya.svg";
 import faceLogo from "../assets/face.svg";
-import { importIdentityParameters } from "../utils/exportUtils.js";
+import { importIdentityParameters, computeModelHashFromImportedData } from "../utils/exportUtils.js";
 import { useState, useRef, useEffect } from "react";
 import WalletConnector from "./WalletConnector.jsx";
 import { runAleoHashPerformanceTest } from "../utils/aleoHashTest.js";
@@ -43,12 +43,42 @@ export default function MainScreen({
 
   const handleFileSelect = async (file) => {
     try {
-      const result = await importIdentityParameters(file);
-      if (result.success) {
-        onModelImport(result);
-      } else {
-        alert(`Failed to import model: ${result.error}`);
+      // First, import the model data to get the JSON structure
+      const importResult = await importIdentityParameters(file);
+      if (!importResult.success) {
+        alert(`Failed to import model: ${importResult.error}`);
+        return;
       }
+
+      // Parse the file again to get the raw JSON data for hash computation
+      const text = await file.text();
+      const identityData = JSON.parse(text);
+
+      // Compute the model hash from the imported data
+      console.log("🔍 Validating model hash...");
+      const hashResult = await computeModelHashFromImportedData(identityData);
+      
+      if (!hashResult.success) {
+        alert(`Failed to compute model hash: ${hashResult.error}`);
+        return;
+      }
+
+      const computedHash = hashResult.modelHash;
+      const registeredHash = walletData?.registeredHash;
+      
+      console.log("📊 Computed hash from opened model:", computedHash);
+      console.log("📊 Registered hash from wallet:", registeredHash);
+
+      // Validate the hash matches the registered hash
+      if (registeredHash && computedHash !== registeredHash) {
+        alert(`Model hash mismatch!\n\nOpened model hash: ${computedHash}\nExpected hash: ${registeredHash}\n\nPlease upload the correct model file.`);
+        return;
+      }
+
+      // If we get here, the hash is valid (or no registered hash to compare against)
+      console.log("✅ Model hash validation passed");
+      onModelImport(importResult);
+      
     } catch (error) {
       alert(`Error importing model: ${error.message}`);
     }
