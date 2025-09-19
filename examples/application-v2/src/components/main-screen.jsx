@@ -159,9 +159,9 @@ export default function MainScreen({
                     console.log("User clicked: START WITH PASSPORT VERIFICATION");
                     onVerificationChoice("passport");
                   }}
-                  disabled={!isWalletReady || (isAddressWhitelisted && isModelHashRegistered && hasTrainedModelInMemory)}
+                  disabled={!isWalletReady || (isAddressWhitelisted && isModelHashRegistered)}
                   className={`flex h-[42px] w-[353px] items-center justify-between rounded-full px-4 text-sm font-medium transition-all ${
-                    isWalletReady && !(isAddressWhitelisted && isModelHashRegistered && hasTrainedModelInMemory)
+                    isWalletReady && !(isAddressWhitelisted && isModelHashRegistered)
                       ? "cursor-pointer bg-gray-200 text-gray-900 hover:bg-gray-300" 
                       : "cursor-not-allowed bg-gray-500 text-gray-600 opacity-50"
                   }`}
@@ -170,7 +170,7 @@ export default function MainScreen({
                     <img src={faceLogo} alt="Face Logo" className="h-5 w-5" />
                     <span className="w-full">START WITH PASSPORT VERIFICATION</span>
                   </div>
-                  <span className={isWalletReady && !(isAddressWhitelisted && isModelHashRegistered && hasTrainedModelInMemory) ? "text-gray-400" : "text-gray-500"}>›</span>
+                  <span className={isWalletReady && !(isAddressWhitelisted && isModelHashRegistered) ? "text-gray-400" : "text-gray-500"}>›</span>
                 </Button>
 
               </div>
