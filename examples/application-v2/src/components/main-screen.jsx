@@ -14,11 +14,20 @@ export default function MainScreen({
   onVerificationChoice,
   onOptionsClick,
   onModelImport,
+  trainedModelData,
+  onGoToInference,
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isWalletReady, setIsWalletReady] = useState(false);
   const [walletData, setWalletData] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Determine UI state based on wallet and model data
+  const isAddressWhitelisted = walletData?.isWhitelisted === true;
+  const isModelHashRegistered = walletData?.registeredHash !== null && walletData?.registeredHash !== undefined;
+  const hasTrainedModelInMemory = trainedModelData && trainedModelData.success;
+  const shouldShowDragAndDrop = isAddressWhitelisted && isModelHashRegistered && !hasTrainedModelInMemory;
+  const shouldShowModelLoaded = hasTrainedModelInMemory && isAddressWhitelisted && isModelHashRegistered;
 
   // Listen for wallet ready event
   useEffect(() => {
@@ -150,9 +159,9 @@ export default function MainScreen({
                     console.log("User clicked: START WITH PASSPORT VERIFICATION");
                     onVerificationChoice("passport");
                   }}
-                  disabled={!isWalletReady || (walletData && walletData.isWhitelisted !== null && walletData.registeredHash !== null)}
+                  disabled={!isWalletReady || (isAddressWhitelisted && isModelHashRegistered && hasTrainedModelInMemory)}
                   className={`flex h-[42px] w-[353px] items-center justify-between rounded-full px-4 text-sm font-medium transition-all ${
-                    isWalletReady && (!walletData || walletData.isWhitelisted === null || walletData.registeredHash === null)
+                    isWalletReady && !(isAddressWhitelisted && isModelHashRegistered && hasTrainedModelInMemory)
                       ? "cursor-pointer bg-gray-200 text-gray-900 hover:bg-gray-300" 
                       : "cursor-not-allowed bg-gray-500 text-gray-600 opacity-50"
                   }`}
@@ -161,31 +170,61 @@ export default function MainScreen({
                     <img src={faceLogo} alt="Face Logo" className="h-5 w-5" />
                     <span className="w-full">START WITH PASSPORT VERIFICATION</span>
                   </div>
-                  <span className={isWalletReady && (!walletData || walletData.isWhitelisted === null || walletData.registeredHash === null) ? "text-gray-400" : "text-gray-500"}>›</span>
+                  <span className={isWalletReady && !(isAddressWhitelisted && isModelHashRegistered && hasTrainedModelInMemory) ? "text-gray-400" : "text-gray-500"}>›</span>
                 </Button>
 
               </div>
 
-              <span className="mb-4 text-sm text-gray-400">OR</span>
+              {/* Conditional UI based on wallet and model state */}
+              {shouldShowModelLoaded ? (
+                <>
+                  {/* Model Loaded Message */}
+                  <div className="mb-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                    <div className="text-center">
+                      <div className="text-green-400 text-sm font-medium mb-2">
+                        ✓ Model Loaded
+                      </div>
+                      <div className="text-gray-300 text-xs">
+                        Your trained model is ready for inference
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Drag & Drop Area */}
-              <div
-                className={`mx-auto mt-6 w-full max-w-md cursor-pointer rounded-lg border-2 border-dashed p-4 transition-colors ${
-                  isDragOver
-                    ? "bg-opacity-10 border-blue-400 bg-blue-50"
-                    : "border-opacity-50 border-gray-600 hover:border-gray-500"
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={handleUploadAreaClick}
-              >
-                <p className="text-xs text-gray-400 uppercase">
-                  {isDragOver
-                    ? "Drop your model file here"
-                    : "Open a trained model"}
-                </p>
-              </div>
+                  {/* Go to Inference Button */}
+                  <Button
+                    onClick={onGoToInference}
+                    className="flex h-[42px] w-[353px] items-center justify-center rounded-full px-4 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-all"
+                  >
+                    <div className="flex w-full items-center justify-center">
+                      <img src={faceLogo} alt="Face Logo" className="h-5 w-5 mr-2" />
+                      <span>GO TO INFERENCE</span>
+                    </div>
+                  </Button>
+                </>
+              ) : shouldShowDragAndDrop ? (
+                <>
+                  <span className="mb-4 text-sm text-gray-400">OR</span>
+
+                  {/* Drag & Drop Area */}
+                  <div
+                    className={`mx-auto mt-6 w-full max-w-md cursor-pointer rounded-lg border-2 border-dashed p-4 transition-colors ${
+                      isDragOver
+                        ? "bg-opacity-10 border-blue-400 bg-blue-50"
+                        : "border-opacity-50 border-gray-600 hover:border-gray-500"
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={handleUploadAreaClick}
+                  >
+                    <p className="text-xs text-gray-400 uppercase">
+                      {isDragOver
+                        ? "Drop your model file here"
+                        : "Open a trained model"}
+                    </p>
+                  </div>
+                </>
+              ) : null}
 
               <input
                 ref={fileInputRef}

@@ -131,6 +131,7 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     isTooSimilar,
     trainedModel,
     modelScaler,
+    labelMapping,
     resetVerification,
     startCapturing,
     capture,
@@ -176,7 +177,16 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     return (
       <VerificationCompleteScreen
         onBack={onStepBack}
-        onGoHome={onSuccess || onBack}
+        onGoHome={() => {
+          // Pass trained model data back to main screen
+          const modelData = {
+            model: trainedModel,
+            scaler: modelScaler,
+            labelMapping: labelMapping,
+            success: true
+          };
+          onSuccess && onSuccess(modelData);
+        }}
         onRetry={retryProofCreation}
         chartDataProof={chartDataProof}
         verificationType={VERIFICATION_TYPES.FACE}
@@ -295,7 +305,14 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
         verificationType={VERIFICATION_TYPES.FACE}
         onSuccess={() => {
           console.log('Address registration successful - redirecting to home');
-          onSuccess && onSuccess();
+          // Pass trained model data back to main screen
+          const modelData = {
+            model: trainedModel,
+            scaler: modelScaler,
+            labelMapping: labelMapping,
+            success: true
+          };
+          onSuccess && onSuccess(modelData);
         }}
         onError={(error) => {
           console.error('Address registration failed:', error);

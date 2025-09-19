@@ -13,6 +13,7 @@ export default function App() {
   const [importedModelData, setImportedModelData] = useState(null);
   const [capturedPassportImage, setCapturedPassportImage] = useState(null);
   const [, setLoadedResources] = useState(null);
+  const [trainedModelData, setTrainedModelData] = useState(null);
 
   const handleLoadingComplete = (resources) => {
     setLoadedResources(resources);
@@ -78,11 +79,27 @@ export default function App() {
     }, 300);
   };
 
-  const handleKyaSuccess = () => {
+  const handleKyaSuccess = (modelData = null) => {
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentScreen("main");
       setCapturedPassportImage(null); // Clear passport image
+      if (modelData) {
+        setTrainedModelData(modelData); // Store trained model data
+      }
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  const handleTrainedModelReady = (modelData) => {
+    setTrainedModelData(modelData);
+  };
+
+  const handleGoToInference = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentScreen("face-verification");
+      setImportedModelData(trainedModelData); // Use trained model for inference
       setIsTransitioning(false);
     }, 300);
   };
@@ -102,6 +119,8 @@ export default function App() {
             onVerificationChoice={handleVerificationChoice}
             onOptionsClick={handleOptionsClick}
             onModelImport={handleModelImport}
+            trainedModelData={trainedModelData}
+            onGoToInference={handleGoToInference}
           />
         )}
         {currentScreen === "face-verification" && (
