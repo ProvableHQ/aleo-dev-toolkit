@@ -233,7 +233,6 @@ export default function MainScreen({
                 </>
               ) : shouldShowDragAndDrop ? (
                 <>
-                  <span className="mb-4 text-sm text-gray-400">OR</span>
 
                   {/* Drag & Drop Area */}
                   <div
