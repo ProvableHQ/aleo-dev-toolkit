@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Upload } from "lucide-react";
+import { Upload, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScreenLayout, ActionButton } from "./signature/sig-components";
+import { detectFaceWithDescriptor, loadFaceApiModels } from "@/utils/faceUtils";
 
 const PassportCapture = ({
   captureRef,
@@ -14,6 +15,9 @@ const PassportCapture = ({
   capturedImage,
   onTakePicture,
   onTryAgain,
+  isValidatingFace,
+  faceValidationError,
+  hasValidFace,
 }) => {
   useEffect(() => {
     if (isReady) {
@@ -65,15 +69,36 @@ const PassportCapture = ({
           )}
 
           {hasCaptured && capturedImage && (
-            <img
-              src={capturedImage}
-              alt="Captured passport"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
+            <div className="relative w-full h-full">
+              <img
+                src={capturedImage}
+                alt="Captured passport"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+              {/* Validation status overlay */}
+              {isValidatingFace && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                    <div className="text-sm">Validating face...</div>
+                  </div>
+                </div>
+              )}
+              {!isValidatingFace && hasValidFace && (
+                <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs">
+                  ✓ Face detected
+                </div>
+              )}
+              {!isValidatingFace && faceValidationError && (
+                <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs">
+                  ✗ No face
+                </div>
+              )}
+            </div>
           )}
 
           {!isCapturing && !hasCaptured && (
@@ -100,6 +125,16 @@ const PassportCapture = ({
           </ActionButton>
         )}
       </div>
+
+      {/* Face validation error message */}
+      {faceValidationError && (
+        <div className="mt-4 mx-auto max-w-md">
+          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+            <p className="text-sm text-red-400">{faceValidationError}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -110,8 +145,59 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
   const [hasCaptured, setHasCaptured] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isValidatingFace, setIsValidatingFace] = useState(false);
+  const [faceValidationError, setFaceValidationError] = useState(null);
+  const [hasValidFace, setHasValidFace] = useState(false);
   const captureRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Face validation function
+  const validateFaceInImage = async (imageDataUrl) => {
+    setIsValidatingFace(true);
+    setFaceValidationError(null);
+    setHasValidFace(false);
+
+    try {
+      // Ensure face API models are loaded
+      await loadFaceApiModels();
+
+      // Create an image element from the data URL
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageDataUrl;
+      });
+
+      // Create a canvas from the image
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      // Detect face in the image
+      const faceResult = await detectFaceWithDescriptor(canvas);
+      
+      if (faceResult.success) {
+        setHasValidFace(true);
+        setFaceValidationError(null);
+        console.log("Face detected successfully in passport image");
+      } else {
+        setHasValidFace(false);
+        setFaceValidationError("No face detected in the passport image. Please ensure the passport photo is clearly visible and try again.");
+        console.log("Face detection failed:", faceResult.error);
+      }
+    } catch (error) {
+      setHasValidFace(false);
+      setFaceValidationError("Error processing the image. Please try again.");
+      console.error("Face validation error:", error);
+    } finally {
+      setIsValidatingFace(false);
+    }
+  };
 
   const startCapturing = async () => {
     try {
@@ -123,7 +209,7 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
     }
   };
 
-  const capture = () => {
+  const capture = async () => {
     if (captureRef.current) {
       const canvas = document.createElement("canvas");
       const video = captureRef.current;
@@ -141,6 +227,9 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+
+      // Validate face in the captured image
+      await validateFaceInImage(imageDataUrl);
     }
   };
 
@@ -149,6 +238,9 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
     setHasCaptured(false);
     setIsCapturing(false);
     setIsReady(true); // This will trigger camera restart
+    setFaceValidationError(null);
+    setHasValidFace(false);
+    setIsValidatingFace(false);
   };
 
   const handleTakePicture = () => {
@@ -164,10 +256,14 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
   const handleFileSelect = async (file) => {
     try {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setCapturedImage(e.target.result);
+      reader.onload = async (e) => {
+        const imageDataUrl = e.target.result;
+        setCapturedImage(imageDataUrl);
         setHasCaptured(true);
         setIsCapturing(false);
+        
+        // Validate face in the uploaded image
+        await validateFaceInImage(imageDataUrl);
       };
       reader.readAsDataURL(file);
     } catch (error) {
@@ -239,6 +335,9 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
           capturedImage={capturedImage}
           onTakePicture={handleTakePicture}
           onTryAgain={handleTryAgain}
+          isValidatingFace={isValidatingFace}
+          faceValidationError={faceValidationError}
+          hasValidFace={hasValidFace}
         />
 
         {/* Drag & Drop Upload Area */}
@@ -281,10 +380,10 @@ export default function PassportVerificationScreen({ onBack, onKycStart }) {
                 onKycStart(capturedImage); // Pass the captured image
               }
             }}
-            disabled={!hasCaptured}
+            disabled={!hasCaptured || !hasValidFace || isValidatingFace}
             variant="primary"
           >
-            CONTINUE
+            {isValidatingFace ? "VALIDATING..." : "CONTINUE"}
           </ActionButton>
         </div>
       </div>
