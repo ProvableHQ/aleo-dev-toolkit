@@ -157,7 +157,7 @@ export default function MainScreen({
                   A DEMO OF ALEO ZKML VERIFICATION.
                 </p>
                 <p className="gradient-white text-sm leading-relaxed text-gray-300">
-                  TRAIN A MODEL • CREATE & VERIFY A PROOF
+                  UPLOAD PASSPORT • TRAIN A MODEL • REGISTER ADDRESS & MODEL HASH • CREATE & VERIFY A PROOF
                 </p>
               </div>
 
