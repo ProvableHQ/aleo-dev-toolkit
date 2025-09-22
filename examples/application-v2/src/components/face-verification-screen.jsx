@@ -249,7 +249,15 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
   if (currentStep === VERIFICATION_STEPS.CREATE_PROOF) {
     return (
       <ScreenLayout
-        onBack={onStepBack}
+        onBack={() => {
+          if (importedModelData && importedModelData.success) {
+            // If we came from imported model, go back to main screen
+            onBack();
+          } else {
+            // Otherwise, use normal step back navigation
+            onStepBack();
+          }
+        }}
         title={stepConfig.titles[currentStep]}
         description={stepConfig.descriptions[currentStep]}
         tooltipText="Image only used for local feature extraction"
@@ -409,6 +417,9 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     <ScreenLayout
       onBack={() => {
         if (currentStep === VERIFICATION_STEPS.INITIAL) {
+          onBack();
+        } else if (currentStep === VERIFICATION_STEPS.CREATE_PROOF && importedModelData && importedModelData.success) {
+          // If we're on CREATE_PROOF step and came from imported model, go back to main screen
           onBack();
         } else {
           onStepBack();
