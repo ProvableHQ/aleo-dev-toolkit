@@ -116,9 +116,9 @@ export default function TrainingModelScreen({
   const [isComputingHash, setIsComputingHash] = useState(false);
   const [hashError, setHashError] = useState(null);
   
-  // Download status state
-  const [downloadStatus, setDownloadStatus] = useState('pending'); // 'pending', 'downloading', 'success', 'failed'
-  const [isDownloading, setIsDownloading] = useState(false);
+  // Store status state
+  const [storeStatus, setStoreStatus] = useState('pending'); // 'pending', 'storing', 'success', 'failed'
+  const [isStoring, setIsStoring] = useState(false);
 
   useEffect(() => {
     if (isTraining && currentEpoch > lastEpochRef.current) {
@@ -142,60 +142,60 @@ export default function TrainingModelScreen({
     }
   }, [isTraining, trainedModel, modelHash, isComputingHash]);
 
-  // Handle automatic download when training completes
+  // Handle automatic store when training completes
   useEffect(() => {
-    if (!isTraining && trainedModel && downloadStatus === 'pending' && onDownloadModel) {
-      handleAutomaticDownload();
+    if (!isTraining && trainedModel && storeStatus === 'pending' && onDownloadModel) {
+      handleAutomaticStore();
     }
-  }, [isTraining, trainedModel, downloadStatus, onDownloadModel]);
+  }, [isTraining, trainedModel, storeStatus, onDownloadModel]);
 
-  // Handle automatic download when training completes
-  const handleAutomaticDownload = async () => {
-    if (!onDownloadModel || isDownloading) return;
+  // Handle automatic store when training completes
+  const handleAutomaticStore = async () => {
+    if (!onDownloadModel || isStoring) return;
     
     try {
-      setDownloadStatus('downloading');
-      setIsDownloading(true);
+      setStoreStatus('storing');
+      setIsStoring(true);
       
       const success = await onDownloadModel();
       
       if (success) {
-        setDownloadStatus('success');
-        console.log('✅ Model automatically downloaded successfully');
+        setStoreStatus('success');
+        console.log('✅ Model automatically stored successfully');
       } else {
-        setDownloadStatus('failed');
-        console.warn('⚠️ Automatic download failed');
+        setStoreStatus('failed');
+        console.warn('⚠️ Automatic store failed');
       }
     } catch (error) {
-      console.error('❌ Error during automatic download:', error);
-      setDownloadStatus('failed');
+      console.error('❌ Error during automatic store:', error);
+      setStoreStatus('failed');
     } finally {
-      setIsDownloading(false);
+      setIsStoring(false);
     }
   };
 
-  // Handle manual download (Download Again button)
-  const handleManualDownload = async () => {
-    if (!onDownloadModel || isDownloading) return;
+  // Handle manual store (Store Again button)
+  const handleManualStore = async () => {
+    if (!onDownloadModel || isStoring) return;
     
     try {
-      setIsDownloading(true);
-      setDownloadStatus('downloading');
+      setIsStoring(true);
+      setStoreStatus('storing');
       
       const success = await onDownloadModel();
       
       if (success) {
-        setDownloadStatus('success');
-        console.log('✅ Model downloaded successfully');
+        setStoreStatus('success');
+        console.log('✅ Model stored successfully');
       } else {
-        setDownloadStatus('failed');
-        console.warn('⚠️ Download failed');
+        setStoreStatus('failed');
+        console.warn('⚠️ Store failed');
       }
     } catch (error) {
-      console.error('❌ Error during download:', error);
-      setDownloadStatus('failed');
+      console.error('❌ Error during store:', error);
+      setStoreStatus('failed');
     } finally {
-      setIsDownloading(false);
+      setIsStoring(false);
     }
   };
 
@@ -493,48 +493,48 @@ export default function TrainingModelScreen({
               </div>
             </div>
             
-            {/* Download Status Section */}
+            {/* Store Status Section */}
             <div className="mb-6 w-full max-w-md">
               <div className="gradient-white mb-2 text-center text-xs tracking-widest uppercase">
-                MODEL DOWNLOAD
+                MODEL STORE
               </div>
               <div className="bg-black/20 rounded-lg p-3 border border-white/10">
-                {downloadStatus === 'pending' && (
+                {storeStatus === 'pending' && (
                   <div className="text-xs text-white/50 text-center">
-                    Preparing download...
+                    Preparing store...
                   </div>
                 )}
-                {downloadStatus === 'downloading' && (
+                {storeStatus === 'storing' && (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "0ms" }}></div>
                     <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "150ms" }}></div>
                     <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "300ms" }}></div>
-                    <span className="text-xs text-white/70 ml-2">Downloading...</span>
+                    <span className="text-xs text-white/70 ml-2">Storing...</span>
                   </div>
                 )}
-                {downloadStatus === 'success' && (
+                {storeStatus === 'success' && (
                   <div className="text-xs text-green-400 text-center">
-                    ✅ Model downloaded successfully
+                    ✅ Model stored successfully
                   </div>
                 )}
-                {downloadStatus === 'failed' && (
+                {storeStatus === 'failed' && (
                   <div className="text-xs text-red-400 text-center">
-                    ❌ Download failed - try again
+                    ❌ Store failed - try again
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Download Again Button - only show if download failed or user wants to re-download */}
-            {(downloadStatus === 'failed' || downloadStatus === 'success') && (
+            {/* Store Again Button - only show if store failed or user wants to re-store */}
+            {(storeStatus === 'failed' || storeStatus === 'success') && (
               <ActionButton
-                onClick={handleManualDownload}
+                onClick={handleManualStore}
                 variant="primary"
                 icon={Download}
-                disabled={isDownloading}
+                disabled={isStoring}
                 className="mb-4"
               >
-                {isDownloading ? 'DOWNLOADING...' : 'DOWNLOAD AGAIN'}
+                {isStoring ? 'STORING...' : 'STORE AGAIN'}
               </ActionButton>
             )}
             <ActionButton onClick={onContinue} variant="primary">

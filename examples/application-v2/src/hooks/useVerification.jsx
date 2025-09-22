@@ -983,13 +983,13 @@ export const useVerification = (verificationType, importedModelData = null, capt
     // Remove redundant processing - augmentation will be done once inside startTrainingWithCollectedData
     await startTrainingWithCollectedData(samples);
     
-    // Automatically download the trained model
-    console.log("Training completed, automatically downloading model...");
-    const downloadSuccess = await downloadTrainedModel();
-    if (downloadSuccess) {
-      console.log("✅ Model automatically downloaded successfully");
+    // Automatically store the trained model
+    console.log("Training completed, automatically storing model...");
+    const storeSuccess = await downloadTrainedModel();
+    if (storeSuccess) {
+      console.log("✅ Model automatically stored successfully");
     } else {
-      console.warn("⚠️ Model training completed but download failed - user can manually download");
+      console.warn("⚠️ Model training completed but store failed - user can manually store");
     }
     
     setCurrentStep(VERIFICATION_STEPS.COMPLETE);
@@ -1987,7 +1987,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
   const downloadTrainedModel = async () => {
     if (!trainedModel || !modelScaler || !labelMapping) {
-      console.error("Please train a model first before downloading the model");
+      console.error("Please train a model first before storing the model");
       return false;
     }
 
@@ -1999,7 +1999,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
         verificationType
       );
       if (exportSuccess) {
-        console.log(`${verificationType} identity parameters downloaded successfully`);
+        console.log(`${verificationType} identity parameters stored successfully`);
         return true;
       } else {
         console.error("Failed to export identity parameters");
@@ -2007,7 +2007,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
       }
     } catch (error) {
       console.error(
-        `Failed to download ${verificationType} identity parameters:`,
+        `Failed to store ${verificationType} identity parameters:`,
         error
       );
       return false;
