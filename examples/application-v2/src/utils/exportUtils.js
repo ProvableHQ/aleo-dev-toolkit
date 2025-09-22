@@ -33,6 +33,31 @@ export const exportIdentityParameters = async (trainedModel, modelScaler, labelM
             // Add other scaler properties as needed
         };
 
+        // Compute model hash for filename
+        console.log("🔗 Computing model hash for filename...");
+        const [inputDim, hiddenDim] = modelWeights[0].shape;
+        const [, outputDim] = modelWeights[2].shape;
+        
+        const layer1Weights = await modelWeights[0].data();
+        const layer1Biases = await modelWeights[1].data();
+        const layer2Weights = await modelWeights[2].data();
+        const layer2Biases = await modelWeights[3].data();
+
+        // Prepare Aleo input array using the same logic as in training
+        const aleoInputArray = await prepareAleoInputFromRawWeights(
+            layer1Weights, layer1Biases, layer2Weights, layer2Biases,
+            inputDim, hiddenDim, outputDim, verificationType
+        );
+        
+        if (!aleoInputArray) {
+            throw new Error("Failed to prepare Aleo input from model weights");
+        }
+        
+        // Compute model hash using the same function as in training
+        const { modelHash: computedHash } = await computeModelHashFromAleoInputs(aleoInputArray);
+        const modelHashString = computedHash.toString();
+        console.log("✅ Model hash computed for filename:", modelHashString);
+
         // Create complete identity export
         const identityData = {
             version: "1.0",
@@ -54,7 +79,7 @@ export const exportIdentityParameters = async (trainedModel, modelScaler, labelM
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${verificationType}-identity-${Date.now()}.json`;
+        link.download = `${verificationType}-identity-${modelHashString}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
