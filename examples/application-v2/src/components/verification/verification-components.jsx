@@ -1329,7 +1329,7 @@ export const RegisteringAddressScreen = ({
               {transactionId && (
                 <ActionButton
                   onClick={() => window.open(`https://testnet.explorer.provable.com/transaction/${transactionId}`, '_blank')}
-                  variant="outline"
+                  variant="primary"
                   className="flex items-center gap-2"
                 >
                   <ExternalLink className="h-4 w-4" />
