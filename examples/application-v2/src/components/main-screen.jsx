@@ -227,7 +227,7 @@ export default function MainScreen({
                   >
                     <div className="flex w-full items-center justify-center">
                       <img src={faceLogo} alt="Face Logo" className="h-5 w-5 mr-2" />
-                      <span>GO TO INFERENCE</span>
+                      <span>CREATE A PROOF</span>
                     </div>
                   </Button>
                 </>
