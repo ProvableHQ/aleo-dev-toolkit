@@ -315,7 +315,7 @@ export const VerificationCompleteScreen = ({
         </div>
 
         <ButtonContainer>
-          <ActionButton onClick={onRestart} variant="outline" icon={RefreshCw}>
+          <ActionButton onClick={onRestart} variant="outline" icon={RefreshCw} className="text-gray-900 border-gray-600 hover:bg-gray-800 hover:text-white">
             RESTART EXPERIENCE
           </ActionButton>
 
