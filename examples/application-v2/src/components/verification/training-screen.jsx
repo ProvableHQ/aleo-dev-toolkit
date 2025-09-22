@@ -115,6 +115,10 @@ export default function TrainingModelScreen({
   const [modelHash, setModelHash] = useState(null);
   const [isComputingHash, setIsComputingHash] = useState(false);
   const [hashError, setHashError] = useState(null);
+  
+  // Download status state
+  const [downloadStatus, setDownloadStatus] = useState('pending'); // 'pending', 'downloading', 'success', 'failed'
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (isTraining && currentEpoch > lastEpochRef.current) {
@@ -137,6 +141,63 @@ export default function TrainingModelScreen({
       computeModelHash();
     }
   }, [isTraining, trainedModel, modelHash, isComputingHash]);
+
+  // Handle automatic download when training completes
+  useEffect(() => {
+    if (!isTraining && trainedModel && downloadStatus === 'pending' && onDownloadModel) {
+      handleAutomaticDownload();
+    }
+  }, [isTraining, trainedModel, downloadStatus, onDownloadModel]);
+
+  // Handle automatic download when training completes
+  const handleAutomaticDownload = async () => {
+    if (!onDownloadModel || isDownloading) return;
+    
+    try {
+      setDownloadStatus('downloading');
+      setIsDownloading(true);
+      
+      const success = await onDownloadModel();
+      
+      if (success) {
+        setDownloadStatus('success');
+        console.log('✅ Model automatically downloaded successfully');
+      } else {
+        setDownloadStatus('failed');
+        console.warn('⚠️ Automatic download failed');
+      }
+    } catch (error) {
+      console.error('❌ Error during automatic download:', error);
+      setDownloadStatus('failed');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Handle manual download (Download Again button)
+  const handleManualDownload = async () => {
+    if (!onDownloadModel || isDownloading) return;
+    
+    try {
+      setIsDownloading(true);
+      setDownloadStatus('downloading');
+      
+      const success = await onDownloadModel();
+      
+      if (success) {
+        setDownloadStatus('success');
+        console.log('✅ Model downloaded successfully');
+      } else {
+        setDownloadStatus('failed');
+        console.warn('⚠️ Download failed');
+      }
+    } catch (error) {
+      console.error('❌ Error during download:', error);
+      setDownloadStatus('failed');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Function to compute model hash using only model weights
   const computeModelHash = async () => {
@@ -432,14 +493,50 @@ export default function TrainingModelScreen({
               </div>
             </div>
             
-            <ActionButton
-              onClick={onDownloadModel}
-              variant="outline"
-              icon={Download}
-              className="mb-4"
-            >
-              STORE MODEL
-            </ActionButton>
+            {/* Download Status Section */}
+            <div className="mb-6 w-full max-w-md">
+              <div className="gradient-white mb-2 text-center text-xs tracking-widest uppercase">
+                MODEL DOWNLOAD
+              </div>
+              <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                {downloadStatus === 'pending' && (
+                  <div className="text-xs text-white/50 text-center">
+                    Preparing download...
+                  </div>
+                )}
+                {downloadStatus === 'downloading' && (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "0ms" }}></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "150ms" }}></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-white" style={{ animationDelay: "300ms" }}></div>
+                    <span className="text-xs text-white/70 ml-2">Downloading...</span>
+                  </div>
+                )}
+                {downloadStatus === 'success' && (
+                  <div className="text-xs text-green-400 text-center">
+                    ✅ Model downloaded successfully
+                  </div>
+                )}
+                {downloadStatus === 'failed' && (
+                  <div className="text-xs text-red-400 text-center">
+                    ❌ Download failed - try again
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Download Again Button - only show if download failed or user wants to re-download */}
+            {(downloadStatus === 'failed' || downloadStatus === 'success') && (
+              <ActionButton
+                onClick={handleManualDownload}
+                variant="primary"
+                icon={Download}
+                disabled={isDownloading}
+                className="mb-4"
+              >
+                {isDownloading ? 'DOWNLOADING...' : 'DOWNLOAD AGAIN'}
+              </ActionButton>
+            )}
             <ActionButton onClick={onContinue} variant="primary">
               CONTINUE
             </ActionButton>

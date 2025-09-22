@@ -982,6 +982,16 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
     // Remove redundant processing - augmentation will be done once inside startTrainingWithCollectedData
     await startTrainingWithCollectedData(samples);
+    
+    // Automatically download the trained model
+    console.log("Training completed, automatically downloading model...");
+    const downloadSuccess = await downloadTrainedModel();
+    if (downloadSuccess) {
+      console.log("✅ Model automatically downloaded successfully");
+    } else {
+      console.warn("⚠️ Model training completed but download failed - user can manually download");
+    }
+    
     setCurrentStep(VERIFICATION_STEPS.COMPLETE);
   };
 
@@ -1978,7 +1988,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
   const downloadTrainedModel = async () => {
     if (!trainedModel || !modelScaler || !labelMapping) {
       console.error("Please train a model first before downloading the model");
-      return;
+      return false;
     }
 
     try {
@@ -1989,13 +1999,18 @@ export const useVerification = (verificationType, importedModelData = null, capt
         verificationType
       );
       if (exportSuccess) {
-        console.log("Signature identity parameters auto-downloaded");
+        console.log(`${verificationType} identity parameters downloaded successfully`);
+        return true;
+      } else {
+        console.error("Failed to export identity parameters");
+        return false;
       }
     } catch (error) {
       console.error(
-        "Failed to auto-download signature identity parameters:",
+        `Failed to download ${verificationType} identity parameters:`,
         error
       );
+      return false;
     }
   };
 
