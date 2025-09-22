@@ -249,7 +249,7 @@ export default function MainScreen({
                     <p className="text-xs text-gray-400 uppercase">
                       {isDragOver
                         ? "Drop your model file here"
-                        : "Open a trained model"}
+                        : "Open the trained model"}
                     </p>
                   </div>
                 </>
