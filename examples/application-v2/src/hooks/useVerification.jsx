@@ -2070,6 +2070,32 @@ export const useVerification = (verificationType, importedModelData = null, capt
     setExpectedRuntime(0);
   };
 
+  const restartInference = () => {
+    clearCapture();
+    // If we have a trained model, restart the inference flow
+    if (trainedModel && modelScaler && labelMapping) {
+      setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF);
+    } else {
+      // Fallback to training flow if no model available
+      setCurrentStep(VERIFICATION_STEPS.INITIAL);
+    }
+    setMatchPercentage(0);
+    setProofRunCount(0);
+    setProofText("");
+    setMlpPrediction("");
+    setChartDataProof([
+      { label: "False", value: 0 },
+      { label: "True", value: 0 },
+    ]);
+    setProofSample(null);
+    setProvingFinished(false);
+    setIsProgressRunning(false);
+    setProgress(0);
+    setProgressInterval(null);
+    setExpectedRuntime(0);
+    setProvingError(null);
+  };
+
   const retryProofCreation = () => {
     setMlpPrediction("");
     clearCapture();
@@ -2226,6 +2252,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
     onStepBack,
     generateProof,
     resetVerification,
+    restartInference,
     downloadTrainedModel,
     retryProofCreation,
     retryProvingRequest,

@@ -46,6 +46,7 @@ export default function SignatureVerificationScreen({
     trainedModel,
     modelScaler,
     resetVerification,
+    restartInference,
     handleContinue,
     handleConfirm,
     handleContinueToProof,
@@ -67,7 +68,7 @@ export default function SignatureVerificationScreen({
       <VerificationCompleteScreen
         onBack={onStepBack}
         onGoHome={onBack}
-        onRestart={resetVerification}
+        onRestart={restartInference}
         onRetry={retryProofCreation}
         chartDataProof={chartDataProof}
         verificationType={VERIFICATION_TYPES.SIGNATURE}

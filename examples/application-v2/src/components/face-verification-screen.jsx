@@ -133,6 +133,7 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     modelScaler,
     labelMapping,
     resetVerification,
+    restartInference,
     startCapturing,
     capture,
 
@@ -190,7 +191,7 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
         onRetry={retryProofCreation}
         chartDataProof={chartDataProof}
         verificationType={VERIFICATION_TYPES.FACE}
-        onRestart={resetVerification}
+        onRestart={restartInference}
         proofSample={proofFace}
       />
     );
