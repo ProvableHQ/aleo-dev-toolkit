@@ -36,7 +36,7 @@ import {
 } from "../components/signature/signature-utils.jsx";
 import { useGenericCapture } from "./useGenericCapture.jsx";
 import { exportIdentityParameters } from "../utils/exportUtils.js";
-import { bhp1024HashToFieldOfI64, mlpFaceHashTest } from "../utils/aleoHashTest.js";
+import { bhp1024HashToFieldOfI64 } from "../utils/aleoHashTest.js";
 import { computeCompleteModelHash, analyzeModelStructure } from "../utils/modelHashUtils.js";
 
 // Import enhanced utilities to eliminate code duplication
