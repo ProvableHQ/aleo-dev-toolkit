@@ -1051,6 +1051,87 @@ export const RegisteringAddressScreen = ({
   const [registrationStartTime, setRegistrationStartTime] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerIntervalRef = useRef(null);
+  
+  // Progress calculation state
+  const [registrationProgress, setRegistrationProgress] = useState(0);
+  const [isProgressRunning, setIsProgressRunning] = useState(false);
+  const progressIntervalRef = useRef(null);
+  const expectedRuntime = 57; // 57 seconds total duration
+
+  // Start progress simulation
+  const startProgressSimulation = () => {
+    // Clear any existing interval
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    
+    setIsProgressRunning(true);
+    setRegistrationProgress(0);
+
+    const intervalTime = 150; // Update every 150ms
+    const expectedRuntimeInMilliseconds = expectedRuntime * 1000;
+    const increment = (intervalTime / expectedRuntimeInMilliseconds) * 100;
+
+    progressIntervalRef.current = setInterval(() => {
+      setRegistrationProgress((oldProgress) => {
+        var newProgress = oldProgress + increment;
+        if (newProgress >= 99) {
+          newProgress = 99; // Cap at 99% until actual completion
+        }
+        return Math.round(newProgress * 10) / 10;
+      });
+    }, intervalTime);
+  };
+
+  // Stop progress simulation
+  const stopProgressSimulation = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setIsProgressRunning(false);
+    setRegistrationProgress(100); // Set to 100% when completed
+  };
+
+  // Calculate remaining seconds
+  const getRemainingSeconds = () => {
+    return Math.ceil(((100 - registrationProgress) * expectedRuntime) / 100);
+  };
+
+  // Get progress text similar to GeneratingProofScreen
+  const getProgressText = () => {
+    if (registrationProgress >= 99.0) {
+      return "Expecting results momentarily...";
+    } else {
+      const remainingSeconds = getRemainingSeconds();
+      return `${registrationProgress.toFixed(1)}% • ABOUT ${remainingSeconds} SECONDS REMAINING`;
+    }
+  };
+
+
+  // Start progress simulation when registration starts
+  useEffect(() => {
+    if (isRegistering) {
+      startProgressSimulation();
+    } else {
+      stopProgressSimulation();
+    }
+  }, [isRegistering]);
+
+  // Timeout handling - if registration takes longer than expected, show timeout message
+  useEffect(() => {
+    if (isRegistering && registrationStartTime) {
+      const timeoutId = setTimeout(() => {
+        if (isRegistering) {
+          console.log('Registration timeout reached, showing timeout message');
+          // The progress will already be at 99% and showing "Expecting results momentarily..."
+        }
+      }, expectedRuntime * 1000); // 57 seconds timeout
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isRegistering, registrationStartTime, expectedRuntime]);
 
   useEffect(() => {
     console.log('RegisteringAddressScreen useEffect triggered. address:', address, 'connected:', connected, 'hasRegistered:', hasRegisteredRef.current);
@@ -1119,7 +1200,7 @@ export const RegisteringAddressScreen = ({
           setTransactionId(txId);
           console.log('Address registered successfully:', result);
           
-          // Stop timer and log final duration
+          // Stop timer
           if (timerIntervalRef.current) {
             clearInterval(timerIntervalRef.current);
             timerIntervalRef.current = null;
@@ -1134,7 +1215,7 @@ export const RegisteringAddressScreen = ({
       } catch (err) {
         console.error('Error registering address:', err);
         
-        // Stop timer and log final duration
+        // Stop timer
         if (timerIntervalRef.current) {
           clearInterval(timerIntervalRef.current);
           timerIntervalRef.current = null;
@@ -1153,20 +1234,19 @@ export const RegisteringAddressScreen = ({
     }
   }, [address, connected]); // Only re-run when address or connection status changes
 
-  // Cleanup timer on component unmount
+  // Cleanup timer and progress interval on component unmount
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
       }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
     };
   }, []);
-
-  const verificationTypeConfig = {
-    signature: "SIGNATURE",
-    face: "FACE",
-  };
 
   // Debug logging
   console.log('RegisteringAddressScreen render state:', {
@@ -1176,169 +1256,194 @@ export const RegisteringAddressScreen = ({
     shouldShowButtons: !isRegistering && !error
   });
 
-  return (
-    <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6">
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <span className="gradient-green font-innovator mb-4 text-[26px] font-bold">
-            {isRegistering ? "Registering Address" : error ? "Registration Failed" : "Registration Successful"}
-          </span>
-          <p className="mb-8 text-[13px] text-white text-center">
-            {isRegistering 
-              ? "REGISTERING YOUR WALLET ADDRESS ON THE BLOCKCHAIN..."
-              : error 
-                ? error
-                : "YOUR WALLET ADDRESS HAS BEEN SUCCESSFULLY REGISTERED"
-            }
-          </p>
-          
-          {isRegistering && (
-            <div className="mb-4">
-              <div className="flex justify-center space-x-1">
-                <div
-                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
-                  style={{ animationDelay: "0ms" }}
-                ></div>
-                <div
-                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
-                  style={{ animationDelay: "150ms" }}
-                ></div>
-                <div
-                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
-                  style={{ animationDelay: "300ms" }}
-                ></div>
-              </div>
-            </div>
-          )}
+  const verificationTypeConfig = {
+    signature: "SIGNATURE VERIFICATION",
+    face: "FACE VERIFICATION",
+  };
 
-          {!isRegistering && !error && transactionId && (
+  if (error) {
+    return (
+      <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6">
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <span className="gradient-green font-innovator mb-4 text-[26px] font-bold">
+              Registration Failed
+            </span>
+            <p className="mb-8 text-[13px] text-white text-center">
+              {error}
+            </p>
+          </div>
+          <ButtonContainer>
+            <ActionButton
+              onClick={onBack}
+              variant="secondary"
+            >
+              BACK
+            </ActionButton>
+            <ActionButton
+              onClick={() => {
+                setError(null);
+                setIsRegistering(true);
+                // Retry registration
+                const registerAddress = async () => {
+                  try {
+                    if (!connected || !address) {
+                      throw new Error('No wallet connected. Please connect your wallet first.');
+                    }
+                    
+                    // Start timer for retry registration
+                    const startTime = Date.now();
+                    setRegistrationStartTime(startTime);
+                    setElapsedSeconds(0);
+                    
+                    // Start timer interval to update elapsed seconds every second
+                    timerIntervalRef.current = setInterval(() => {
+                      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                      setElapsedSeconds(elapsed);
+                      console.log(`Registration retry in progress: ${elapsed} seconds elapsed`);
+                    }, 1000);
+                    
+                    // Use the same endpoint logic for retry
+                    const endpoint = computedHash ? '/api/rust/register-address-kya' : '/api/rust/verify';
+                    const requestBody = computedHash 
+                      ? { address: address, kya_hash: computedHash }
+                      : { address: address };
+                      
+                    const response = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(requestBody)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                      // Parse the transaction ID from the response
+                      let txId = result.transactionId || result.transaction_id;
+                      if (typeof txId === 'string' && txId.startsWith('{')) {
+                        try {
+                          const parsed = JSON.parse(txId);
+                          txId = parsed.id || txId;
+                        } catch (e) {
+                          // If parsing fails, use the original value
+                        }
+                      }
+                      setTransactionId(txId);
+                      
+                        // Stop timer for retry
+                        if (timerIntervalRef.current) {
+                          clearInterval(timerIntervalRef.current);
+                          timerIntervalRef.current = null;
+                        }
+                      const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
+                      console.log(`✅ Registration retry completed successfully in ${finalElapsed} seconds`);
+                      
+                      setIsRegistering(false);
+                    } else {
+                      throw new Error(result.error || 'Failed to register address');
+                    }
+                  } catch (err) {
+                    // Stop timer for retry error
+                    if (timerIntervalRef.current) {
+                      clearInterval(timerIntervalRef.current);
+                      timerIntervalRef.current = null;
+                    }
+                    const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
+                    console.log(`❌ Registration retry failed after ${finalElapsed} seconds:`, err.message);
+                    
+                    setError(err.message);
+                    setIsRegistering(false);
+                  }
+                };
+                registerAddress();
+              }}
+              variant="primary"
+            >
+              RETRY
+            </ActionButton>
+          </ButtonContainer>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isRegistering && !error && transactionId) {
+    return (
+      <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6">
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <span className="gradient-green font-innovator mb-4 text-[26px] font-bold">
+              Registration Successful
+            </span>
+            <p className="mb-8 text-[13px] text-white text-center">
+              YOUR WALLET ADDRESS HAS BEEN SUCCESSFULLY REGISTERED
+            </p>
+            
             <div className="mb-4">
               <div className="flex items-center justify-center">
                 <Check className="h-8 w-8 text-green-500" />
               </div>
             </div>
-          )}
 
-          {transactionId && (
             <div className="mb-4 max-w-md rounded-lg bg-black bg-opacity-20 p-4">
               <div className="mb-2 text-xs text-gray-300">Transaction ID:</div>
               <div className="break-all font-mono text-xs text-white">
                 {transactionId}
               </div>
             </div>
-          )}
+          </div>
+          <ButtonContainer>
+            <ActionButton
+              onClick={() => onSuccess && onSuccess()}
+              variant="primary"
+            >
+              CONTINUE
+            </ActionButton>
+            <ActionButton
+              onClick={() => window.open(`https://testnet.explorer.provable.com/transaction/${transactionId}`, '_blank')}
+              variant="primary"
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              VIEW IN BLOCK EXPLORER
+            </ActionButton>
+          </ButtonContainer>
         </div>
+      </div>
+    );
+  }
 
-        <ButtonContainer>
-          {error ? (
-            <>
-              <ActionButton
-                onClick={onBack}
-                variant="secondary"
-              >
-                BACK
-              </ActionButton>
-              <ActionButton
-                onClick={() => {
-                  setError(null);
-                  setIsRegistering(true);
-                  // Retry registration
-                  const registerAddress = async () => {
-                    try {
-                      if (!connected || !address) {
-                        throw new Error('No wallet connected. Please connect your wallet first.');
-                      }
-                      
-                      // Start timer for retry registration
-                      const startTime = Date.now();
-                      setRegistrationStartTime(startTime);
-                      setElapsedSeconds(0);
-                      
-                      // Start timer interval to update elapsed seconds every second
-                      timerIntervalRef.current = setInterval(() => {
-                        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                        setElapsedSeconds(elapsed);
-                        console.log(`Registration retry in progress: ${elapsed} seconds elapsed`);
-                      }, 1000);
-                      
-                      // Use the same endpoint logic for retry
-                      const endpoint = computedHash ? '/api/rust/register-address-kya' : '/api/rust/verify';
-                      const requestBody = computedHash 
-                        ? { address: address, kya_hash: computedHash }
-                        : { address: address };
-                        
-                      const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestBody)
-                      });
-                      const result = await response.json();
-                      if (result.success) {
-                        // Parse the transaction ID from the response
-                        let txId = result.transactionId || result.transaction_id;
-                        if (typeof txId === 'string' && txId.startsWith('{')) {
-                          try {
-                            const parsed = JSON.parse(txId);
-                            txId = parsed.id || txId;
-                          } catch (e) {
-                            // If parsing fails, use the original value
-                          }
-                        }
-                        setTransactionId(txId);
-                        
-                        // Stop timer and log final duration for retry
-                        if (timerIntervalRef.current) {
-                          clearInterval(timerIntervalRef.current);
-                          timerIntervalRef.current = null;
-                        }
-                        const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
-                        console.log(`✅ Registration retry completed successfully in ${finalElapsed} seconds`);
-                        
-                        setIsRegistering(false);
-                      } else {
-                        throw new Error(result.error || 'Failed to register address');
-                      }
-                    } catch (err) {
-                      // Stop timer and log final duration for retry error
-                      if (timerIntervalRef.current) {
-                        clearInterval(timerIntervalRef.current);
-                        timerIntervalRef.current = null;
-                      }
-                      const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
-                      console.log(`❌ Registration retry failed after ${finalElapsed} seconds:`, err.message);
-                      
-                      setError(err.message);
-                      setIsRegistering(false);
-                    }
-                  };
-                  registerAddress();
-                }}
-                variant="primary"
-              >
-                RETRY
-              </ActionButton>
-            </>
-          ) : !isRegistering && !error ? (
-            <>
-              <ActionButton
-                onClick={() => onSuccess && onSuccess()}
-                variant="primary"
-              >
-                CONTINUE
-              </ActionButton>
-              {transactionId && (
-                <ActionButton
-                  onClick={() => window.open(`https://testnet.explorer.provable.com/transaction/${transactionId}`, '_blank')}
-                  variant="primary"
-                  className="flex items-center gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  VIEW IN BLOCK EXPLORER
-                </ActionButton>
-              )}
-            </>
-          ) : null}
-        </ButtonContainer>
+  return (
+    <div className="bg-constellation relative flex h-svh flex-col overflow-hidden text-white">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
+        <div className="mx-auto max-w-md pt-20 text-center">
+          <span className="font-innovator gradient-white mb-4 inline-block w-full text-[26px] font-bold">
+            Registering Address...
+          </span>
+          <span className="block w-full text-center text-[13px] text-gray-400">
+            {verificationTypeConfig[verificationType]}
+          </span>
+        </div>
+      </div>
+
+      <div className="relative z-10 space-y-2 px-6 pb-5 text-center text-[10px] text-gray-500 sm:pb-15">
+        <div className="mb-4">
+          <span className="text-white">
+            {getProgressText()}
+          </span>
+        </div>
+        <div
+          style={{
+            backgroundImage: `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(appVersionFooter)}")`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            width: "337px",
+            height: "102px",
+            // center the div
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            margin: "0 auto",
+          }}
+        ></div>
       </div>
     </div>
   );
