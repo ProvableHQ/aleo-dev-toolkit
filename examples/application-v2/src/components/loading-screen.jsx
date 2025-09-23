@@ -38,7 +38,6 @@ const bottomInfo = `<svg width="337" height="171" viewBox="0 0 337 171" fill="no
 let hasLoadedOnce = false;
 
 export default function LoadingScreen({ onLoadingComplete }) {
-  const [progress, setProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("Initializing...");
   const [error, setError] = useState(null);
 
@@ -69,15 +68,12 @@ export default function LoadingScreen({ onLoadingComplete }) {
           },
         ];
 
-        let completed = 0;
         const results = {};
 
         for (const { name, task } of tasks) {
           setLoadingStatus(name);
           try {
             results[name] = await task();
-            completed++;
-            setProgress((completed / tasks.length) * 80); // Reserve 20% for warm-up
           } catch (err) {
             console.error(`Failed to load ${name}:`, err);
             throw new Error(`Failed to load ${name}`);
@@ -87,14 +83,9 @@ export default function LoadingScreen({ onLoadingComplete }) {
         // After all initial loading is complete, run face processing warm-up
         // Only proceed if face-api models were successfully loaded
         if (results["Loading Face-api.js models"]) {
-          // Small delay to ensure progress state is updated
-          await new Promise((resolve) => setTimeout(resolve, 50));
           setLoadingStatus("Warming up face processing...");
           try {
-            const warmupResult = await warmupFaceProcessing((p) => {
-              // first 80 % is already filled, map 0-1 → 80-100 %
-              setProgress(80 + p * 20);
-            });
+            const warmupResult = await warmupFaceProcessing();
 
             results["Face processing warm-up"] = warmupResult;
             console.log("Face processing warm-up completed:", warmupResult);
@@ -105,7 +96,6 @@ export default function LoadingScreen({ onLoadingComplete }) {
               success: false,
               error: err.message,
             };
-            setProgress(100);
           }
         } else {
           console.warn("Skipping face processing warm-up - models not loaded");
@@ -113,7 +103,6 @@ export default function LoadingScreen({ onLoadingComplete }) {
             success: false,
             error: "Models not loaded",
           };
-          setProgress(100);
         }
 
         setLoadingStatus("Ready!");
@@ -159,16 +148,24 @@ export default function LoadingScreen({ onLoadingComplete }) {
           </div>
 
           <div className="mb-8 w-[250px]">
-            <p className="mb-4 text-sm text-gray-400">{loadingStatus}</p>
-            <div className="h-2 w-full rounded-full bg-gray-700">
-              <div
-                className="h-2 rounded-full bg-[#298ff9]"
-                style={{ width: `${progress}%` }}
-              ></div>
+          <div className="mb-6 flex items-center justify-center gap-2">
+              <span className="text-lg font-medium text-white">Loading</span>
+              <div className="flex justify-center space-x-1">
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                  style={{ animationDelay: "0ms" }}
+                ></div>
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                  style={{ animationDelay: "150ms" }}
+                ></div>
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"
+                  style={{ animationDelay: "300ms" }}
+                ></div>
+              </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              {Math.round(progress)}%
-            </p>
+            <p className="text-xs text-gray-400">{loadingStatus}</p>
           </div>
         </div>
 
