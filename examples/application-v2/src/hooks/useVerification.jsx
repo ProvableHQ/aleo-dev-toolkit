@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAtomValue } from "jotai";
 import { useWallet } from "@provablehq/aleo-wallet-adaptor-react";
+import { useAtom } from "jotai";
+import { useWalletAdapterAtom } from "../store/atoms/settings";
 import {
   isDelegatedProvingAtom,
   privateKeyAtom,
@@ -178,6 +180,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
   // Wallet adapter integration
   const { connected, executeTransaction } = useWallet();
+  const [useWalletAdapter] = useAtom(useWalletAdapterAtom);
   const isDelegatedProving = useAtomValue(isDelegatedProvingAtom);
   const privateKey = useAtomValue(privateKeyAtom);
   const shouldBroadcastLocalTx = useAtomValue(shouldBroadcastLocalTxAtom);
@@ -1560,9 +1563,14 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
     let result, executionResponse, fullTransaction, broadcastResult;
 
-    // Check if wallet is connected and use wallet-based execution
-    if (connected && executeTransaction) {
+    // Check if wallet adapter is enabled and wallet is connected
+    if (useWalletAdapter && connected && executeTransaction) {
       console.log("🔗 Using wallet adapter for transaction execution");
+      console.log("🔍 Debug - Wallet adapter settings:", {
+        useWalletAdapter,
+        connected,
+        hasExecuteTransaction: !!executeTransaction
+      });
       try {
         // Phase 1: Create authorization (show bouncing dots)
         setCurrentStep(VERIFICATION_STEPS.CREATING_AUTHORIZATION);
@@ -1723,27 +1731,36 @@ export const useVerification = (verificationType, importedModelData = null, capt
         });
         return;
       }
+    } else if (useWalletAdapter && (!connected || !executeTransaction)) {
+      // Wallet adapter is enabled but wallet is not connected
+      console.log("⚠️ Wallet adapter is enabled but wallet is not connected");
+      clearInterval(progressInterval);
+      setProgressInterval(null);
+      setIsProgressRunning(false);
+      
+      setProvingError({
+        message: "Wallet adapter is enabled but no wallet is connected. Please connect a wallet or disable wallet adapter in settings.",
+        originalError: "No wallet connected",
+        canRetry: false,
+        canSwitchToLocal: true,
+        walletError: true
+      });
+      return;
     } else if (!useLocalProving) {
+      console.log("🔗 Using delegated proving (traditional method)");
+      console.log("🔍 Debug - Proving settings:", {
+        useWalletAdapter,
+        connected,
+        useLocalProving
+      });
+      
       let requestData;
       try {
         // Phase 1: Create authorization (show bouncing dots)
         setCurrentStep(VERIFICATION_STEPS.CREATING_AUTHORIZATION);
         
-        // For delegated proving with wallet, we need to handle this differently
-        if (connected) {
-          console.log("🔗 Using wallet for delegated proving");
-          // For wallet-based delegated proving, we'll use executeTransaction
-          // but we need to handle the authorization differently
-          // For now, we'll show an error that this needs to be implemented
-          setProvingError({
-            message: "Delegated proving with wallet is not fully supported yet. Please use local proving or connect without wallet for delegated proving.",
-            originalError: "Wallet delegated proving not implemented",
-            canRetry: false,
-            canSwitchToLocal: true
-          });
-          return;
-        } else {
-          console.log("🔧 Using settings private key for delegated proving");
+        // Traditional delegated proving - always use settings private key
+        console.log("🔧 Using settings private key for delegated proving");
         requestData = await aleoWorker.buildDelegatedProvingRequest(
           model,
           "main",
@@ -1751,7 +1768,6 @@ export const useVerification = (verificationType, importedModelData = null, capt
           privateKey,
           shouldBroadcastLocalTx
         );
-        }
         
         // Phase 2: Execute proving request (show countdown)
         setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
@@ -1806,26 +1822,18 @@ export const useVerification = (verificationType, importedModelData = null, capt
       }
     } else {
       // local proving *with fee* so we can broadcast later
+      console.log("🔗 Using local proving (traditional method)");
+      console.log("🔍 Debug - Proving settings:", {
+        useWalletAdapter,
+        connected,
+        useLocalProving
+      });
+      
       setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
       startProgressAndRandomizeData(expected_runtime);
       
-      // Use wallet private key if connected, otherwise fall back to settings
-      const keyToUse = connected ? null : privateKey; // null means use wallet, privateKey means use settings
-      
-      if (connected) {
-        console.log("🔗 Using wallet for local proving (wallet will handle signing)");
-        // For wallet-based local proving, we need to use executeTransaction
-        // but this is a bit tricky since local proving typically requires the private key
-        // For now, we'll show a message that wallet-based local proving isn't fully supported
-        setProvingError({
-          message: "Local proving with wallet is not fully supported. Please use delegated proving or connect without wallet for local proving.",
-          originalError: "Wallet local proving not implemented",
-          canRetry: false,
-          canSwitchToLocal: false
-        });
-        return;
-      } else {
-        console.log("🔧 Using settings private key for local proving");
+      // Traditional local proving - always use settings private key
+      console.log("🔧 Using settings private key for local proving");
       [result, executionResponse, fullTransaction, broadcastResult] =
         await aleoWorker.localProgramExecutionWithFee(
           model, // program source
@@ -1836,7 +1844,6 @@ export const useVerification = (verificationType, importedModelData = null, capt
           0, // priority fee
           shouldBroadcastLocalTx // broadcast to network
         );
-      }
     }
 
     console.debug("result", result);
@@ -1895,14 +1902,14 @@ export const useVerification = (verificationType, importedModelData = null, capt
       // We need to process them the same way as normal executions
       try {
         console.log("🔍 Debug - Attempting to convert wallet proof to softmax...");
-        var softmax = convert_proof_to_softmax(executionResponse);
+    var softmax = convert_proof_to_softmax(executionResponse);
         console.log("🔍 Debug - Wallet softmax result:", softmax);
-        
-        if (softmax.length === 2) {
-          setChartDataProof([
-            { label: "False", value: softmax[0] * 100 },
-            { label: "True", value: softmax[1] * 100 },
-          ]);
+
+    if (softmax.length === 2) {
+      setChartDataProof([
+        { label: "False", value: softmax[0] * 100 },
+        { label: "True", value: softmax[1] * 100 },
+      ]);
           console.log("✅ Wallet proof results processed successfully:", {
             false: softmax[0] * 100,
             true: softmax[1] * 100

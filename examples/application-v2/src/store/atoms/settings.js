@@ -14,5 +14,10 @@ export const shouldBroadcastTxAtom = atomWithStorage(
     false,
 );
 
+export const useWalletAdapterAtom = atomWithStorage(
+    "useWalletAdapter",
+    false, // Default to false (use original method)
+);
+
 // Legacy export for backward compatibility
 export const shouldBroadcastLocalTxAtom = shouldBroadcastTxAtom;

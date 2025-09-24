@@ -11,6 +11,7 @@ import {
   isDelegatedProvingAtom,
   privateKeyAtom,
   shouldBroadcastTxAtom,
+  useWalletAdapterAtom,
 } from "../store/atoms/settings";
 
 export default function OptionsScreen({ onBack }) {
@@ -21,6 +22,9 @@ export default function OptionsScreen({ onBack }) {
   const [shouldBroadcastTxAtomValue, setShouldBroadcastTxAtom] = useAtom(
     shouldBroadcastTxAtom
   );
+  const [useWalletAdapterAtomValue, setUseWalletAdapterAtom] = useAtom(
+    useWalletAdapterAtom
+  );
 
   // Local state for form inputs
   const [isDelegatedProving, setIsDelegatedProving] = useState(
@@ -30,6 +34,9 @@ export default function OptionsScreen({ onBack }) {
   const [shouldBroadcastTx, setShouldBroadcastTx] = useState(
     shouldBroadcastTxAtomValue
   );
+  const [useWalletAdapter, setUseWalletAdapter] = useState(
+    useWalletAdapterAtomValue
+  );
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,10 +45,12 @@ export default function OptionsScreen({ onBack }) {
     setIsDelegatedProving(isDelegatedProvingAtomValue);
     setPrivateKey(privateKeyAtomValue);
     setShouldBroadcastTx(shouldBroadcastTxAtomValue);
+    setUseWalletAdapter(useWalletAdapterAtomValue);
   }, [
     isDelegatedProvingAtomValue,
     privateKeyAtomValue,
     shouldBroadcastTxAtomValue,
+    useWalletAdapterAtomValue,
   ]);
 
   const handleSaveSettings = () => {
@@ -50,6 +59,7 @@ export default function OptionsScreen({ onBack }) {
     setIsDelegatedProvingAtom(isDelegatedProving);
     setPrivateKeyAtom(privateKey);
     setShouldBroadcastTxAtom(shouldBroadcastTx);
+    setUseWalletAdapterAtom(useWalletAdapter);
 
     console.log("Settings saved:", {
       isDelegatedProving,
@@ -133,6 +143,59 @@ export default function OptionsScreen({ onBack }) {
                   </div>
                 </Button>
               </div>
+            </div>
+          </div>
+
+          {/* Wallet Adapter Section */}
+          <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
+            <h3 className="mb-4 text-lg font-medium text-gray-200">
+              Wallet Integration
+            </h3>
+
+            <div className="space-y-3">
+              <Label className="font-medium text-gray-300">
+                Use Wallet Adapter for Proof Generation
+              </Label>
+
+              <div className="grid grid-cols-1 gap-3">
+                <Button
+                  onClick={() => setUseWalletAdapter(true)}
+                  variant={useWalletAdapter ? "default" : "outline"}
+                  className={`h-auto justify-start p-4 text-left ${
+                    useWalletAdapter
+                      ? "border-blue-600 bg-[#298ff9] text-white hover:bg-blue-500"
+                      : "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  <div className="flex w-full flex-col items-start">
+                    <span className="font-medium">Yes - Use Wallet Adapter</span>
+                    <span className="text-sm whitespace-normal opacity-80">
+                      Use connected wallet for proof generation and transaction signing
+                    </span>
+                  </div>
+                </Button>
+
+                <Button
+                  onClick={() => setUseWalletAdapter(false)}
+                  variant={!useWalletAdapter ? "default" : "outline"}
+                  className={`h-auto justify-start p-4 text-left ${
+                    !useWalletAdapter
+                      ? "border-blue-600 bg-[#298ff9] text-white hover:bg-blue-500"
+                      : "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  <div className="flex w-full flex-col items-start">
+                    <span className="font-medium">No - Use Traditional Method</span>
+                    <span className="text-sm whitespace-normal opacity-80">
+                      Use the original proving method with private key from settings
+                    </span>
+                  </div>
+                </Button>
+              </div>
+              
+              <p className="text-xs text-gray-400">
+                When enabled, the app will use your connected wallet for proof generation instead of the private key configured below.
+              </p>
             </div>
           </div>
 
