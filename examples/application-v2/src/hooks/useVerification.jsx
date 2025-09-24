@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAtomValue } from "jotai";
+import { useWallet } from "@provablehq/aleo-wallet-adaptor-react";
 import {
   isDelegatedProvingAtom,
   privateKeyAtom,
@@ -175,6 +176,8 @@ export const useVerification = (verificationType, importedModelData = null, capt
   const [progressInterval, setProgressInterval] = useState(null);
   const [expectedRuntime, setExpectedRuntime] = useState(0);
 
+  // Wallet adapter integration
+  const { connected, executeTransaction } = useWallet();
   const isDelegatedProving = useAtomValue(isDelegatedProvingAtom);
   const privateKey = useAtomValue(privateKeyAtom);
   const shouldBroadcastLocalTx = useAtomValue(shouldBroadcastLocalTxAtom);
@@ -1310,6 +1313,7 @@ export const useVerification = (verificationType, importedModelData = null, capt
       isDelegatedProving,
       forceLocalProving,
       useLocalProving,
+      connected,
       fixed_point_features: fixed_point_features?.slice(0, 5) + "..." // Log first 5 values
     });
     
@@ -1341,10 +1345,15 @@ export const useVerification = (verificationType, importedModelData = null, capt
       }
 
       const aleoInputArray = await prepareAleoInput(fixed_point_features);
+      console.log("🔍 Debug - Signature prepareAleoInput result:", aleoInputArray);
+      console.log("🔍 Debug - Signature aleoInputArray type:", typeof aleoInputArray);
+      console.log("🔍 Debug - Signature aleoInputArray length:", aleoInputArray?.length);
+      
       if (aleoInputArray) {
         const structs = [];
 
-        aleoInputArray.forEach((structStr) => {
+        aleoInputArray.forEach((structStr, index) => {
+          console.log(`🔍 Debug - Signature Processing struct ${index}:`, structStr);
           const structObj = {};
           const cleanStr = structStr.replace(/[{}]/g, "");
           const pairs = cleanStr.split(", ");
@@ -1357,6 +1366,8 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
           structs.push(structObj);
         });
+        
+        console.log("🔍 Debug - Signature Final structs:", structs);
 
         const jsMLPResult = mlpInference(
           structs[0],
@@ -1405,10 +1416,15 @@ export const useVerification = (verificationType, importedModelData = null, capt
       }
 
       const aleoInputArray = await prepareAleoInput(fixed_point_features);
+      console.log("🔍 Debug - Face prepareAleoInput result:", aleoInputArray);
+      console.log("🔍 Debug - Face aleoInputArray type:", typeof aleoInputArray);
+      console.log("🔍 Debug - Face aleoInputArray length:", aleoInputArray?.length);
+      
       if (aleoInputArray) {
         const structs = [];
 
-        aleoInputArray.forEach((structStr) => {
+        aleoInputArray.forEach((structStr, index) => {
+          console.log(`🔍 Debug - Face Processing struct ${index}:`, structStr);
           const structObj = {};
           const cleanStr = structStr.replace(/[{}]/g, "");
           const pairs = cleanStr.split(", ");
@@ -1421,6 +1437,8 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
           structs.push(structObj);
         });
+        
+        console.log("🔍 Debug - Face Final structs:", structs);
 
         // For face verification, we need to call mlpInference with the correct number of structs
         // Face architecture: 32 -> 17 -> 2 (5 Struct0 + 19 Struct1 = 24 structs total)
@@ -1466,19 +1484,155 @@ export const useVerification = (verificationType, importedModelData = null, capt
 
     let result, executionResponse, fullTransaction, broadcastResult;
 
-    if (!useLocalProving) {
+    // Check if wallet is connected and use wallet-based execution
+    if (connected && executeTransaction) {
+      console.log("🔗 Using wallet adapter for transaction execution");
+      try {
+        // Phase 1: Create authorization (show bouncing dots)
+        setCurrentStep(VERIFICATION_STEPS.CREATING_AUTHORIZATION);
+        
+        // Phase 2: Execute proving request (show countdown)
+        setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
+        startProgressAndRandomizeData(expected_runtime);
+        
+        // Extract program name from the model
+        const programNameMatch = model.match(/program\s+([a-zA-Z0-9_]+\.aleo)/);
+        const programName = programNameMatch ? programNameMatch[1] : 'sklearn_mlp_face_hash_3.aleo';
+        
+        // Debug: Log the input parameters before sending to wallet
+        console.log("🔍 Debug - Wallet transaction parameters:");
+        console.log("  - program:", programName);
+        console.log("  - function:", "main");
+        console.log("  - inputs:", input_array);
+        console.log("  - inputs type:", typeof input_array);
+        console.log("  - inputs length:", input_array?.length);
+        console.log("  - first few inputs:", input_array?.slice(0, 3));
+        console.log("  - fee:", 100000);
+        
+        // Validate inputs before sending
+        if (!input_array || !Array.isArray(input_array) || input_array.length === 0) {
+          throw new Error("Invalid input array: inputs must be a non-empty array");
+        }
+        
+        // Convert inputs to the format expected by wallet adapter
+        // The wallet adapter expects an array of strings, not complex struct objects
+        const walletInputs = input_array.map((input, index) => {
+          if (typeof input === 'string') {
+            return input;
+          } else if (typeof input === 'object') {
+            // Convert object to string representation
+            return JSON.stringify(input);
+          } else {
+            return String(input);
+          }
+        });
+        
+        console.log("🔍 Debug - Converted wallet inputs:", walletInputs);
+        console.log("🔍 Debug - Wallet inputs type:", typeof walletInputs);
+        console.log("🔍 Debug - Wallet inputs length:", walletInputs?.length);
+        
+        // Additional validation for wallet inputs
+        console.log("🔍 Debug - Validating wallet inputs...");
+        const validInputs = walletInputs.filter(input => {
+          if (typeof input !== 'string') {
+            console.warn("⚠️ Non-string input found:", input);
+            return false;
+          }
+          if (input.length === 0) {
+            console.warn("⚠️ Empty input found");
+            return false;
+          }
+          return true;
+        });
+        
+        if (validInputs.length !== walletInputs.length) {
+          console.warn("⚠️ Some inputs were filtered out:", {
+            original: walletInputs.length,
+            valid: validInputs.length
+          });
+        }
+        
+        console.log("🔍 Debug - Final valid inputs:", validInputs);
+        
+        // Use wallet adapter's executeTransaction method
+        const tx = await executeTransaction({
+          program: programName, // The program name extracted from the model
+          function: "main",
+          inputs: validInputs, // Use validated inputs
+          fee: 100000, // 0.1 ALEO in microcredits
+        });
+        
+        console.log("✅ Wallet transaction executed successfully:", tx);
+        
+        // For wallet-based execution, we don't get the same response format
+        // We'll need to handle this differently - for now, set a success response
+        executionResponse = `Wallet transaction executed: ${tx?.id || 'success'}`;
+        result = ["success"];
+        fullTransaction = tx;
+        broadcastResult = tx;
+        
+      } catch (error) {
+        console.error("❌ Wallet transaction failed:", error);
+        clearInterval(progressInterval);
+        setProgressInterval(null);
+        setIsProgressRunning(false);
+        
+        let errorMessage = "Wallet transaction failed";
+        if (error.message.includes("User rejected")) {
+          errorMessage = "Transaction was rejected by user";
+        } else if (error.message.includes("Insufficient")) {
+          errorMessage = "Insufficient funds for transaction";
+        } else if (error.message.includes("Invalid argument")) {
+          errorMessage = "Invalid transaction parameters. This might be due to input format issues.";
+        } else {
+          errorMessage = error.message;
+        }
+        
+        console.log("🔍 Debug - Wallet error details:", {
+          error: error.message,
+          stack: error.stack,
+          inputs: input_array,
+          programName: programName
+        });
+        
+        setProvingError({
+          message: errorMessage,
+          originalError: error.message,
+          canRetry: true,
+          canSwitchToLocal: true,
+          walletError: true // Flag to indicate this is a wallet-specific error
+        });
+        return;
+      }
+    } else if (!useLocalProving) {
       let requestData;
       try {
         // Phase 1: Create authorization (show bouncing dots)
         setCurrentStep(VERIFICATION_STEPS.CREATING_AUTHORIZATION);
         
-        requestData = await aleoWorker.buildDelegatedProvingRequest(
-          model,
-          "main",
-          input_array,
-          privateKey,
-          shouldBroadcastLocalTx
-        );
+        // For delegated proving with wallet, we need to handle this differently
+        if (connected) {
+          console.log("🔗 Using wallet for delegated proving");
+          // For wallet-based delegated proving, we'll use executeTransaction
+          // but we need to handle the authorization differently
+          // For now, we'll show an error that this needs to be implemented
+          setProvingError({
+            message: "Delegated proving with wallet is not fully supported yet. Please use local proving or connect without wallet for delegated proving.",
+            originalError: "Wallet delegated proving not implemented",
+            canRetry: false,
+            canSwitchToLocal: true
+          });
+          return;
+        } else {
+          console.log("🔧 Using settings private key for delegated proving");
+          requestData = await aleoWorker.buildDelegatedProvingRequest(
+            model,
+            "main",
+            input_array,
+            privateKey,
+            shouldBroadcastLocalTx
+          );
+        }
         
         // Phase 2: Execute proving request (show countdown)
         setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
@@ -1536,16 +1690,34 @@ export const useVerification = (verificationType, importedModelData = null, capt
       setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
       startProgressAndRandomizeData(expected_runtime);
       
-      [result, executionResponse, fullTransaction, broadcastResult] =
-        await aleoWorker.localProgramExecutionWithFee(
-          model, // program source
-          "main", // entry function
-          input_array, // inputs
-          privateKey, // pays the fee
-          0.01, // base fee (Aleo credits)
-          0, // priority fee
-          shouldBroadcastLocalTx // broadcast to network
-        );
+      // Use wallet private key if connected, otherwise fall back to settings
+      const keyToUse = connected ? null : privateKey; // null means use wallet, privateKey means use settings
+      
+      if (connected) {
+        console.log("🔗 Using wallet for local proving (wallet will handle signing)");
+        // For wallet-based local proving, we need to use executeTransaction
+        // but this is a bit tricky since local proving typically requires the private key
+        // For now, we'll show a message that wallet-based local proving isn't fully supported
+        setProvingError({
+          message: "Local proving with wallet is not fully supported. Please use delegated proving or connect without wallet for local proving.",
+          originalError: "Wallet local proving not implemented",
+          canRetry: false,
+          canSwitchToLocal: false
+        });
+        return;
+      } else {
+        console.log("🔧 Using settings private key for local proving");
+        [result, executionResponse, fullTransaction, broadcastResult] =
+          await aleoWorker.localProgramExecutionWithFee(
+            model, // program source
+            "main", // entry function
+            input_array, // inputs
+            privateKey, // pays the fee
+            0.01, // base fee (Aleo credits)
+            0, // priority fee
+            shouldBroadcastLocalTx // broadcast to network
+          );
+      }
     }
 
     console.debug("result", result);
@@ -1906,6 +2078,15 @@ export const useVerification = (verificationType, importedModelData = null, capt
       if (!trainedModel) {
         alert("Please train a model first before using verification mode");
         return;
+      }
+
+      // Check wallet connection status and show appropriate message
+      if (connected) {
+        console.log("🔗 Wallet is connected - will use wallet for transaction signing");
+        // For now, we'll proceed with the wallet-based execution
+        // The actual execution logic will handle the wallet integration
+      } else {
+        console.log("🔧 No wallet connected - will use settings private key");
       }
 
       setProofRunCount((prev) => prev + 1);
