@@ -92,16 +92,19 @@ export default function MainScreen({
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
 
     const files = e.dataTransfer.files;
@@ -121,7 +124,12 @@ export default function MainScreen({
 
   return (
     <>
-      <div className="bg-constellation flex h-dvh flex-col text-white">
+      <div 
+        className="bg-constellation flex h-dvh flex-col text-white"
+        onDragOver={shouldShowDragAndDrop ? handleDragOver : undefined}
+        onDragLeave={shouldShowDragAndDrop ? handleDragLeave : undefined}
+        onDrop={shouldShowDragAndDrop ? handleDrop : undefined}
+      >
         {/* Header with controls */}
         <div className="flex w-full items-start justify-between p-6 md:mx-auto md:max-w-4xl">
           <div className="text-left text-[14px] text-gray-600">
