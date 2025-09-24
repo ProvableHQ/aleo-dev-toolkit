@@ -123,7 +123,7 @@ export default function LoadingScreen({ onLoadingComplete }) {
         <div className="text-center">
           <img
             src={kyaLogo}
-            alt="zPass"
+            alt="zPass with KYA"
             className="mx-auto mb-8 h-24 w-24"
           />
           <p className="mb-4 text-red-500">Error: {error}</p>

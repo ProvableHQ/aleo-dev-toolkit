@@ -148,7 +148,7 @@ export default function MainScreen({
                 </h1>
               </div>
 
-              <span className="text-[16px] uppercase">zPass</span>
+              <span className="text-[16px] uppercase">zPass with KYA</span>
 
               {/* Description */}
               <div className="mt-4 mb-8">
