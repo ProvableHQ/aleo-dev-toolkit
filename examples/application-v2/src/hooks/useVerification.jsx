@@ -189,6 +189,82 @@ export const useVerification = (verificationType, importedModelData = null, capt
   ]);
   const [provingError, setProvingError] = useState(null);
   const [lastProcessedFeatures, setLastProcessedFeatures] = useState(null);
+
+  // Function to poll for transaction results from the network
+  const pollForTransactionResults = async (transactionId, maxAttempts = 30, delayMs = 2000) => {
+    console.log(`🔍 Polling for transaction results: ${transactionId}`);
+    console.log(`🔍 Polling config: maxAttempts=${maxAttempts}, delayMs=${delayMs}`);
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`🔍 Polling attempt ${attempt}/${maxAttempts} for transaction ${transactionId}`);
+        
+        // Fetch transaction details from the network
+        const response = await fetch(`https://api.explorer.aleo.org/v1/testnet/transaction/${transactionId}`);
+        
+        if (!response.ok) {
+          console.log(`⚠️ Transaction not found yet (attempt ${attempt}): ${response.status} ${response.statusText}`);
+          if (attempt < maxAttempts) {
+            console.log(`⏳ Waiting ${delayMs}ms before next attempt...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+          }
+          continue;
+        }
+        
+        const transactionData = await response.json();
+        console.log(`🔍 Transaction data received (attempt ${attempt}):`, {
+          status: transactionData.status,
+          type: transactionData.type,
+          hasExecution: !!transactionData.execution,
+          executionTransitions: transactionData.execution?.transitions?.length || 0
+        });
+        
+        // Check if transaction is confirmed
+        // If the API returns the transaction data, it means it's confirmed and on the network
+        if (transactionData.status === 'confirmed' || transactionData.status === 'accepted' || 
+            (transactionData.execution && transactionData.execution.transitions && transactionData.execution.transitions.length > 0)) {
+          
+          const status = transactionData.status || 'confirmed';
+          console.log(`✅ Transaction confirmed! Status: ${status} (has execution data: ${!!transactionData.execution})`);
+          
+          // Extract execution results from the transaction
+          if (transactionData.execution) {
+            console.log(`🔍 Found execution data:`, transactionData.execution);
+            
+            // Format the execution response to match the expected format
+            const executionResponse = JSON.stringify({
+              execution: transactionData.execution,
+              transaction_id: transactionId,
+              status: status,
+              wallet_execution: true
+            });
+            
+            console.log(`✅ Returning execution response:`, executionResponse);
+            return executionResponse;
+          } else {
+            console.log(`⚠️ No execution data found in confirmed transaction`);
+            return null;
+          }
+        } else {
+          console.log(`⏳ Transaction status: ${transactionData.status} (attempt ${attempt})`);
+          if (attempt < maxAttempts) {
+            console.log(`⏳ Waiting ${delayMs}ms before next attempt...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Error polling transaction (attempt ${attempt}):`, error);
+        if (attempt === maxAttempts) {
+          throw error;
+        }
+        console.log(`⏳ Waiting ${delayMs}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    
+    console.log(`⏰ Polling timeout after ${maxAttempts} attempts`);
+    return null;
+  };
   
   // Hash computation state
   const [computedHash, setComputedHash] = useState(null);
@@ -1493,7 +1569,9 @@ export const useVerification = (verificationType, importedModelData = null, capt
         
         // Phase 2: Execute proving request (show countdown)
         setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
-        startProgressAndRandomizeData(expected_runtime);
+        // For wallet execution, we need longer runtime to account for polling
+        const walletExpectedRuntime = Math.max(expected_runtime, 60); // At least 60 seconds for polling
+        startProgressAndRandomizeData(walletExpectedRuntime);
         
         // Extract program name from the model
         const programNameMatch = model.match(/program\s+([a-zA-Z0-9_]+\.aleo)/);
@@ -1563,13 +1641,54 @@ export const useVerification = (verificationType, importedModelData = null, capt
         });
         
         console.log("✅ Wallet transaction executed successfully:", tx);
+        console.log("🔍 Debug - Wallet transaction details:", {
+          id: tx?.id,
+          status: tx?.status,
+          fee: tx?.fee,
+          type: typeof tx,
+          keys: Object.keys(tx || {})
+        });
         
-        // For wallet-based execution, we don't get the same response format
-        // We'll need to handle this differently - for now, set a success response
-        executionResponse = `Wallet transaction executed: ${tx?.id || 'success'}`;
-        result = ["success"];
+        // Store the transaction for later result fetching
         fullTransaction = tx;
         broadcastResult = tx;
+        
+        // Now we need to wait for the transaction to be confirmed and fetch the results
+        console.log("🔍 Debug - Starting to poll for transaction results...");
+        
+        // Update progress to show we're waiting for confirmation
+        setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
+        
+        try {
+          // Poll for transaction confirmation and results
+          const executionResults = await pollForTransactionResults(tx.id);
+          
+          if (executionResults) {
+            console.log("✅ Successfully fetched execution results:", executionResults);
+            executionResponse = executionResults;
+            result = ["success"];
+          } else {
+            throw new Error("Failed to fetch execution results from network");
+          }
+        } catch (pollError) {
+          console.error("❌ Failed to fetch execution results:", pollError);
+          
+          // Clear progress interval since polling failed
+          clearInterval(progressInterval);
+          setProgressInterval(null);
+          setIsProgressRunning(false);
+          
+          // Show error to user
+          setProvingError({
+            message: "Transaction was submitted but we couldn't fetch the results. The transaction may still be processing on the network.",
+            originalError: pollError.message,
+            canRetry: true,
+            canSwitchToLocal: true,
+            walletError: true,
+            transactionId: tx?.id
+          });
+          return;
+        }
         
       } catch (error) {
         console.error("❌ Wallet transaction failed:", error);
@@ -1625,13 +1744,13 @@ export const useVerification = (verificationType, importedModelData = null, capt
           return;
         } else {
           console.log("🔧 Using settings private key for delegated proving");
-          requestData = await aleoWorker.buildDelegatedProvingRequest(
-            model,
-            "main",
-            input_array,
-            privateKey,
-            shouldBroadcastLocalTx
-          );
+        requestData = await aleoWorker.buildDelegatedProvingRequest(
+          model,
+          "main",
+          input_array,
+          privateKey,
+          shouldBroadcastLocalTx
+        );
         }
         
         // Phase 2: Execute proving request (show countdown)
@@ -1707,21 +1826,24 @@ export const useVerification = (verificationType, importedModelData = null, capt
         return;
       } else {
         console.log("🔧 Using settings private key for local proving");
-        [result, executionResponse, fullTransaction, broadcastResult] =
-          await aleoWorker.localProgramExecutionWithFee(
-            model, // program source
-            "main", // entry function
-            input_array, // inputs
-            privateKey, // pays the fee
-            0.01, // base fee (Aleo credits)
-            0, // priority fee
-            shouldBroadcastLocalTx // broadcast to network
-          );
+      [result, executionResponse, fullTransaction, broadcastResult] =
+        await aleoWorker.localProgramExecutionWithFee(
+          model, // program source
+          "main", // entry function
+          input_array, // inputs
+          privateKey, // pays the fee
+          0.01, // base fee (Aleo credits)
+          0, // priority fee
+          shouldBroadcastLocalTx // broadcast to network
+        );
       }
     }
 
     console.debug("result", result);
     console.log("executionResponse", executionResponse);
+    console.log("🔍 Debug - Execution response type:", typeof executionResponse);
+    console.log("🔍 Debug - Execution response length:", executionResponse?.length);
+    
     if (fullTransaction) {
       console.log(
         "fullTransaction (includes main execution + fee execution)",
@@ -1738,13 +1860,89 @@ export const useVerification = (verificationType, importedModelData = null, capt
     setProofText(executionResponse);
     setProvingFinished(true);
 
-    var softmax = convert_proof_to_softmax(executionResponse);
+    // Check if this was a wallet execution
+    let executionData;
+    try {
+      executionData = typeof executionResponse === "string" 
+        ? JSON.parse(executionResponse) 
+        : executionResponse;
+      
+      console.log("🔍 Debug - Parsed execution data:", {
+        hasExecution: !!executionData?.execution,
+        hasTransitions: !!executionData?.execution?.transitions,
+        transitionsCount: executionData?.execution?.transitions?.length || 0,
+        isWalletExecution: !!executionData?.wallet_execution,
+        status: executionData?.status
+      });
+      
+      if (executionData?.execution?.transitions) {
+        console.log("🔍 Debug - First transition:", executionData.execution.transitions[0]);
+        if (executionData.execution.transitions[0]?.outputs) {
+          console.log("🔍 Debug - Outputs count:", executionData.execution.transitions[0].outputs.length);
+          console.log("🔍 Debug - First few outputs:", executionData.execution.transitions[0].outputs.slice(0, 3));
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse execution response:", e);
+      executionData = null;
+    }
 
-    if (softmax.length === 2) {
-      setChartDataProof([
-        { label: "False", value: softmax[0] * 100 },
-        { label: "True", value: softmax[1] * 100 },
-      ]);
+    if (executionData?.wallet_execution) {
+      console.log("🔗 Wallet execution detected - processing execution results");
+      console.log("🔍 Debug - Wallet execution data:", executionData);
+      
+      // For wallet executions, we DO have the actual proof results
+      // We need to process them the same way as normal executions
+      try {
+        console.log("🔍 Debug - Attempting to convert wallet proof to softmax...");
+        var softmax = convert_proof_to_softmax(executionResponse);
+        console.log("🔍 Debug - Wallet softmax result:", softmax);
+        
+        if (softmax.length === 2) {
+          setChartDataProof([
+            { label: "False", value: softmax[0] * 100 },
+            { label: "True", value: softmax[1] * 100 },
+          ]);
+          console.log("✅ Wallet proof results processed successfully:", {
+            false: softmax[0] * 100,
+            true: softmax[1] * 100
+          });
+        } else {
+          console.warn("⚠️ Wallet softmax result has unexpected length:", softmax.length);
+          setChartDataProof([
+            { label: "Transaction", value: 100 },
+            { label: "Submitted", value: 0 },
+          ]);
+        }
+      } catch (error) {
+        console.error("❌ Failed to convert wallet proof to softmax:", error);
+        console.error("❌ Error details:", error.message);
+        console.error("❌ Execution response that failed:", executionResponse);
+        
+        // Fallback to showing transaction success
+        setChartDataProof([
+          { label: "Transaction", value: 100 },
+          { label: "Completed", value: 0 },
+        ]);
+      }
+    } else {
+      // Normal execution - try to parse the proof results
+      try {
+        var softmax = convert_proof_to_softmax(executionResponse);
+        if (softmax.length === 2) {
+          setChartDataProof([
+            { label: "False", value: softmax[0] * 100 },
+            { label: "True", value: softmax[1] * 100 },
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to convert proof to softmax:", error);
+        // Fallback to showing transaction success
+        setChartDataProof([
+          { label: "Transaction", value: 100 },
+          { label: "Completed", value: 0 },
+        ]);
+      }
     }
   }
 
