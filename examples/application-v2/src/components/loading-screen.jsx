@@ -124,7 +124,7 @@ export default function LoadingScreen({ onLoadingComplete }) {
           <img
             src={kyaLogo}
             alt="zPass with KYA"
-            className="mx-auto mb-8 h-24 w-24"
+            className="mx-auto mb-8 h-48 w-48"
           />
           <p className="mb-4 text-red-500">Error: {error}</p>
           <button
@@ -144,7 +144,7 @@ export default function LoadingScreen({ onLoadingComplete }) {
         <div className="mx-auto max-w-md text-center">
           {/* zPass Logo */}
           <div className="mb-16">
-            <img src={kyaLogo} alt="KYA Logo" className="mx-auto h-24 w-24" />
+            <img src={kyaLogo} alt="KYA Logo" className="mx-auto h-48 w-48" />
           </div>
 
           <div className="mb-8 w-[250px]">

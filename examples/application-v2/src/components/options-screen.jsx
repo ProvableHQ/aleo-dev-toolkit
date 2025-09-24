@@ -83,7 +83,7 @@ export default function OptionsScreen({ onBack }) {
           {/* zPass Logo */}
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold tracking-wider md:text-4xl">
-              <img src={kyaLogo} alt="zPass with KYA Logo" className="mx-auto h-10 w-40" />
+              <img src={kyaLogo} alt="zPass with KYA Logo" className="mx-auto h-20 w-80" />
             </h1>
           </div>
 

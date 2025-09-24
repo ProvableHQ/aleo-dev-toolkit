@@ -143,7 +143,7 @@ export default function MainScreen({
                   <img
                     src={kyaLogo}
                     alt="KYC Logo"
-                    className="mx-auto h-10 w-40"
+                    className="mx-auto h-20 w-80"
                   />
                 </h1>
               </div>
