@@ -234,7 +234,7 @@ export default function MainScreen({
 
                   {/* Drag & Drop Area */}
                   <div
-                    className={`mx-auto mt-6 w-full max-w-md cursor-pointer rounded-lg border-2 border-dashed p-4 transition-colors ${
+                    className={`mt-6 w-full cursor-pointer rounded-lg border-2 border-dashed p-4 transition-colors ${
                       isDragOver
                         ? "bg-opacity-10 border-blue-400 bg-blue-50"
                         : "border-opacity-50 border-gray-600 hover:border-gray-500"
