@@ -12,6 +12,8 @@ import {
   ProofDetailsScreen,
   CreatingAuthorizationScreen,
   GeneratingProofScreen,
+  WaitingForWalletScreen,
+  SearchingNetworkScreen,
   ProofGeneratedScreen,
   RegisteringAddressScreen,
   SamplePreview,
@@ -152,6 +154,7 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     retryProvingRequest,
     switchToLocalProving,
     computedHash,
+    networkSearchAttempt,
   } = useVerification(VERIFICATION_TYPES.FACE, importedModelData, capturedPassportImage);
 
   // State for model hash from TrainingScreen
@@ -228,6 +231,28 @@ export default function FaceVerificationScreen({ onBack, onSuccess, importedMode
     return (
       <CreatingAuthorizationScreen
         verificationType={VERIFICATION_TYPES.FACE}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.WAITING_FOR_WALLET) {
+    return (
+      <WaitingForWalletScreen
+        verificationType={VERIFICATION_TYPES.FACE}
+        provingError={provingError}
+        onRetryProving={retryProvingRequest}
+        onBack={onStepBack}
+        onBackToProof={() => setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF)}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.SEARCHING_NETWORK) {
+    return (
+      <SearchingNetworkScreen
+        verificationType={VERIFICATION_TYPES.FACE}
+        networkSearchAttempt={networkSearchAttempt}
+        onBack={onStepBack}
       />
     );
   }

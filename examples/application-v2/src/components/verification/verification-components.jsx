@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, Home, RefreshCw, Hash, ExternalLink } from "lucide-react";
+import { Check, Home, RefreshCw, Hash, ExternalLink, ArrowLeft } from "lucide-react";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { Button } from "@/components/ui/button";
 import {
   ActionButton,
   CopyButton,
@@ -1029,6 +1030,145 @@ export const HashProofGeneratedScreen = ({
             CONTINUE
           </ActionButton>
         </ButtonContainer>
+      </div>
+    </div>
+  );
+};
+
+// Waiting for Wallet Screen Component
+export const WaitingForWalletScreen = ({ 
+  verificationType, 
+  provingError, 
+  onRetryProving, 
+  onBack,
+  onBackToProof 
+}) => {
+  const verificationTypeConfig = {
+    signature: "SIGNATURE VERIFICATION",
+    face: "FACE VERIFICATION",
+  };
+
+  // If there's an error, show error UI instead of waiting animation
+  if (provingError) {
+    return (
+      <div className="flex h-svh flex-col text-white">
+        <div className="flex items-center justify-between p-2 text-[13px] uppercase sm:p-6">
+          <Button variant="ghost" size="icon" onClick={onBackToProof || onBack}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <span className="font-innovator gradient-white text-[26px] font-semibold">
+            Transaction Cancelled
+          </span>
+          <div className="w-10"></div> {/* Spacer for centering */}
+        </div>
+
+        <div className="flex flex-1 flex-col items-center justify-center px-6">
+          <div className="mx-auto max-w-md text-center">
+            <span className="mb-6 block w-full text-center text-[13px] text-gray-400">
+              {verificationTypeConfig[verificationType]}
+            </span>
+            
+            <div className="mb-6 rounded-lg bg-red-900/20 border border-red-500/30 p-4">
+              <p className="text-sm text-red-300 mb-2">
+                {provingError.message}
+              </p>
+              {provingError.originalError && (
+                <p className="text-xs text-red-400">
+                  {provingError.originalError}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {provingError.canRetry && (
+                <button
+                  onClick={onRetryProving}
+                  className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-500"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-svh flex-col text-white">
+      <div className="flex items-center justify-between p-2 text-[13px] uppercase sm:p-6">
+        <Button variant="ghost" size="icon" onClick={onBack}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <span className="font-innovator gradient-white text-[26px] font-semibold">
+          Waiting for Wallet...
+        </span>
+        <div className="w-10"></div> {/* Spacer for centering */}
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-6">
+        <div className="mx-auto max-w-md text-center">
+          <span className="block w-full text-center text-[13px] text-gray-400">
+            {verificationTypeConfig[verificationType]}
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-2 px-6 pb-5 text-center text-[10px] text-gray-500 sm:pb-15">
+        <div className="gradient-white mb-4 text-center text-base text-[10px] tracking-widest">
+          WAITING FOR WALLET TO SIGN TRANSACTION
+        </div>
+        <div className="flex justify-center space-x-1">
+          <div className="h-2 w-2 animate-bounce rounded-full bg-white [animation-delay:-0.3s]"></div>
+          <div className="h-2 w-2 animate-bounce rounded-full bg-white [animation-delay:-0.15s]"></div>
+          <div className="h-2 w-2 animate-bounce rounded-full bg-white"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Searching Network Screen Component
+export const SearchingNetworkScreen = ({ verificationType, networkSearchAttempt, onBack }) => {
+  const verificationTypeConfig = {
+    signature: "SIGNATURE VERIFICATION",
+    face: "FACE VERIFICATION",
+  };
+
+  const attemptText = networkSearchAttempt.current > 0 
+    ? `ATTEMPT ${networkSearchAttempt.current} OF ${networkSearchAttempt.total}`
+    : "SEARCHING FOR TRANSACTION ON NETWORK";
+
+  return (
+    <div className="flex h-svh flex-col text-white">
+      <div className="flex items-center justify-between p-2 text-[13px] uppercase sm:p-6">
+        <Button variant="ghost" size="icon" onClick={onBack}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <span className="font-innovator gradient-white text-[26px] font-semibold">
+          Searching Network...
+        </span>
+        <div className="w-10"></div> {/* Spacer for centering */}
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-6">
+        <div className="mx-auto max-w-md text-center">
+          <span className="block w-full text-center text-[13px] text-gray-400">
+            {verificationTypeConfig[verificationType]}
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-2 px-6 pb-5 text-center text-[10px] text-gray-500 sm:pb-15">
+        <div className="gradient-white mb-4 text-center text-base text-[10px] tracking-widest">
+          {attemptText}
+        </div>
+        <div className="flex justify-center space-x-1">
+          <div className="h-2 w-2 animate-bounce rounded-full bg-white [animation-delay:-0.3s]"></div>
+          <div className="h-2 w-2 animate-bounce rounded-full bg-white [animation-delay:-0.15s]"></div>
+          <div className="h-2 w-2 animate-bounce rounded-full bg-white"></div>
+        </div>
       </div>
     </div>
   );

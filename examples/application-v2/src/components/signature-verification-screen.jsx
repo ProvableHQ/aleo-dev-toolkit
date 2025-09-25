@@ -13,6 +13,8 @@ import {
   ProofDetailsScreen,
   CreatingAuthorizationScreen,
   GeneratingProofScreen,
+  WaitingForWalletScreen,
+  SearchingNetworkScreen,
   ProofGeneratedScreen,
   RegisteringAddressScreen,
   ButtonContainer,
@@ -60,6 +62,7 @@ export default function SignatureVerificationScreen({
     provingError,
     retryProvingRequest,
     switchToLocalProving,
+    networkSearchAttempt,
   } = useVerification(VERIFICATION_TYPES.SIGNATURE, importedModelData);
 
   // Render different screens based on currentStep
@@ -108,6 +111,28 @@ export default function SignatureVerificationScreen({
     return (
       <CreatingAuthorizationScreen
         verificationType={VERIFICATION_TYPES.SIGNATURE}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.WAITING_FOR_WALLET) {
+    return (
+      <WaitingForWalletScreen
+        verificationType={VERIFICATION_TYPES.SIGNATURE}
+        provingError={provingError}
+        onRetryProving={retryProvingRequest}
+        onBack={onStepBack}
+        onBackToProof={() => setCurrentStep(VERIFICATION_STEPS.CREATE_PROOF)}
+      />
+    );
+  }
+
+  if (currentStep === VERIFICATION_STEPS.SEARCHING_NETWORK) {
+    return (
+      <SearchingNetworkScreen
+        verificationType={VERIFICATION_TYPES.SIGNATURE}
+        networkSearchAttempt={networkSearchAttempt}
+        onBack={onStepBack}
       />
     );
   }

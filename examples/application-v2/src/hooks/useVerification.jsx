@@ -69,6 +69,8 @@ export const VERIFICATION_STEPS = {
   CREATE_PROOF: "create-proof",
   CREATING_AUTHORIZATION: "creating-authorization",
   GENERATING_PROOF: "generating-proof",
+  WAITING_FOR_WALLET: "waiting-for-wallet",
+  SEARCHING_NETWORK: "searching-network",
   PROOF_GENERATED: "proof-generated",
   PROOF_DETAILS: "proof-details",
   VERIFICATION_COMPLETE: "verification-complete",
@@ -86,6 +88,8 @@ export const STEP_CONFIGS = {
       [VERIFICATION_STEPS.CREATE_PROOF]: "Create a Proof",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "Creating Authorization...",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "Generating Proof...",
+      [VERIFICATION_STEPS.WAITING_FOR_WALLET]: "Waiting for Wallet...",
+      [VERIFICATION_STEPS.SEARCHING_NETWORK]: "Searching Network...",
       [VERIFICATION_STEPS.PROOF_GENERATED]: "Proof Generated",
       [VERIFICATION_STEPS.PROOF_DETAILS]: "Your Proof",
       [VERIFICATION_STEPS.VERIFICATION_COMPLETE]: "Verification Complete",
@@ -103,6 +107,8 @@ export const STEP_CONFIGS = {
       [VERIFICATION_STEPS.CREATE_PROOF]: "VERIFY YOUR SIGNATURE TO CONTINUE",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "CREATING PROOF AUTHORIZATION",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "SIGNATURE VERIFICATION",
+      [VERIFICATION_STEPS.WAITING_FOR_WALLET]: "WAITING FOR WALLET TO SIGN TRANSACTION",
+      [VERIFICATION_STEPS.SEARCHING_NETWORK]: "SEARCHING FOR TRANSACTION ON NETWORK",
       [VERIFICATION_STEPS.PROOF_GENERATED]:
         "SIGNATURE TRUE: {matchPercentage}% MATCH",
       [VERIFICATION_STEPS.PROOF_DETAILS]: "",
@@ -125,6 +131,8 @@ export const STEP_CONFIGS = {
       [VERIFICATION_STEPS.CREATE_PROOF]: "Create a Proof",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "Creating Authorization...",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "Generating Proof...",
+      [VERIFICATION_STEPS.WAITING_FOR_WALLET]: "Waiting for Wallet...",
+      [VERIFICATION_STEPS.SEARCHING_NETWORK]: "Searching Network...",
       [VERIFICATION_STEPS.PROOF_GENERATED]: "Proof Generated",
       [VERIFICATION_STEPS.PROOF_DETAILS]: "Your Proof",
       [VERIFICATION_STEPS.VERIFICATION_COMPLETE]: "Verification Complete",
@@ -142,6 +150,8 @@ export const STEP_CONFIGS = {
       [VERIFICATION_STEPS.CREATE_PROOF]: "VERIFY YOUR FACE TO CONTINUE",
       [VERIFICATION_STEPS.CREATING_AUTHORIZATION]: "CREATING PROOF AUTHORIZATION",
       [VERIFICATION_STEPS.GENERATING_PROOF]: "FACE VERIFICATION",
+      [VERIFICATION_STEPS.WAITING_FOR_WALLET]: "WAITING FOR WALLET TO SIGN TRANSACTION",
+      [VERIFICATION_STEPS.SEARCHING_NETWORK]: "SEARCHING FOR TRANSACTION ON NETWORK",
       [VERIFICATION_STEPS.PROOF_GENERATED]:
         "FACE TRUE: {matchPercentage}% MATCH",
       [VERIFICATION_STEPS.PROOF_DETAILS]: "",
@@ -192,15 +202,21 @@ export const useVerification = (verificationType, importedModelData = null, capt
   ]);
   const [provingError, setProvingError] = useState(null);
   const [lastProcessedFeatures, setLastProcessedFeatures] = useState(null);
+  const [networkSearchAttempt, setNetworkSearchAttempt] = useState({ current: 0, total: 0 });
 
   // Function to poll for transaction results from the network
-  const pollForTransactionResults = async (transactionId, maxAttempts = 30, delayMs = 2000) => {
+  const pollForTransactionResults = async (transactionId, maxAttempts = 30, delayMs = 2000, onAttemptUpdate = null) => {
     console.log(`🔍 Polling for transaction results: ${transactionId}`);
     console.log(`🔍 Polling config: maxAttempts=${maxAttempts}, delayMs=${delayMs}`);
     
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         console.log(`🔍 Polling attempt ${attempt}/${maxAttempts} for transaction ${transactionId}`);
+        
+        // Update attempt counter if callback provided
+        if (onAttemptUpdate) {
+          onAttemptUpdate(attempt, maxAttempts);
+        }
         
         // Fetch transaction details from the network
         const response = await fetch(`https://api.explorer.aleo.org/v1/testnet/transaction/${transactionId}`);
@@ -1571,19 +1587,17 @@ export const useVerification = (verificationType, importedModelData = null, capt
         connected,
         hasExecuteTransaction: !!executeTransaction
       });
+      
+      // Extract program name from the model (outside try block for error handling)
+      const programNameMatch = model.match(/program\s+([a-zA-Z0-9_]+\.aleo)/);
+      const programName = programNameMatch ? programNameMatch[1] : 'sklearn_mlp_face_hash_3.aleo';
+      
       try {
         // Phase 1: Create authorization (show bouncing dots)
         setCurrentStep(VERIFICATION_STEPS.CREATING_AUTHORIZATION);
         
-        // Phase 2: Execute proving request (show countdown)
-        setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
-        // For wallet execution, we need longer runtime to account for polling
-        const walletExpectedRuntime = Math.max(expected_runtime, 60); // At least 60 seconds for polling
-        startProgressAndRandomizeData(walletExpectedRuntime);
-        
-        // Extract program name from the model
-        const programNameMatch = model.match(/program\s+([a-zA-Z0-9_]+\.aleo)/);
-        const programName = programNameMatch ? programNameMatch[1] : 'sklearn_mlp_face_hash_3.aleo';
+        // Phase 2: Execute proving request (show waiting for wallet)
+        setCurrentStep(VERIFICATION_STEPS.WAITING_FOR_WALLET); // Show waiting for wallet message
         
         // Debug: Log the input parameters before sending to wallet
         console.log("🔍 Debug - Wallet transaction parameters:");
@@ -1595,6 +1609,21 @@ export const useVerification = (verificationType, importedModelData = null, capt
         console.log("  - first few inputs:", input_array?.slice(0, 3));
         console.log("  - fee:", 100000);
         
+        // Detailed input analysis
+        if (input_array && Array.isArray(input_array)) {
+          console.log("🔍 Debug - Detailed input analysis:");
+          input_array.forEach((input, index) => {
+            console.log(`  - Input ${index}:`, {
+              value: input,
+              type: typeof input,
+              length: input?.length,
+              isString: typeof input === 'string',
+              isObject: typeof input === 'object',
+              isArray: Array.isArray(input)
+            });
+          });
+        }
+        
         // Validate inputs before sending
         if (!input_array || !Array.isArray(input_array) || input_array.length === 0) {
           throw new Error("Invalid input array: inputs must be a non-empty array");
@@ -1602,20 +1631,44 @@ export const useVerification = (verificationType, importedModelData = null, capt
         
         // Convert inputs to the format expected by wallet adapter
         // The wallet adapter expects an array of strings, not complex struct objects
+        console.log("🔍 Debug - Converting inputs for wallet adapter...");
         const walletInputs = input_array.map((input, index) => {
+          console.log(`🔍 Debug - Converting input ${index}:`, {
+            original: input,
+            type: typeof input,
+            isString: typeof input === 'string',
+            isObject: typeof input === 'object',
+            isArray: Array.isArray(input)
+          });
+          
           if (typeof input === 'string') {
+            console.log(`🔍 Debug - Input ${index} is already string:`, input);
             return input;
           } else if (typeof input === 'object') {
             // Convert object to string representation
-            return JSON.stringify(input);
+            const stringified = JSON.stringify(input);
+            console.log(`🔍 Debug - Input ${index} converted from object to string:`, stringified);
+            return stringified;
           } else {
-            return String(input);
+            const converted = String(input);
+            console.log(`🔍 Debug - Input ${index} converted to string:`, converted);
+            return converted;
           }
         });
         
-        console.log("🔍 Debug - Converted wallet inputs:", walletInputs);
+        console.log("🔍 Debug - Final converted wallet inputs:", walletInputs);
         console.log("🔍 Debug - Wallet inputs type:", typeof walletInputs);
         console.log("🔍 Debug - Wallet inputs length:", walletInputs?.length);
+        
+        // Validate each converted input
+        walletInputs.forEach((input, index) => {
+          console.log(`🔍 Debug - Final input ${index} validation:`, {
+            value: input,
+            type: typeof input,
+            length: input?.length,
+            isValid: typeof input === 'string' && input.length > 0
+          });
+        });
         
         // Additional validation for wallet inputs
         console.log("🔍 Debug - Validating wallet inputs...");
@@ -1640,7 +1693,34 @@ export const useVerification = (verificationType, importedModelData = null, capt
         
         console.log("🔍 Debug - Final valid inputs:", validInputs);
         
+        // Final validation before sending to wallet
+        console.log("🔍 Debug - Final transaction parameters being sent to wallet:");
+        console.log("  - program:", programName);
+        console.log("  - function:", "main");
+        console.log("  - inputs:", validInputs);
+        console.log("  - inputs length:", validInputs.length);
+        console.log("  - fee:", 100000);
+        
+        // Validate that all inputs are non-empty strings
+        const hasInvalidInputs = validInputs.some(input => 
+          typeof input !== 'string' || input.length === 0
+        );
+        
+        if (hasInvalidInputs) {
+          console.error("❌ Invalid inputs detected before sending to wallet:");
+          validInputs.forEach((input, index) => {
+            console.error(`  - Input ${index}:`, {
+              value: input,
+              type: typeof input,
+              length: input?.length,
+              isEmpty: input?.length === 0
+            });
+          });
+          throw new Error("Invalid inputs: all inputs must be non-empty strings");
+        }
+        
         // Use wallet adapter's executeTransaction method
+        console.log("🔍 Debug - Calling executeTransaction with validated inputs...");
         const tx = await executeTransaction({
           program: programName, // The program name extracted from the model
           function: "main",
@@ -1661,20 +1741,32 @@ export const useVerification = (verificationType, importedModelData = null, capt
         fullTransaction = tx;
         broadcastResult = tx;
         
-        // Now we need to wait for the transaction to be confirmed and fetch the results
-        console.log("🔍 Debug - Starting to poll for transaction results...");
-        
-        // Update progress to show we're waiting for confirmation
-        setCurrentStep(VERIFICATION_STEPS.GENERATING_PROOF);
+              // Now we need to wait for the transaction to be confirmed and fetch the results
+              console.log("🔍 Debug - Starting to poll for transaction results...");
+              
+              // Update progress to show we're searching the network
+              setCurrentStep(VERIFICATION_STEPS.SEARCHING_NETWORK);
         
         try {
           // Poll for transaction confirmation and results
-          const executionResults = await pollForTransactionResults(tx.id);
+          const executionResults = await pollForTransactionResults(
+            tx.id, 
+            30, 
+            2000, 
+            (attempt, total) => {
+              setNetworkSearchAttempt({ current: attempt, total });
+            }
+          );
           
           if (executionResults) {
             console.log("✅ Successfully fetched execution results:", executionResults);
             executionResponse = executionResults;
             result = ["success"];
+            
+            // Clear any progress intervals since we're done
+            clearInterval(progressInterval);
+            setProgressInterval(null);
+            setIsProgressRunning(false);
           } else {
             throw new Error("Failed to fetch execution results from network");
           }
@@ -1698,39 +1790,52 @@ export const useVerification = (verificationType, importedModelData = null, capt
           return;
         }
         
-      } catch (error) {
-        console.error("❌ Wallet transaction failed:", error);
-        clearInterval(progressInterval);
-        setProgressInterval(null);
-        setIsProgressRunning(false);
-        
-        let errorMessage = "Wallet transaction failed";
-        if (error.message.includes("User rejected")) {
-          errorMessage = "Transaction was rejected by user";
-        } else if (error.message.includes("Insufficient")) {
-          errorMessage = "Insufficient funds for transaction";
-        } else if (error.message.includes("Invalid argument")) {
-          errorMessage = "Invalid transaction parameters. This might be due to input format issues.";
-        } else {
-          errorMessage = error.message;
-        }
-        
-        console.log("🔍 Debug - Wallet error details:", {
-          error: error.message,
-          stack: error.stack,
-          inputs: input_array,
-          programName: programName
-        });
-        
-        setProvingError({
-          message: errorMessage,
-          originalError: error.message,
-          canRetry: true,
-          canSwitchToLocal: true,
-          walletError: true // Flag to indicate this is a wallet-specific error
-        });
-        return;
-      }
+            } catch (error) {
+              console.error("❌ Wallet transaction failed:", error);
+              clearInterval(progressInterval);
+              setProgressInterval(null);
+              setIsProgressRunning(false);
+              
+              let errorMessage = "Wallet transaction failed";
+              let canRetry = true;
+              let canSwitchToLocal = true;
+              
+              if (error.message.includes("Operation was cancelled by the user") || 
+                  error.message.includes("User rejected") ||
+                  error.message.includes("cancelled")) {
+                errorMessage = "Transaction was cancelled by user";
+                canRetry = true;
+                canSwitchToLocal = true;
+              } else if (error.message.includes("Insufficient")) {
+                errorMessage = "Insufficient funds for transaction";
+                canRetry = true;
+                canSwitchToLocal = true;
+              } else if (error.message.includes("Invalid argument")) {
+                errorMessage = "Invalid transaction parameters. This might be due to input format issues.";
+                canRetry = true;
+                canSwitchToLocal = true;
+              } else {
+                errorMessage = error.message;
+                canRetry = true;
+                canSwitchToLocal = true;
+              }
+              
+              console.log("🔍 Debug - Wallet error details:", {
+                error: error.message,
+                stack: error.stack,
+                inputs: input_array,
+                programName: programName
+              });
+              
+              setProvingError({
+                message: errorMessage,
+                originalError: error.message,
+                canRetry: canRetry,
+                canSwitchToLocal: canSwitchToLocal,
+                walletError: true // Flag to indicate this is a wallet-specific error
+              });
+              return;
+            }
     } else if (useWalletAdapter && (!connected || !executeTransaction)) {
       // Wallet adapter is enabled but wallet is not connected
       console.log("⚠️ Wallet adapter is enabled but wallet is not connected");
@@ -1914,12 +2019,18 @@ export const useVerification = (verificationType, importedModelData = null, capt
             false: softmax[0] * 100,
             true: softmax[1] * 100
           });
+          
+          // Transition to proof generated step
+          setCurrentStep(VERIFICATION_STEPS.PROOF_GENERATED);
         } else {
           console.warn("⚠️ Wallet softmax result has unexpected length:", softmax.length);
           setChartDataProof([
             { label: "Transaction", value: 100 },
             { label: "Submitted", value: 0 },
           ]);
+          
+          // Still transition to proof generated step even with unexpected results
+          setCurrentStep(VERIFICATION_STEPS.PROOF_GENERATED);
         }
       } catch (error) {
         console.error("❌ Failed to convert wallet proof to softmax:", error);
@@ -1931,6 +2042,9 @@ export const useVerification = (verificationType, importedModelData = null, capt
           { label: "Transaction", value: 100 },
           { label: "Completed", value: 0 },
         ]);
+        
+        // Still transition to proof generated step even with parsing errors
+        setCurrentStep(VERIFICATION_STEPS.PROOF_GENERATED);
       }
     } else {
       // Normal execution - try to parse the proof results
@@ -2660,5 +2774,6 @@ export const useVerification = (verificationType, importedModelData = null, capt
     switchToLocalProving,
     stepConfig,
     landmarks,
+    networkSearchAttempt,
   };
 };
