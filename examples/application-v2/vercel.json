@@ -1,4 +1,19 @@
 {
+  "buildCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.2.0 --activate && pnpm install && cd examples/application-v2 && pnpm build",
+  "outputDirectory": "dist",
+  "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.2.0 --activate",
+  "framework": "vite",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

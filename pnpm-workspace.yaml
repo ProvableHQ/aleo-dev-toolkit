@@ -8,3 +8,4 @@ packages:
   - 'packages/aleo-wallet-adaptor/wallets/galileo'
   - 'packages/aleo-wallet-adaptor/wallets/fox'
   - 'examples/*'
+  - 'examples/application-v2'
