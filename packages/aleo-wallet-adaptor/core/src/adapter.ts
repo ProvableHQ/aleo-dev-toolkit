@@ -1,4 +1,9 @@
-import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import {
+  Account,
+  Network,
+  TransactionOptions,
+  TransactionStatusResponse,
+} from '@provablehq/aleo-types';
 import {
   AleoChain,
   StandardWallet,
@@ -149,9 +154,9 @@ export abstract class BaseAleoWalletAdapter
   /**
    * Execute a transaction
    * @param options Transaction options
-   * @returns The executed transaction
+   * @returns The executed temporary transaction ID
    */
-  async executeTransaction(options: TransactionOptions): Promise<Transaction> {
+  async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -160,6 +165,22 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.EXECUTE);
     }
     return feature.executeTransaction(options);
+  }
+
+  /**
+   * Get transaction status
+   * @param transactionId The transaction ID
+   * @returns The transaction status
+   */
+  async transactionStatus(transactionId: string): Promise<TransactionStatusResponse> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.TRANSACTION_STATUS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.TRANSACTION_STATUS);
+    }
+    return feature.transactionStatus(transactionId);
   }
 
   async switchNetwork(network: Network): Promise<void> {

@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Send, Copy, CheckCircle, Loader2, Zap, Code, Code2 } from 'lucide-react';
+import { Send, Copy, CheckCircle, Loader2, Zap, Code, Code2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { Network } from '@provablehq/aleo-types';
+import { Network, TransactionStatus } from '@provablehq/aleo-types';
 import { HookCodeModal } from '../HookCodeModal';
 import { ProgramAutocomplete } from '../ProgramAutocomplete';
 import { FunctionSelector } from '../FunctionSelector';
@@ -18,14 +18,23 @@ import { functionNameAtom, programAtom, useDynamicInputsAtom } from '@/lib/store
 import { useAtom } from 'jotai';
 
 export function ExecuteTransaction() {
-  const { connected, executeTransaction, network } = useWallet();
+  const {
+    connected,
+    executeTransaction,
+    transactionStatus: getTransactionStatus,
+    network,
+  } = useWallet();
   const [program, setProgram] = useAtom(programAtom);
   const [functionName, setFunctionName] = useAtom(functionNameAtom);
   const [inputs, setInputs] = useState('');
   const [dynamicInputValues, setDynamicInputValues] = useState<string[]>([]);
   const [fee, setFee] = useState('100000');
-  const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const [onchainTransactionId, setOnchainTransactionId] = useState<string | null>(null);
   const [isExecutingTransaction, setIsExecutingTransaction] = useState(false);
+  const [isPollingStatus, setIsPollingStatus] = useState(false);
+  const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isProgramCodeModalOpen, setIsProgramCodeModalOpen] = useState(false);
   const [programCode, setProgramCode] = useState<string>('');
@@ -53,6 +62,15 @@ export function ExecuteTransaction() {
   const currentFunction = useMemo(() => {
     return functions.find(f => f.name === functionName);
   }, [functions, functionName]);
+
+  useEffect(() => {
+    if (!connected) {
+      setTransactionStatus(null);
+      setOnchainTransactionId(null);
+      setTransactionError(null);
+      setIsPollingStatus(false);
+    }
+  }, [connected]);
 
   useEffect(() => {
     if (functionNames.length > 0 && isLoading) {
@@ -115,12 +133,66 @@ export function ExecuteTransaction() {
     }
   }, [programIsError]);
 
+  // Cleanup polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Function to poll transaction status
+  const pollTransactionStatus = async (tempTransactionId: string) => {
+    function clear() {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    }
+    try {
+      const statusResponse = await getTransactionStatus(tempTransactionId);
+      setTransactionStatus(statusResponse.status);
+      if (statusResponse.transactionId) {
+        // Transaction is now onchain, we have the final transaction ID
+        setOnchainTransactionId(statusResponse.transactionId);
+      }
+
+      if (statusResponse.status.toLowerCase() === TransactionStatus.ACCEPTED.toLowerCase()) {
+        setIsPollingStatus(false);
+        clear();
+        toast.success('Transaction ' + statusResponse.status);
+      } else if (
+        statusResponse.status.toLowerCase() === TransactionStatus.FAILED.toLowerCase() ||
+        statusResponse.status.toLowerCase() === TransactionStatus.REJECTED.toLowerCase()
+      ) {
+        // Transaction failed
+        setIsPollingStatus(false);
+        if (statusResponse.error) {
+          setTransactionError(statusResponse.error);
+        }
+        clear();
+        toast.error('Transaction ' + statusResponse.status);
+      }
+    } catch (error) {
+      console.error('Error polling transaction status, will stop polling. Error:', error);
+      toast.error('Error polling transaction status. Check console for details.');
+      setTransactionError('Error polling transaction status');
+      setIsPollingStatus(false);
+      setTransactionStatus(TransactionStatus.FAILED);
+      clear();
+    }
+  };
+
   const handleExecuteTransaction = async () => {
     if (!program.trim() || !functionName.trim() || !fee.trim()) {
       toast.error('Please enter program, function, and fee');
       return;
     }
     setIsExecutingTransaction(true);
+    setOnchainTransactionId(null);
+    setTransactionStatus(null);
+    setTransactionError(null);
     try {
       let inputArray: string[];
 
@@ -138,8 +210,21 @@ export function ExecuteTransaction() {
         inputs: inputArray,
         fee: Number(fee),
       });
-      setTransactionHash(tx?.id ?? null);
-      toast.success('Transaction submitted successfully');
+
+      if (tx?.transactionId) {
+        toast.success('Transaction submitted successfully');
+        setIsPollingStatus(true);
+
+        // Start polling for transaction status every 1 second
+        pollingIntervalRef.current = setInterval(() => {
+          pollTransactionStatus(tx.transactionId);
+        }, 1000);
+
+        // Initial status check
+        pollTransactionStatus(tx.transactionId);
+      } else {
+        toast.error('Failed to get transaction ID');
+      }
     } catch (error) {
       console.error(error);
       toast.error('Failed to execute transaction. Check console for details.');
@@ -343,6 +428,7 @@ export function ExecuteTransaction() {
           disabled={
             !connected ||
             isExecutingTransaction ||
+            isPollingStatus ||
             !program.trim() ||
             !functionName.trim() ||
             !fee.trim()
@@ -354,6 +440,11 @@ export function ExecuteTransaction() {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Executing Transaction...
             </>
+          ) : isPollingStatus ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Waiting for Confirmation...
+            </>
           ) : (
             <>
               <Zap className="mr-2 h-4 w-4" />
@@ -362,36 +453,54 @@ export function ExecuteTransaction() {
           )}
         </Button>
 
-        {transactionHash && (
+        {(transactionStatus || onchainTransactionId) && (
           <Alert>
-            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
+            {transactionStatus?.toLowerCase() === TransactionStatus.ACCEPTED.toLowerCase() ? (
+              <CheckCircle className="h-4 w-4 " />
+            ) : transactionStatus?.toLowerCase() === TransactionStatus.REJECTED.toLowerCase() ||
+              transactionStatus?.toLowerCase() === TransactionStatus.FAILED.toLowerCase() ? (
+              <XCircle className="h-4 w-4" />
+            ) : (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            )}
             <AlertDescription>
               <div className="space-y-2">
-                <p className="font-medium">Transaction Executed Successfully!</p>
-                <div className="flex items-center justify-between bg-muted p-2 rounded text-xs font-mono break-all border">
-                  <span className="truncate">Tx Hash: {transactionHash}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(transactionHash)}
-                    className="transition-all duration-200"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    window.open(
-                      `https://${network === Network.TESTNET3 ? 'testnet.' : network === Network.CANARY ? 'canary.' : ''}explorer.provable.com/transaction/${transactionHash}`,
-                      '_blank',
-                    );
-                  }}
-                  className="transition-all duration-200"
-                >
-                  See on the explorer
-                </Button>
+                <p className="font-medium">
+                  Transaction status:{' '}
+                  <span className="font-bold capitalize">{transactionStatus || 'Pending'}</span>
+                </p>
+
+                {onchainTransactionId ? (
+                  <>
+                    <div className="flex items-center justify-between bg-muted p-2 rounded text-xs font-mono break-all border">
+                      <span className="truncate">Transaction Id: {onchainTransactionId}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(onchainTransactionId)}
+                        className="transition-all duration-200"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        window.open(
+                          `https://${network === Network.TESTNET3 ? 'testnet.' : network === Network.CANARY ? 'canary.' : ''}explorer.provable.com/transaction/${onchainTransactionId}`,
+                          '_blank',
+                        );
+                      }}
+                      className="transition-all duration-200"
+                    >
+                      See on the explorer
+                    </Button>
+                  </>
+                ) : null}
+                {transactionError && (
+                  <div className="text-sm text-destructive">Error: {transactionError}</div>
+                )}
               </div>
             </AlertDescription>
           </Alert>

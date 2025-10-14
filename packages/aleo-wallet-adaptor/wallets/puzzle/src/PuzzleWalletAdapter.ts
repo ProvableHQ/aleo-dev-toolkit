@@ -1,9 +1,9 @@
 import {
   Account,
-  Transaction,
   TransactionOptions,
-  TransactionStatus,
   Network,
+  TransactionStatusResponse,
+  TransactionStatus,
 } from '@provablehq/aleo-types';
 import {
   WalletDecryptPermission,
@@ -32,7 +32,6 @@ import {
   decrypt as puzzleDecrypt,
   getRecords,
   getEvent,
-  EventStatus,
 } from '@puzzlehq/sdk-core';
 import { PuzzleWindow, PuzzleWalletAdapterConfig, PUZZLE_NETWORK_MAP } from './types';
 import { PuzzleIcon } from './icon';
@@ -257,9 +256,9 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Execute a transaction with Puzzle wallet
    * @param options Transaction options
-   * @returns The executed transaction
+   * @returns The executed temporary transaction ID
    */
-  async executeTransaction(options: TransactionOptions): Promise<Transaction> {
+  async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -287,26 +286,8 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletTransactionError('Could not create transaction');
       }
 
-      let event;
-
-      while (!event || event.event.status === EventStatus.Creating) {
-        await new Promise(resolve => setTimeout(resolve, 250));
-        event = await getEvent({
-          id: result.eventId,
-          address: this._publicKey,
-          network: PUZZLE_NETWORK_MAP[this.network],
-        });
-      }
-
       return {
-        id: event.event.transactionId!,
-        status:
-          event.event.status === EventStatus.Settled
-            ? TransactionStatus.CONFIRMED
-            : event.event.status === EventStatus.Failed
-              ? TransactionStatus.FAILED
-              : TransactionStatus.PENDING,
-        fee: options.fee,
+        transactionId: result.eventId,
       };
     } catch (error: Error | unknown) {
       console.error('Puzzle Wallet executeTransaction error', error);
@@ -319,6 +300,34 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     }
   }
 
+  /**
+   * Get transaction status
+   * @param transactionId The transaction ID
+   * @returns The transaction status
+   */
+  async transactionStatus(transactionId: string): Promise<TransactionStatusResponse> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await getEvent({
+        id: transactionId,
+        address: this._publicKey,
+        network: PUZZLE_NETWORK_MAP[this.network],
+      });
+
+      return {
+        status: result.event?.status || TransactionStatus.PENDING,
+        transactionId: result.event?.transactionId,
+        error: result.event?.error,
+      };
+    } catch (error: Error | unknown) {
+      throw new WalletTransactionError(
+        error instanceof Error ? error.message : 'Failed to get transaction status',
+      );
+    }
+  }
   /**
    * Request records from Leo wallet
    * @param program The program to request records from

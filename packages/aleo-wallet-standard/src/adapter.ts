@@ -1,4 +1,9 @@
-import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import {
+  Account,
+  Network,
+  TransactionOptions,
+  TransactionStatusResponse,
+} from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
@@ -73,9 +78,16 @@ export interface WalletAdapterProps<Name extends string = string> {
   /**
    * Execute a transaction
    * @param options Transaction options
-   * @returns The executed transaction
+   * @returns The executed temporary transaction ID
    */
-  executeTransaction(options: TransactionOptions): Promise<Transaction>;
+  executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }>;
+
+  /**
+   * Get transaction status
+   * @param transactionId The transaction ID
+   * @returns The transaction status
+   */
+  transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
 
   /**
    * Sign a message
