@@ -296,6 +296,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const transactionStatus = useCallback(
+    async (transactionId: string) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('transactionStatus' in adapter))
+        throw handleError(new MethodNotImplementedError('transactionStatus'));
+
+      return await adapter.transactionStatus(transactionId);
+    },
+    [adapter, handleError, connected],
+  );
+
   // Sign an arbitrary message if the wallet supports it
   const signMessage = useMemo(
     () =>
@@ -383,6 +394,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         connect,
         disconnect,
         executeTransaction,
+        transactionStatus,
         signMessage,
         switchNetwork,
         decrypt,

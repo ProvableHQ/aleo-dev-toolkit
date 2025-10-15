@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import { WalletAdapter, WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
-import { Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import { Network, TransactionOptions, TransactionStatusResponse } from '@provablehq/aleo-types';
 
 export interface Wallet {
   adapter: WalletAdapter;
@@ -70,7 +70,14 @@ export interface WalletContextState {
   /**
    * Execute a transaction
    */
-  executeTransaction: (options: TransactionOptions) => Promise<Transaction | undefined>;
+  executeTransaction: (
+    options: TransactionOptions,
+  ) => Promise<{ transactionId: string } | undefined>;
+
+  /**
+   * Get transaction status
+   */
+  transactionStatus: (transactionId: string) => Promise<TransactionStatusResponse>;
 
   /**
    * Sign a message

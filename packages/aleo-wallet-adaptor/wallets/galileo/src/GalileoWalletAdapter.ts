@@ -1,9 +1,8 @@
 import {
   Account,
   Network,
-  Transaction,
   TransactionOptions,
-  TransactionStatus,
+  TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
   WalletDecryptPermission,
@@ -226,9 +225,9 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Execute a transaction with Galileo wallet
    * @param options Transaction options
-   * @returns The executed transaction
+   * @returns The executed temporary transaction ID
    */
-  async executeTransaction(options: TransactionOptions): Promise<Transaction> {
+  async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -239,14 +238,12 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         network: this.network,
       });
 
-      if (!result?.transaction) {
+      if (!result?.transactionId) {
         throw new WalletTransactionError('Could not create transaction');
       }
 
       return {
-        id: result.transaction.id,
-        status: TransactionStatus.PENDING,
-        fee: options.fee,
+        transactionId: result.transactionId,
       };
     } catch (error: Error | unknown) {
       console.error('GalileoWalletAdapter executeTransaction error', error);
@@ -255,6 +252,31 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       }
       throw new WalletTransactionError(
         error instanceof Error ? error.message : 'Failed to execute transaction',
+      );
+    }
+  }
+
+  /**
+   * Get transaction status
+   * @param transactionId The transaction ID
+   * @returns The transaction status
+   */
+  async transactionStatus(transactionId: string): Promise<TransactionStatusResponse> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._galileoWallet?.transactionStatus(transactionId);
+
+      if (!result?.status) {
+        throw new WalletTransactionError('Could not get transaction status');
+      }
+
+      return result;
+    } catch (error: Error | unknown) {
+      throw new WalletTransactionError(
+        error instanceof Error ? error.message : 'Failed to get transaction status',
       );
     }
   }

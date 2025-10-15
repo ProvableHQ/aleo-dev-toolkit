@@ -1,4 +1,9 @@
-import { Account, Network, Transaction, TransactionOptions } from '@provablehq/aleo-types';
+import {
+  Account,
+  Network,
+  TransactionOptions,
+  TransactionStatusResponse,
+} from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import { WalletDecryptPermission } from './wallet';
 
@@ -78,9 +83,23 @@ export interface ExecuteFeature extends WalletFeature {
   /**
    * Execute a transaction
    * @param options Transaction options
-   * @returns The executed transaction
+   * @returns The executed temporary transaction ID
    */
-  executeTransaction(options: TransactionOptions): Promise<Transaction>;
+  executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }>;
+}
+
+/**
+ * Feature for getting transaction status
+ */
+export interface TransactionStatusFeature extends WalletFeature {
+  name: 'aleo:execute';
+
+  /**
+   * Get transaction status
+   * @param transactionId The transaction ID
+   * @returns The executed temporary transaction ID
+   */
+  transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
 }
 
 /**

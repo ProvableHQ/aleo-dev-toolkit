@@ -8,6 +8,7 @@ import {
   RequestRecordsFeature,
   SignFeature,
   SwitchNetworkFeature,
+  TransactionStatusFeature,
   WalletFeature,
 } from './features';
 
@@ -66,6 +67,11 @@ export interface WalletFeatures {
   [WalletFeatureName.EXECUTE]?: ExecuteFeature;
 
   /**
+   * The transaction status feature
+   */
+  [WalletFeatureName.TRANSACTION_STATUS]?: TransactionStatusFeature;
+
+  /**
    * The chain feature
    */
   [WalletFeatureName.CHAINS]?: ChainFeature;
@@ -99,6 +105,7 @@ export enum WalletFeatureName {
   ACCOUNTS = 'standard:accounts',
   SIGN = 'aleo:sign',
   EXECUTE = 'aleo:execute',
+  TRANSACTION_STATUS = 'aleo:transaction-status',
   CHAINS = 'standard:chains',
   SWITCH_NETWORK = 'standard:switch-network',
   DECRYPT = 'standard:decrypt',

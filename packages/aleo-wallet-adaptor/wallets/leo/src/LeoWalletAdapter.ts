@@ -1,9 +1,9 @@
 import {
   Account,
   Network,
-  Transaction,
   TransactionOptions,
   TransactionStatus,
+  TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
   WalletDecryptPermission,
@@ -255,9 +255,9 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Execute a transaction with Leo wallet
    * @param options Transaction options
-   * @returns The executed transaction
+   * @returns The executed temporary transaction ID
    */
-  async executeTransaction(options: TransactionOptions): Promise<Transaction> {
+  async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -284,9 +284,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       }
 
       return {
-        id: result.transactionId,
-        status: TransactionStatus.PENDING,
-        fee: options.fee,
+        transactionId: result.transactionId,
       };
     } catch (error: Error | unknown) {
       console.error('Leo Wallet executeTransaction error', error);
@@ -295,6 +293,42 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
       }
       throw new WalletTransactionError(
         error instanceof Error ? error.message : 'Failed to execute transaction',
+      );
+    }
+  }
+
+  /**
+   * Get transaction status
+   * @param transactionId The transaction ID
+   * @returns The transaction status
+   */
+  async transactionStatus(transactionId: string): Promise<TransactionStatusResponse> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._leoWallet?.transactionStatus(transactionId);
+
+      if (!result?.status) {
+        throw new WalletTransactionError('Could not get transaction status');
+      }
+
+      const leoStatus = result.status;
+      console.log('leoStatus', leoStatus);
+      const status =
+        leoStatus === 'Finalized'
+          ? TransactionStatus.ACCEPTED
+          : leoStatus === 'Completed' // Completed probably means Proving completed
+            ? TransactionStatus.PENDING
+            : leoStatus;
+
+      return {
+        status,
+      };
+    } catch (error: Error | unknown) {
+      throw new WalletTransactionError(
+        error instanceof Error ? error.message : 'Failed to get transaction status',
       );
     }
   }

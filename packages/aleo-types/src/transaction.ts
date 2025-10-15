@@ -3,8 +3,9 @@
  */
 export enum TransactionStatus {
   PENDING = 'pending',
-  CONFIRMED = 'confirmed',
+  ACCEPTED = 'accepted',
   FAILED = 'failed',
+  REJECTED = 'rejected',
 }
 
 /**
@@ -65,4 +66,24 @@ export interface TransactionOptions {
    * Record indices to use
    */
   recordIndices?: number[];
+}
+
+/**
+ * Transaction status response
+ */
+export interface TransactionStatusResponse {
+  /**
+   * The transaction status
+   */
+  status: string;
+
+  /**
+   * The onchain transaction ID (if already exists)
+   */
+  transactionId?: string;
+
+  /**
+   * The error message (if any)
+   */
+  error?: string;
 }
