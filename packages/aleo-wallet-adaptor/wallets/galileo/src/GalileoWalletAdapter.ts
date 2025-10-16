@@ -5,6 +5,7 @@ import {
   TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
+  AleoDeployment,
   WalletDecryptPermission,
   WalletName,
   WalletReadyState,
@@ -318,6 +319,34 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       return result || [];
     } catch (error: Error | unknown) {
       throw new WalletError(error instanceof Error ? error.message : 'Failed to request records');
+    }
+  }
+
+  /**
+   * Execute a deployment
+   * @param deployment The deployment to execute
+   * @returns The executed transaction ID
+   */
+  async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {
+    try {
+      const wallet = this._wallet;
+      if (!wallet || !this._publicKey) throw new WalletNotConnectedError();
+      try {
+        const result = await this._galileoWallet?.executeDeployment(deployment);
+        if (!result?.transactionId) {
+          throw new WalletTransactionError('Could not create deployment');
+        }
+        return {
+          transactionId: result.transactionId,
+        };
+      } catch (error: Error | unknown) {
+        throw new WalletTransactionError(
+          error instanceof Error ? error.message : 'Failed to execute deployment',
+        );
+      }
+    } catch (error: Error | unknown) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
     }
   }
 

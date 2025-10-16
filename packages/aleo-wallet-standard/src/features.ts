@@ -6,6 +6,7 @@ import {
 } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import { WalletDecryptPermission } from './wallet';
+import { AleoDeployment } from './adapter';
 
 /**
  * Base interface for all wallet features
@@ -161,4 +162,15 @@ export interface RequestRecordsFeature extends WalletFeature {
    * @returns The records
    */
   requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
+}
+
+export interface ExecuteDeploymentFeature extends WalletFeature {
+  name: 'standard:execute-deployment';
+
+  /**
+   * Execute a deployment
+   * @param deployment The deployment to execute
+   * @returns The executed transaction ID
+   */
+  executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }>;
 }

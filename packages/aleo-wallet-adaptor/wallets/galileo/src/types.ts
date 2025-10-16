@@ -1,5 +1,9 @@
 import { Network, TransactionOptions, TransactionStatusResponse } from '@provablehq/aleo-types';
-import { EventEmitter, WalletDecryptPermission } from '@provablehq/aleo-wallet-standard';
+import {
+  AleoDeployment,
+  EventEmitter,
+  WalletDecryptPermission,
+} from '@provablehq/aleo-wallet-standard';
 
 export interface GalileoWalletAdapterConfig {}
 
@@ -26,6 +30,7 @@ export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
   transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
   switchNetwork(network: Network): Promise<void>;
   requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
+  executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }>;
 }
 
 export interface GalileoWindow extends Window {

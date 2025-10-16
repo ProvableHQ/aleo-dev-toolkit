@@ -6,6 +6,7 @@ import {
   TransactionStatus,
 } from '@provablehq/aleo-types';
 import {
+  AleoDeployment,
   WalletDecryptPermission,
   WalletName,
   WalletReadyState,
@@ -363,5 +364,15 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   async switchNetwork(_network: Network): Promise<void> {
     console.error('Puzzle Wallet does not support switching networks');
     throw new MethodNotImplementedError('switchNetwork');
+  }
+
+  /**
+   * Execute a deployment
+   * @param deployment The deployment to execute
+   * @returns The executed transaction ID
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async executeDeployment(_deployment: AleoDeployment): Promise<{ transactionId: string }> {
+    throw new MethodNotImplementedError('executeDeployment');
   }
 }
