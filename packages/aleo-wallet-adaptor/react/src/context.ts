@@ -1,5 +1,10 @@
 import { createContext, useContext } from 'react';
-import { WalletAdapter, WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  AleoDeployment,
+  WalletAdapter,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
 import { Network, TransactionOptions, TransactionStatusResponse } from '@provablehq/aleo-types';
 
 export interface Wallet {
@@ -98,6 +103,11 @@ export interface WalletContextState {
    * Request records
    */
   requestRecords: (program: string, includePlaintext?: boolean) => Promise<unknown[]>;
+
+  /**
+   * Execute a deployment
+   */
+  executeDeployment: (deployment: AleoDeployment) => Promise<{ transactionId: string }>;
 }
 
 /**
