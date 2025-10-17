@@ -329,10 +329,14 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    */
   async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {
     try {
-      const wallet = this._wallet;
-      if (!wallet || !this._publicKey) throw new WalletNotConnectedError();
+      if (!this._publicKey || !this.account) {
+        throw new WalletNotConnectedError();
+      }
       try {
-        const result = await this._galileoWallet?.executeDeployment(deployment);
+        const result = await this._galileoWallet?.executeDeployment({
+          ...deployment,
+          network: this.network,
+        });
         if (!result?.transactionId) {
           throw new WalletTransactionError('Could not create deployment');
         }

@@ -11,6 +11,10 @@ export interface GalileoTransaction extends TransactionOptions {
   network: Network;
 }
 
+export interface GalileoDeployment extends AleoDeployment {
+  network: Network;
+}
+
 export interface GalileoWalletEvents {
   networkChanged(network: Network): void;
   disconnect(): void;
@@ -30,7 +34,7 @@ export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
   transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
   switchNetwork(network: Network): Promise<void>;
   requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
-  executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }>;
+  executeDeployment(deployment: GalileoDeployment): Promise<{ transactionId: string }>;
 }
 
 export interface GalileoWindow extends Window {

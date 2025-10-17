@@ -374,8 +374,9 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    */
   async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {
     try {
-      const wallet = this._wallet;
-      if (!wallet || !this._publicKey) throw new WalletNotConnectedError();
+      if (!this._publicKey || !this.account) {
+        throw new WalletNotConnectedError();
+      }
       try {
         const leoDeployment = new Deployment(
           this._publicKey,
