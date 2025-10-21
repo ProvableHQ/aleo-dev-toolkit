@@ -44,7 +44,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * The wallet URL
    */
-  url = 'https://foxwallet.com/downloa';
+  url = 'https://foxwallet.com/download';
 
   /**
    * The wallet icon (base64-encoded SVG)
@@ -59,7 +59,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  network: Network = Network.TESTNET3;
+  network: Network = Network.MAINNET;
 
   /**
    * The wallet's decrypt permission
@@ -88,7 +88,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
   constructor(config?: LeoWalletAdapterConfig) {
     super();
     console.debug('FoxWalletAdapter constructor', config);
-    this.network = Network.TESTNET3;
+    this.network = Network.MAINNET;
     this._checkAvailability();
     this._foxWallet = this._window?.foxwallet?.aleo;
     if (config?.isMobile) {
@@ -130,6 +130,10 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Fox Wallet is not available');
+      }
+
+      if (network !== Network.MAINNET) {
+        throw new WalletConnectionError('Fox Wallet only support mainnet');
       }
 
       // Call connect and extract address safely
@@ -242,7 +246,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
             functionName,
             index,
           );
-          return result.toString();
+          return result.text;
         } catch (error: Error | unknown) {
           throw new WalletDecryptionError(
             error instanceof Error ? error.message : 'Failed to decrypt',

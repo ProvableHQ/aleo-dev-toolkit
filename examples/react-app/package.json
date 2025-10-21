@@ -16,6 +16,7 @@
     "@provablehq/aleo-wallet-adaptor-galileo": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-leo": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-puzzle": "workspace:*",
+    "@provablehq/aleo-wallet-adaptor-soter": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-react-ui": "workspace:*",
     "@puzzlehq/sdk": "^0.2.0",
