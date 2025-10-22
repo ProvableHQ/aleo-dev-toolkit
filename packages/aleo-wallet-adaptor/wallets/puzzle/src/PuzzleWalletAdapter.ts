@@ -264,6 +264,10 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
       throw new WalletNotConnectedError();
     }
 
+    if (options.privateFee) {
+      throw new WalletTransactionError('Private fee is not supported by Puzzle wallet');
+    }
+
     try {
       const fee = options.fee ? options.fee / 1000000 : 0.001;
 

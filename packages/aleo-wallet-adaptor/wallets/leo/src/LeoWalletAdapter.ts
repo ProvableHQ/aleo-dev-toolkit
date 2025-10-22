@@ -269,7 +269,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
         address: this._publicKey,
         chainId: LEO_NETWORK_MAP[this.network],
         fee: options.fee ? options.fee : 0.001,
-        feePrivate: false,
+        feePrivate: options.privateFee ?? false,
         transitions: [
           {
             program: options.program,

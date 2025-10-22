@@ -66,6 +66,11 @@ export interface TransactionOptions {
    * Record indices to use
    */
   recordIndices?: number[];
+
+  /**
+   * Whether the fee is private
+   */
+  privateFee?: boolean;
 }
 
 /**

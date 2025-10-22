@@ -41,6 +41,7 @@ export function ExecuteTransaction() {
   const [useDynamicInputs, setUseDynamicInputs] = useAtom(useDynamicInputsAtom);
   const [isLoading, setIsLoading] = useState(true);
   const [wasManuallyCleared, setWasManuallyCleared] = useState(false);
+  const [privateFee, setPrivateFee] = useState(false);
 
   // Use the useProgram hook to fetch program data
   const {
@@ -209,6 +210,7 @@ export function ExecuteTransaction() {
         function: functionName.trim(),
         inputs: inputArray,
         fee: Number(fee),
+        privateFee,
       });
 
       if (tx?.transactionId) {
@@ -420,6 +422,19 @@ export function ExecuteTransaction() {
               disabled={!connected}
               className="transition-all duration-300"
             />
+          </div>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="privateFee"
+              disabled={!connected}
+              checked={privateFee}
+              onChange={e => setPrivateFee(e.target.checked)}
+              className="rounded border-input"
+            />
+            <Label htmlFor="privateFee" className="text-sm">
+              Pay fee privately
+            </Label>
           </div>
         </div>
 
