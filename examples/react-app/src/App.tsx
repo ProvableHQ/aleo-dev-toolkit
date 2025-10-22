@@ -4,6 +4,7 @@ import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
 import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-galileo';
 import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
+import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
 import WalletAdapterDemo from './WalletAdapterDemo';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
@@ -22,6 +23,7 @@ const wallets = [
   new PuzzleWalletAdapter(),
   new LeoWalletAdapter(),
   new FoxWalletAdapter(),
+  new SoterWalletAdapter(),
 ];
 
 export function App() {
