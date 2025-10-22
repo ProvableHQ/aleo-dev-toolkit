@@ -5,7 +5,7 @@ import { Copy, Check } from 'lucide-react';
 interface HookCodeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  action: 'executeTransaction' | 'signMessage' | 'decrypt' | 'requestRecords';
+  action: 'executeTransaction' | 'signMessage' | 'decrypt' | 'requestRecords' | 'executeDeployment';
 }
 
 export function HookCodeModal({ isOpen, onClose, action }: HookCodeModalProps) {
@@ -144,6 +144,48 @@ export function RequestRecordsComponent() {
   );
 }`;
 
+      case 'executeDeployment':
+        return `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+
+export function DeployProgramComponent() {
+  const { connected, executeDeployment, address } = useWallet();
+  const [isDeploying, setIsDeploying] = useState(false);
+
+  const handleDeployProgram = async () => {
+    if (!connected || !address) return;
+    
+    setIsDeploying(true);
+    try {
+      const deployment = {
+        program: \`program hello_world.aleo;
+        
+        function main(a: u32, b: u32) -> u32 {
+            return a + b;
+        }\`,
+        address: address,
+        fee: 100000,
+        feePrivate: false,
+      };
+      
+      const tx = await executeDeployment(deployment);
+      console.log('Deployment Transaction ID:', tx?.transactionId);
+    } catch (error) {
+      console.error('Deployment failed:', error);
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleDeployProgram}
+      disabled={!connected || isDeploying}
+    >
+      {isDeploying ? 'Deploying...' : 'Deploy Program'}
+    </button>
+  );
+}`;
+
       default:
         return '';
     }
@@ -169,6 +211,8 @@ export function RequestRecordsComponent() {
         return 'Decrypt Hook';
       case 'requestRecords':
         return 'Request Records Hook';
+      case 'executeDeployment':
+        return 'Execute Deployment Hook';
       default:
         return 'Hook Code';
     }

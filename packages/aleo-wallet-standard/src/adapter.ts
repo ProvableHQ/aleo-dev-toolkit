@@ -8,6 +8,13 @@ import { AleoChain } from './chains';
 import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
 
+export interface AleoDeployment {
+  program: string;
+  address: string;
+  fee: number;
+  feePrivate: boolean;
+}
+
 /**
  * Wallet adapter interface
  */
@@ -122,6 +129,13 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns The records
    */
   requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
+
+  /**
+   * Execute a deployment
+   * @param deployment The deployment to execute
+   * @returns The executed deployment ID
+   */
+  executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

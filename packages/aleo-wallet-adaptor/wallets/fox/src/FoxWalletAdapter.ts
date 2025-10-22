@@ -5,6 +5,7 @@ import {
   TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
+  AleoDeployment,
   WalletDecryptPermission,
   WalletName,
   WalletReadyState,
@@ -360,5 +361,38 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
   async switchNetwork(_network: Network): Promise<void> {
     console.error('Fox Wallet does not support switching networks');
     throw new MethodNotImplementedError('switchNetwork');
+  }
+
+  /**
+   * Execute a deployment
+   * @param deployment The deployment to execute
+   * @returns The executed transaction ID
+   */
+  async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {
+    try {
+      if (!this._foxWallet || !this._publicKey) throw new WalletNotConnectedError();
+      try {
+        const result = await this._foxWallet?.requestDeploy({
+          address: this._publicKey,
+          chainId: LEO_NETWORK_MAP[this.network],
+          program: deployment.program,
+          fee: deployment.fee,
+          feePrivate: deployment.feePrivate,
+        });
+        if (!result?.transactionId) {
+          throw new WalletTransactionError('Could not create deployment');
+        }
+        return {
+          transactionId: result.transactionId,
+        };
+      } catch (error: Error | unknown) {
+        throw new WalletTransactionError(
+          error instanceof Error ? error.message : 'Failed to execute deployment',
+        );
+      }
+    } catch (error: Error | unknown) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
   }
 }

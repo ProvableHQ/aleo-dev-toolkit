@@ -24,3 +24,6 @@ export const programsAtom = atomWithStorage<string[]>('programs', [
 export const programAtom = atomWithStorage<string>('program', 'hello_world.aleo');
 export const functionNameAtom = atomWithStorage<string>('functionName', 'main');
 export const useDynamicInputsAtom = atomWithStorage<boolean>('useDynamicInputs', true);
+
+// Deploy Program state
+export const programCodeAtom = atomWithStorage<string>('programCode', '');

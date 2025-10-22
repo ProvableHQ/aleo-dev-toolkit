@@ -1,6 +1,11 @@
 import type { FC, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { WalletName, WalletReadyState, WalletAdapter } from '@provablehq/aleo-wallet-standard';
+import {
+  WalletName,
+  WalletReadyState,
+  WalletAdapter,
+  AleoDeployment,
+} from '@provablehq/aleo-wallet-standard';
 import { Network, TransactionOptions } from '@provablehq/aleo-types';
 import { Wallet, WalletContext } from './context';
 import { useLocalStorage } from './useLocalStorage';
@@ -370,6 +375,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const executeDeployment = useCallback(
+    async (deployment: AleoDeployment) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('executeDeployment' in adapter))
+        throw handleError(new MethodNotImplementedError('executeDeployment'));
+
+      return await adapter.executeDeployment(deployment);
+    },
+    [adapter, handleError, connected],
+  );
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -399,6 +415,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         switchNetwork,
         decrypt,
         requestRecords,
+        executeDeployment,
       }}
     >
       {children}

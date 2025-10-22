@@ -14,6 +14,7 @@ import {
   WalletEvents,
   WalletName,
   WalletDecryptPermission,
+  AleoDeployment,
 } from '@provablehq/aleo-wallet-standard';
 import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
 import { WalletConnectionError } from './errors';
@@ -222,5 +223,16 @@ export abstract class BaseAleoWalletAdapter
     }
 
     return feature.requestRecords(program, includePlaintext);
+  }
+
+  async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.EXECUTE_DEPLOYMENT];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.EXECUTE_DEPLOYMENT);
+    }
+    return feature.executeDeployment(deployment);
   }
 }

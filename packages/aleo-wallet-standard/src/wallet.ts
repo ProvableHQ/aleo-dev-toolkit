@@ -4,6 +4,7 @@ import {
   ChainFeature,
   ConnectFeature,
   DecryptFeature,
+  ExecuteDeploymentFeature,
   ExecuteFeature,
   RequestRecordsFeature,
   SignFeature,
@@ -92,6 +93,11 @@ export interface WalletFeatures {
   [WalletFeatureName.REQUEST_RECORDS]?: RequestRecordsFeature;
 
   /**
+   * The execute deployment feature
+   */
+  [WalletFeatureName.EXECUTE_DEPLOYMENT]?: ExecuteDeploymentFeature;
+
+  /**
    * Other features
    */
   [featureName: string]: WalletFeature | undefined;
@@ -110,6 +116,7 @@ export enum WalletFeatureName {
   SWITCH_NETWORK = 'standard:switch-network',
   DECRYPT = 'standard:decrypt',
   REQUEST_RECORDS = 'standard:request-records',
+  EXECUTE_DEPLOYMENT = 'standard:execute-deployment',
 }
 
 /**
