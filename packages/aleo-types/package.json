@@ -1,10 +1,11 @@
 {
   "name": "@provablehq/aleo-types",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha.0",
   "description": "Types for Aleo blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "license": "GPL-3.0-or-later",
   "files": [
     "dist"
   ],
@@ -19,8 +20,19 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProvableHQ/aleo-dev-toolkit.git",
+    "directory": "packages/aleo-types"
+  },
+  "homepage": "https://provable.com/",
+  "keywords": [
+    "aleo",
+    "types"
+  ],
+  "author": "Provable Labs",
   "devDependencies": {
     "rimraf": "^5.0.5",
     "tsup": "^8.0.2"
   }
-} 
+}

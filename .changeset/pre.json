@@ -1,0 +1,20 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@provablehq/aleo-hooks": "0.1.0",
+    "@provablehq/aleo-types": "0.1.0",
+    "@provablehq/aleo-wallet-standard": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-core": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-react": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-react-ui": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-fox": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-galileo": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-leo": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-puzzle": "0.1.0",
+    "@provablehq/aleo-wallet-adaptor-soter": "0.1.0"
+  },
+  "changesets": [
+    "alpha-adaptor-release"
+  ]
+}

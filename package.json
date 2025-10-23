@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/aleo-wallet-adaptor/*",
+    "packages/aleo-wallet-adaptor/wallets/*"
   ],
   "scripts": {
     "build": "turbo run build --filter=!react-app-example --filter=!react-app-example-hooks",

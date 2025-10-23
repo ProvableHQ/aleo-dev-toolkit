@@ -1,17 +1,18 @@
 {
   "name": "@provablehq/aleo-wallet-adaptor-soter",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha.0",
   "description": "Soter wallet adapter for Aleo",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "license": "GPL-3.0-or-later",
   "files": [
     "dist",
     "src"
   ],
   "scripts": {
     "build": "tsup",
-    "clean": "rm -rf dist",
+    "clean": "rimraf dist",
     "dev": "tsup --watch"
   },
   "dependencies": {
@@ -20,7 +21,24 @@
     "@provablehq/aleo-wallet-standard": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-leo": "workspace:*"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProvableHQ/aleo-dev-toolkit.git",
+    "directory": "packages/aleo-wallet-adaptor/wallets/soter"
+  },
+  "homepage": "https://provable.com/",
+  "keywords": [
+    "aleo",
+    "wallet",
+    "adapter",
+    "soter"
+  ],
+  "author": "Provable Labs",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
+    "rimraf": "^5.0.5",
     "tsup": "^7.0.0",
     "typescript": "^5.0.0"
   }

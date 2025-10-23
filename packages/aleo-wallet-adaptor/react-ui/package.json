@@ -1,16 +1,17 @@
 {
   "name": "@provablehq/aleo-wallet-adaptor-react-ui",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha.0",
   "description": "UI components for wallet adapter integration",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "license": "GPL-3.0-or-later",
   "files": [
     "dist"
   ],
   "sideEffects": false,
   "scripts": {
-    "build": " tsup && pnpm copy-files",
+    "build": "tsup && pnpm copy-files",
     "clean": "rimraf dist",
     "dev": "tsup --watch",
     "lint": "eslint src/**/*.ts*",
@@ -23,6 +24,20 @@
     "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
     "@provablehq/aleo-wallet-standard": "workspace:*"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProvableHQ/aleo-dev-toolkit.git",
+    "directory": "packages/aleo-wallet-adaptor/react-ui"
+  },
+  "homepage": "https://provable.com/",
+  "keywords": [
+    "aleo",
+    "wallet",
+    "adapter",
+    "react",
+    "ui"
+  ],
+  "author": "Provable Labs",
   "peerDependencies": {
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
