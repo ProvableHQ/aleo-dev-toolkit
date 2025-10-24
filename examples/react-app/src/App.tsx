@@ -2,7 +2,7 @@ import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-galileo';
+import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-prove-alpha';
 import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
 import WalletAdapterDemo from './WalletAdapterDemo';

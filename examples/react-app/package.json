@@ -13,7 +13,7 @@
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-fox": "workspace:*",
-    "@provablehq/aleo-wallet-adaptor-galileo": "workspace:*",
+    "@provablehq/aleo-wallet-adaptor-prove-alpha": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-leo": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-puzzle": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-soter": "workspace:*",
