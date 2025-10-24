@@ -1,4 +1,4 @@
-# @provablehq/aleo-wallet-adaptor-galileo
+# @provablehq/aleo-wallet-adaptor-prove-alpha
 
 ## 0.1.1-alpha.0
 
