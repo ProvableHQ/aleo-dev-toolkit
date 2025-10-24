@@ -1,14 +1,20 @@
 # @provablehq/aleo-wallet-adaptor-react-ui
 
-Pre-built React components for connecting to Aleo wallets.
+Drop-in React components—modals, buttons, icons—for projects that use the Aleo wallet adaptor provider.
 
-## Install
+## When to use it
+
+- You already integrate `@provablehq/aleo-wallet-adaptor-react` and want production-ready UI elements.
+- You need a wallet picker modal that adapts to installed/loadable wallets automatically.
+- You prefer to customise styling via CSS variables rather than building UI from scratch.
+
+## Installation
 
 ```bash
 pnpm add @provablehq/aleo-wallet-adaptor-react-ui
 ```
 
-Also import the bundled stylesheet:
+Include the distributed stylesheet once in your bundle:
 
 ```tsx
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
@@ -29,5 +35,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 ```
 
-See the end-to-end demo: https://aleo-dev-toolkit-react-app.vercel.app/
+## Related packages
 
+- `@provablehq/aleo-wallet-adaptor-react` – required provider context for these components.
+- Wallet adapters such as `@provablehq/aleo-wallet-adaptor-prove-alpha`, `-puzzle`, `-leo`, etc.
+
+Live demo: https://aleo-dev-toolkit-react-app.vercel.app/

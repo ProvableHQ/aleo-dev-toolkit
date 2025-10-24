@@ -1,14 +1,20 @@
 # @provablehq/aleo-wallet-adaptor-puzzle
 
-Adapter for connecting the Puzzle wallet to Aleo-enabled applications.
+Adapter that exposes the Puzzle wallet through the Aleo wallet adaptor interfaces.
 
-## Install
+## When to use it
+
+- Offer Puzzle wallet users a seamless connect experience in your Aleo dApp.
+- Combine Puzzle with other wallets (Leo, Prove Alpha, Fox, Soter) in a single provider instance.
+- Prototype wallet flows that rely on Puzzle’s capabilities without forking adaptor logic.
+
+## Installation
 
 ```bash
 pnpm add @provablehq/aleo-wallet-adaptor-puzzle
 ```
 
-Register with the React provider:
+## Usage
 
 ```tsx
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
@@ -16,5 +22,10 @@ import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 const wallets = [new PuzzleWalletAdapter()];
 ```
 
-Reference implementation: https://aleo-dev-toolkit-react-app.vercel.app/
+## Related packages
 
+- `@provablehq/aleo-wallet-adaptor-core` – required base implementation.
+- `@provablehq/aleo-wallet-adaptor-react` – provider that wires Puzzle into React apps.
+- `@provablehq/aleo-wallet-adaptor-react-ui` – wallet picker UI that automatically lists Puzzle when available.
+
+Live demo: https://aleo-dev-toolkit-react-app.vercel.app/

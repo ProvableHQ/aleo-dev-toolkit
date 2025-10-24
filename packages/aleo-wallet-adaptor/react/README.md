@@ -1,25 +1,36 @@
 # @provablehq/aleo-wallet-adaptor-react
 
-React hooks and context providers for interacting with Aleo wallets.
+React context, hooks, and utilities for consuming Aleo wallet adapters in browser applications.
 
-## Install
+## When to use it
+
+- Wrap your React tree with a wallet provider that manages connection state, auto-connect, and error handling.
+- Access wallet methods (`connect`, `executeTransaction`, `decrypt`, etc.) through a simple `useWallet` hook.
+- Pair with the UI kit (`@provablehq/aleo-wallet-adaptor-react-ui`) or build your own custom interface.
+
+## Installation
 
 ```bash
 pnpm add @provablehq/aleo-wallet-adaptor-react
 ```
 
-## Quick Start
+## Quick start
 
 ```tsx
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
+import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-prove-alpha';
 
-const wallets = [new LeoWalletAdapter()];
+const wallets = [new GalileoWalletAdapter()];
 
 export function App({ children }: { children: React.ReactNode }) {
   return <AleoWalletProvider wallets={wallets}>{children}</AleoWalletProvider>;
 }
 ```
 
-Full demo: https://aleo-dev-toolkit-react-app.vercel.app/
+## Related packages
 
+- `@provablehq/aleo-wallet-adaptor-core` – underlying adapter interfaces consumed by the provider.
+- `@provablehq/aleo-wallet-adaptor-react-ui` – drop-in modals and buttons that work with this context.
+- Wallet adapters such as `@provablehq/aleo-wallet-adaptor-prove-alpha`, `-puzzle`, `-leo`, etc.
+
+Live demo: https://aleo-dev-toolkit-react-app.vercel.app/
