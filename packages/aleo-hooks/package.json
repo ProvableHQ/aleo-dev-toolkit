@@ -27,7 +27,7 @@
   "dependencies": {
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-standard": "workspace:*",
-    "@provablehq/sdk": "^0.9.0",
+    "@provablehq/sdk": "^0.9.9",
     "@tanstack/react-query": "^5.75.0",
     "react": "^18.2.0"
   }
