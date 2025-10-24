@@ -1,10 +1,11 @@
 {
   "name": "@provablehq/aleo-wallet-standard",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha.0",
   "description": "Standard interfaces and types for Aleo wallets",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "license": "GPL-3.0-or-later",
   "files": [
     "dist"
   ],
@@ -20,6 +21,18 @@
     "@provablehq/aleo-types": "workspace:*",
     "eventemitter3": "^5.0.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProvableHQ/aleo-dev-toolkit.git",
+    "directory": "packages/aleo-wallet-standard"
+  },
+  "homepage": "https://provable.com/",
+  "keywords": [
+    "aleo",
+    "wallet",
+    "standard"
+  ],
+  "author": "Provable Labs",
   "publishConfig": {
     "access": "public"
   },

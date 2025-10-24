@@ -38,7 +38,7 @@ export function CodeModal({ isOpen, onClose }: CodeModalProps) {
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-galileo';
+import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-prove-alpha';
 import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
