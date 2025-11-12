@@ -1,6 +1,8 @@
 import { Wallet, Settings, X, Code } from 'lucide-react';
 import { useAtom } from 'jotai';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { toast } from 'sonner';
 import { ConnectSection } from './components/ConnectSection';
 import { SignMessage } from './components/functions/SignMessage';
 import { ExecuteTransaction } from './components/functions/ExecuteTransaction';
@@ -33,12 +35,27 @@ import Records from './components/functions/Records';
 import { DeployProgram } from './components/functions/DeployProgram';
 
 export default function WalletAdapterDemo() {
+  const { address, connected } = useWallet();
+  const prevAddressRef = useRef<string | null>(null);
   const [network, setNetwork] = useAtom(networkAtom);
   const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
   const [autoConnect, setAutoConnect] = useAtom(autoConnectAtom);
   const [programs, setPrograms] = useAtom(programsAtom);
   const [newProgram, setNewProgram] = useState('');
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+
+  // Detect account changes
+  useEffect(() => {
+    if (connected && prevAddressRef.current && prevAddressRef.current !== address) {
+      // Account changed, show notification
+      toast.info(`Account switched to ${address?.slice(0, 14)}...${address?.slice(-6)}`);
+    }
+    if (connected && address) {
+      prevAddressRef.current = address;
+    } else if (!connected) {
+      prevAddressRef.current = null;
+    }
+  }, [address, connected]);
 
   const handleNetworkChange = (value: string) => {
     setNetwork(value as Network);

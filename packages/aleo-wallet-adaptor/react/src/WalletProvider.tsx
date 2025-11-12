@@ -109,11 +109,20 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       }));
     }
 
+    function handleAccountChange(this: WalletAdapter, newAccount: { address: string }): void {
+      setState(state => ({
+        ...state,
+        publicKey: newAccount.address,
+      }));
+    }
+
     adapters.forEach(adapter => adapter.on('readyStateChange', handleReadyStateChange, adapter));
     adapters.forEach(adapter => adapter.on('networkChange', handleNetworkChange, adapter));
+    adapters.forEach(adapter => adapter.on('accountChange', handleAccountChange, adapter));
     return () => {
       adapters.forEach(adapter => adapter.off('readyStateChange', handleReadyStateChange, adapter));
       adapters.forEach(adapter => adapter.off('networkChange', handleNetworkChange, adapter));
+      adapters.forEach(adapter => adapter.off('accountChange', handleAccountChange, adapter));
     };
   }, [adapters]);
 
@@ -160,6 +169,18 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     if (!isUnloading.current) setName(null);
   }, [isUnloading, setName]);
 
+  // Handle the adapter's account change event
+  const handleAccountChange = useCallback(
+    (newAccount: { address: string }) => {
+      if (!adapter) return;
+      setState(state => ({
+        ...state,
+        publicKey: newAccount.address,
+      }));
+    },
+    [adapter],
+  );
+
   // Handle the adapter's error event, and local errors
   const handleError = useCallback(
     (error: WalletError) => {
@@ -176,13 +197,15 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       adapter.on('connect', handleConnect);
       adapter.on('disconnect', handleDisconnect);
       adapter.on('error', handleError);
+      adapter.on('accountChange', handleAccountChange);
       return () => {
         adapter.off('connect', handleConnect);
         adapter.off('disconnect', handleDisconnect);
         adapter.off('error', handleError);
+        adapter.off('accountChange', handleAccountChange);
       };
     }
-  }, [adapter, handleConnect, handleDisconnect, handleError]);
+  }, [adapter, handleConnect, handleDisconnect, handleError, handleAccountChange]);
 
   // When the adapter changes, disconnect the old one
   useEffect(() => {

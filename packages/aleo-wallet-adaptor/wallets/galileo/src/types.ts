@@ -18,6 +18,7 @@ export interface GalileoDeployment extends AleoDeployment {
 export interface GalileoWalletEvents {
   networkChanged(network: Network): void;
   disconnect(): void;
+  accountChanged(data: { address: string }): void;
 }
 
 export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
