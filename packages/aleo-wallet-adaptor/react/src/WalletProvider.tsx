@@ -59,9 +59,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   const readyState = adapter?.readyState || WalletReadyState.UNSUPPORTED;
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const isConnecting = useRef(false);
   const isDisconnecting = useRef(false);
+  const isReconnecting = useRef(false);
   const isUnloading = useRef(false);
+  const lastAuthorizedAccount = useRef<string | null>(null);
 
   // Wrap adapters to conform to the `Wallet` interface
   const [wallets, setWallets] = useState(() =>
@@ -109,20 +112,11 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       }));
     }
 
-    function handleAccountChange(this: WalletAdapter, newAccount: { address: string }): void {
-      setState(state => ({
-        ...state,
-        publicKey: newAccount.address,
-      }));
-    }
-
     adapters.forEach(adapter => adapter.on('readyStateChange', handleReadyStateChange, adapter));
     adapters.forEach(adapter => adapter.on('networkChange', handleNetworkChange, adapter));
-    adapters.forEach(adapter => adapter.on('accountChange', handleAccountChange, adapter));
     return () => {
       adapters.forEach(adapter => adapter.off('readyStateChange', handleReadyStateChange, adapter));
       adapters.forEach(adapter => adapter.off('networkChange', handleNetworkChange, adapter));
-      adapters.forEach(adapter => adapter.off('accountChange', handleAccountChange, adapter));
     };
   }, [adapters]);
 
@@ -137,8 +131,10 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         publicKey: wallet.adapter.account?.address ?? null,
         network: wallet.adapter.network ?? null,
       });
+      lastAuthorizedAccount.current = wallet.adapter.account?.address ?? null;
     } else {
       setState(initialState);
+      lastAuthorizedAccount.current = null;
     }
   }, [name, wallets]);
 
@@ -161,25 +157,35 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       publicKey: adapter.account?.address ?? null,
       network: adapter.network ?? null,
     }));
+    lastAuthorizedAccount.current = adapter.account?.address ?? null;
   }, [adapter]);
 
   // Handle the adapter's disconnect event
   const handleDisconnect = useCallback(() => {
     // Clear the selected wallet unless the window is unloading
     if (!isUnloading.current) setName(null);
+    lastAuthorizedAccount.current = null;
   }, [isUnloading, setName]);
 
-  // Handle the adapter's account change event
-  const handleAccountChange = useCallback(
-    (newAccount: { address: string }) => {
-      if (!adapter) return;
-      setState(state => ({
-        ...state,
-        publicKey: newAccount.address,
-      }));
-    },
-    [adapter],
-  );
+  // Disconnect the adapter from the wallet
+  const disconnect = useCallback(async () => {
+    if (isDisconnecting.current) return;
+    if (!adapter) return setName(null);
+
+    isDisconnecting.current = true;
+    setDisconnecting(true);
+    try {
+      await adapter.disconnect();
+    } catch (error: unknown) {
+      // Clear the selected wallet
+      setName(null);
+      // Rethrow the error, and handleError will also be called
+      throw error;
+    } finally {
+      setDisconnecting(false);
+      isDisconnecting.current = false;
+    }
+  }, [isDisconnecting, adapter, setName]);
 
   // Handle the adapter's error event, and local errors
   const handleError = useCallback(
@@ -190,6 +196,36 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     },
     [isUnloading, onError],
   );
+
+  // Handle the adapter's account change event
+  const handleAccountChange = useCallback(async () => {
+    if (!adapter || isReconnecting.current) return;
+
+    isReconnecting.current = true;
+    setReconnecting(true);
+    setState(state => ({
+      ...state,
+      publicKey: null,
+      connected: false,
+    }));
+
+    try {
+      const account = await adapter.connect(initialNetwork, decryptPermission, programs);
+      setState(state => ({
+        ...state,
+        publicKey: account.address,
+        connected: adapter.connected,
+        network: adapter.network ?? state.network,
+      }));
+      lastAuthorizedAccount.current = account.address ?? null;
+    } catch (error: unknown) {
+      handleError(error as WalletError);
+      await disconnect();
+    } finally {
+      setReconnecting(false);
+      isReconnecting.current = false;
+    }
+  }, [adapter, disconnect, handleError, initialNetwork, decryptPermission, programs]);
 
   // Setup and teardown event listeners when the adapter changes
   useEffect(() => {
@@ -220,6 +256,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   useEffect(() => {
     if (
       isConnecting.current ||
+      isReconnecting.current ||
       connected ||
       !autoConnect ||
       !adapter ||
@@ -231,7 +268,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = true;
       setConnecting(true);
       try {
-        await adapter.connect(initialNetwork, decryptPermission, programs);
+        const account = await adapter.connect(initialNetwork, decryptPermission, programs);
+        lastAuthorizedAccount.current = account.address ?? null;
       } catch (error: unknown) {
         // Clear the selected wallet
         setName(null);
@@ -279,7 +317,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     isConnecting.current = true;
     setConnecting(true);
     try {
-      await adapter.connect(initialNetwork, decryptPermission, programs);
+      const account = await adapter.connect(initialNetwork, decryptPermission, programs);
+      lastAuthorizedAccount.current = account.address ?? null;
     } catch (error: unknown) {
       // Clear the selected wallet
       setName(null);
@@ -290,26 +329,6 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = false;
     }
   }, [isConnecting, isDisconnecting, connected, adapter, readyState, handleError, setName]);
-
-  // Disconnect the adapter from the wallet
-  const disconnect = useCallback(async () => {
-    if (isDisconnecting.current) return;
-    if (!adapter) return setName(null);
-
-    isDisconnecting.current = true;
-    setDisconnecting(true);
-    try {
-      await adapter.disconnect();
-    } catch (error: unknown) {
-      // Clear the selected wallet
-      setName(null);
-      // Rethrow the error, and handleError will also be called
-      throw error;
-    } finally {
-      setDisconnecting(false);
-      isDisconnecting.current = false;
-    }
-  }, [isDisconnecting, adapter, setName]);
 
   const executeTransaction = useCallback(
     async (transaction: TransactionOptions) => {
@@ -427,6 +446,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         address: publicKey ?? null,
         connected,
         connecting,
+        reconnecting,
         disconnecting,
         network,
         selectWallet: setName,

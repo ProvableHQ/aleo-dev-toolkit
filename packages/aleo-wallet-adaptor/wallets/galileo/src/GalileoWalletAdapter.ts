@@ -366,12 +366,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   };
 
   // Account change listener
-  _onAccountChange = (data: { address: string }) => {
-    console.debug('Galileo Wallet account changed to:', data.address);
-    this._publicKey = data.address;
-    const newAccount: Account = { address: data.address };
-    this.account = newAccount;
-    this.emit('accountChange', newAccount);
+  _onAccountChange = () => {
+    console.debug('Galileo Wallet account change detected – reauthorization required');
+    this._publicKey = '';
+    this.account = undefined;
+    this.emit('accountChange');
   };
 
   // Disconnect listener

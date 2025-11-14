@@ -16,9 +16,10 @@ export interface WalletEvents {
   disconnect(): void;
 
   /**
-   * Emitted when the connected account changes
+   * Emitted when the connected account changes.
+   * Wallets should emit this event without revealing account details so dapps re-authorize explicitly.
    */
-  accountChange(newAccount: Account): void;
+  accountChange(): void;
 
   /**
    * Emitted when the wallet's ready state changes
