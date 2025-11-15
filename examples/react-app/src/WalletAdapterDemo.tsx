@@ -35,7 +35,7 @@ import Records from './components/functions/Records';
 import { DeployProgram } from './components/functions/DeployProgram';
 
 export default function WalletAdapterDemo() {
-  const { address, connected, reconnecting } = useWallet();
+  const { address, connected } = useWallet();
   const prevAddressRef = useRef<string | null>(null);
   const [network, setNetwork] = useAtom(networkAtom);
   const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
@@ -215,13 +215,6 @@ export default function WalletAdapterDemo() {
             </p>
           </div>
         </div>
-
-        {reconnecting && (
-          <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-center text-sm font-medium text-amber-500 shadow-sm transition-colors">
-            Authorizing the newly selected account...
-          </div>
-        )}
-
         <ConnectSection />
 
         <Tabs defaultValue="execute" className="w-full">
