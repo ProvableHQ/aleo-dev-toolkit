@@ -365,6 +365,14 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     this.emit('networkChange', network);
   };
 
+  // Account change listener
+  _onAccountChange = () => {
+    console.debug('Galileo Wallet account change detected – reauthorization required');
+    this._publicKey = '';
+    this.account = undefined;
+    this.emit('accountChange');
+  };
+
   // Disconnect listener
   _onDisconnect = () => {
     console.debug('Galileo Wallet disconnected');
@@ -383,6 +391,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     // Register listeners
     this._galileoWallet.on('networkChanged', this._onNetworkChange);
     this._galileoWallet.on('disconnect', this._onDisconnect);
+    this._galileoWallet.on('accountChanged', this._onAccountChange);
   }
 
   /**
@@ -393,5 +402,6 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
 
     this._galileoWallet.off('networkChanged', this._onNetworkChange);
     this._galileoWallet.off('disconnect', this._onDisconnect);
+    this._galileoWallet.off('accountChanged', this._onAccountChange);
   }
 }

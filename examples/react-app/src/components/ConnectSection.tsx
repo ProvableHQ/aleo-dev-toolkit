@@ -10,7 +10,7 @@ import { networkAtom } from '@/lib/store/global';
 
 export function ConnectSection() {
   const neededNetwork = useAtomValue(networkAtom);
-  const { connected, connecting, address, network, switchNetwork } = useWallet();
+  const { connected, connecting, reconnecting, address, network, switchNetwork } = useWallet();
   const wrongNetwork = connected && !connecting && network !== neededNetwork;
 
   const copyToClipboard = (text: string) => {
@@ -56,13 +56,15 @@ export function ConnectSection() {
               />
             </div>
             <span className="font-medium transition-colors duration-300">
-              {connecting
-                ? 'Connecting...'
-                : wrongNetwork
-                  ? `Wallet network: ${network}`
-                  : connected
-                    ? 'Connected'
-                    : 'Disconnected'}
+              {reconnecting
+                ? 'Reconnecting on new account'
+                : connecting
+                  ? 'Connecting...'
+                  : wrongNetwork
+                    ? `Wallet network: ${network}`
+                    : connected
+                      ? 'Connected'
+                      : 'Disconnected'}
             </span>
             {wrongNetwork && (
               <Button

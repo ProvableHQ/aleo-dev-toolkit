@@ -47,6 +47,11 @@ export interface WalletContextState {
   disconnecting: boolean;
 
   /**
+   * Whether the wallet is reauthorizing after an account change
+   */
+  reconnecting: boolean;
+
+  /**
    * Whether the wallet is auto-connecting
    */
   autoConnect: boolean;
