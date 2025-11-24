@@ -21,6 +21,7 @@ import {
   WalletTransactionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
+  scopePollingDetectionStrategy,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { GalileoWallet, GalileoWalletAdapterConfig, GalileoWindow } from './types';
 
@@ -82,29 +83,32 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     super();
     console.debug('GalileoWalletAdapter constructor', config);
     this.network = Network.TESTNET3;
-    this._checkAvailability();
+    if (this._readyState !== WalletReadyState.UNSUPPORTED) {
+      scopePollingDetectionStrategy(() => this._checkAvailability());
+    }
   }
 
   /**
    * Check if Galileo wallet is available
    */
-  private _checkAvailability(): void {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      this.readyState = WalletReadyState.UNSUPPORTED;
-      return;
-    }
-
+  private _checkAvailability(): boolean {
+    console.debug('Checking Galileo Wallet availability');
     this._window = window as GalileoWindow;
 
     if (this._window.galileo) {
       this.readyState = WalletReadyState.INSTALLED;
       this._galileoWallet = this._window?.galileo;
+      console.debug('Galileo Wallet is installed');
+      return true;
     } else {
       // Check if user is on a mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         this.readyState = WalletReadyState.LOADABLE;
+        return true;
       }
+      console.debug('Galileo Wallet is not available');
+      return false;
     }
   }
 

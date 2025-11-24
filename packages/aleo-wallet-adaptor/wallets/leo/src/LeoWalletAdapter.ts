@@ -22,6 +22,7 @@ import {
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletTransactionError,
+  scopePollingDetectionStrategy,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import {
   AleoTransaction,
@@ -89,7 +90,9 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     super();
     console.debug('LeoWalletAdapter constructor', config);
     this.network = Network.TESTNET3;
-    this._checkAvailability();
+    if (this._readyState !== WalletReadyState.UNSUPPORTED) {
+      scopePollingDetectionStrategy(() => this._checkAvailability());
+    }
     this._leoWallet = this._window?.leoWallet || this._window?.leo;
     if (config?.isMobile) {
       this.url = `https://app.leo.app/browser?url=${config.mobileWebviewUrl}`;
@@ -99,22 +102,23 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Check if Leo wallet is available
    */
-  private _checkAvailability(): void {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      this.readyState = WalletReadyState.UNSUPPORTED;
-      return;
-    }
-
+  private _checkAvailability(): boolean {
+    console.debug('Checking Leo Wallet availability');
     this._window = window as LeoWindow;
 
     if (this._window.leoWallet || this._window.leo) {
       this.readyState = WalletReadyState.INSTALLED;
+      console.debug('Leo Wallet is installed');
+      return true;
     } else {
       // Check if user is on a mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         this.readyState = WalletReadyState.LOADABLE;
+        return true;
       }
+      console.debug('Leo Wallet is not available');
+      return false;
     }
   }
 

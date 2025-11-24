@@ -15,6 +15,7 @@ import {
   BaseAleoWalletAdapter,
   DecryptPermission,
   MethodNotImplementedError,
+  scopePollingDetectionStrategy,
   WalletConnectionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
@@ -104,28 +105,31 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     this._appName = config?.appName || 'Aleo App';
     this._appIconUrl = config?.appIconUrl;
     this._appDescription = config?.appDescription;
-    this._checkAvailability();
+    if (this._readyState !== WalletReadyState.UNSUPPORTED) {
+      scopePollingDetectionStrategy(() => this._checkAvailability());
+    }
   }
 
   /**
    * Check if Puzzle wallet is available
    */
-  private _checkAvailability(): void {
-    if (typeof window === 'undefined') {
-      this.readyState = WalletReadyState.UNSUPPORTED;
-      return;
-    }
-
+  private _checkAvailability(): boolean {
+    console.debug('Checking Puzzle Wallet availability');
     this._window = window as PuzzleWindow;
 
     if (this._window.puzzle) {
       this.readyState = WalletReadyState.INSTALLED;
+      console.debug('Puzzle Wallet is installed');
+      return true;
     } else {
       // Check if user is on a mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         this.readyState = WalletReadyState.LOADABLE;
+        return true;
       }
+      console.debug('Puzzle Wallet is not available');
+      return false;
     }
   }
 

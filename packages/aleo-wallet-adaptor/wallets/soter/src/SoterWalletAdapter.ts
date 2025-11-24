@@ -11,6 +11,7 @@ import {
 } from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
+  scopePollingDetectionStrategy,
   MethodNotImplementedError,
   WalletConnectionError,
   WalletDecryptionError,
@@ -91,30 +92,33 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
     super();
     console.debug('SoterWalletAdapter constructor', config);
     this.network = Network.MAINNET;
-    this._checkAvailability();
+    if (this._readyState !== WalletReadyState.UNSUPPORTED) {
+      scopePollingDetectionStrategy(() => this._checkAvailability());
+    }
     this._soterWallet = this._window?.soter || this._window?.soterWallet;
   }
 
   /**
    * Check if Soter wallet is available
    */
-  private _checkAvailability(): void {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      this.readyState = WalletReadyState.UNSUPPORTED;
-      return;
-    }
-
+  private _checkAvailability(): boolean {
+    console.debug('Checking Soter Wallet availability');
     this._window = window as SoterWindow;
 
     if (this._window.soter || this._window.soterWallet) {
       this.readyState = WalletReadyState.INSTALLED;
       this._soterWallet = this._window?.soter || this._window?.soterWallet;
+      console.debug('Soter Wallet is installed');
+      return true;
     } else {
       // Check if user is on a mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         this.readyState = WalletReadyState.LOADABLE;
+        return true;
       }
+      console.debug('Soter Wallet is not available');
+      return false;
     }
   }
 
