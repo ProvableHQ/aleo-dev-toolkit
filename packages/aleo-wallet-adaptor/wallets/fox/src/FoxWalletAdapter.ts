@@ -13,6 +13,7 @@ import {
 import {
   BaseAleoWalletAdapter,
   MethodNotImplementedError,
+  scopePollingDetectionStrategy,
   WalletConnectionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
@@ -90,7 +91,9 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
     super();
     console.debug('FoxWalletAdapter constructor', config);
     this.network = Network.MAINNET;
-    this._checkAvailability();
+    if (this._readyState !== WalletReadyState.UNSUPPORTED) {
+      scopePollingDetectionStrategy(() => this._checkAvailability());
+    }
     this._foxWallet = this._window?.foxwallet?.aleo;
     if (config?.isMobile) {
       this.url = `https://app.leo.app/browser?url=${config.mobileWebviewUrl}`;
@@ -100,22 +103,29 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Check if Fox wallet is available
    */
-  private _checkAvailability(): void {
+  private _checkAvailability(): boolean {
+    console.debug('Checking Fox Wallet availability');
     if (typeof window === 'undefined' || typeof document === 'undefined') {
+      console.debug('Fox Wallet is not supported');
       this.readyState = WalletReadyState.UNSUPPORTED;
-      return;
+      return false;
     }
 
     this._window = window as FoxWindow;
 
     if (this._window.foxwallet?.aleo) {
       this.readyState = WalletReadyState.INSTALLED;
+      console.debug('Fox Wallet is installed');
+      return true;
     } else {
       // Check if user is on a mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         this.readyState = WalletReadyState.LOADABLE;
+        return true;
       }
+      console.debug('Fox Wallet is not available');
+      return false;
     }
   }
 
