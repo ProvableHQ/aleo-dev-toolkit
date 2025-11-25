@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-wallet-adaptor-fox",
-  "version": "0.1.1-alpha.0",
+  "version": "0.3.0-alpha.0",
   "description": "Fox wallet adapter for Aleo",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

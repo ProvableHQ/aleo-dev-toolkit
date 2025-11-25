@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-wallet-adaptor-leo",
-  "version": "0.1.1-alpha.0",
+  "version": "0.3.0-alpha.0",
   "description": "Leo wallet adapter for Aleo",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

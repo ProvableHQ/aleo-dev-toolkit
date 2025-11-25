@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-wallet-adaptor-react",
-  "version": "0.1.1-alpha.0",
+  "version": "0.3.0-alpha.0",
   "description": "React integration for wallet adapter",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -15,7 +15,7 @@
     "clean": "rimraf dist",
     "dev": "tsup --watch",
     "lint": "eslint src/**/*.ts*",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
