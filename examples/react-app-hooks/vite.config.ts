@@ -5,29 +5,25 @@ import topLevelAwait from 'vite-plugin-top-level-await';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    wasm(),
-    topLevelAwait(),
-    react()
-  ],
+  plugins: [wasm(), topLevelAwait(), react()],
   build: {
     target: 'esnext',
-    sourcemap: true
+    sourcemap: true,
   },
   optimizeDeps: {
     exclude: ['@provablehq/wasm'],
     include: ['@provablehq/sdk'],
     esbuildOptions: {
-      target: 'esnext'
-    }
+      target: 'esnext',
+    },
   },
   server: {
     fs: {
-      allow: [searchForWorkspaceRoot(process.cwd()), "../../packages/aleo-hooks"],
+      allow: [searchForWorkspaceRoot(process.cwd()), '../../packages/aleo-hooks'],
     },
     headers: {
-      "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp"
-    }
-  }
-}); 
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+});

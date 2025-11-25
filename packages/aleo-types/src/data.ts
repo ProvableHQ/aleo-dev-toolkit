@@ -49,32 +49,48 @@ export type scalar = string;
 export type signature = string;
 
 /** A union type of all possible Aleo atomic types */
-export type Literal = address | bool | group | u8 | u16 | u32 | u64 | u128 | i8 | i16 | i32 | i64 | i128 | field | scalar | signature;
+export type Literal =
+  | address
+  | bool
+  | group
+  | u8
+  | u16
+  | u32
+  | u64
+  | u128
+  | i8
+  | i16
+  | i32
+  | i64
+  | i128
+  | field
+  | scalar
+  | signature;
 
 /** An enum enumerating all literal types. */
 export enum LiteralType {
-  ADDRESS = "address",
-  BOOL = "bool",
-  GROUP = "group",
-  U8 = "u8",
-  U16 = "u16",
-  U32 = "u32",
-  U64 = "u64",
-  U128 = "u128",
-  I8 = "i8",
-  I16 = "i16",
-  I32 = "i32",
-  I64 = "i64",
-  I128 = "i128",
-  FIELD = "field",
-  SCALAR = "scalar",
-  SIGNATURE = "signature"
+  ADDRESS = 'address',
+  BOOL = 'bool',
+  GROUP = 'group',
+  U8 = 'u8',
+  U16 = 'u16',
+  U32 = 'u32',
+  U64 = 'u64',
+  U128 = 'u128',
+  I8 = 'i8',
+  I16 = 'i16',
+  I32 = 'i32',
+  I64 = 'i64',
+  I128 = 'i128',
+  FIELD = 'field',
+  SCALAR = 'scalar',
+  SIGNATURE = 'signature',
 }
 
 /** Aleo struct type */
 export type Struct = {
   [key: string]: Array | Literal | Struct;
-}
+};
 
 /** An aleo array type */
 export type Array = Array[] | Literal[] | Struct[];
@@ -84,9 +100,9 @@ export type Plaintext = Array | Literal | Struct;
 
 /** An enum enumerating all plaintext types. */
 export enum PlaintextType {
-  ARRAY = "array",
-  LITERAL = "literal",
-  STRUCT = "struct"
+  ARRAY = 'array',
+  LITERAL = 'literal',
+  STRUCT = 'struct',
 }
 
 /** Ciphertext type */
@@ -101,17 +117,17 @@ export interface Record {
 
 /** An aleo future type */
 export type Future = {
-  programId: string,
-  function: string,
-  value: Future[] | Plaintext[],
-}
+  programId: string;
+  function: string;
+  value: Future[] | Plaintext[];
+};
 
 /** A union type of all possible Aleo types */
 export type Value = Plaintext | Record | Future;
 
 /** An enum enumerating all value types. */
 export enum ValueType {
-  PLAINTEXT = "plaintext",
-  RECORD = "record",
-  FUTURE = "future"
+  PLAINTEXT = 'plaintext',
+  RECORD = 'record',
+  FUTURE = 'future',
 }

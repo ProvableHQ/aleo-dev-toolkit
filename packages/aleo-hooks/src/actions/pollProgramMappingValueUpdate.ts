@@ -1,15 +1,21 @@
-import { Config } from "../createConfig";
-import { Network } from "../types";
+import { Config } from '../createConfig';
 
 export default async function pollProgramMappingValueUpdate(
-    config: Config,
-    programName: string,
-    mappingName: string,
-    key: string,
-    callback: (value: string) => string = (value) => value,
-    retries: number = 10,
-    interval: number = 1000,
+  config: Config,
+  programName: string,
+  mappingName: string,
+  key: string,
+  callback: (value: string) => string = value => value,
+  retries: number = 10,
+  interval: number = 1000,
 ): Promise<string | null> {
-    let res = await config.state.pollProgramMappingValueUpdate(programName, mappingName, key, callback, retries, interval)
-    return res ?? null
+  const res = await config.state.pollProgramMappingValueUpdate(
+    programName,
+    mappingName,
+    key,
+    callback,
+    retries,
+    interval,
+  );
+  return res ?? null;
 }
