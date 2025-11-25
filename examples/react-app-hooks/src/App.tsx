@@ -1,6 +1,6 @@
 import './App.css';
-import { WalletWrapper } from "./components/WalletWrapper";
-import HooksDisplay from "./components/HooksDisplay";
+import { WalletWrapper } from './components/WalletWrapper';
+import HooksDisplay from './components/HooksDisplay';
 import { AleoHooksProvider } from '@provablehq/aleo-hooks';
 function App() {
   return (
@@ -12,4 +12,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

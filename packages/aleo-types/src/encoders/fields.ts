@@ -1,4 +1,4 @@
-import { field } from "../data";
+import { field } from '../data';
 const FIELD_MODULUS = 8444461749428370424248824938781546531375899335154063827935233455917409239040n;
 
 /**
@@ -62,7 +62,7 @@ function stringToFields(input: string, numFieldElements = 4): bigint[] {
     remainingValue = remainingValue / FIELD_MODULUS;
   }
   if (remainingValue !== 0n) {
-    throw new Error("String is too big to be encoded.");
+    throw new Error('String is too big to be encoded.');
   }
   return fieldElements;
 }
@@ -73,7 +73,7 @@ function stringToFields(input: string, numFieldElements = 4): bigint[] {
  * @param numFieldElements The number of field elements to encode.
  */
 function stringToFieldInputs(inputString: string, numFieldElements = 4): field[] {
-  return stringToFields(inputString, numFieldElements).map((field) => field.toString() + "field");
+  return stringToFields(inputString, numFieldElements).map(field => field.toString() + 'field');
 }
 
 /**
@@ -92,4 +92,4 @@ function fieldsToString(fields: bigint[]): string {
   return bigIntToString(bigIntValue);
 }
 
-export { bigIntToString, fieldsToString, stringToFields, stringToFieldInputs }
+export { bigIntToString, fieldsToString, stringToFields, stringToFieldInputs };
