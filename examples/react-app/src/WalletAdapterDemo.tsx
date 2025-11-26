@@ -1,4 +1,4 @@
-import { Wallet, Settings, X, Code } from 'lucide-react';
+import { Wallet, Settings, X, Code, Send, PenLine, KeyRound, Database, Rocket } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
@@ -23,6 +23,13 @@ import {
 import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './components/ui/select';
+import {
   decryptPermissionAtom,
   networkAtom,
   autoConnectAtom,
@@ -43,6 +50,15 @@ export default function WalletAdapterDemo() {
   const [programs, setPrograms] = useAtom(programsAtom);
   const [newProgram, setNewProgram] = useState('');
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('execute');
+
+  const tabOptions = [
+    { value: 'execute', label: 'Execute', icon: Send },
+    { value: 'sign', label: 'Sign', icon: PenLine },
+    { value: 'decrypt', label: 'Decrypt', icon: KeyRound },
+    { value: 'records', label: 'Records', icon: Database },
+    { value: 'deploy', label: 'Deploy', icon: Rocket },
+  ] as const;
 
   // Detect account changes
   useEffect(() => {
@@ -82,24 +98,24 @@ export default function WalletAdapterDemo() {
   };
 
   return (
-    <div className="min-h-screen  p-4 min-w-[782px] relative overflow-hidden">
+    <div className="min-h-screen p-4 relative overflow-hidden">
       {/* Background decoration for dark mode */}
       <div className="absolute inset-0 dark:bg-[radial-gradient(circle_at_50%_50%,var(--primary-glow,rgba(59,130,246,0.1)),transparent_50%)] pointer-events-none" />
 
       <div className="mx-auto max-w-4xl space-y-8 relative z-10">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="relative">
-            <div className="flex items-center justify-center space-x-2">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
               <div className="relative">
-                <Wallet className="h-8 w-8 text-primary transition-colors duration-300" />
+                <Wallet className="h-6 w-6 sm:h-8 sm:w-8 text-primary transition-colors duration-300" />
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
               </div>
-              <h1 className="text-3xl font-bold text-foreground transition-colors duration-300">
+              <h1 className="text-xl sm:text-3xl font-bold text-foreground transition-colors duration-300">
                 Wallet Adapter Demo
               </h1>
             </div>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <ThemeToggle />
 
               <DropdownMenu>
@@ -209,46 +225,62 @@ export default function WalletAdapterDemo() {
               </DropdownMenu>
             </div>
           </div>
-          <div className="flex items-center justify-center space-x-2 relative">
-            <p className="text-muted-foreground max-w-2xl mx-auto transition-colors duration-300">
-              Test the different features of our Aleo wallet adapter
-            </p>
-          </div>
+          <p className="text-muted-foreground text-sm sm:text-base text-center transition-colors duration-300">
+            Test the different features of our Aleo wallet adapter
+          </p>
         </div>
         <ConnectSection />
 
-        <Tabs defaultValue="execute" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 uppercase">
-            <TabsTrigger
-              value="execute"
-              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
-            >
-              Execute
-            </TabsTrigger>
-            <TabsTrigger
-              value="sign"
-              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
-            >
-              Sign
-            </TabsTrigger>
-            <TabsTrigger
-              value="decrypt"
-              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
-            >
-              Decrypt
-            </TabsTrigger>
-            <TabsTrigger
-              value="records"
-              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
-            >
-              Records
-            </TabsTrigger>
-            <TabsTrigger
-              value="deploy"
-              className="data-[state=active]:bg-background data-[state=active]:text-foreground"
-            >
-              Deploy
-            </TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Mobile: Select dropdown */}
+          <div className="sm:hidden">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full h-10 rounded-full border border-border/70 bg-card! text-sm font-medium shadow-xs hover:bg-card/90">
+                <SelectValue>
+                  {(() => {
+                    const currentTab = tabOptions.find(t => t.value === activeTab);
+                    if (!currentTab) return null;
+                    const Icon = currentTab.icon;
+                    return (
+                      <span className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        {currentTab.label}
+                      </span>
+                    );
+                  })()}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {tabOptions.map(tab => {
+                  const Icon = tab.icon;
+                  return (
+                    <SelectItem key={tab.value} value={tab.value}>
+                      <span className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        {tab.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Desktop: Tab bar */}
+          <TabsList className="hidden sm:grid w-full grid-cols-5 uppercase">
+            {tabOptions.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground"
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
           <TabsContent value="sign">
             <SignMessage />
