@@ -102,13 +102,11 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
    * Check if Soter wallet is available
    */
   private _checkAvailability(): boolean {
-    console.debug('Checking Soter Wallet availability');
     this._window = window as SoterWindow;
 
     if (this._window.soter || this._window.soterWallet) {
       this.readyState = WalletReadyState.INSTALLED;
       this._soterWallet = this._window?.soter || this._window?.soterWallet;
-      console.debug('Soter Wallet is installed');
       return true;
     } else {
       // Check if user is on a mobile device
@@ -117,7 +115,6 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
         this.readyState = WalletReadyState.LOADABLE;
         return true;
       }
-      console.debug('Soter Wallet is not available');
       return false;
     }
   }

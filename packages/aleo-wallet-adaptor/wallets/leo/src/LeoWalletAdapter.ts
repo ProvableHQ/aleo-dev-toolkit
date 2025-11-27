@@ -103,12 +103,10 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    * Check if Leo wallet is available
    */
   private _checkAvailability(): boolean {
-    console.debug('Checking Leo Wallet availability');
     this._window = window as LeoWindow;
 
     if (this._window.leoWallet || this._window.leo) {
       this.readyState = WalletReadyState.INSTALLED;
-      console.debug('Leo Wallet is installed');
       return true;
     } else {
       // Check if user is on a mobile device
@@ -117,7 +115,6 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
         this.readyState = WalletReadyState.LOADABLE;
         return true;
       }
-      console.debug('Leo Wallet is not available');
       return false;
     }
   }

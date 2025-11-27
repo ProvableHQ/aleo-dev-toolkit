@@ -114,12 +114,10 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    * Check if Puzzle wallet is available
    */
   private _checkAvailability(): boolean {
-    console.debug('Checking Puzzle Wallet availability');
     this._window = window as PuzzleWindow;
 
     if (this._window.puzzle) {
       this.readyState = WalletReadyState.INSTALLED;
-      console.debug('Puzzle Wallet is installed');
       return true;
     } else {
       // Check if user is on a mobile device
@@ -128,7 +126,6 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         this.readyState = WalletReadyState.LOADABLE;
         return true;
       }
-      console.debug('Puzzle Wallet is not available');
       return false;
     }
   }
