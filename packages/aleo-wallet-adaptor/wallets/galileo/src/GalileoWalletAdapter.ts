@@ -92,13 +92,11 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    * Check if Galileo wallet is available
    */
   private _checkAvailability(): boolean {
-    console.debug('Checking Galileo Wallet availability');
     this._window = window as GalileoWindow;
 
     if (this._window.galileo) {
       this.readyState = WalletReadyState.INSTALLED;
       this._galileoWallet = this._window?.galileo;
-      console.debug('Galileo Wallet is installed');
       return true;
     } else {
       // Check if user is on a mobile device
@@ -107,7 +105,6 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         this.readyState = WalletReadyState.LOADABLE;
         return true;
       }
-      console.debug('Galileo Wallet is not available');
       return false;
     }
   }

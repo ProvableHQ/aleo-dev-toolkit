@@ -104,7 +104,6 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
    * Check if Fox wallet is available
    */
   private _checkAvailability(): boolean {
-    console.debug('Checking Fox Wallet availability');
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       console.debug('Fox Wallet is not supported');
       this.readyState = WalletReadyState.UNSUPPORTED;
@@ -115,7 +114,6 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
 
     if (this._window.foxwallet?.aleo) {
       this.readyState = WalletReadyState.INSTALLED;
-      console.debug('Fox Wallet is installed');
       return true;
     } else {
       // Check if user is on a mobile device
@@ -124,7 +122,6 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
         this.readyState = WalletReadyState.LOADABLE;
         return true;
       }
-      console.debug('Fox Wallet is not available');
       return false;
     }
   }
