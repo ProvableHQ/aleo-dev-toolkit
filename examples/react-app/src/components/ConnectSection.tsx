@@ -1,8 +1,7 @@
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Wallet, Copy, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { Wallet, Copy, CheckCircle2 } from 'lucide-react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { useAtomValue } from 'jotai';
@@ -12,11 +11,6 @@ export function ConnectSection() {
   const neededNetwork = useAtomValue(networkAtom);
   const { connected, connecting, reconnecting, address, network, switchNetwork } = useWallet();
   const wrongNetwork = connected && !connecting && network !== neededNetwork;
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
-  };
 
   return (
     <Card className="transition-all duration-300 ">
@@ -80,23 +74,108 @@ export function ConnectSection() {
           <WalletMultiButton />
         </div>
 
-        {connected && (
-          <Alert className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 shrink-0 text-green-500 dark:text-green-400" />
-            <AlertDescription className="flex items-center justify-between flex-1">
-              <span className="font-mono text-sm">Wallet Address: {address}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(address ?? '')}
-                className="transition-all duration-200"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+        {connected && <WalletAddressCard address={address} />}
       </CardContent>
     </Card>
+  );
+}
+
+interface WalletAddressCardProps {
+  address?: string | null;
+}
+
+function WalletAddressCard({ address }: WalletAddressCardProps) {
+  const [copied, setCopied] = useState(false);
+  const [showGradient, setShowGradient] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const safeAddress = address ?? '';
+  const chunkSize = safeAddress.length ? Math.ceil(safeAddress.length / 3) : 0;
+  const part1 = chunkSize ? safeAddress.slice(0, chunkSize) : safeAddress;
+  const part2 = chunkSize ? safeAddress.slice(chunkSize, chunkSize * 2) : '';
+  const part3 = chunkSize ? safeAddress.slice(chunkSize * 2) : '';
+  const displayAddressMobile =
+    chunkSize && safeAddress.length > chunkSize ? `${part1}\n${part2}\n${part3}` : safeAddress;
+
+  const handleCopy = async () => {
+    if (!safeAddress) return;
+    await navigator.clipboard.writeText(safeAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const isScrollable = container.scrollWidth > container.clientWidth;
+      const isAtEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 10;
+      setShowGradient(isScrollable && !isAtEnd);
+    };
+
+    handleScroll();
+    container.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [safeAddress]);
+
+  return (
+    <>
+      <div className="w-full rounded-xl border border-border bg-card p-3 sm:hidden">
+        <div className="mb-3 flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600" />
+          <h2 className="text-sm font-medium text-foreground">Wallet Address</h2>
+        </div>
+
+        <div className="mb-3 rounded-lg bg-muted/50 p-3">
+          <code className="block break-words whitespace-pre-wrap text-center font-mono text-xs leading-snug text-foreground">
+            {displayAddressMobile}
+          </code>
+        </div>
+
+        <Button
+          onClick={handleCopy}
+          className="w-full gap-2 px-3 py-2 text-xs font-medium"
+          variant={copied ? 'secondary' : 'default'}
+          disabled={!safeAddress}
+        >
+          <Copy className="h-4 w-4" />
+          <span>{copied ? 'Copied!' : 'Copy'}</span>
+        </Button>
+      </div>
+
+      <div className="hidden w-full rounded-xl border border-border bg-card p-4 sm:block">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600" />
+            <div
+              ref={scrollContainerRef}
+              className="relative flex flex-1 items-center gap-2 overflow-x-auto rounded-lg bg-muted/50 px-3 py-2"
+            >
+              <span className="flex-shrink-0 text-sm text-muted-foreground">Wallet Address:</span>
+              <code className="whitespace-nowrap font-mono text-sm text-foreground">
+                {safeAddress}
+              </code>
+              {showGradient && (
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-16 rounded-r-md bg-gradient-to-l from-muted to-transparent" />
+              )}
+            </div>
+          </div>
+          <Button
+            onClick={handleCopy}
+            size="icon"
+            variant={copied ? 'secondary' : 'ghost'}
+            className="h-8 w-8 flex-shrink-0"
+            disabled={!safeAddress}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }
