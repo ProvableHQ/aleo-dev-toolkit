@@ -214,7 +214,7 @@ export function DeployProgram() {
               className="rounded border-input"
             />
             <Label htmlFor="privateFee" className="text-sm transition-colors duration-300">
-              Fee private
+              Pay fee privately
             </Label>
           </div>
         </div>
