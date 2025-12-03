@@ -287,7 +287,13 @@ export function CustomButtonExamples() {
           )}
         </CardTitle>
         <CardDescription>
-          Shows you how you can build your own custom components to interact with the wallets
+          Shows you how you can build your own custom components to interact with the wallets.
+          <br />
+          Always make sure that your components are wrapped with the{' '}
+          <code className="text-xs bg-muted px-1 py-0.5 rounded">
+            &lt;WalletModalProvider /&gt;
+          </code>{' '}
+          component.
         </CardDescription>
       </CardHeader>
       {isExpanded && (
