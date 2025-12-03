@@ -174,3 +174,14 @@ export interface ExecuteDeploymentFeature extends WalletFeature {
    */
   executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }>;
 }
+
+export interface TransitionViewKeysFeature extends WalletFeature {
+  name: 'standard:transition_viewkeys';
+
+  /**
+   * Execute a deployment
+   * @param deployment The deployment to execute
+   * @returns The executed transaction ID
+   */
+  transitionViewKeys: (transactionId: string) => Promise<string[]>;
+}

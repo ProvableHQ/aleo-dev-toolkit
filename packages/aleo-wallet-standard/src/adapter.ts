@@ -136,6 +136,13 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns The executed deployment ID
    */
   executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }>;
+
+  /**
+   * get transition view keys(tvk) for a transaction
+   * @param transactionId The transaction ID
+   * @returns The tvk array
+   */
+  transitionViewKeys: (transactionId: string) => Promise<string[]>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

@@ -10,6 +10,7 @@ import {
   SignFeature,
   SwitchNetworkFeature,
   TransactionStatusFeature,
+  TransitionViewKeysFeature,
   WalletFeature,
 } from './features';
 
@@ -96,6 +97,10 @@ export interface WalletFeatures {
    * The execute deployment feature
    */
   [WalletFeatureName.EXECUTE_DEPLOYMENT]?: ExecuteDeploymentFeature;
+  /**
+   * The transitionViewKeys feature
+   */
+  [WalletFeatureName.TRANSITION_VIEWKEYS]?: TransitionViewKeysFeature;
 
   /**
    * Other features
@@ -117,6 +122,7 @@ export enum WalletFeatureName {
   DECRYPT = 'standard:decrypt',
   REQUEST_RECORDS = 'standard:request-records',
   EXECUTE_DEPLOYMENT = 'standard:execute-deployment',
+  TRANSITION_VIEWKEYS = 'standard:transition_viewkeys',
 }
 
 /**

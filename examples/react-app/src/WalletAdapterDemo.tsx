@@ -1,4 +1,15 @@
-import { Wallet, Settings, X, Code, Send, PenLine, KeyRound, Database, Rocket } from 'lucide-react';
+import {
+  Wallet,
+  Settings,
+  X,
+  Code,
+  Send,
+  PenLine,
+  KeyRound,
+  Database,
+  Rocket,
+  Logs,
+} from 'lucide-react';
 import { useAtom } from 'jotai';
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
@@ -40,6 +51,7 @@ import { Decrypt } from './components/functions/Decrypt';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 import Records from './components/functions/Records';
 import { DeployProgram } from './components/functions/DeployProgram';
+import OnChainHistory from './components/functions/OnChainHistory';
 
 export default function WalletAdapterDemo() {
   const { address, connected } = useWallet();
@@ -58,6 +70,7 @@ export default function WalletAdapterDemo() {
     { value: 'decrypt', label: 'Decrypt', icon: KeyRound },
     { value: 'records', label: 'Records', icon: Database },
     { value: 'deploy', label: 'Deploy', icon: Rocket },
+    { value: 'OnChainHistory', label: 'OnChainHistory', icon: Logs },
   ] as const;
 
   // Detect account changes
@@ -267,7 +280,7 @@ export default function WalletAdapterDemo() {
           </div>
 
           {/* Desktop: Tab bar */}
-          <TabsList className="hidden sm:grid w-full grid-cols-5 uppercase">
+          <TabsList className="hidden sm:grid w-full grid-cols-6 uppercase">
             {tabOptions.map(tab => {
               const Icon = tab.icon;
               return (
@@ -296,6 +309,9 @@ export default function WalletAdapterDemo() {
           </TabsContent>
           <TabsContent value="deploy">
             <DeployProgram />
+          </TabsContent>
+          <TabsContent value="OnChainHistory">
+            <OnChainHistory />
           </TabsContent>
         </Tabs>
       </div>

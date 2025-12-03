@@ -235,6 +235,17 @@ export abstract class BaseAleoWalletAdapter
     }
     return feature.executeDeployment(deployment);
   }
+
+  async transitionViewKeys(transactionId: string): Promise<string[]> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.TRANSITION_VIEWKEYS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.TRANSITION_VIEWKEYS);
+    }
+    return feature.transitionViewKeys(transactionId);
+  }
 }
 
 export function scopePollingDetectionStrategy(detect: () => boolean): void {

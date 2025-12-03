@@ -356,6 +356,33 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
+   * Execute a deployment
+   * @param deployment The deployment to execute
+   * @returns The executed transaction ID
+   */
+  async transitionViewKeys(transactionId: string): Promise<string[]> {
+    try {
+      if (!this._publicKey || !this.account) {
+        throw new WalletNotConnectedError();
+      }
+      try {
+        const result = await this._galileoWallet?.transitionViewKeys(transactionId);
+        if (!Array.isArray(result)) {
+          throw new WalletTransactionError('Could not get transitionViewKeys');
+        }
+        return result;
+      } catch (error: Error | unknown) {
+        throw new WalletTransactionError(
+          error instanceof Error ? error.message : 'Failed to get transitionViewKeys',
+        );
+      }
+    } catch (error: Error | unknown) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
    * EVENTS HANDLING
    */
 
