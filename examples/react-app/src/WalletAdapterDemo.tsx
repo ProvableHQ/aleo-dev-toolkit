@@ -14,7 +14,7 @@ import { useAtom } from 'jotai';
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { toast } from 'sonner';
-import { ConnectSection } from './components/ConnectSection';
+import { ConnectSectionWithExamples } from './components/ConnectSection';
 import { SignMessage } from './components/functions/SignMessage';
 import { ExecuteTransaction } from './components/functions/ExecuteTransaction';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -266,7 +266,7 @@ export default function WalletAdapterDemo() {
             Test the different features of our Aleo wallet adapter
           </p>
         </div>
-        <ConnectSection />
+        <ConnectSectionWithExamples />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Mobile: Select dropdown */}

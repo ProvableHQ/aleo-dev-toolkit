@@ -14,27 +14,33 @@ import { Network } from '@provablehq/aleo-types';
 interface CodeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  customCode?: string;
+  componentCode?: string;
+  title?: string;
+  description?: string;
 }
 
-export function CodeModal({ isOpen, onClose }: CodeModalProps) {
-  const network = useAtomValue(networkAtom);
-  const decryptPermission = useAtomValue(decryptPermissionAtom);
-  const autoConnect = useAtomValue(autoConnectAtom);
-  const programs = useAtomValue(programsAtom);
-  const [copied, setCopied] = useState(false);
+/**
+ * Generates the complete provider setup code with customizable content
+ */
+export function generateProviderCode(
+  content: string,
+  network: Network,
+  decryptPermission: DecryptPermission,
+  autoConnect: boolean,
+  programs: string[],
+): string {
+  const networkValue = network === Network.MAINNET ? 'Network.MAINNET' : 'Network.TESTNET3';
+  const decryptValue = Object.keys(DecryptPermission).find(
+    key => DecryptPermission[key as keyof typeof DecryptPermission] === decryptPermission,
+  );
 
-  const generateCode = () => {
-    const networkValue = network === Network.MAINNET ? 'Network.MAINNET' : 'Network.TESTNET3';
-    const decryptValue = Object.keys(DecryptPermission).find(
-      key => DecryptPermission[key as keyof typeof DecryptPermission] === decryptPermission,
-    );
+  const programsString =
+    programs.length > 0
+      ? `\n  programs={[${programs.map(p => `"${p}"`).join(', ')}]}`
+      : '\n  programs={[]}';
 
-    const programsString =
-      programs.length > 0
-        ? `\n  programs={[${programs.map(p => `"${p}"`).join(', ')}]}`
-        : '\n  programs={[]}';
-
-    return `import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
+  return `import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
@@ -43,28 +49,75 @@ import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 
-const wallets = [
-  new GalileoWalletAdapter(),
-  new PuzzleWalletAdapter(),
-  new LeoWalletAdapter(),
-  new FoxWalletAdapter(),
-];
-
 export function App() {
   return (
     <AleoWalletProvider
-      wallets={wallets}
+      wallets={[
+        new GalileoWalletAdapter(),
+        new PuzzleWalletAdapter(),
+        new LeoWalletAdapter(),
+        new FoxWalletAdapter(),
+        new SoterWalletAdapter(),
+      ]}
       autoConnect={${autoConnect}}
       network={${networkValue}}
       decryptPermission={DecryptPermission.${decryptValue}}${programsString}
       onError={error => console.error(error.message)}
     >
       <WalletModalProvider>
-        {/* Your app content */}
+        ${content}
       </WalletModalProvider>
     </AleoWalletProvider>
   );
 }`;
+}
+
+/**
+ * Wraps component code with the AleoWalletProvider setup
+ */
+export function wrapWithProvider(
+  componentCode: string,
+  network: Network,
+  decryptPermission: DecryptPermission,
+  autoConnect: boolean,
+  programs: string[],
+): string {
+  return generateProviderCode(
+    `<MyComponent />`,
+    network,
+    decryptPermission,
+    autoConnect,
+    programs,
+  ).replace('export function App()', `${componentCode}\n\nexport function App()`);
+}
+
+export function CodeModal({
+  isOpen,
+  onClose,
+  customCode,
+  componentCode,
+  title = 'AleoWalletProvider Configuration',
+  description = 'This reflects the current selected options',
+}: CodeModalProps) {
+  const network = useAtomValue(networkAtom);
+  const decryptPermission = useAtomValue(decryptPermissionAtom);
+  const autoConnect = useAtomValue(autoConnectAtom);
+  const programs = useAtomValue(programsAtom);
+  const [copied, setCopied] = useState(false);
+
+  const generateCode = () => {
+    if (componentCode) {
+      return wrapWithProvider(componentCode, network, decryptPermission, autoConnect, programs);
+    }
+    if (customCode) return customCode;
+
+    return generateProviderCode(
+      '{/* Your app content */}',
+      network,
+      decryptPermission,
+      autoConnect,
+      programs,
+    );
   };
 
   const handleCopy = async () => {
@@ -84,12 +137,8 @@ export function App() {
       <div className="bg-card dark:bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-border">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex flex-col items-start gap-2">
-            <h2 className="text-xl font-semibold text-card-foreground">
-              AleoWalletProvider Configuration
-            </h2>
-            <span className="text-sm text-muted-foreground">
-              This reflects the current selected options
-            </span>
+            <h2 className="text-xl font-semibold text-card-foreground">{title}</h2>
+            <span className="text-sm text-muted-foreground">{description}</span>
           </div>
 
           <div className="flex items-center gap-2">
