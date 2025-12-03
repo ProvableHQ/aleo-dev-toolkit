@@ -22,8 +22,8 @@ export function DeployProgram() {
     address,
   } = useWallet();
   const [programCode, setProgramCode] = useAtom(programCodeAtom);
-  const [fee, setFee] = useState('100000');
-  const [feePrivate, setFeePrivate] = useState(false);
+  const [priorityFee, setPriorityFee] = useState('100000');
+  const [privateFee, setPrivateFee] = useState(false);
   const [onchainTransactionId, setOnchainTransactionId] = useState<string | null>(null);
   const [isExecutingDeployment, setIsExecutingDeployment] = useState(false);
   const [isPollingStatus, setIsPollingStatus] = useState(false);
@@ -93,7 +93,7 @@ export function DeployProgram() {
   };
 
   const handleExecuteDeployment = async () => {
-    if (!programCode.trim() || !fee.trim() || !address) {
+    if (!programCode.trim() || !priorityFee.trim() || !address) {
       toast.error('Please enter program code, fee, and ensure wallet is connected');
       return;
     }
@@ -107,8 +107,8 @@ export function DeployProgram() {
       const deployment = {
         program: programCode.trim(),
         address: address,
-        fee: Number(fee),
-        feePrivate: feePrivate,
+        priorityFee: Number(priorityFee),
+        privateFee,
       };
 
       const tx = await executeDeployment(deployment);
@@ -187,15 +187,15 @@ export function DeployProgram() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="fee" className="transition-colors duration-300">
-              Fee
+            <Label htmlFor="priorityFee" className="transition-colors duration-300">
+              Priority Fee
             </Label>
             <Input
-              id="fee"
-              placeholder="Fee (in microcredits)"
+              id="priorityFee"
+              placeholder="Priority Fee (in microcredits)"
               type="number"
-              value={fee}
-              onChange={e => setFee(e.target.value)}
+              value={priorityFee}
+              onChange={e => setPriorityFee(e.target.value)}
               disabled={!connected}
               className="transition-all duration-300"
             />
@@ -207,14 +207,14 @@ export function DeployProgram() {
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="feePrivate"
-              checked={feePrivate}
-              onChange={e => setFeePrivate(e.target.checked)}
+              id="privateFee"
+              checked={privateFee}
+              onChange={e => setPrivateFee(e.target.checked)}
               disabled={!connected}
               className="rounded border-input"
             />
-            <Label htmlFor="feePrivate" className="text-sm transition-colors duration-300">
-              Fee private
+            <Label htmlFor="privateFee" className="text-sm transition-colors duration-300">
+              Pay fee privately
             </Label>
           </div>
         </div>
@@ -226,7 +226,7 @@ export function DeployProgram() {
             isExecutingDeployment ||
             isPollingStatus ||
             !programCode.trim() ||
-            !fee.trim()
+            !priorityFee.trim()
           }
           className="w-full hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200"
         >

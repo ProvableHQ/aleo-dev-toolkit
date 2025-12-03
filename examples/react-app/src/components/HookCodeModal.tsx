@@ -163,8 +163,8 @@ export function DeployProgramComponent() {
             return a + b;
         }\`,
         address: address,
-        fee: 100000,
-        feePrivate: false,
+        priorityFee: 100000,
+        privateFee: false,
       };
       
       const tx = await executeDeployment(deployment);
