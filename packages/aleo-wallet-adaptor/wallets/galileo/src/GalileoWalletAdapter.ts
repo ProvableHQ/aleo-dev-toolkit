@@ -356,9 +356,9 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Execute a deployment
-   * @param deployment The deployment to execute
-   * @returns The executed transaction ID
+   * get transition view keys(tvk) for a transaction
+   * @param transactionId The transaction ID
+   * @returns The tvk array
    */
   async transitionViewKeys(transactionId: string): Promise<string[]> {
     try {
