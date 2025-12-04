@@ -154,8 +154,8 @@ export default function OnChainHistory() {
           <Alert>
             <AlertDescription>
               <p className="text-sm">
-                No transitionViewKeys found. Enter a transaction id and click "Fetch
-                transitionViewKeys" to get started.
+                No View Keys found. Enter a transaction id and click "Fetch View Keys" to get
+                started.
               </p>
             </AlertDescription>
           </Alert>
