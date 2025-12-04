@@ -125,15 +125,20 @@ export const Decrypt = () => {
         {decryptedData && (
           <Alert>
             <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-            <AlertDescription>
+            <AlertDescription className="min-w-0 w-full">
               <p className="font-medium">Data Decrypted Successfully!</p>
-              <div className="relative bg-muted p-3 rounded border mt-2">
-                <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{decryptedData}</pre>
+              <div className="relative bg-muted p-3 rounded border mt-2 overflow-hidden w-full min-w-0">
+                <pre
+                  className="text-xs whitespace-pre-wrap break-all max-w-full"
+                  style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
+                >
+                  {decryptedData}
+                </pre>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copyToClipboard(decryptedData)}
-                  className="absolute right-2 top-2 transition-all duration-200"
+                  className="absolute right-1 top-1 sm:right-2 sm:top-2 transition-all duration-200"
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
