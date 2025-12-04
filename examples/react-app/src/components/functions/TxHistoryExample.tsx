@@ -75,7 +75,7 @@ export function TxHistoryExample() {
               <Database className="h-5 w-5 text-primary transition-colors duration-300" />
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
             </div>
-            <span>requestTransactionHistory</span>
+            <span>Request Transaction History</span>
           </div>
           <Button
             variant="outline"
@@ -88,7 +88,7 @@ export function TxHistoryExample() {
           </Button>
         </CardTitle>
         <CardDescription className="transition-colors duration-300">
-          requestTransactionHistory
+          Returns Transaction History for program
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -111,12 +111,12 @@ export function TxHistoryExample() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              requesting TransactionHistory...
+              requesting Transaction History...
             </>
           ) : (
             <>
               <Database className="mr-2 h-4 w-4" />
-              request TransactionHistory
+              Request Transaction History
             </>
           )}
         </Button>
@@ -135,7 +135,7 @@ export function TxHistoryExample() {
           <Alert>
             <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
             <AlertDescription>
-              <p className="font-medium">requestTransactionHistory Called Successfully!</p>
+              <p className="font-medium">Request Transaction History Successful!</p>
               <div className="space-y-2 mt-2">
                 {txs.map((transitionViewKey, index) => (
                   <div
@@ -164,8 +164,8 @@ export function TxHistoryExample() {
           <Alert>
             <AlertDescription>
               <p className="text-sm">
-                No TransactionHistory found. Enter a transaction id and click "request
-                TransactionHistory" to get started.
+                No Transaction History found. Enter a program and click "Request Transaction
+                History" to get started.
               </p>
             </AlertDescription>
           </Alert>

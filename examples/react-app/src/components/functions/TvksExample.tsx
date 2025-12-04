@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card.tsx';
-import { AlertCircle, CheckCircle, Code, Copy, Database, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Code, Copy, Key, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Input } from '@/components/ui/input.tsx';
@@ -65,10 +65,10 @@ export function TvksExample() {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="relative">
-              <Database className="h-5 w-5 text-primary transition-colors duration-300" />
+              <Key className="h-5 w-5 text-primary transition-colors duration-300" />
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
             </div>
-            <span>transitionViewKeys</span>
+            <span>Transition View Keys</span>
           </div>
           <Button
             variant="outline"
@@ -81,7 +81,7 @@ export function TvksExample() {
           </Button>
         </CardTitle>
         <CardDescription className="transition-colors duration-300">
-          transitionViewKeys
+          Returns the View Keys for a given transaction id.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -91,7 +91,7 @@ export function TvksExample() {
           </Label>
           <Input
             id="txId"
-            placeholder="transactionId"
+            placeholder="Enter the transaction ID"
             type="text"
             value={transactionId}
             onChange={e => setTransactionId(e.target.value)}
@@ -107,12 +107,12 @@ export function TvksExample() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Fetching transitionViewKeys...
+              Fetching View Keys...
             </>
           ) : (
             <>
-              <Database className="mr-2 h-4 w-4" />
-              Fetch transitionViewKeys
+              <Key className="mr-2 h-4 w-4" />
+              Fetch View Keys
             </>
           )}
         </Button>
@@ -121,7 +121,7 @@ export function TvksExample() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <p className="font-medium">Error fetching transitionViewKeys</p>
+              <p className="font-medium">Error fetching Transition View Keys</p>
               <p className="text-sm mt-1">{error}</p>
             </AlertDescription>
           </Alert>
@@ -131,7 +131,7 @@ export function TvksExample() {
           <Alert>
             <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
             <AlertDescription>
-              <p className="font-medium">transitionViewKeys Fetched Successfully!</p>
+              <p className="font-medium">Transition View Keys Fetched Successfully!</p>
               <div className="space-y-2 mt-2">
                 {tvks.map((transitionViewKey, index) => (
                   <div
@@ -160,8 +160,8 @@ export function TvksExample() {
           <Alert>
             <AlertDescription>
               <p className="text-sm">
-                No transitionViewKeys found. Enter a transaction id and click "Fetch
-                transitionViewKeys" to get started.
+                No View Keys found. Enter a transaction id and click "Fetch View Keys" to get
+                started.
               </p>
             </AlertDescription>
           </Alert>
