@@ -179,9 +179,9 @@ export interface TransitionViewKeysFeature extends WalletFeature {
   name: 'standard:transition_viewkeys';
 
   /**
-   * Execute a deployment
-   * @param deployment The deployment to execute
-   * @returns The executed transaction ID
+   * get transition view keys(tvk) for a transaction
+   * @param transactionId The transaction ID
+   * @returns The tvk array
    */
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
 }

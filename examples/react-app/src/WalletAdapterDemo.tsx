@@ -72,7 +72,7 @@ export default function WalletAdapterDemo() {
     { value: 'decrypt', label: 'Decrypt', icon: KeyRound },
     { value: 'records', label: 'Records', icon: Database },
     { value: 'deploy', label: 'Deploy', icon: Rocket },
-    { value: 'OnChainHistory', label: 'OnChainHistory', icon: Logs },
+    { value: 'misc', label: 'Misc', icon: Logs },
   ] as const;
 
   // Detect account changes
@@ -337,7 +337,7 @@ export default function WalletAdapterDemo() {
           <TabsContent value="deploy">
             <DeployProgram />
           </TabsContent>
-          <TabsContent value="OnChainHistory">
+          <TabsContent value="misc">
             <OnChainHistory />
           </TabsContent>
         </Tabs>
