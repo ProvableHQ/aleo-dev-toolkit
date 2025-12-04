@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Database, Copy, CheckCircle, Loader2, AlertCircle, Code, Key } from 'lucide-react';
+import { Copy, CheckCircle, Loader2, AlertCircle, Code, Key } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { HookCodeModal } from '../HookCodeModal';
@@ -105,7 +105,7 @@ export default function OnChainHistory() {
             </>
           ) : (
             <>
-              <Database className="mr-2 h-4 w-4" />
+              <Key className="mr-2 h-4 w-4" />
               Fetch View Keys
             </>
           )}
