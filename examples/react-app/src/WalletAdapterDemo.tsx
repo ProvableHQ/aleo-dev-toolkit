@@ -8,13 +8,14 @@ import {
   KeyRound,
   Database,
   Rocket,
+  Info,
   Logs,
 } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { toast } from 'sonner';
-import { ConnectSection } from './components/ConnectSection';
+import { ConnectSectionWithExamples } from './components/ConnectSection';
 import { SignMessage } from './components/functions/SignMessage';
 import { ExecuteTransaction } from './components/functions/ExecuteTransaction';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -33,6 +34,7 @@ import {
 } from './components/ui/dropdown-menu';
 import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -143,7 +145,7 @@ export default function WalletAdapterDemo() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
-                  <DropdownMenuLabel>Network</DropdownMenuLabel>
+                  <DropdownMenuLabel className="font-bold">Network</DropdownMenuLabel>
                   <DropdownMenuRadioGroup value={network} onValueChange={handleNetworkChange}>
                     <DropdownMenuRadioItem
                       value={Network.MAINNET}
@@ -159,7 +161,7 @@ export default function WalletAdapterDemo() {
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Decrypt Permission</DropdownMenuLabel>
+                  <DropdownMenuLabel className="font-bold">Decrypt Permission</DropdownMenuLabel>
                   <DropdownMenuRadioGroup
                     value={decryptPermission}
                     onValueChange={handleDecryptPermissionChange}
@@ -190,7 +192,32 @@ export default function WalletAdapterDemo() {
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Programs</DropdownMenuLabel>
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    <DropdownMenuLabel className="px-0 font-bold">
+                      Allowed Programs
+                    </DropdownMenuLabel>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            aria-label="Information about allowed programs"
+                          >
+                            <Info className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <p>
+                            Programs in this list are the ones your dApp will interact with and
+                            request user approval for. <br /> <br /> Transactions for programs not
+                            in this list will be automatically rejected. <br /> <br /> If the list
+                            is empty, all program transactions will prompt the user for approval.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <div className="px-2 py-1.5">
                     <div className="flex gap-1 mb-2">
                       <ProgramAutocomplete
@@ -221,7 +248,7 @@ export default function WalletAdapterDemo() {
                   <DropdownMenuCheckboxItem
                     checked={autoConnect}
                     onCheckedChange={handleAutoConnectChange}
-                    className="hover:bg-accent focus:bg-accent"
+                    className="hover:bg-accent focus:bg-accent font-bold"
                   >
                     Auto Connect
                   </DropdownMenuCheckboxItem>
@@ -242,7 +269,7 @@ export default function WalletAdapterDemo() {
             Test the different features of our Aleo wallet adapter
           </p>
         </div>
-        <ConnectSection />
+        <ConnectSectionWithExamples />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Mobile: Select dropdown */}

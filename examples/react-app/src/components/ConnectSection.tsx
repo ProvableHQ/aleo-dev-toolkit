@@ -1,82 +1,153 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, Copy, CheckCircle2 } from 'lucide-react';
+import { Wallet, Copy, CheckCircle2, Code } from 'lucide-react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { useAtomValue } from 'jotai';
 import { networkAtom } from '@/lib/store/global';
+import { CustomButtonExamples } from './CustomButtonExamples';
+import { CodeModal } from './CodeModal';
 
 export function ConnectSection() {
   const neededNetwork = useAtomValue(networkAtom);
   const { connected, connecting, reconnecting, address, network, switchNetwork } = useWallet();
   const wrongNetwork = connected && !connecting && network !== neededNetwork;
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+
+  const componentCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+
+function MyComponent() {
+  // Access all wallet state and methods
+  const {
+    connected,        // boolean - whether wallet is connected
+    connecting,       // boolean - whether wallet is connecting
+    disconnecting,    // boolean - whether wallet is disconnecting
+    reconnecting,    // boolean - whether wallet is reconnecting
+    address,          // string | null - connected wallet address
+    network,          // Network | null - current network
+    wallet,           // Wallet | null - connected wallet adapter
+    autoConnect,      // boolean - autoConnect setting
+    switchNetwork,    // (network: Network) => Promise<boolean>
+    disconnect,       // () => Promise<void>
+    // ... other methods
+  } = useWallet();
 
   return (
-    <Card className="transition-all duration-300 ">
-      <CardHeader className="">
-        <CardTitle className="flex items-center space-x-2">
-          <div className="relative">
-            <Wallet className="h-5 w-5 text-primary transition-colors duration-300" />
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
-          </div>
-          <span>Wallet Connection</span>
-        </CardTitle>
-        <CardDescription className="transition-colors duration-300">
-          Connect your wallet to access the different features
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div
-                className={`h-3 w-3 rounded-full transition-all duration-300 ${
-                  connected
-                    ? wrongNetwork || connecting
-                      ? 'bg-yellow-500 dark:bg-yellow-400'
-                      : 'bg-green-500 dark:bg-green-400'
-                    : 'bg-gray-300 dark:bg-muted'
-                }`}
-              />
-              <div
-                className={`absolute inset-0 rounded-full blur-sm transition-all duration-300 ${
-                  connected
-                    ? wrongNetwork || connecting
-                      ? 'bg-yellow-500/30 dark:bg-yellow-400/30'
-                      : 'bg-green-500/30 dark:bg-green-400/30'
-                    : 'bg-gray-300/30 dark:bg-muted/30'
-                }`}
-              />
-            </div>
-            <span className="font-medium transition-colors duration-300">
-              {reconnecting
-                ? 'Reconnecting on new account'
-                : connecting
-                  ? 'Connecting...'
-                  : wrongNetwork
-                    ? `Wallet network: ${network}`
-                    : connected
-                      ? 'Connected'
-                      : 'Disconnected'}
-            </span>
-            {wrongNetwork && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => switchNetwork(neededNetwork)}
-                className="transition-all duration-200"
-              >
-                Switch to {neededNetwork}
-              </Button>
-            )}
-          </div>
-          <WalletMultiButton />
-        </div>
+    <div>
+      {/* Use the pre-built WalletMultiButton component */}
+      <WalletMultiButton />
+      
+      {/* Access wallet state */}
+      {connected && address && (
+        <p>Connected: {address}</p>
+      )}
+      
+      {connecting && <p>Connecting...</p>}
+      {reconnecting && <p>Reconnecting...</p>}
+      
+      {connected && network && (
+        <p>Network: {network}</p>
+      )}
+    </div>
+  );
+}`;
 
-        {connected && <WalletAddressCard address={address} />}
-      </CardContent>
-    </Card>
+  return (
+    <>
+      <Card className="transition-all duration-300 ">
+        <CardHeader className="border-b border-border/50">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="relative">
+                <Wallet className="h-5 w-5 text-primary transition-colors duration-300" />
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+              </div>
+              <span>Wallet Connection</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCodeModalOpen(true)}
+              className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
+            >
+              <Code className="h-4 w-4" />
+              Code
+            </Button>
+          </CardTitle>
+          <CardDescription className="transition-colors duration-300">
+            Connect your wallet to access the different features
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div
+                  className={`h-3 w-3 rounded-full transition-all duration-300 ${
+                    connected
+                      ? wrongNetwork || connecting
+                        ? 'bg-yellow-500 dark:bg-yellow-400'
+                        : 'bg-green-500 dark:bg-green-400'
+                      : 'bg-gray-300 dark:bg-muted'
+                  }`}
+                />
+                <div
+                  className={`absolute inset-0 rounded-full blur-sm transition-all duration-300 ${
+                    connected
+                      ? wrongNetwork || connecting
+                        ? 'bg-yellow-500/30 dark:bg-yellow-400/30'
+                        : 'bg-green-500/30 dark:bg-green-400/30'
+                      : 'bg-gray-300/30 dark:bg-muted/30'
+                  }`}
+                />
+              </div>
+              <span className="font-medium transition-colors duration-300">
+                {reconnecting
+                  ? 'Reconnecting on new account'
+                  : connecting
+                    ? 'Connecting...'
+                    : wrongNetwork
+                      ? `Wallet network: ${network}`
+                      : connected
+                        ? 'Connected'
+                        : 'Disconnected'}
+              </span>
+              {wrongNetwork && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => switchNetwork(neededNetwork)}
+                  className="transition-all duration-200"
+                >
+                  Switch to {neededNetwork}
+                </Button>
+              )}
+            </div>
+            <WalletMultiButton />
+          </div>
+
+          {connected && <WalletAddressCard address={address} />}
+        </CardContent>
+      </Card>
+      <CodeModal
+        isOpen={isCodeModalOpen}
+        onClose={() => setIsCodeModalOpen(false)}
+        componentCode={componentCode}
+        title="WalletMultiButton & useWallet Hook"
+        description="Example showing how to use WalletMultiButton and access wallet state. Note: Component must be wrapped with AleoWalletProvider."
+      />
+    </>
+  );
+}
+
+export function ConnectSectionWithExamples() {
+  return (
+    <div className="space-y-4">
+      <ConnectSection />
+      <CustomButtonExamples />
+    </div>
   );
 }
 

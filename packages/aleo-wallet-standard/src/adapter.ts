@@ -11,8 +11,8 @@ import { EventEmitter, WalletEvents } from './events';
 export interface AleoDeployment {
   program: string;
   address: string;
-  fee: number;
-  feePrivate: boolean;
+  priorityFee: number;
+  privateFee: boolean;
 }
 
 /**

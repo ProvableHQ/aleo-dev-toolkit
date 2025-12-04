@@ -18,14 +18,6 @@ import {
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
-const wallets = [
-  new GalileoWalletAdapter(),
-  new PuzzleWalletAdapter(),
-  new LeoWalletAdapter(),
-  new FoxWalletAdapter(),
-  new SoterWalletAdapter(),
-];
-
 export function App() {
   const network = useAtomValue(networkAtom);
   const decryptPermission = useAtomValue(decryptPermissionAtom);
@@ -35,7 +27,13 @@ export function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <AleoWalletProvider
-        wallets={wallets}
+        wallets={[
+          new GalileoWalletAdapter(),
+          new PuzzleWalletAdapter(),
+          new LeoWalletAdapter(),
+          new FoxWalletAdapter(),
+          new SoterWalletAdapter(),
+        ]}
         autoConnect={autoConnect}
         network={network}
         onError={error => toast.error(error.message)}

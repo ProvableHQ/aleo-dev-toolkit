@@ -383,8 +383,8 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
           address: this._publicKey,
           chainId: LEO_NETWORK_MAP[this.network],
           program: deployment.program,
-          fee: deployment.fee,
-          feePrivate: deployment.feePrivate,
+          fee: deployment.priorityFee,
+          feePrivate: deployment.privateFee,
         });
         if (!result?.transactionId) {
           throw new WalletTransactionError('Could not create deployment');

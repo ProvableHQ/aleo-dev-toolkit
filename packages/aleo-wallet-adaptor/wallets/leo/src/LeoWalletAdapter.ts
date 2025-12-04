@@ -383,8 +383,8 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
           this._publicKey,
           LEO_NETWORK_MAP[this.network],
           deployment.program,
-          deployment.fee,
-          deployment.feePrivate,
+          deployment.priorityFee,
+          deployment.privateFee,
         );
         const result = await this._leoWallet?.requestDeploy(leoDeployment);
         if (!result?.transactionId) {
