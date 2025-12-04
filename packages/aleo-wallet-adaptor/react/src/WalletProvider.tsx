@@ -428,6 +428,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const transitionViewKeys = useCallback(
+    async (transactionId: string) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('transitionViewKeys' in adapter))
+        throw handleError(new MethodNotImplementedError('transitionViewKeys'));
+
+      return await adapter.transitionViewKeys(transactionId);
+    },
+    [adapter, handleError, connected],
+  );
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -459,6 +470,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         decrypt,
         requestRecords,
         executeDeployment,
+        transitionViewKeys,
       }}
     >
       {children}

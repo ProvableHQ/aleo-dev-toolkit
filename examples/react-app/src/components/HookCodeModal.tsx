@@ -5,7 +5,13 @@ import { Copy, Check } from 'lucide-react';
 interface HookCodeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  action: 'executeTransaction' | 'signMessage' | 'decrypt' | 'requestRecords' | 'executeDeployment';
+  action:
+    | 'executeTransaction'
+    | 'signMessage'
+    | 'decrypt'
+    | 'requestRecords'
+    | 'executeDeployment'
+    | 'transitionViewKeys';
 }
 
 export function HookCodeModal({ isOpen, onClose, action }: HookCodeModalProps) {
@@ -185,6 +191,36 @@ export function DeployProgramComponent() {
     </button>
   );
 }`;
+      case 'transitionViewKeys':
+        return `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+
+export function TransitionViewKeysComponent() {
+  const { connected, transitionViewKeys } = useWallet();
+  const [isFetching, setIsFetching] = useState(false);
+
+  const handleDecrypt = async () => {
+    if (!connected) return;
+    
+    setIsFetching(true);
+    try {
+      const tvks = await transitionViewKeys('your_txId_here');
+      console.log('transitionViewKeys data:', tvks);
+    } catch (error) {
+      console.error('transitionViewKeys failed:', error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleDecrypt}
+      disabled={!connected || isFetching}
+    >
+      {isFetching ? 'Fetching...' : 'transitionViewKeys'}
+    </button>
+  );
+}`;
 
       default:
         return '';
@@ -213,6 +249,8 @@ export function DeployProgramComponent() {
         return 'Request Records Hook';
       case 'executeDeployment':
         return 'Execute Deployment Hook';
+      case 'transitionViewKeys':
+        return 'Get transitionViewKeys';
       default:
         return 'Hook Code';
     }

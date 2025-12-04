@@ -113,6 +113,10 @@ export interface WalletContextState {
    * Execute a deployment
    */
   executeDeployment: (deployment: AleoDeployment) => Promise<{ transactionId: string }>;
+  /**
+   * get transition view keys(tvk) for a transaction
+   */
+  transitionViewKeys: (transactionId: string) => Promise<string[]>;
 }
 
 /**
