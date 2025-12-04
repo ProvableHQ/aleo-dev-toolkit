@@ -101,12 +101,12 @@ export default function OnChainHistory() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Fetching transitionViewKeys...
+              Fetching View Keys...
             </>
           ) : (
             <>
               <Database className="mr-2 h-4 w-4" />
-              Fetch transitionViewKeys
+              Fetch View Keys
             </>
           )}
         </Button>
