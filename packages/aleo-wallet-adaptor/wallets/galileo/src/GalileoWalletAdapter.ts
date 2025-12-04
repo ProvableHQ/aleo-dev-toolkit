@@ -3,6 +3,7 @@ import {
   Network,
   TransactionOptions,
   TransactionStatusResponse,
+  TxHistoryResult,
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
@@ -369,6 +370,33 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         const result = await this._galileoWallet?.transitionViewKeys(transactionId);
         if (!Array.isArray(result)) {
           throw new WalletTransactionError('Could not get transitionViewKeys');
+        }
+        return result;
+      } catch (error: Error | unknown) {
+        throw new WalletTransactionError(
+          error instanceof Error ? error.message : 'Failed to get transitionViewKeys',
+        );
+      }
+    } catch (error: Error | unknown) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * get transaction of specific program
+   * @param program The program ID
+   * @returns array of transactionId
+   */
+  async requestTransactionHistory(program: string): Promise<TxHistoryResult> {
+    try {
+      if (!this._publicKey || !this.account) {
+        throw new WalletNotConnectedError();
+      }
+      try {
+        const result = await this._galileoWallet?.requestTransactionHistory(program);
+        if (!result?.transactions || !Array.isArray(result.transactions)) {
+          throw new WalletTransactionError('Could not get TransactionHistory');
         }
         return result;
       } catch (error: Error | unknown) {
