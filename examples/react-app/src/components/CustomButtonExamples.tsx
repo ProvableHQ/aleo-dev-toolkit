@@ -85,7 +85,7 @@ function CustomWalletButton({ wallet: targetWallet }: CustomWalletButtonProps) {
           disabled={isConnected || isNotInstalled}
           variant="outline"
           size="sm"
-          className="w-[400px] justify-start gap-2 h-auto min-h-[2.5rem] py-2 px-4 rounded-lg border-2 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 shadow-sm hover:shadow-md"
+          className="w-full max-w-[400px] justify-start gap-2 h-auto min-h-[2.5rem] py-2 px-4 rounded-lg border-2 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           {targetWallet.adapter.icon && (
             <img
