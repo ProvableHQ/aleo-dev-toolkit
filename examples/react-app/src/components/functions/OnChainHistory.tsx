@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Database, Copy, CheckCircle, Loader2, AlertCircle, Code } from 'lucide-react';
+import { Database, Copy, CheckCircle, Loader2, AlertCircle, Code, Key } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { HookCodeModal } from '../HookCodeModal';
@@ -59,10 +59,10 @@ export default function OnChainHistory() {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="relative">
-              <Database className="h-5 w-5 text-primary transition-colors duration-300" />
+              <Key className="h-5 w-5 text-primary transition-colors duration-300" />
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
             </div>
-            <span>transitionViewKeys</span>
+            <span>Transition View Keys</span>
           </div>
           <Button
             variant="outline"
@@ -75,7 +75,7 @@ export default function OnChainHistory() {
           </Button>
         </CardTitle>
         <CardDescription className="transition-colors duration-300">
-          transitionViewKeys
+          Returns the View Keys for a given transaction id.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -85,7 +85,7 @@ export default function OnChainHistory() {
           </Label>
           <Input
             id="txId"
-            placeholder="transactionId"
+            placeholder="Enter the transaction ID"
             type="text"
             value={transactionId}
             onChange={e => setTransactionId(e.target.value)}
