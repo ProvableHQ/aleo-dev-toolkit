@@ -115,7 +115,7 @@ export default function OnChainHistory() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <p className="font-medium">Error fetching transitionViewKeys</p>
+              <p className="font-medium">Error fetching Transition View Keys</p>
               <p className="text-sm mt-1">{error}</p>
             </AlertDescription>
           </Alert>
@@ -125,7 +125,7 @@ export default function OnChainHistory() {
           <Alert>
             <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
             <AlertDescription>
-              <p className="font-medium">transitionViewKeys Fetched Successfully!</p>
+              <p className="font-medium">Transition View Keys Fetched Successfully!</p>
               <div className="space-y-2 mt-2">
                 {tvks.map((transitionViewKey, index) => (
                   <div
