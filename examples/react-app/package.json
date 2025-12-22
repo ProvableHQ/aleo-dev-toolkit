@@ -14,7 +14,7 @@
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-fox": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-leo": "workspace:*",
-    "@provablehq/aleo-wallet-adaptor-prove-alpha": "workspace:*",
+    "@provablehq/aleo-wallet-adaptor-shield": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-puzzle": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-react-ui": "workspace:*",

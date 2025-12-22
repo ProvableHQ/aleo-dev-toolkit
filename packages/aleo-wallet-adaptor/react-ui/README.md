@@ -38,6 +38,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 ## Related packages
 
 - `@provablehq/aleo-wallet-adaptor-react` – required provider context for these components.
-- Wallet adapters such as `@provablehq/aleo-wallet-adaptor-prove-alpha`, `-puzzle`, `-leo`, etc.
+- Wallet adapters such as `@provablehq/aleo-wallet-adaptor-shield`, `-puzzle`, `-leo`, etc.
 
 Live demo: https://aleo-dev-toolkit-react-app.vercel.app/

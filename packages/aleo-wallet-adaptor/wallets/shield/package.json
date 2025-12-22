@@ -1,7 +1,7 @@
 {
-  "name": "@provablehq/aleo-wallet-adaptor-prove-alpha",
+  "name": "@provablehq/aleo-wallet-adaptor-shield",
   "version": "0.3.0-alpha.0",
-  "description": "Galileo wallet adapter for Aleo",
+  "description": "Shield wallet adapter for Aleo",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -23,7 +23,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ProvableHQ/aleo-dev-toolkit.git",
-    "directory": "packages/aleo-wallet-adaptor/wallets/galileo"
+    "directory": "packages/aleo-wallet-adaptor/wallets/shield"
   },
   "homepage": "https://provable.com/",
   "keywords": [
