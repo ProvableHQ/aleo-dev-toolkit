@@ -1,4 +1,4 @@
-# @provablehq/aleo-wallet-adaptor-prove-alpha
+# @provablehq/aleo-wallet-adaptor-shield
 
 ## 0.3.0-alpha.0
 

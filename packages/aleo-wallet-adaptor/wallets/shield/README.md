@@ -1,4 +1,4 @@
-# @provablehq/aleo-wallet-adaptor-prove-alpha
+# @provablehq/aleo-wallet-adaptor-shield
 
 Prove wallet connector (alpha) built on top of the Aleo wallet adaptor core.
 
@@ -11,18 +11,18 @@ Prove wallet connector (alpha) built on top of the Aleo wallet adaptor core.
 ## Installation
 
 ```bash
-pnpm add @provablehq/aleo-wallet-adaptor-prove-alpha
+pnpm add @provablehq/aleo-wallet-adaptor-shield
 ```
 
 ## Usage
 
 ```tsx
-import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-prove-alpha';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 
-const wallets = [new GalileoWalletAdapter()];
+const wallets = [new ShieldWalletAdapter()];
 ```
 
-> **Note:** The exported class is still named `GalileoWalletAdapter` for internal compatibility. The package name will change again once the final brand is announced.
+> **Note:** The exported class is still named `ShieldWalletAdapter` for internal compatibility. The package name will change again once the final brand is announced.
 
 ## Related packages
 

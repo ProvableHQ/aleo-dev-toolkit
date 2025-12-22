@@ -60,9 +60,6 @@ importers:
       '@provablehq/aleo-wallet-adaptor-leo':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor/wallets/leo
-      '@provablehq/aleo-wallet-adaptor-prove-alpha':
-        specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/wallets/galileo
       '@provablehq/aleo-wallet-adaptor-puzzle':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor/wallets/puzzle
@@ -72,6 +69,9 @@ importers:
       '@provablehq/aleo-wallet-adaptor-react-ui':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor/react-ui
+      '@provablehq/aleo-wallet-adaptor-shield':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-adaptor/wallets/shield
       '@provablehq/aleo-wallet-adaptor-soter':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adaptor/wallets/soter
@@ -392,28 +392,6 @@ importers:
         specifier: ^5.0.0
         version: 5.8.3
 
-  packages/aleo-wallet-adaptor/wallets/galileo:
-    dependencies:
-      '@provablehq/aleo-types':
-        specifier: workspace:*
-        version: link:../../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
-        specifier: workspace:*
-        version: link:../../core
-      '@provablehq/aleo-wallet-standard':
-        specifier: workspace:*
-        version: link:../../../aleo-wallet-standard
-    devDependencies:
-      rimraf:
-        specifier: ^5.0.5
-        version: 5.0.10
-      tsup:
-        specifier: ^7.0.0
-        version: 7.3.0(@swc/core@1.12.1)(postcss@8.5.3)(typescript@5.8.3)
-      typescript:
-        specifier: ^5.0.0
-        version: 5.8.3
-
   packages/aleo-wallet-adaptor/wallets/leo:
     dependencies:
       '@provablehq/aleo-types':
@@ -450,6 +428,28 @@ importers:
       '@puzzlehq/sdk-core':
         specifier: ^1.0.3
         version: 1.0.4(buffer@6.0.3)
+    devDependencies:
+      rimraf:
+        specifier: ^5.0.5
+        version: 5.0.10
+      tsup:
+        specifier: ^7.0.0
+        version: 7.3.0(@swc/core@1.12.1)(postcss@8.5.3)(typescript@5.8.3)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.8.3
+
+  packages/aleo-wallet-adaptor/wallets/shield:
+    dependencies:
+      '@provablehq/aleo-types':
+        specifier: workspace:*
+        version: link:../../../aleo-types
+      '@provablehq/aleo-wallet-adaptor-core':
+        specifier: workspace:*
+        version: link:../../core
+      '@provablehq/aleo-wallet-standard':
+        specifier: workspace:*
+        version: link:../../../aleo-wallet-standard
     devDependencies:
       rimraf:
         specifier: ^5.0.5

@@ -23,16 +23,16 @@ import {
   WalletDecryptionNotAllowedError,
   scopePollingDetectionStrategy,
 } from '@provablehq/aleo-wallet-adaptor-core';
-import { GalileoWallet, GalileoWalletAdapterConfig, GalileoWindow } from './types';
+import { ShieldWallet, ShieldWalletAdapterConfig, ShieldWindow } from './types';
 
 /**
- * Galileo wallet adapter
+ * Shield wallet adapter
  */
-export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
+export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * The wallet name
    */
-  readonly name = 'Galileo Wallet' as WalletName<'Galileo Wallet'>;
+  readonly name = 'Shield Wallet' as WalletName<'Shield Wallet'>;
 
   /**
    * The wallet URL
@@ -48,7 +48,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * The window object
    */
-  private _window: GalileoWindow | undefined;
+  private _window: ShieldWindow | undefined;
 
   /**
    * Current network
@@ -71,17 +71,17 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       : WalletReadyState.NOT_DETECTED;
 
   /**
-   * Galileo wallet instance
+   * Shield wallet instance
    */
-  private _galileoWallet: GalileoWallet | undefined;
+  private _shieldWallet: ShieldWallet | undefined;
 
   /**
-   * Create a new Galileo wallet adapter
+   * Create a new Shield wallet adapter
    * @param config Adapter configuration
    */
-  constructor(config?: GalileoWalletAdapterConfig) {
+  constructor(config?: ShieldWalletAdapterConfig) {
     super();
-    console.debug('GalileoWalletAdapter constructor', config);
+    console.debug('ShieldWalletAdapter constructor', config);
     this.network = Network.TESTNET3;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());
@@ -89,14 +89,14 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Check if Galileo wallet is available
+   * Check if Shield wallet is available
    */
   private _checkAvailability(): boolean {
-    this._window = window as GalileoWindow;
+    this._window = window as ShieldWindow;
 
-    if (this._window.galileo) {
+    if (this._window.shield) {
       this.readyState = WalletReadyState.INSTALLED;
-      this._galileoWallet = this._window?.galileo;
+      this._shieldWallet = this._window?.shield;
       return true;
     } else {
       // Check if user is on a mobile device
@@ -110,7 +110,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Connect to Galileo wallet
+   * Connect to Shield wallet
    * @returns The connected account
    */
   async connect(
@@ -120,12 +120,12 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
-        throw new WalletConnectionError('Galileo Wallet is not available');
+        throw new WalletConnectionError('Shield Wallet is not available');
       }
 
       // Call connect and extract address safely
       try {
-        const connectResult = await this._galileoWallet?.connect(
+        const connectResult = await this._shieldWallet?.connect(
           network,
           decryptPermission,
           programs,
@@ -160,13 +160,13 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Disconnect from Galileo wallet
+   * Disconnect from Shield wallet
    */
   async disconnect(): Promise<void> {
     try {
       this._cleanupListeners();
 
-      await this._galileoWallet?.disconnect();
+      await this._shieldWallet?.disconnect();
       this._onDisconnect();
     } catch (err: Error | unknown) {
       this.emit('error', err instanceof Error ? err : new Error(String(err)));
@@ -177,7 +177,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Sign a transaction with Galileo wallet
+   * Sign a transaction with Shield wallet
    * @param message The message to sign
    * @returns The signed message
    */
@@ -187,8 +187,8 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     }
 
     try {
-      // Pass only the parameters expected by the Galileo SDK
-      const signature = await this._galileoWallet?.signMessage(message);
+      // Pass only the parameters expected by the Shield SDK
+      const signature = await this._shieldWallet?.signMessage(message);
       if (!signature) {
         throw new WalletSignMessageError('Failed to sign message');
       }
@@ -202,7 +202,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   async decrypt(cipherText: string) {
-    if (!this._galileoWallet || !this._publicKey) {
+    if (!this._shieldWallet || !this._publicKey) {
       throw new WalletNotConnectedError();
     }
     switch (this.decryptPermission) {
@@ -212,7 +212,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
       case WalletDecryptPermission.AutoDecrypt:
       case WalletDecryptPermission.OnChainHistory: {
         try {
-          return await this._galileoWallet.decrypt(cipherText);
+          return await this._shieldWallet.decrypt(cipherText);
         } catch (error: Error | unknown) {
           throw new WalletDecryptionError(
             error instanceof Error ? error.message : 'Failed to decrypt',
@@ -225,7 +225,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Execute a transaction with Galileo wallet
+   * Execute a transaction with Shield wallet
    * @param options Transaction options
    * @returns The executed temporary transaction ID
    */
@@ -235,7 +235,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     }
 
     try {
-      const result = await this._galileoWallet?.executeTransaction({
+      const result = await this._shieldWallet?.executeTransaction({
         ...options,
         network: this.network,
       });
@@ -248,7 +248,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         transactionId: result.transactionId,
       };
     } catch (error: Error | unknown) {
-      console.error('GalileoWalletAdapter executeTransaction error', error);
+      console.error('ShieldWalletAdapter executeTransaction error', error);
       if (error instanceof WalletError) {
         throw error;
       }
@@ -269,7 +269,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     }
 
     try {
-      const result = await this._galileoWallet?.transactionStatus(transactionId);
+      const result = await this._shieldWallet?.transactionStatus(transactionId);
 
       if (!result?.status) {
         throw new WalletTransactionError('Could not get transaction status');
@@ -294,7 +294,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     }
 
     try {
-      await this._galileoWallet?.switchNetwork(_network);
+      await this._shieldWallet?.switchNetwork(_network);
       this._onNetworkChange(_network);
     } catch (error: unknown) {
       throw new WalletSwitchNetworkError(
@@ -304,7 +304,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Request records from Galileo wallet
+   * Request records from Shield wallet
    * @param program The program to request records from
    * @param includePlaintext Whether to include plaintext on each record
    * @returns The records
@@ -315,7 +315,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
     }
 
     try {
-      const result = await this._galileoWallet?.requestRecords(program, includePlaintext);
+      const result = await this._shieldWallet?.requestRecords(program, includePlaintext);
 
       return result || [];
     } catch (error: Error | unknown) {
@@ -334,7 +334,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletNotConnectedError();
       }
       try {
-        const result = await this._galileoWallet?.executeDeployment({
+        const result = await this._shieldWallet?.executeDeployment({
           ...deployment,
           network: this.network,
         });
@@ -366,7 +366,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletNotConnectedError();
       }
       try {
-        const result = await this._galileoWallet?.transitionViewKeys(transactionId);
+        const result = await this._shieldWallet?.transitionViewKeys(transactionId);
         if (!Array.isArray(result)) {
           throw new WalletTransactionError('Could not get transitionViewKeys');
         }
@@ -388,14 +388,14 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
 
   // Network change listener
   _onNetworkChange = (network: Network) => {
-    console.debug('Galileo Wallet network changed to: ', network);
+    console.debug('Shield Wallet network changed to: ', network);
     this.network = network;
     this.emit('networkChange', network);
   };
 
   // Account change listener
   _onAccountChange = () => {
-    console.debug('Galileo Wallet account change detected – reauthorization required');
+    console.debug('Shield Wallet account change detected – reauthorization required');
     this._publicKey = '';
     this.account = undefined;
     this.emit('accountChange');
@@ -403,7 +403,7 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
 
   // Disconnect listener
   _onDisconnect = () => {
-    console.debug('Galileo Wallet disconnected');
+    console.debug('Shield Wallet disconnected');
     this._cleanupListeners();
     this._publicKey = '';
     this.account = undefined;
@@ -414,22 +414,22 @@ export class GalileoWalletAdapter extends BaseAleoWalletAdapter {
    * Set up event listeners with structured approach
    */
   private _setupListeners(): void {
-    if (!this._galileoWallet) return;
+    if (!this._shieldWallet) return;
 
     // Register listeners
-    this._galileoWallet.on('networkChanged', this._onNetworkChange);
-    this._galileoWallet.on('disconnect', this._onDisconnect);
-    this._galileoWallet.on('accountChanged', this._onAccountChange);
+    this._shieldWallet.on('networkChanged', this._onNetworkChange);
+    this._shieldWallet.on('disconnect', this._onDisconnect);
+    this._shieldWallet.on('accountChanged', this._onAccountChange);
   }
 
   /**
    * Clean up all event listeners
    */
   private _cleanupListeners(): void {
-    if (!this._galileoWallet) return;
+    if (!this._shieldWallet) return;
 
-    this._galileoWallet.off('networkChanged', this._onNetworkChange);
-    this._galileoWallet.off('disconnect', this._onDisconnect);
-    this._galileoWallet.off('accountChanged', this._onAccountChange);
+    this._shieldWallet.off('networkChanged', this._onNetworkChange);
+    this._shieldWallet.off('disconnect', this._onDisconnect);
+    this._shieldWallet.off('accountChanged', this._onAccountChange);
   }
 }

@@ -18,9 +18,9 @@ pnpm add @provablehq/aleo-wallet-adaptor-react
 
 ```tsx
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
-import { GalileoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-prove-alpha';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 
-const wallets = [new GalileoWalletAdapter()];
+const wallets = [new ShieldWalletAdapter()];
 
 export function App({ children }: { children: React.ReactNode }) {
   return <AleoWalletProvider wallets={wallets}>{children}</AleoWalletProvider>;
@@ -31,6 +31,6 @@ export function App({ children }: { children: React.ReactNode }) {
 
 - `@provablehq/aleo-wallet-adaptor-core` – underlying adapter interfaces consumed by the provider.
 - `@provablehq/aleo-wallet-adaptor-react-ui` – drop-in modals and buttons that work with this context.
-- Wallet adapters such as `@provablehq/aleo-wallet-adaptor-prove-alpha`, `-puzzle`, `-leo`, etc.
+- Wallet adapters such as `@provablehq/aleo-wallet-adaptor-shield`, `-puzzle`, `-leo`, etc.
 
 Live demo: https://aleo-dev-toolkit-react-app.vercel.app/

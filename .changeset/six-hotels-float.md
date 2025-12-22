@@ -1,5 +1,5 @@
 ---
-'@provablehq/aleo-wallet-adaptor-prove-alpha': minor
+'@provablehq/aleo-wallet-adaptor-shield': minor
 '@provablehq/aleo-wallet-adaptor-puzzle': minor
 '@provablehq/aleo-wallet-adaptor-soter': minor
 '@provablehq/aleo-wallet-adaptor-fox': minor

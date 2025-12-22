@@ -26,6 +26,6 @@ const wallets = [new LeoWalletAdapter()];
 
 - `@provablehq/aleo-wallet-adaptor-core` – shared adapter base implementation.
 - `@provablehq/aleo-wallet-adaptor-react` – provider that surface Leo in React apps.
-- Other wallet adapters (`-prove-alpha`, `-puzzle`, `-fox`, etc.) that can coexist with Leo.
+- Other wallet adapters (`-shield`, `-puzzle`, `-fox`, etc.) that can coexist with Leo.
 
 Live demo: https://aleo-dev-toolkit-react-app.vercel.app/

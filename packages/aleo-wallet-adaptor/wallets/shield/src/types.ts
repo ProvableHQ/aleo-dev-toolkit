@@ -5,23 +5,23 @@ import {
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
 
-export interface GalileoWalletAdapterConfig {}
+export interface ShieldWalletAdapterConfig {}
 
-export interface GalileoTransaction extends TransactionOptions {
+export interface ShieldTransaction extends TransactionOptions {
   network: Network;
 }
 
-export interface GalileoDeployment extends AleoDeployment {
+export interface ShieldDeployment extends AleoDeployment {
   network: Network;
 }
 
-export interface GalileoWalletEvents {
+export interface ShieldWalletEvents {
   networkChanged(network: Network): void;
   disconnect(): void;
   accountChanged(): void;
 }
 
-export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
+export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   publicKey?: string;
   connect(
     network: Network,
@@ -31,14 +31,14 @@ export interface GalileoWallet extends EventEmitter<GalileoWalletEvents> {
   disconnect(): Promise<void>;
   signMessage(message: Uint8Array): Promise<Uint8Array>;
   decrypt(cipherText: string): Promise<string>;
-  executeTransaction(transactionOptions: GalileoTransaction): Promise<{ transactionId?: string }>;
+  executeTransaction(transactionOptions: ShieldTransaction): Promise<{ transactionId?: string }>;
   transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
   switchNetwork(network: Network): Promise<void>;
   requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
-  executeDeployment(deployment: GalileoDeployment): Promise<{ transactionId: string }>;
+  executeDeployment(deployment: ShieldDeployment): Promise<{ transactionId: string }>;
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
 }
 
-export interface GalileoWindow extends Window {
-  galileo?: GalileoWallet;
+export interface ShieldWindow extends Window {
+  shield?: ShieldWallet;
 }

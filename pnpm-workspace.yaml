@@ -5,7 +5,7 @@ packages:
   - 'packages/aleo-wallet-adaptor/react-ui'
   - 'packages/aleo-wallet-adaptor/wallets/leo'
   - 'packages/aleo-wallet-adaptor/wallets/puzzle'
-  - 'packages/aleo-wallet-adaptor/wallets/galileo'
+  - 'packages/aleo-wallet-adaptor/wallets/shield'
   - 'packages/aleo-wallet-adaptor/wallets/fox'
   - 'packages/aleo-wallet-adaptor/wallets/soter'
   - 'examples/*'
