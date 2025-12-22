@@ -1,4 +1,9 @@
-import { Network, TransactionOptions, TransactionStatusResponse } from '@provablehq/aleo-types';
+import {
+  Network,
+  TransactionOptions,
+  TransactionStatusResponse,
+  TxHistoryResult,
+} from '@provablehq/aleo-types';
 import {
   AleoDeployment,
   EventEmitter,
@@ -37,6 +42,7 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
   executeDeployment(deployment: ShieldDeployment): Promise<{ transactionId: string }>;
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
+  requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
 }
 
 export interface ShieldWindow extends Window {

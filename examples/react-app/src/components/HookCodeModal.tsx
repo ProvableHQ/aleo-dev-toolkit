@@ -11,7 +11,8 @@ interface HookCodeModalProps {
     | 'decrypt'
     | 'requestRecords'
     | 'executeDeployment'
-    | 'transitionViewKeys';
+    | 'transitionViewKeys'
+    | 'requestTransactionHistory';
 }
 
 export function HookCodeModal({ isOpen, onClose, action }: HookCodeModalProps) {
@@ -221,6 +222,36 @@ export function TransitionViewKeysComponent() {
     </button>
   );
 }`;
+      case 'requestTransactionHistory':
+        return `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+
+export function RequestTransactionHistoryComponent() {
+  const { connected, requestTransactionHistory } = useWallet();
+  const [isFetching, setIsFetching] = useState(false);
+
+  const handleDecrypt = async () => {
+    if (!connected) return;
+    
+    setIsFetching(true);
+    try {
+      const txs = await requestTransactionHistory('credits.aleo');
+      console.log('requestTransactionHistory data:', txs);
+    } catch (error) {
+      console.error('requestTransactionHistory failed:', error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleDecrypt}
+      disabled={!connected || isFetching}
+    >
+      {isFetching ? 'Fetching...' : 'requestTransactionHistory'}
+    </button>
+  );
+}`;
 
       default:
         return '';
@@ -251,6 +282,8 @@ export function TransitionViewKeysComponent() {
         return 'Execute Deployment Hook';
       case 'transitionViewKeys':
         return 'Get transitionViewKeys';
+      case 'requestTransactionHistory':
+        return 'request Transaction History';
       default:
         return 'Hook Code';
     }

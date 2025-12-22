@@ -3,6 +3,7 @@ import {
   Network,
   TransactionOptions,
   TransactionStatusResponse,
+  TxHistoryResult,
 } from '@provablehq/aleo-types';
 import {
   AleoChain,
@@ -245,6 +246,17 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.TRANSITION_VIEWKEYS);
     }
     return feature.transitionViewKeys(transactionId);
+  }
+
+  async requestTransactionHistory(program: string): Promise<TxHistoryResult> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.REQUEST_TRANSACTION_HISTORY];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_TRANSACTION_HISTORY);
+    }
+    return feature.requestTransactionHistory(program);
   }
 }
 

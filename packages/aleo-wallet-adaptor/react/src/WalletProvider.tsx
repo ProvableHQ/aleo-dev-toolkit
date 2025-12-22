@@ -439,6 +439,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const requestTransactionHistory = useCallback(
+    async (program: string) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('requestTransactionHistory' in adapter))
+        throw handleError(new MethodNotImplementedError('requestTransactionHistory'));
+
+      return await adapter.requestTransactionHistory(program);
+    },
+    [adapter, handleError, connected],
+  );
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -471,6 +482,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         requestRecords,
         executeDeployment,
         transitionViewKeys,
+        requestTransactionHistory,
       }}
     >
       {children}

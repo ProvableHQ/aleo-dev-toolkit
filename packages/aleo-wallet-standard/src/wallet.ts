@@ -9,6 +9,7 @@ import {
   RequestRecordsFeature,
   SignFeature,
   SwitchNetworkFeature,
+  RequestTransactionHistoryFeature,
   TransactionStatusFeature,
   TransitionViewKeysFeature,
   WalletFeature,
@@ -101,6 +102,10 @@ export interface WalletFeatures {
    * The transitionViewKeys feature
    */
   [WalletFeatureName.TRANSITION_VIEWKEYS]?: TransitionViewKeysFeature;
+  /**
+   * The requestTransactionHistory feature
+   */
+  [WalletFeatureName.REQUEST_TRANSACTION_HISTORY]?: RequestTransactionHistoryFeature;
 
   /**
    * Other features
@@ -123,6 +128,7 @@ export enum WalletFeatureName {
   REQUEST_RECORDS = 'standard:request-records',
   EXECUTE_DEPLOYMENT = 'standard:execute-deployment',
   TRANSITION_VIEWKEYS = 'standard:transition_viewkeys',
+  REQUEST_TRANSACTION_HISTORY = 'standard:request_transaction_history',
 }
 
 /**

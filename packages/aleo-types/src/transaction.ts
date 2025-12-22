@@ -92,3 +92,13 @@ export interface TransactionStatusResponse {
    */
   error?: string;
 }
+
+/**
+ * response of requestTransactionHistory
+ */
+export interface TxHistoryResult {
+  transactions: Array<{
+    transactionId: string;
+    id: string;
+  }>;
+}

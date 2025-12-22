@@ -3,6 +3,7 @@ import {
   Network,
   TransactionOptions,
   TransactionStatusResponse,
+  TxHistoryResult,
 } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
@@ -143,6 +144,13 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns The tvk array
    */
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
+
+  /**
+   * get transaction of specific program
+   * @param program The program ID
+   * @returns array of transactionId
+   */
+  requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &
