@@ -394,7 +394,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletNotConnectedError();
       }
       try {
-        const result = await this._galileoWallet?.requestTransactionHistory(program);
+        const result = await this._shieldWallet?.requestTransactionHistory(program);
         if (!result?.transactions || !Array.isArray(result.transactions)) {
           throw new WalletTransactionError('Could not get TransactionHistory');
         }
