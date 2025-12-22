@@ -5,7 +5,12 @@ import {
   WalletName,
   WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
-import { Network, TransactionOptions, TransactionStatusResponse } from '@provablehq/aleo-types';
+import {
+  Network,
+  TransactionOptions,
+  TransactionStatusResponse,
+  TxHistoryResult,
+} from '@provablehq/aleo-types';
 
 export interface Wallet {
   adapter: WalletAdapter;
@@ -117,6 +122,12 @@ export interface WalletContextState {
    * get transition view keys(tvk) for a transaction
    */
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
+  /**
+   * get transaction of specific program
+   * @param program The program ID
+   * @returns array of transactionId
+   */
+  requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
 }
 
 /**
