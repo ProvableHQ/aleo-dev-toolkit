@@ -47,12 +47,15 @@ import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 
-export const App: FC = () => {
-  const wallets = useMemo(
-    () => [new ShieldWalletAdapter(), new PuzzleWalletAdapter(), new LeoWalletAdapter()],
-    [],
-  );
+const wallets = [
+  new ShieldWalletAdapter(),
+  new PuzzleWalletAdapter(),
+  new LeoWalletAdapter(),
+  new FoxWalletAdapter(),
+  new SoterWalletAdapter(),
+];
 
+export const App: FC = () => {
   return (
     <AleoWalletProvider
       wallets={wallets}
@@ -175,10 +178,7 @@ export const SignMessage: FC = () => {
 
     const message = 'Hello, Aleo!';
     const signature = await signMessage(message);
-
-    if (signature) {
-      console.log('Signature:', new TextDecoder().decode(signature));
-    }
+    console.log('Signature:', new TextDecoder().decode(signature));
   }, [address, signMessage, connected]);
 
   return (
@@ -268,9 +268,8 @@ export const ExecuteTransaction: FC = () => {
 
     const transactionOptions: TransactionOptions = {
       program: 'credits.aleo',
-      function: 'transfer',
+      function: 'transfer_public',
       inputs: [
-        'record1...', // Input record
         'aleo1...', // Recipient address
         '100u64', // Amount
       ],
@@ -491,12 +490,12 @@ Here's a complete example combining multiple features:
 ```tsx
 import React, { FC, useCallback, useState } from 'react';
 import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission, WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
 import { TransactionOptions } from '@provablehq/aleo-types';
 
-const wallets = [new LeoWalletAdapter()];
+const wallets = [new ShieldWalletAdapter()];
 
 function WalletApp() {
   const {
@@ -571,4 +570,3 @@ export const App: FC = () => {
   );
 };
 ```
-
