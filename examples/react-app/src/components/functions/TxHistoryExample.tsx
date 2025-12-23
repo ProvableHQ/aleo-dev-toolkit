@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

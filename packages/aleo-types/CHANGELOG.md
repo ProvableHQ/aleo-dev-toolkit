@@ -1,5 +1,11 @@
 # @provablehq/aleo-types
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- Adds support to Shield wallet on the wallet adaptor
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

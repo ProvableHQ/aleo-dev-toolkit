@@ -14,5 +14,8 @@
     "@provablehq/aleo-wallet-adaptor-soter": "0.3.0",
     "@provablehq/aleo-wallet-standard": "0.3.0"
   },
-  "changesets": ["six-hotels-float"]
+  "changesets": [
+    "six-hotels-float",
+    "thick-birds-float"
+  ]
 }
