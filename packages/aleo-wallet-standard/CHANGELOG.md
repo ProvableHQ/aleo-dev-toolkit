@@ -1,5 +1,16 @@
 # @provablehq/aleo-wallet-standard
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- Adds support to Shield wallet on the wallet adaptor
+
+### Patch Changes
+
+- Updated dependencies
+  - @provablehq/aleo-types@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes
