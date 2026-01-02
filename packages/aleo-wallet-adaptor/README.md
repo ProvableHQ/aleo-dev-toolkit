@@ -90,7 +90,7 @@ export const App: FC = () => {
 - **`onError`** (optional): Error handler callback
 - **`localStorageKey`** (optional): Key for storing selected wallet in localStorage. Defaults to `'walletName'`
 
-## 🎣 Using the `useWallet` Hook
+## Using the `useWallet` Hook
 
 The `useWallet` hook provides access to wallet state and methods:
 
@@ -129,7 +129,7 @@ function MyComponent() {
 }
 ```
 
-## 🔌 Connecting to a Wallet
+## Connecting to a Wallet
 
 ### Out-of-the-Box Solution (Recommended)
 
