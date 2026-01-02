@@ -5,7 +5,7 @@ Adapter that exposes the Puzzle wallet through the Aleo wallet adaptor interface
 ## When to use it
 
 - Offer Puzzle wallet users a seamless connect experience in your Aleo dApp.
-- Combine Puzzle with other wallets (Leo, Prove Alpha, Fox, Soter) in a single provider instance.
+- Combine Puzzle with other wallets (Leo, Shield, Fox, Puzzle) in a single provider instance.
 - Prototype wallet flows that rely on Puzzle’s capabilities without forking adaptor logic.
 
 ## Installation
