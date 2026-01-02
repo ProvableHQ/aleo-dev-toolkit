@@ -131,7 +131,7 @@ function MyComponent() {
 
 ## Connecting to a Wallet
 
-### Out-of-the-Box Solution (Recommended)
+### Out-of-the-Box Solution
 
 The wallet adapter provides a ready-to-use modal and button component. Simply wrap your app with `WalletModalProvider` and use the `WalletMultiButton` component:
 
