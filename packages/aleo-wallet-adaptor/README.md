@@ -9,6 +9,7 @@ Install the required dependencies:
 ```bash
 npm install --save \
     @provablehq/aleo-wallet-adaptor-react \
+    @provablehq/aleo-wallet-adaptor-react-ui \
     @provablehq/aleo-wallet-adaptor-core \
     @provablehq/aleo-wallet-standard \
     @provablehq/aleo-types \
@@ -36,16 +37,21 @@ npm install --save @provablehq/aleo-wallet-adaptor-soter
 
 ## 🛠️ Setup
 
-Wrap your application with the `AleoWalletProvider`:
+Wrap your application with the `AleoWalletProvider` and `WalletModalProvider`:
 
 ```tsx
-import React, { FC, useMemo } from 'react';
+import React, { FC } from 'react';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
+import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
+import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
+import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+// Import wallet adapter CSS
+import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 const wallets = [
   new ShieldWalletAdapter(),
@@ -61,10 +67,10 @@ export const App: FC = () => {
       wallets={wallets}
       network={Network.TESTNET3}
       decryptPermission={DecryptPermission.UponRequest}
-      autoConnect={false}
+      autoConnect={true}
       onError={error => console.error(error)}
     >
-      {/* Your app components */}
+      <WalletModalProvider>{/* Your app components */}</WalletModalProvider>
     </AleoWalletProvider>
   );
 };
@@ -78,9 +84,9 @@ export const App: FC = () => {
   - `DecryptPermission.NoDecrypt` - The dapp cannot decrypt any records (default)
   - `DecryptPermission.UponRequest` - The dapp can decrypt records upon request
   - `DecryptPermission.AutoDecrypt` - The dapp can decrypt any requested records
-  - `DecryptPermission.OnChainHistory` - The dapp can request on-chain record plain texts and transaction ids
+  - `DecryptPermission.OnChainHistory` - The dapp can request on-chain record plain texts and transaction ids, but cannot decrypt them
 - **`autoConnect`** (optional): Whether to automatically connect on mount. Defaults to `false`
-- **`programs`** (optional): Array of program IDs to request access to
+- **`programs`** (optional): Array of program IDs that will be called - Leave empty to allow any program to be called.
 - **`onError`** (optional): Error handler callback
 - **`localStorageKey`** (optional): Key for storing selected wallet in localStorage. Defaults to `'walletName'`
 
@@ -125,6 +131,41 @@ function MyComponent() {
 
 ## 🔌 Connecting to a Wallet
 
+### Out-of-the-Box Solution (Recommended)
+
+The wallet adapter provides a ready-to-use modal and button component. Simply wrap your app with `WalletModalProvider` and use the `WalletMultiButton` component:
+
+```tsx
+import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+
+export const App: FC = () => {
+  return (
+    <AleoWalletProvider wallets={wallets} network={Network.TESTNET3}>
+      <WalletModalProvider>
+        <div>
+          <WalletMultiButton />
+          {/* Rest of your app */}
+        </div>
+      </WalletModalProvider>
+    </AleoWalletProvider>
+  );
+};
+```
+
+The `WalletMultiButton` component automatically:
+
+- Shows "Connect Wallet" when disconnected
+- Opens a modal with available wallets when clicked
+- Displays the connected wallet address when connected
+- Provides a dropdown menu to disconnect or switch wallets
+
+![Connect Wallet Modal](./docs/images/connect-modal.png)
+
+### Manual Approach (Custom UI)
+
+If you prefer to build your own wallet connection UI, you can use the `useWallet` hook directly:
+
 ```tsx
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Network } from '@provablehq/aleo-types';
@@ -137,7 +178,7 @@ export const ConnectWallet: FC = () => {
     try {
       // First, select a wallet
       if (!wallet) {
-        // Select the first available wallet
+        // Select the wallet you want to connect (we will select the first one)
         const firstWallet = wallets[0];
         if (firstWallet) {
           selectWallet(firstWallet.adapter.name);
@@ -146,7 +187,7 @@ export const ConnectWallet: FC = () => {
         }
       }
 
-      // Then connect
+      // Then connect (only needed if autoConnect is false on AleoWalletProvider)
       await connect(Network.TESTNET3);
     } catch (error) {
       console.error('Failed to connect:', error);
@@ -280,6 +321,9 @@ export const ExecuteTransaction: FC = () => {
     try {
       // Execute the transaction
       const result = await executeTransaction(transactionOptions);
+
+      // NOTE: This is not the on-chain transaction id
+      // This can be used to check the transaction status.
       console.log('Transaction ID:', result?.transactionId);
 
       // Optional: Poll for transaction status
@@ -466,7 +510,9 @@ export const CheckTransactionStatus: FC = () => {
       throw new WalletNotConnectedError();
     }
 
-    const transactionId = 'at1...'; // Transaction ID
+    // Some wallets might only accept an internal transactionId, 
+    // others might accept both onchainId or wallet-specific internal transactionId
+    const transactionId = 'at1...';
     const status = await transactionStatus(transactionId);
     console.log('Status:', status.status);
     console.log('On-chain Transaction ID:', status.transactionId);
@@ -563,7 +609,7 @@ export const App: FC = () => {
       wallets={wallets}
       network={Network.TESTNET3}
       decryptPermission={DecryptPermission.UponRequest}
-      autoConnect={false}
+      autoConnect={true}
     >
       <WalletApp />
     </AleoWalletProvider>
