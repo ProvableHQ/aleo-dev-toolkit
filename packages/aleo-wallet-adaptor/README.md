@@ -510,7 +510,7 @@ export const CheckTransactionStatus: FC = () => {
       throw new WalletNotConnectedError();
     }
 
-    // Some wallets might only accept an internal transactionId, 
+    // Some wallets might only accept an internal transactionId,
     // others might accept both onchainId or wallet-specific internal transactionId
     const transactionId = 'at1...';
     const status = await transactionStatus(transactionId);
@@ -531,37 +531,24 @@ export const CheckTransactionStatus: FC = () => {
 
 ## 🎯 Complete Example
 
-Here's a complete example combining multiple features:
+Here's a complete example combining multiple features using the out-of-the-box wallet connection UI:
 
 ```tsx
 import React, { FC, useCallback, useState } from 'react';
 import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { WalletModalProvider, WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission, WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
 import { TransactionOptions } from '@provablehq/aleo-types';
+// Import wallet adapter CSS
+import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 const wallets = [new ShieldWalletAdapter()];
 
 function WalletApp() {
-  const {
-    address,
-    connected,
-    connecting,
-    connect,
-    disconnect,
-    executeTransaction,
-    transactionStatus,
-  } = useWallet();
+  const { address, connected, executeTransaction, transactionStatus } = useWallet();
   const [txId, setTxId] = useState<string | null>(null);
-
-  const handleConnect = useCallback(async () => {
-    try {
-      await connect(Network.TESTNET3);
-    } catch (error) {
-      console.error('Connection failed:', error);
-    }
-  }, [connect]);
 
   const handleTransaction = useCallback(async () => {
     if (!connected || !address) {
@@ -570,35 +557,34 @@ function WalletApp() {
 
     const options: TransactionOptions = {
       program: 'credits.aleo',
-      function: 'transfer',
-      inputs: ['record1...', 'aleo1...', '100u64'],
+      function: 'transfer_public',
+      inputs: ['aleo1...', '100u64'],
       fee: 100000,
     };
 
-    const result = await executeTransaction(options);
-    if (result?.transactionId) {
-      setTxId(result.transactionId);
+    try {
+      const result = await executeTransaction(options);
+      if (result?.transactionId) {
+        setTxId(result.transactionId);
 
-      // Poll for status
-      const status = await transactionStatus(result.transactionId);
-      console.log('Transaction status:', status);
+        // Poll for status
+        const status = await transactionStatus(result.transactionId);
+        console.log('Transaction status:', status);
+      }
+    } catch (error) {
+      console.error('Transaction failed:', error);
     }
   }, [connected, address, executeTransaction, transactionStatus]);
 
   return (
     <div>
-      {!connected ? (
-        <button onClick={handleConnect} disabled={connecting}>
-          {connecting ? 'Connecting...' : 'Connect Wallet'}
+      <WalletMultiButton />
+      <div style={{ marginTop: '20px' }}>
+        <button onClick={handleTransaction} disabled={!connected}>
+          Execute Transaction
         </button>
-      ) : (
-        <>
-          <p>Connected: {address}</p>
-          <button onClick={handleTransaction}>Execute Transaction</button>
-          <button onClick={disconnect}>Disconnect</button>
-          {txId && <p>Transaction ID: {txId}</p>}
-        </>
-      )}
+        {txId && <p>Transaction ID: {txId}</p>}
+      </div>
     </div>
   );
 }
@@ -611,7 +597,9 @@ export const App: FC = () => {
       decryptPermission={DecryptPermission.UponRequest}
       autoConnect={true}
     >
-      <WalletApp />
+      <WalletModalProvider>
+        <WalletApp />
+      </WalletModalProvider>
     </AleoWalletProvider>
   );
 };
