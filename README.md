@@ -14,6 +14,8 @@ pnpm install
 
 Explore the `examples/` directory for sample projects or refer to the `docs/` directory for detailed documentation.
 
+For wallet adapter documentation, see the [Wallet Adapter README](/packages/aleo-wallet-adaptor/README.md).
+
 ## Build
 
 To build all packages (will not build example apps):
@@ -98,21 +100,27 @@ This will:
 ```
 aleo-dev-toolkit/                          (Monorepo Root)
 ├─ packages/
-│   ├─ aleo-types/                         (Common types for Aleo)
+│   ├─ aleo-hooks/                        (React hooks for Aleo chain data)
 │   │
-│   ├─ aleo-wallet-standard/               (Wallet Standard Interfaces & Types)
+│   ├─ aleo-types/                        (Common types for Aleo)
 │   │
-│   ├─ aleo-wallet-adaptor-core/           (Core wallet adapter logic and utilities)
+│   ├─ aleo-wallet-standard/              (Wallet Standard Interfaces & Types)
 │   │
-│   ├─ aleo-wallet-adaptor-leo/            (LeoWallet adapter implementation)
-│   │
-│   ├─ aleo-wallet-adaptor-react/          (React integration for wallet adapter)
-│   │
-│   ├─ aleo-wallet-adaptor-react-ui/       (UI components for wallet adapter integration)
+│   ├─ aleo-wallet-adaptor/               (Wallet adapter package)
+│   │   ├─ core/                          (Core wallet adapter logic and utilities)
+│   │   ├─ react/                         (React integration for wallet adapter)
+│   │   ├─ react-ui/                      (UI components for wallet adapter integration)
+│   │   ├─ wallets/                       (Wallet adapter implementations)
+│   │   │   ├─ shield/                    (ShieldWallet adapter)
+│   │   │   ├─ fox/                       (FoxWallet adapter)
+│   │   │   ├─ leo/                       (LeoWallet adapter)
+│   │   │   ├─ puzzle/                    (PuzzleWallet adapter)
+│   │   │   └─ soter/                     (SoterWallet adapter)
+│   │   └─ docs/                          (Wallet adapter documentation)
 │   │
 ├─ examples/
-│   ├─ react-app/                         (Example React application using the toolkit)
-│   │
+│   ├─ react-app/                         (Example React application using wallet adapter)
+│
 ├─ .changeset/                            (Changeset configuration for versioning and publishing)
 ├─ turbo.json                             (Turborepo configuration)
 ├─ package.json                           (Root package configuration for workspaces)
