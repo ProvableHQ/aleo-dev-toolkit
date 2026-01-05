@@ -37,12 +37,11 @@ npm install --save @provablehq/aleo-wallet-adaptor-soter
 
 ## 🛠️ Setup
 
-Wrap your application with the `AleoWalletProvider` and `WalletModalProvider`:
+Wrap your application with the `AleoWalletProvider`:
 
 ```tsx
 import React, { FC } from 'react';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
 import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
@@ -70,7 +69,7 @@ export const App: FC = () => {
       autoConnect={true}
       onError={error => console.error(error)}
     >
-      <WalletModalProvider>{/* Your app components */}</WalletModalProvider>
+      {/* Your app components */}
     </AleoWalletProvider>
   );
 };
@@ -330,6 +329,10 @@ export const ExecuteTransaction: FC = () => {
       if (result?.transactionId) {
         const status = await transactionStatus(result.transactionId);
         console.log('Transaction Status:', status);
+        if (statusResponse.transactionId) {
+          // Transaction is now onchain, we have the final transaction ID
+          console.log('Onchain transaction Id/Hash:', statusResponse.transactionId);
+        }
       }
     } catch (error) {
       console.error('Transaction failed:', error);
