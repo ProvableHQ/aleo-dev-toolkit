@@ -296,10 +296,50 @@ export const RequestRecords: FC = () => {
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
 import { TransactionOptions } from '@provablehq/aleo-types';
-import React, { FC, useCallback } from 'react';
+import React, { FC, useCallback, useRef, useEffect } from 'react';
 
 export const ExecuteTransaction: FC = () => {
   const { address, executeTransaction, transactionStatus, connected } = useWallet();
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const pollTransactionStatus = useCallback(
+    async (tempTransactionId: string) => {
+      try {
+        const statusResponse = await transactionStatus(tempTransactionId);
+        console.log('Transaction Status:', statusResponse.status);
+
+        if (statusResponse.status.toLowerCase() !== 'pending') {
+          // Stop polling when status is no longer pending
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+
+          if (statusResponse.transactionId) {
+            // Transaction is now on-chain, we have the final transaction ID
+            console.log('On-chain Transaction ID:', statusResponse.transactionId);
+          }
+
+          if (statusResponse.status.toLowerCase() === 'accepted') {
+            console.log('Transaction accepted!');
+          } else if (
+            statusResponse.status.toLowerCase() === 'failed' ||
+            statusResponse.status.toLowerCase() === 'rejected'
+          ) {
+            console.error('Transaction failed:', statusResponse.error || statusResponse.status);
+          }
+        }
+      } catch (error) {
+        console.error('Error polling transaction status:', error);
+        // Stop polling on error
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      }
+    },
+    [transactionStatus],
+  );
 
   const onClick = useCallback(async () => {
     if (!connected || !address) {
@@ -322,22 +362,37 @@ export const ExecuteTransaction: FC = () => {
       const result = await executeTransaction(transactionOptions);
 
       // NOTE: This is not the on-chain transaction id
-      // This can be used to check the transaction status.
-      console.log('Transaction ID:', result?.transactionId);
+      // This is a temporary transaction ID that can be used to check the transaction status.
+      console.log('Temporary Transaction ID:', result?.transactionId);
 
-      // Optional: Poll for transaction status
       if (result?.transactionId) {
-        const status = await transactionStatus(result.transactionId);
-        console.log('Transaction Status:', status);
-        if (statusResponse.transactionId) {
-          // Transaction is now onchain, we have the final transaction ID
-          console.log('Onchain transaction Id/Hash:', statusResponse.transactionId);
-        }
+        // Start polling for transaction status every 1 second
+        // Poll until status is no longer "pending"
+        pollingIntervalRef.current = setInterval(() => {
+          pollTransactionStatus(result.transactionId);
+        }, 1000);
+
+        // Initial status check
+        await pollTransactionStatus(result.transactionId);
       }
     } catch (error) {
       console.error('Transaction failed:', error);
+      // Clean up polling interval on error
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
     }
-  }, [address, executeTransaction, transactionStatus, connected]);
+  }, [address, executeTransaction, pollTransactionStatus, connected]);
+
+  // Cleanup polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   return (
     <button onClick={onClick} disabled={!connected}>
