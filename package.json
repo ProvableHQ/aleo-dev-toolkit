@@ -20,7 +20,10 @@
     "dev:example": "pnpm --filter react-app-example dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "publish-packages": "turbo run build lint && changeset publish"
+    "publish-packages": "turbo run build lint && changeset publish",
+    "docs:dev": "cd website && pnpm start",
+    "docs:build": "cd website && pnpm build",
+    "docs:serve": "cd website && pnpm serve"
   },
   "dependencies": {
     "@provablehq/wasm": "^0.8.8"

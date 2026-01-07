@@ -9,3 +9,4 @@ packages:
   - 'packages/aleo-wallet-adaptor/wallets/fox'
   - 'packages/aleo-wallet-adaptor/wallets/soter'
   - 'examples/*'
+  - 'website'
