@@ -1,7 +1,7 @@
 {
   "name": "@provablehq/aleo-wallet-standard",
   "version": "0.3.0-alpha.1",
-  "description": "Standard interfaces and types for Aleo wallets",
+  "description": "TypeScript type definitions and interfaces for Aleo wallets (StandardWallet interface is experimental/work-in-progress)",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -30,7 +30,9 @@
   "keywords": [
     "aleo",
     "wallet",
-    "standard"
+    "standard",
+    "types",
+    "typescript"
   ],
   "author": "Provable Labs",
   "publishConfig": {

@@ -1,28 +1,23 @@
-# @provablehq/aleo-wallet-standard
+### StandardWallet Interface (Work in Progress)
 
-Canonical TypeScript definitions, feature flags, and event contracts that underpin the Aleo wallet adaptor ecosystem.
+> **⚠️ Experimental / Work in Progress**
 
-## When to use it
+The `StandardWallet` interface and feature-based architecture are **experimental and work-in-progress**. They are not currently used by first-party wallet adapters in this toolkit.
 
-- Build a wallet adapter that needs to advertise capabilities (connect, execute, decrypt, etc.).
-- Consume adapter events (connect, disconnect, network change) in a type-safe way.
-- Create tooling that inspects wallet features or chains without taking a dependency on React or the core implementation.
+**Current State:**
 
-## Installation
+- First-party wallet adapters (Shield, Leo, Puzzle, Soter, Fox) extend `BaseAleoWalletAdapter` and override methods directly
+- The `StandardWallet` interface exists but is not implemented by any current adapters
+- The feature-based pattern (`StandardWallet.features`) is designed for future third-party wallet integration
 
-```bash
-pnpm add @provablehq/aleo-wallet-standard
-```
+**Future Vision:**
+The `StandardWallet` interface is intended to enable:
 
-## Usage
+- Automatic discovery of third-party wallets that follow the standard
+- Runtime feature detection and capability inspection
+- Easier integration for external wallet developers
 
-```ts
-import { WalletFeatureName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
-
-function logFeature(feature: WalletFeatureName, state: WalletReadyState) {
-  console.log(`Feature ${feature} is ${state}`);
-}
-```
+If you're building a wallet adapter, you should currently use the direct method override pattern (see `BaseAleoWalletAdapter` in `@provablehq/aleo-wallet-adaptor-core`).
 
 ## Related packages
 
