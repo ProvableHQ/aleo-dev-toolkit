@@ -118,6 +118,7 @@ git checkout -b feature/your-feature-name
 ```
 
 Use descriptive branch names:
+
 - `feature/add-new-wallet` - New features
 - `fix/wallet-connection-bug` - Bug fixes
 - `docs/update-readme` - Documentation updates
@@ -162,6 +163,7 @@ feat: add support for new wallet adapter
 ```
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
+
 - `feat:` - New feature
 - `fix:` - Bug fix
 - `docs:` - Documentation changes
@@ -234,6 +236,7 @@ pnpm changeset
 ```
 
 This will:
+
 1. Prompt you to select which packages changed
 2. Ask for the type of change (major, minor, patch)
 3. Request a description of the changes
@@ -305,4 +308,3 @@ By contributing to this project, you agree that your contributions will be licen
 ---
 
 Thank you for contributing to the Aleo Dev Toolkit! 🎉
-
