@@ -1,3 +1,7 @@
+---
+title: Aleo Wallet Adapter
+---
+
 # Aleo Wallet Adapter
 
 The **Aleo Wallet Adapter** provides a simple and unified interface for integrating Aleo wallets into your React applications. This guide will walk you through installation, setup, and usage of the wallet adapter.
@@ -159,7 +163,7 @@ The `WalletMultiButton` component automatically:
 - Displays the connected wallet address when connected
 - Provides a dropdown menu to disconnect or switch wallets
 
-![Connect Wallet Modal](/images/connect-modal.png)
+![Connect Wallet Modal](https://raw.githubusercontent.com/ProvableHQ/aleo-dev-toolkit/master/packages/aleo-wallet-adaptor/docs/images/connect-modal.png)
 
 ### Manual Approach (Custom UI)
 
