@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/ProvableHQ/aleo-dev-toolkit/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 📖 Documentation
+    url: https://github.com/ProvableHQ/aleo-dev-toolkit#readme
+    about: Check the README and package documentation
+
