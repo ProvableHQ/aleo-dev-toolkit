@@ -64,14 +64,17 @@ const config: Config = {
       logo: {
         alt: 'Aleo Dev Toolkit Logo',
         src: 'img/logo.png',
+        style: {
+          width: 20,
+          height: 20,
+        },
       },
       items: [
-        // {
-        //   type: 'docSidebar',
-        //   sidebarId: 'docsSidebar',
-        //   position: 'left',
-        //   label: 'Documentation',
-        // },
+        {
+          href: '/docs/wallet-adapter',
+          label: 'Wallet Adapter',
+          position: 'left',
+        },
         {
           href: 'https://github.com/ProvableHQ/aleo-dev-toolkit',
           label: 'GitHub',
@@ -80,27 +83,14 @@ const config: Config = {
       ],
     },
     footer: {
-      links: [
-        {
-          title: 'Documentation',
-          items: [
-            {
-              label: 'Wallet Adapter',
-              to: '/docs/wallet-adapter',
-            },
-          ],
-        },
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'GitHub',
-              href: 'https://github.com/ProvableHQ/aleo-dev-toolkit',
-            },
-          ],
-        },
-      ],
-      copyright: `Copyright © ${new Date().getFullYear()} ProvableHQ.`,
+      logo: {
+        alt: 'Meta Open Source Logo',
+        src: 'img/provable-logo-dark.svg',
+        srcDark: 'img/provable-logo-light.svg',
+        href: 'https://provable.com',
+        width: 160,
+        height: 51,
+      },
     },
     prism: {
       theme: prismThemes.github,

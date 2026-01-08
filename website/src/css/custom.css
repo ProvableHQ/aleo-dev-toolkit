@@ -7,11 +7,26 @@
 /* You can override the default Infima variables here. */
 :root {
   --ifm-color-primary: #9565fb;
+  --ifm-color-primary-dark: #7952ca;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-navbar-background-color: #f7f5f3;
+  --ifm-footer-background-color: #f7f5f3;
+  --ifm-background-color: #f7f5f3;
+  --ifm-button-background-color: #9565fb;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ifm-navbar-background-color: #070504;
+  --ifm-footer-background-color: #070504;
+  --ifm-background-color: #070504;
+  --ifm-button-color: white;
+}
+
+/* Center navbar logo vertically */
+.navbar__logo {
+  display: flex;
+  align-items: center;
 }
