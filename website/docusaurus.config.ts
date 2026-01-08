@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Aleo Dev Toolkit',
   tagline: 'Tools and libraries for building on Aleo',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/logo.png',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -63,15 +63,15 @@ const config: Config = {
       title: 'Aleo Dev Toolkit',
       logo: {
         alt: 'Aleo Dev Toolkit Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo.png',
       },
       items: [
-        {
-          type: 'docSidebar',
-          sidebarId: 'docsSidebar',
-          position: 'left',
-          label: 'Documentation',
-        },
+        // {
+        //   type: 'docSidebar',
+        //   sidebarId: 'docsSidebar',
+        //   position: 'left',
+        //   label: 'Documentation',
+        // },
         {
           href: 'https://github.com/ProvableHQ/aleo-dev-toolkit',
           label: 'GitHub',
@@ -80,7 +80,6 @@ const config: Config = {
       ],
     },
     footer: {
-      style: 'dark',
       links: [
         {
           title: 'Documentation',
@@ -101,7 +100,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} ProvableHQ. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} ProvableHQ.`,
     },
     prism: {
       theme: prismThemes.github,
