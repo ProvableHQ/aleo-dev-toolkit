@@ -86,7 +86,7 @@ const config: Config = {
           items: [
             {
               label: 'Wallet Adapter',
-              to: '/docs/wallet-adapter/intro',
+              to: '/docs/wallet-adapter',
             },
           ],
         },
