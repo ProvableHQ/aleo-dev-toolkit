@@ -8,7 +8,7 @@ Documentation is automatically synced from package READMEs using the `sync-readm
 
 - Copies README content from packages to the `docs/` directory
 - Transforms image paths to GitHub raw URLs
-- Adds Docusaurus frontmatter
+- Adds Docusaurus formatting
 
 **Important Note on Images**: Images in the documentation are linked directly to GitHub using raw URLs. This means:
 

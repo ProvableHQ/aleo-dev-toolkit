@@ -2,6 +2,8 @@
 
 The **Aleo Wallet Adapter** provides a simple and unified interface for integrating Aleo wallets into your React applications. This guide will walk you through installation, setup, and usage of the wallet adapter.
 
+- [Demo App](https://aleo-dev-toolkit-react-app.vercel.app/)
+
 ## 📲 Installation
 
 Install the required dependencies:
