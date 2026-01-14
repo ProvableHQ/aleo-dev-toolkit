@@ -154,7 +154,7 @@ export default function WalletAdapterDemo() {
                       MAINNET
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
-                      value={Network.TESTNET3}
+                      value={Network.TESTNET}
                       className="hover:bg-accent focus:bg-accent"
                     >
                       TESTNET

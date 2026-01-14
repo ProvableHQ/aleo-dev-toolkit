@@ -83,7 +83,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   constructor(config?: ShieldWalletAdapterConfig) {
     super();
     console.debug('ShieldWalletAdapter constructor', config);
-    this.network = Network.TESTNET3;
+    this.network = Network.TESTNET;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());
     }

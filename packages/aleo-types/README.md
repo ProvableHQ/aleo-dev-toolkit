@@ -26,7 +26,7 @@ const tx: TransactionOptions = {
   fee: 1,
 };
 
-console.log('Submitting to network', Network.TESTNET3, tx);
+console.log('Submitting to network', Network.TESTNET, tx);
 ```
 
 Live demo: https://aleo-dev-toolkit-react-app.vercel.app/

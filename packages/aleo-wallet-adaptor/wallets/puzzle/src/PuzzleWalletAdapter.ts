@@ -79,7 +79,7 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Current network
    */
-  network: Network = Network.TESTNET3;
+  network: Network = Network.TESTNET;
 
   /**
    * The wallet's decrypt permission

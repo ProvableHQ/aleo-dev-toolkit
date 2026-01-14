@@ -34,7 +34,7 @@ assignees: ''
 - **pnpm version**: <!-- e.g., 10.2.0 -->
 - **Browser/Environment**: <!-- e.g., Chrome 120, Node.js, React 18 -->
 - **Wallet(s) tested**: <!-- e.g., Leo Wallet, Puzzle Wallet, Shield Wallet -->
-- **Network**: <!-- e.g., Testnet3, Mainnet -->
+- **Network**: <!-- e.g., Testnet, Mainnet -->
 
 ## Code Example
 
