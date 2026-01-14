@@ -38,7 +38,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * The wallet URL
    */
-  url = 'https://provable.com/';
+  url = 'https://www.shield.app/';
 
   /**
    * The wallet icon (base64-encoded SVG)
