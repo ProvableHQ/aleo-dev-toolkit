@@ -155,7 +155,6 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
       return account;
     } catch (err: Error | unknown) {
-      this.emit('error', err instanceof Error ? err : new Error(String(err)));
       throw new WalletConnectionError(err instanceof Error ? err.message : 'Connection failed');
     }
   }

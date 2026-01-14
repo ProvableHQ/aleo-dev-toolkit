@@ -273,7 +273,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       } catch (error: unknown) {
         // Clear the selected wallet
         setName(null);
-        // Don't throw error, but handleError will still be called
+
+        adapter.emit('error', error as WalletError);
       } finally {
         setConnecting(false);
         isConnecting.current = false;
@@ -323,6 +324,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       // Clear the selected wallet
       setName(null);
       // Rethrow the error, and handleError will also be called
+      adapter.emit('error', error as WalletError);
       throw error;
     } finally {
       setConnecting(false);
