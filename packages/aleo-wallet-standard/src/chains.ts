@@ -3,7 +3,7 @@
  */
 export const ALEO_CHAINS = {
   MAINNET: 'aleo:mainnet',
-  TESTNET3: 'aleo:testnet3',
+  TESTNET: 'aleo:testnet',
 } as const;
 
 /**

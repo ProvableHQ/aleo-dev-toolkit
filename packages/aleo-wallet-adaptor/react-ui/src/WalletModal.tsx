@@ -143,7 +143,7 @@ export const WalletModal: FC<WalletModalProps> = ({
 
   useLayoutEffect(() => {
     if (wallet) {
-      connect(network || Network.TESTNET3).catch(e => {
+      connect(network || Network.TESTNET).catch(e => {
         console.error({ e });
       });
     }

@@ -30,7 +30,7 @@ export function generateProviderCode(
   autoConnect: boolean,
   programs: string[],
 ): string {
-  const networkValue = network === Network.MAINNET ? 'Network.MAINNET' : 'Network.TESTNET3';
+  const networkValue = network === Network.MAINNET ? 'Network.MAINNET' : 'Network.TESTNET';
   const decryptValue = Object.keys(DecryptPermission).find(
     key => DecryptPermission[key as keyof typeof DecryptPermission] === decryptPermission,
   );

@@ -66,7 +66,7 @@ export const App: FC = () => {
   return (
     <AleoWalletProvider
       wallets={wallets}
-      network={Network.TESTNET3}
+      network={Network.TESTNET}
       decryptPermission={DecryptPermission.UponRequest}
       autoConnect={true}
       onError={error => console.error(error)}
@@ -80,7 +80,7 @@ export const App: FC = () => {
 ### Provider Props
 
 - **`wallets`** (required): Array of wallet adapter instances
-- **`network`** (optional): The Aleo network to connect to (`Network.MAINNET`, `Network.TESTNET3`, or `Network.CANARY`). Defaults to `Network.TESTNET3`
+- **`network`** (optional): The Aleo network to connect to (`Network.MAINNET`, `Network.TESTNET`, or `Network.CANARY`). Defaults to `Network.TESTNET`
 - **`decryptPermission`** (optional): Decrypt permission level. Options:
   - `DecryptPermission.NoDecrypt` - The dapp cannot decrypt any records (default)
   - `DecryptPermission.UponRequest` - The dapp can decrypt records upon request
@@ -142,7 +142,7 @@ import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 
 export const App: FC = () => {
   return (
-    <AleoWalletProvider wallets={wallets} network={Network.TESTNET3}>
+    <AleoWalletProvider wallets={wallets} network={Network.TESTNET}>
       <WalletModalProvider>
         <div>
           <WalletMultiButton />
@@ -189,7 +189,7 @@ export const ConnectWallet: FC = () => {
       }
 
       // Then connect (only needed if autoConnect is false on AleoWalletProvider)
-      await connect(Network.TESTNET3);
+      await connect(Network.TESTNET);
     } catch (error) {
       console.error('Failed to connect:', error);
     }
@@ -484,8 +484,8 @@ export const SwitchNetwork: FC = () => {
 
   return (
     <div>
-      <button onClick={() => handleSwitch(Network.TESTNET3)} disabled={!connected}>
-        Switch to Testnet3
+      <button onClick={() => handleSwitch(Network.TESTNET)} disabled={!connected}>
+        Switch to Testnet
       </button>
       <button onClick={() => handleSwitch(Network.MAINNET)} disabled={!connected}>
         Switch to Mainnet
@@ -653,7 +653,7 @@ export const App: FC = () => {
   return (
     <AleoWalletProvider
       wallets={wallets}
-      network={Network.TESTNET3}
+      network={Network.TESTNET}
       decryptPermission={DecryptPermission.UponRequest}
       autoConnect={true}
     >

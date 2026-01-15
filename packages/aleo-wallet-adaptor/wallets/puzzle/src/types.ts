@@ -39,6 +39,6 @@ export interface PuzzleWalletAdapterConfig {
 
 export const PUZZLE_NETWORK_MAP: Record<Network, PuzzleNetwork> = {
   [Network.MAINNET]: PuzzleNetwork.AleoMainnet,
-  [Network.TESTNET3]: PuzzleNetwork.AleoTestnet,
+  [Network.TESTNET]: PuzzleNetwork.AleoTestnet,
   [Network.CANARY]: PuzzleNetwork.AleoTestnet,
 };

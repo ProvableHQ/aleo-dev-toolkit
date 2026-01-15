@@ -48,7 +48,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   children,
   wallets: adapters,
   autoConnect = false,
-  network: initialNetwork = Network.TESTNET3,
+  network: initialNetwork = Network.TESTNET,
   onError,
   localStorageKey = 'walletName',
   decryptPermission = DecryptPermission.NoDecrypt,

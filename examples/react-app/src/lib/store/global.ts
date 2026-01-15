@@ -5,7 +5,7 @@ import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 /**
  * Adapter default values
  */
-export const networkAtom = atomWithStorage<Network>('network', Network.TESTNET3);
+export const networkAtom = atomWithStorage<Network>('network', Network.TESTNET);
 export const decryptPermissionAtom = atomWithStorage<DecryptPermission>(
   'decryptPermission',
   DecryptPermission.UponRequest,

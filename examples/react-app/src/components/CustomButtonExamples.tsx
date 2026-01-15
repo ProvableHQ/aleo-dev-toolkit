@@ -208,7 +208,7 @@ function SwitchNetworkButton() {
   const { switchNetwork, connected, network } = useWallet();
   const [lastAction, setLastAction] = useState<'idle' | 'switching' | 'success' | 'error'>('idle');
 
-  const targetNetwork = network === Network.MAINNET ? Network.TESTNET3 : Network.MAINNET;
+  const targetNetwork = network === Network.MAINNET ? Network.TESTNET : Network.MAINNET;
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!connected) return;
@@ -451,7 +451,7 @@ import { Network } from '@provablehq/aleo-types';
 
 function MyComponent() {
   const { connect, disconnect, switchNetwork, connected, wallet, network } = useWallet();
-  const targetNetwork = network === Network.MAINNET ? Network.TESTNET3 : Network.MAINNET;
+  const targetNetwork = network === Network.MAINNET ? Network.TESTNET : Network.MAINNET;
   
   const handleConnect = async () => {
     if (wallet) {

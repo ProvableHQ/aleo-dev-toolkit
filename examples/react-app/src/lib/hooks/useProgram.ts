@@ -16,7 +16,7 @@ const fetchProgram = async (programId: string, network: Network): Promise<string
 export const useProgram = (programId: string, network?: Network) => {
   return useQuery({
     queryKey: ['program', programId, network],
-    queryFn: () => fetchProgram(programId, network || Network.TESTNET3),
+    queryFn: () => fetchProgram(programId, network || Network.TESTNET),
     enabled: !!programId && !!network,
     staleTime: 1000 * 60 * 10, // 10 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes

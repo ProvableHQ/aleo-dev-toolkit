@@ -503,7 +503,7 @@ export function ExecuteTransaction() {
                       size="sm"
                       onClick={() => {
                         window.open(
-                          `https://${network === Network.TESTNET3 ? 'testnet.' : network === Network.CANARY ? 'canary.' : ''}explorer.provable.com/transaction/${onchainTransactionId}`,
+                          `https://${network === Network.TESTNET ? 'testnet.' : network === Network.CANARY ? 'canary.' : ''}explorer.provable.com/transaction/${onchainTransactionId}`,
                           '_blank',
                         );
                       }}
