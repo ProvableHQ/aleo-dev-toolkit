@@ -46,7 +46,7 @@ export type LeoNetwork = 'mainnet' | 'testnetbeta';
 
 export const LEO_NETWORK_MAP: Record<Network, LeoNetwork> = {
   [Network.MAINNET]: 'mainnet',
-  [Network.TESTNET3]: 'testnetbeta',
+  [Network.TESTNET]: 'testnetbeta',
   [Network.CANARY]: 'testnetbeta',
 };
 

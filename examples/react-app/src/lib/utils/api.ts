@@ -5,7 +5,7 @@ export const getAPIEndpoint = (network: Network): string => {
   switch (network) {
     case Network.MAINNET:
       return PROVABLE_API_MAINNET;
-    case Network.TESTNET3:
+    case Network.TESTNET:
       return PROVABLE_API_TESTNET;
     case Network.CANARY:
       return PROVABLE_API_CANARY;

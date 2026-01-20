@@ -3,7 +3,7 @@
  */
 export enum Network {
   MAINNET = 'mainnet',
-  TESTNET3 = 'testnet3',
+  TESTNET = 'testnet',
   CANARY = 'canary',
 }
 
