@@ -1,5 +1,16 @@
 # @provablehq/aleo-wallet-adaptor-soter
 
+## 0.3.0-alpha.2
+
+### Patch Changes
+
+- Prepare 0.3.0-alpha.2 release
+- Updated dependencies
+  - @provablehq/aleo-wallet-adaptor-leo@0.3.0-alpha.2
+  - @provablehq/aleo-wallet-adaptor-core@0.3.0-alpha.2
+  - @provablehq/aleo-wallet-standard@0.3.0-alpha.2
+  - @provablehq/aleo-types@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes

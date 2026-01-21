@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-wallet-adaptor-puzzle",
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "description": "Puzzle wallet adapter for Aleo",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

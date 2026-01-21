@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-hooks",
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "description": "Hooks for Aleo blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
