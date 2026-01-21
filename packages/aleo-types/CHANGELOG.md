@@ -1,5 +1,11 @@
 # @provablehq/aleo-types
 
+## 0.3.0-alpha.2
+
+### Patch Changes
+
+- Prepare 0.3.0-alpha.2 release
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes
