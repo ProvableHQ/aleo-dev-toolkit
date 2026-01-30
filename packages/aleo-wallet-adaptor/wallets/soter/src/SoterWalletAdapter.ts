@@ -22,12 +22,7 @@ import {
   WalletSignMessageError,
   WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
-import {
-  AleoTransaction,
-  LEO_NETWORK_MAP,
-  LeoWallet,
-  LeoWalletAdapterConfig,
-} from '@provablehq/aleo-wallet-adaptor-leo';
+import { AleoTransaction, LEO_NETWORK_MAP, LeoWallet } from '@provablehq/aleo-wallet-adaptor-leo';
 
 export interface SoterWindow extends Window {
   soterWallet?: LeoWallet;
@@ -88,9 +83,8 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
    * Create a new Soter wallet adapter
    * @param config Adapter configuration
    */
-  constructor(config?: LeoWalletAdapterConfig) {
+  constructor() {
     super();
-    console.debug('SoterWalletAdapter constructor', config);
     this.network = Network.MAINNET;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());

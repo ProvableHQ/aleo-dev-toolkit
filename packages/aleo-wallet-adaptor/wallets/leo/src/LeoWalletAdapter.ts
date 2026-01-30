@@ -88,7 +88,6 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    */
   constructor(config?: LeoWalletAdapterConfig) {
     super();
-    console.debug('LeoWalletAdapter constructor', config);
     this.network = Network.TESTNET;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());
