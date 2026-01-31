@@ -10,7 +10,7 @@ export const WalletIcon: FC<WalletIconProps> = ({ wallet, ...props }) => {
   return (
     wallet && (
       <img
-        style={{ borderRadius: '50%' }}
+        style={{ borderRadius: '22%' }}
         src={wallet.adapter.icon}
         alt={`${wallet.adapter.name} icon`}
         {...props}
