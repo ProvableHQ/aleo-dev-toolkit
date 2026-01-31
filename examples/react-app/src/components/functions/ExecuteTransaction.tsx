@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Send, Copy, CheckCircle, Loader2, Zap, Code, Code2, XCircle } from 'lucide-react';
+import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { Network, TransactionStatus } from '@provablehq/aleo-types';
-import { HookCodeModal } from '../HookCodeModal';
+import { CodePanel } from '../CodePanel';
+import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import { ProgramAutocomplete } from '../ProgramAutocomplete';
 import { FunctionSelector } from '../FunctionSelector';
 import { ProgramCodeModal } from '../ProgramCodeModal';
@@ -24,6 +25,7 @@ export function ExecuteTransaction() {
     transactionStatus: getTransactionStatus,
     network,
   } = useWallet();
+  const { setVisible: openWalletModal } = useWalletModal();
   const [program, setProgram] = useAtom(programAtom);
   const [functionName, setFunctionName] = useAtom(functionNameAtom);
   const [inputs, setInputs] = useState('');
@@ -35,7 +37,6 @@ export function ExecuteTransaction() {
   const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
   const [transactionError, setTransactionError] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isProgramCodeModalOpen, setIsProgramCodeModalOpen] = useState(false);
   const [programCode, setProgramCode] = useState<string>('');
   const [useDynamicInputs, setUseDynamicInputs] = useAtom(useDynamicInputsAtom);
@@ -79,7 +80,6 @@ export function ExecuteTransaction() {
     }
   }, [functionNames, isLoading]);
 
-  // Only log when currentFunction actually changes
   useEffect(() => {
     if (programCode && functionNames.length > 0 && functionName && !currentFunction) {
       setUseDynamicInputs(false);
@@ -186,6 +186,10 @@ export function ExecuteTransaction() {
   };
 
   const handleExecuteTransaction = async () => {
+    if (!connected) {
+      openWalletModal(true);
+      return;
+    }
     if (!program.trim() || !functionName.trim() || !fee.trim()) {
       toast.error('Please enter program, function, and fee');
       return;
@@ -247,284 +251,257 @@ export function ExecuteTransaction() {
   };
 
   return (
-    <Card
-      className={`dark:shadow-xl dark:shadow-black/20 transition-all duration-300 hover:shadow-lg dark:hover:shadow-black/30 ${!connected ? 'opacity-50' : ''}`}
-    >
-      <CardHeader className="border-b border-border/50">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="relative">
-              <Send className="h-5 w-5 text-primary transition-colors duration-300" />
-              <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 opacity-0 dark:opacity-100 transition-opacity duration-500" />
+    <section className="space-y-4">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="program" className="transition-colors duration-300">
+            Program ID
+          </Label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <ProgramAutocomplete value={program} onChange={setProgram} onAdd={handleProgramAdd} />
             </div>
-            <span>Execute Transaction</span>
+            <Button
+              size="sm"
+              onClick={() => setIsProgramCodeModalOpen(true)}
+              disabled={!programCode}
+              className="gap-2"
+            >
+              <Code2 className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCodeModalOpen(true)}
-            className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
-          >
-            <Code className="h-4 w-4" />
-            Code
-          </Button>
-        </CardTitle>
-        <CardDescription className="transition-colors duration-300">
-          Send a transaction using your connected wallet
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="program" className="transition-colors duration-300">
-              Program ID
-            </Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <ProgramAutocomplete
-                  value={program}
-                  onChange={setProgram}
-                  onAdd={handleProgramAdd}
-                  disabled={!connected}
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsProgramCodeModalOpen(true)}
-                disabled={!connected || !programCode}
-                className="gap-2 hover:bg-secondary/80 dark:hover:bg-secondary/20 transition-colors duration-200"
-              >
-                <Code2 className="h-4 w-4" />
-              </Button>
+          {programIsLoading && (
+            <div className="flex items-center gap-2 body-s text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading program code...</span>
             </div>
-            {programIsLoading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Loading program code...</span>
-              </div>
-            )}
-            {programIsError && <div className="text-sm text-destructive">Program not found</div>}
-            {!programIsError && programCode && functionNames.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Code2 className="h-4 w-4" />
-                <span>
-                  Found {functionCount} function{functionCount !== 1 ? 's' : ''}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="functionName" className="transition-colors duration-300">
-              Function Name
-            </Label>
-            <FunctionSelector
-              value={functionName}
-              onChange={value => {
-                setFunctionName(value);
-                if (value === '') {
-                  setWasManuallyCleared(true);
-                } else {
-                  setWasManuallyCleared(false);
-                }
-              }}
-              functionNames={functionNames}
-              disabled={!connected}
-              placeholder="Enter function name"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="inputs" className="transition-colors duration-300">
-                Inputs
-              </Label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="useDynamicInputs"
-                  disabled={!!programIsError}
-                  checked={useDynamicInputs}
-                  onChange={e => setUseDynamicInputs(e.target.checked)}
-                  className="rounded border-input"
-                />
-                <Label htmlFor="useDynamicInputs" className="text-sm">
-                  Use dynamic inputs
-                </Label>
-              </div>
+          )}
+          {programIsError && <div className="body-s text-destructive">Program not found</div>}
+          {!programIsError && programCode && functionNames.length > 0 && (
+            <div className="flex items-center gap-2 body-s text-muted-foreground">
+              <Code2 className="h-4 w-4" />
+              <span>
+                Found {functionCount} function{functionCount !== 1 ? 's' : ''}
+              </span>
             </div>
-
-            {useDynamicInputs && currentFunction && currentFunction.inputs.length > 0 ? (
-              <div className="space-y-3">
-                {currentFunction.inputs.map((input, index) => (
-                  <div key={index} className="space-y-1">
-                    <Label className="text-sm font-medium">
-                      {input.name}{' '}
-                      <span className="text-xs text-muted-foreground">
-                        ({input.type}.{input.visibility})
-                      </span>
-                    </Label>
-                    <Input
-                      placeholder={`Enter ${input.name} value`}
-                      value={dynamicInputValues[index] || ''}
-                      onChange={e => {
-                        const newValues = [...dynamicInputValues];
-                        newValues[index] = e.target.value;
-                        setDynamicInputValues(newValues);
-                        // Also update the inputs string for compatibility
-                        setInputs(newValues.join('\n'));
-                      }}
-                      disabled={!connected}
-                      className="transition-all duration-300"
-                    />
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground">
-                  Inputs are automatically parsed from the program code. You can still edit them
-                  manually.
-                </p>
-              </div>
-            ) : useDynamicInputs && !currentFunction && functionName.trim() ? (
-              <div className="space-y-3">
-                <div className="text-sm text-muted-foreground">
-                  Custom function "{functionName}" - use manual inputs below since function
-                  signature is unknown.
-                </div>
-              </div>
-            ) : (
-              <>
-                <textarea
-                  id="inputs"
-                  placeholder="Input arguments separated by a newline"
-                  value={inputs}
-                  onChange={e => setInputs(e.target.value)}
-                  disabled={!connected}
-                  className="w-full rounded border border-input px-3 py-2 text-sm shadow-sm transition-all duration-300"
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Input arguments separated by a newline. Objects and arrays can span multiple
-                  lines.
-                </p>
-              </>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fee" className="transition-colors duration-300">
-              Fee
-            </Label>
-            <Input
-              id="fee"
-              placeholder="Fee (in microcredits)"
-              type="number"
-              value={fee}
-              onChange={e => setFee(e.target.value)}
-              disabled={!connected}
-              className="transition-all duration-300"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="privateFee"
-              disabled={!connected}
-              checked={privateFee}
-              onChange={e => setPrivateFee(e.target.checked)}
-              className="rounded border-input"
-            />
-            <Label htmlFor="privateFee" className="text-sm">
-              Pay fee privately
-            </Label>
-          </div>
+          )}
         </div>
 
-        <Button
-          onClick={handleExecuteTransaction}
-          disabled={
-            !connected ||
-            isExecutingTransaction ||
-            isPollingStatus ||
-            !program.trim() ||
-            !functionName.trim() ||
-            !fee.trim()
-          }
-          className="w-full hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200"
-        >
-          {isExecutingTransaction ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Executing Transaction...
-            </>
-          ) : isPollingStatus ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Waiting for Confirmation...
-            </>
+        <div className="space-y-2">
+          <Label htmlFor="functionName" className="transition-colors duration-300">
+            Function Name
+          </Label>
+          <FunctionSelector
+            value={functionName}
+            onChange={value => {
+              setFunctionName(value);
+              if (value === '') {
+                setWasManuallyCleared(true);
+              } else {
+                setWasManuallyCleared(false);
+              }
+            }}
+            functionNames={functionNames}
+            placeholder="Enter function name"
+          />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="inputs" className="transition-colors duration-300">
+              Inputs
+            </Label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="useDynamicInputs"
+                disabled={!!programIsError}
+                checked={useDynamicInputs}
+                onChange={e => setUseDynamicInputs(e.target.checked)}
+                className="rounded border-input"
+              />
+              <Label htmlFor="useDynamicInputs" className="text-sm">
+                Use dynamic inputs
+              </Label>
+            </div>
+          </div>
+
+          {useDynamicInputs && currentFunction && currentFunction.inputs.length > 0 ? (
+            <div className="space-y-3">
+              {currentFunction.inputs.map((input, index) => (
+                <div key={index} className="space-y-1">
+                  <Label className="body-s-bold">
+                    {input.name}{' '}
+                    <span className="label-xs text-muted-foreground normal-case">
+                      ({input.type}.{input.visibility})
+                    </span>
+                  </Label>
+                  <Input
+                    placeholder={`Enter ${input.name} value`}
+                    value={dynamicInputValues[index] || ''}
+                    onChange={e => {
+                      const newValues = [...dynamicInputValues];
+                      newValues[index] = e.target.value;
+                      setDynamicInputValues(newValues);
+                      // Also update the inputs string for compatibility
+                      setInputs(newValues.join('\n'));
+                    }}
+                    className="transition-all duration-300"
+                  />
+                </div>
+              ))}
+              <p className="body-s text-muted-foreground">
+                Inputs are automatically parsed from the program code. You can still edit them
+                manually.
+              </p>
+            </div>
+          ) : useDynamicInputs && !currentFunction && functionName.trim() ? (
+            <div className="space-y-3">
+              <div className="body-s text-muted-foreground">
+                Custom function "{functionName}" - use manual inputs below since function signature
+                is unknown.
+              </div>
+            </div>
           ) : (
             <>
-              <Zap className="mr-2 h-4 w-4" />
-              Execute Transaction
+              <textarea
+                id="inputs"
+                placeholder="Input arguments separated by a newline"
+                value={inputs}
+                onChange={e => setInputs(e.target.value)}
+                className="body-m w-full rounded-xl border border-input px-4 py-3 shadow-sm transition-all duration-300"
+                rows={4}
+              />
+              <p className="body-s text-muted-foreground">
+                Input arguments separated by a newline. Objects and arrays can span multiple lines.
+              </p>
             </>
           )}
-        </Button>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="fee" className="transition-colors duration-300">
+            Fee
+          </Label>
+          <Input
+            id="fee"
+            placeholder="Fee (in microcredits)"
+            type="number"
+            value={fee}
+            onChange={e => setFee(e.target.value)}
+            className="transition-all duration-300"
+          />
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="privateFee"
+            checked={privateFee}
+            onChange={e => setPrivateFee(e.target.checked)}
+            className="rounded border-input"
+          />
+          <Label htmlFor="privateFee" className="text-sm">
+            Pay fee privately
+          </Label>
+        </div>
+      </div>
 
-        {(transactionStatus || onchainTransactionId) && (
-          <Alert>
-            {transactionStatus?.toLowerCase() === TransactionStatus.ACCEPTED.toLowerCase() ? (
-              <CheckCircle className="h-4 w-4 " />
-            ) : transactionStatus?.toLowerCase() === TransactionStatus.REJECTED.toLowerCase() ||
-              transactionStatus?.toLowerCase() === TransactionStatus.FAILED.toLowerCase() ? (
-              <XCircle className="h-4 w-4" />
-            ) : (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            )}
-            <AlertDescription>
-              <div className="space-y-2">
-                <p className="font-medium">
-                  Transaction status:{' '}
-                  <span className="font-bold capitalize">{transactionStatus || 'Pending'}</span>
-                </p>
+      <Button
+        onClick={handleExecuteTransaction}
+        disabled={
+          isExecutingTransaction ||
+          isPollingStatus ||
+          !program.trim() ||
+          !functionName.trim() ||
+          !fee.trim()
+        }
+        className="w-full hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200"
+      >
+        {isExecutingTransaction ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Executing Transaction...
+          </>
+        ) : isPollingStatus ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Waiting for Confirmation...
+          </>
+        ) : !connected ? (
+          <>
+            <Zap className="mr-2 h-4 w-4" />
+            Connect Wallet to Execute
+          </>
+        ) : (
+          <>
+            <Zap className="mr-2 h-4 w-4" />
+            Execute Transaction
+          </>
+        )}
+      </Button>
 
-                {onchainTransactionId ? (
-                  <>
-                    <div className="flex items-center justify-between bg-muted p-2 rounded text-xs font-mono break-all border">
-                      <span className="truncate">Transaction Id: {onchainTransactionId}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(onchainTransactionId)}
-                        className="transition-all duration-200"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
+      {(transactionStatus || onchainTransactionId) && (
+        <Alert>
+          {transactionStatus?.toLowerCase() === TransactionStatus.ACCEPTED.toLowerCase() ? (
+            <CheckCircle className="h-4 w-4 " />
+          ) : transactionStatus?.toLowerCase() === TransactionStatus.REJECTED.toLowerCase() ||
+            transactionStatus?.toLowerCase() === TransactionStatus.FAILED.toLowerCase() ? (
+            <XCircle className="h-4 w-4" />
+          ) : (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          )}
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="body-m">
+                Transaction status:{' '}
+                <span className="body-m-bold capitalize">{transactionStatus || 'Pending'}</span>
+              </p>
+
+              {onchainTransactionId ? (
+                <>
+                  <div className="flex items-center justify-between bg-muted p-2 rounded-lg label-xs break-all border">
+                    <span className="truncate normal-case">
+                      Transaction Id: {onchainTransactionId}
+                    </span>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        window.open(
-                          `https://${network === Network.TESTNET ? 'testnet.' : network === Network.CANARY ? 'canary.' : ''}explorer.provable.com/transaction/${onchainTransactionId}`,
-                          '_blank',
-                        );
-                      }}
+                      onClick={() => copyToClipboard(onchainTransactionId)}
                       className="transition-all duration-200"
                     >
-                      See on the explorer
+                      <Copy className="h-4 w-4" />
                     </Button>
-                  </>
-                ) : null}
-                {transactionError && (
-                  <div className="text-sm text-destructive">Error: {transactionError}</div>
-                )}
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-      <HookCodeModal
-        isOpen={isCodeModalOpen}
-        onClose={() => setIsCodeModalOpen(false)}
-        action="executeTransaction"
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.open(
+                        `https://${network === Network.TESTNET ? 'testnet.' : network === Network.CANARY ? 'canary.' : ''}explorer.provable.com/transaction/${onchainTransactionId}`,
+                        '_blank',
+                      );
+                    }}
+                    className="transition-all duration-200"
+                  >
+                    See on the explorer
+                  </Button>
+                </>
+              ) : null}
+              {transactionError && (
+                <div className="body-s text-destructive">Error: {transactionError}</div>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      {/* Code Example */}
+      <CodePanel
+        code={codeExamples.executeTransaction}
+        language="tsx"
+        highlightValues={{
+          [PLACEHOLDERS.PROGRAM]: program || 'credits.aleo',
+          [PLACEHOLDERS.FUNCTION]: functionName || 'transfer_public',
+          [PLACEHOLDERS.INPUTS]: inputs ? `'${inputs.split('\n').join("', '")}'` : "'arg1', 'arg2'",
+          [PLACEHOLDERS.FEE]: fee || '100000',
+        }}
       />
       <ProgramCodeModal
         isOpen={isProgramCodeModalOpen}
@@ -533,6 +510,6 @@ export function ExecuteTransaction() {
         programName={program}
         functionNames={functionNames}
       />
-    </Card>
+    </section>
   );
 }

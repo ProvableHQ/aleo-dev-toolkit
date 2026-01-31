@@ -1,3 +1,4 @@
+import { useRoutes } from 'react-router-dom';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
@@ -5,7 +6,6 @@ import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
 import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
-import WalletAdapterDemo from './WalletAdapterDemo';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { useAtomValue } from 'jotai';
@@ -15,6 +15,7 @@ import {
   networkAtom,
   programsAtom,
 } from './lib/store/global';
+import { routes } from './routes';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
@@ -25,6 +26,11 @@ const wallets = [
   new FoxWalletAdapter(),
   new SoterWalletAdapter(),
 ];
+
+function AppRoutes() {
+  const element = useRoutes(routes);
+  return element;
+}
 
 export function App() {
   const network = useAtomValue(networkAtom);
@@ -43,7 +49,7 @@ export function App() {
         programs={programs}
       >
         <WalletModalProvider>
-          <WalletAdapterDemo />
+          <AppRoutes />
           <Toaster />
         </WalletModalProvider>
       </AleoWalletProvider>
