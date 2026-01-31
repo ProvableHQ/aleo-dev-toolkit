@@ -74,7 +74,7 @@ export function TxHistoryExample() {
       <Button
         onClick={fetchTransactionHistory}
         disabled={loading || !programId.trim()}
-        className="w-full hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200"
+        className="w-full transition-all duration-200"
       >
         {loading ? (
           <>

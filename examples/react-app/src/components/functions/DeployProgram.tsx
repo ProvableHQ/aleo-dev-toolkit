@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, Copy, CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { Upload, Copy, CheckCircle, Loader2, XCircle, FileCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -13,6 +13,20 @@ import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import { programCodeAtom } from '../../lib/store/global';
 import { useAtom } from 'jotai';
+
+// Generate an example Aleo program with a unique name
+const generateExampleProgram = () => {
+  // Generate a random suffix to make the program name unique
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `program hello_${randomSuffix}.aleo;
+
+function main:
+    input r0 as u32.public;
+    input r1 as u32.private;
+    add r0 r1 into r2;
+    output r2 as u32.private;
+`;
+};
 
 export function DeployProgram() {
   const {
@@ -149,9 +163,23 @@ export function DeployProgram() {
     <section className="space-y-4">
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="programCode" className="transition-colors duration-300">
-            Program Code
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="programCode" className="transition-colors duration-300">
+              Program Code
+            </Label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setProgramCode(generateExampleProgram());
+                toast.success('Example program loaded');
+              }}
+              className="transition-all duration-200"
+            >
+              <FileCode className="mr-2 h-4 w-4" />
+              Add Example Program
+            </Button>
+          </div>
           <Textarea
             id="programCode"
             placeholder="Paste your program code here..."
@@ -198,7 +226,7 @@ export function DeployProgram() {
         disabled={
           isExecutingDeployment || isPollingStatus || !programCode.trim() || !priorityFee.trim()
         }
-        className="w-full hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200"
+        className="w-full transition-all duration-200"
       >
         {isExecutingDeployment ? (
           <>

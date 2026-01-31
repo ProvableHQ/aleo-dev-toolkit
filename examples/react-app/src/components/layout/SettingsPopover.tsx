@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,11 +11,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
-import {
-  autoConnectAtom,
-  networkAtom,
-  decryptPermissionAtom,
-} from '@/lib/store/global';
+import { autoConnectAtom, networkAtom, decryptPermissionAtom } from '@/lib/store/global';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 

@@ -70,7 +70,7 @@ function NavItemComponent({ item }: { item: NavItem }) {
           'body-m flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
           isActive
             ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
         )
       }
     >
@@ -115,14 +115,14 @@ export function Sidebar() {
         {/* Logo/Brand */}
         <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
-            <img
-              src="/assets/icon_aleo.svg"
-              alt="Aleo"
-              className="h-7 w-7 shrink-0"
-            />
+            <img src="/assets/icon_aleo.svg" alt="Aleo" className="h-7 w-7 shrink-0" />
             <div className="flex flex-col">
-              <span className="label-xs text-sidebar-foreground/50 leading-tight">Aleo Dev Toolkit</span>
-              <span className="body-m-bold text-sidebar-foreground leading-tight">Wallet Adapter</span>
+              <span className="label-xs text-sidebar-foreground/50 leading-tight">
+                Aleo Dev Toolkit
+              </span>
+              <span className="body-m-bold text-sidebar-foreground leading-tight">
+                Wallet Adapter
+              </span>
             </div>
           </div>
         </div>
@@ -167,9 +167,7 @@ export function Sidebar() {
               <span className="label-xs">GitHub</span>
             </a>
           </div>
-          <p className="label-xs text-sidebar-foreground/50 text-center">
-            Wallet Adapter Demo
-          </p>
+          <p className="label-xs text-sidebar-foreground/50 text-center">Wallet Adapter Demo</p>
         </div>
       </aside>
     </SidebarContext.Provider>

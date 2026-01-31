@@ -154,7 +154,7 @@ function ConnectButton() {
       disabled={connected || !wallet || connecting}
       variant="outline"
       size="sm"
-      className="justify-start gap-2 px-4 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 shadow-sm hover:shadow"
+      className="justify-start gap-2 px-4 rounded-full border-2 border-primary/20 hover:border-primary/40 transition-all duration-200 shadow-sm hover:shadow"
     >
       {getStatusIcon()}
       <span className="font-medium">{getStatusText()}</span>
