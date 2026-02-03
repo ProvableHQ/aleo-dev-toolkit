@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { Collapse } from './Collapse';
 import { useWalletModal } from './useWalletModal';
 import { WalletListItem } from './WalletListItem';
-import { AleoIcon } from './AleoIcon';
 import { useWallet, Wallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { Network } from '@provablehq/aleo-types';
@@ -51,8 +50,8 @@ export const WalletModal: FC<WalletModalProps> = ({
     return installedWallets.length
       ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         installedWallets[0]!
-      : wallets.find(
-          (wallet: { adapter: { name: WalletName } }) => wallet.adapter.name === 'Puzzle Wallet', // TODO: Add Provable Wallet
+      : wallets.find((wallet: { adapter: { name: WalletName } }) =>
+          wallet.adapter.name.toLowerCase().includes('shield'),
         ) ||
           wallets.find(
             (wallet: { readyState: WalletReadyState }) =>
@@ -215,7 +214,6 @@ export const WalletModal: FC<WalletModalProps> = ({
               <>
                 <h1 className="wallet-adapter-modal-title">Get an Aleo wallet to continue</h1>
                 <div className="wallet-adapter-modal-middle">
-                  <AleoIcon />
                   <button
                     type="button"
                     className="wallet-adapter-modal-middle-button"

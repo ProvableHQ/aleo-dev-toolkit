@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsup && pnpm copy-files",
     "clean": "rimraf dist",
-    "dev": "tsup --watch",
+    "dev": "tsup --watch --onSuccess \"pnpm copy-files\"",
     "lint": "eslint src/**/*.ts*",
     "copy-files": "copyfiles styles.css dist/",
     "test": "jest --passWithNoTests"
