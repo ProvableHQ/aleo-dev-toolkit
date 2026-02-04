@@ -11,11 +11,13 @@ import {
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 import { Network } from '@provablehq/aleo-types';
 
-interface CodeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface ProviderCodeProps {
   customCode?: string;
   componentCode?: string;
+}
+interface CodeModalProps extends ProviderCodeProps {
+  isOpen: boolean;
+  onClose: () => void;
   title?: string;
   description?: string;
 }
@@ -48,6 +50,8 @@ import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+// Import wallet adapter CSS
+import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 export function App() {
   return (
@@ -91,19 +95,11 @@ export function wrapWithProvider(
   ).replace('export function App()', `${componentCode}\n\nexport function App()`);
 }
 
-export function CodeModal({
-  isOpen,
-  onClose,
-  customCode,
-  componentCode,
-  title = 'AleoWalletProvider Configuration',
-  description = 'This reflects the current selected options',
-}: CodeModalProps) {
+export function useProviderCode({ customCode = '', componentCode = '' }: ProviderCodeProps) {
   const network = useAtomValue(networkAtom);
   const decryptPermission = useAtomValue(decryptPermissionAtom);
   const autoConnect = useAtomValue(autoConnectAtom);
   const programs = useAtomValue(programsAtom);
-  const [copied, setCopied] = useState(false);
 
   const generateCode = () => {
     if (componentCode) {
@@ -120,9 +116,27 @@ export function CodeModal({
     );
   };
 
+  return generateCode();
+}
+
+export function CodeModal({
+  isOpen,
+  onClose,
+  title = 'AleoWalletProvider Configuration',
+  description = 'This reflects the current selected options',
+  customCode,
+  componentCode,
+}: CodeModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  const providerCode = useProviderCode({
+    customCode,
+    componentCode,
+  });
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(generateCode());
+      await navigator.clipboard.writeText(providerCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -133,12 +147,12 @@ export function CodeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
       <div className="bg-card dark:bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-border">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex flex-col items-start gap-2">
-            <h2 className="text-xl font-semibold text-card-foreground">{title}</h2>
-            <span className="text-sm text-muted-foreground">{description}</span>
+            <h2 className="h3 text-card-foreground">{title}</h2>
+            <span className="body-s text-muted-foreground">{description}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -162,8 +176,8 @@ export function CodeModal({
         </div>
         <div className="p-6 overflow-auto max-h-[calc(90vh-120px)]">
           <div className="bg-muted rounded-lg p-4 border border-border">
-            <pre className="text-sm text-muted-foreground overflow-x-auto">
-              <code>{generateCode()}</code>
+            <pre className="label-s text-muted-foreground overflow-x-auto normal-case">
+              <code>{providerCode}</code>
             </pre>
           </div>
         </div>

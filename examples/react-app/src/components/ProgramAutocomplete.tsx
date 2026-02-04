@@ -152,7 +152,7 @@ export const ProgramAutocomplete = ({
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={isOpen}
-          className="h-8 text-sm pr-8"
+          className="h-10 body-m pr-8"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
           {value && (
@@ -177,11 +177,11 @@ export const ProgramAutocomplete = ({
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border  rounded-md shadow-lg z-50 max-h-40 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border rounded-md shadow-lg z-[100] max-h-48 overflow-y-auto">
           {isLoading ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">Loading programs...</div>
+            <div className="px-3 py-2 body-s text-muted-foreground">Loading programs...</div>
           ) : programs.length === 0 && searchTerm.length >= 2 ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">No programs found.</div>
+            <div className="px-3 py-2 body-s text-muted-foreground">No programs found.</div>
           ) : (
             <>
               {programs.map((program, index) => {
@@ -189,19 +189,17 @@ export const ProgramAutocomplete = ({
                 return (
                   <div
                     key={program.id}
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-accent ${
+                    className={`px-3 py-2 body-s cursor-pointer hover:bg-accent ${
                       selectedIndex >= 0 && index === selectedIndex ? 'bg-accent' : ''
                     } ${isSelected ? 'opacity-50' : ''}`}
                     onClick={() => !isSelected && handleProgramSelect(program.id)}
                   >
-                    <div className="font-medium text-popover-foreground flex items-center gap-2">
+                    <div className="body-s-bold text-popover-foreground flex items-center gap-2">
                       {program.id}
-                      {isSelected && (
-                        <span className="text-xs text-green-600 dark:text-green-400">✓</span>
-                      )}
+                      {isSelected && <span className="label-xs text-success">✓</span>}
                     </div>
                     {program.name && program.name !== program.id && (
-                      <div className="text-xs text-muted-foreground truncate">{program.name}</div>
+                      <div className="body-s text-muted-foreground truncate">{program.name}</div>
                     )}
                   </div>
                 );
@@ -209,7 +207,7 @@ export const ProgramAutocomplete = ({
               {value.trim() && !programs.some(p => p.id === value.trim()) && (
                 <div className="border-t border-border">
                   <div
-                    className="px-3 py-2 text-sm cursor-pointer hover:bg-accent"
+                    className="px-3 py-2 body-s cursor-pointer hover:bg-accent"
                     onClick={() => {
                       onChange(value.trim());
                       setIsOpen(false);
@@ -217,8 +215,8 @@ export const ProgramAutocomplete = ({
                       onAdd(value.trim());
                     }}
                   >
-                    <div className="font-medium text-accent-foreground">Add "{value.trim()}"</div>
-                    <div className="text-xs text-muted-foreground">Custom program</div>
+                    <div className="body-s-bold text-accent-foreground">Add "{value.trim()}"</div>
+                    <div className="body-s text-muted-foreground">Custom program</div>
                   </div>
                 </div>
               )}

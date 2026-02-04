@@ -1,11 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Primary Colors (65%) */
-  /* --wallet-adapter-primary: #db33ca; PINK  */
-  /* --wallet-adapter-primary-hover: #c42db8;   */
+  /* Primary Colors */
   --wallet-adapter-primary: #9565fb; /* Main brand color for primary actions */
   --wallet-adapter-primary-hover: #7952ca; /* Darker shade for hover states */
+  --wallet-adapter-primary-foreground: #ffffff; /* Text color on primary buttons */
+
+  /* Background & Surface Colors */
   --wallet-adapter-background: #0a0606; /* Main background color */
   --wallet-adapter-surface: #0a0606; /* Surface color for cards/modals */
   --wallet-adapter-surface-hover: #1a1616; /* Slightly lighter for hover states */
@@ -17,21 +18,23 @@
   --wallet-adapter-border: #2a2626; /* Border color */
   --wallet-adapter-border-light: #3a3636; /* Lighter border color */
 
-  /* Secondary Colors (20%) */
+  /* Secondary Colors */
   --wallet-adapter-secondary: #9565fb; /* Secondary action color */
   --wallet-adapter-secondary-hover: #8555eb; /* Secondary hover state */
-  --wallet-adapter-accent-red: #fe514e; /* For important actions/alerts */
 
-  /* Accent Colors (15%) */
+  /* Accent Colors */
+  --wallet-adapter-accent-red: #fe514e; /* For important actions/alerts */
   --wallet-adapter-accent-blue: #3f92ff; /* For links and info states */
   --wallet-adapter-accent-yellow: #faad2b; /* For warnings and highlights */
   --wallet-adapter-accent-green: #13bc80; /* For success states */
 
-  /* Shadows and Border Radius (unchanged) */
+  /* Shadows */
   --wallet-adapter-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --wallet-adapter-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --wallet-adapter-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --wallet-adapter-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Border Radius */
   --wallet-adapter-radius-sm: 6px;
   --wallet-adapter-radius: 8px;
   --wallet-adapter-radius-lg: 12px;
@@ -59,6 +62,7 @@
 
 .wallet-adapter-button-trigger {
   background-color: var(--wallet-adapter-primary);
+  color: var(--wallet-adapter-primary-foreground);
   border: none;
   box-shadow: var(--wallet-adapter-shadow);
   height: 42px;
@@ -209,11 +213,6 @@
   border-radius: 50%;
 }
 
-.wallet-adapter-modal-button-close:hover {
-  border: none;
-  background-color: transparent !important;
-}
-
 .wallet-adapter-modal-button-close:focus-visible,
 .wallet-adapter-modal-button-close:focus {
   outline: 2px solid var(--wallet-adapter-primary);
@@ -227,7 +226,8 @@
 }
 
 .wallet-adapter-modal-button-close:hover svg {
-  fill: #fff;
+  opacity: 0.8;
+  transition: opacity 200ms ease 0s;
 }
 
 .wallet-adapter-modal-overlay {
@@ -327,7 +327,7 @@
 .wallet-adapter-modal-list .wallet-adapter-button-start-icon img {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 22%;
 }
 
 .wallet-adapter-modal-list .wallet-adapter-button span {
@@ -344,14 +344,14 @@
   display: flex;
   align-items: center;
   background-color: transparent;
-  color: #fff;
+  color: var(--wallet-adapter-text);
   margin-bottom: 6px;
   margin-right: 24px;
 }
 
 .wallet-adapter-modal-list-more svg {
   transition: all 0.1s ease;
-  fill: rgba(255, 255, 255, 1);
+  fill: var(--wallet-adapter-text);
   margin-left: 0.5rem;
 }
 
@@ -402,9 +402,12 @@
   padding: 24px;
   margin-top: auto;
   opacity: 0.88;
-  filter: invert(1);
   opacity: 50%;
   max-width: 120px;
+}
+
+.wallet-adapter-modal-footer svg {
+  color: var(--wallet-adapter-text);
 }
 
 .wallet-adapter-button:focus-visible,

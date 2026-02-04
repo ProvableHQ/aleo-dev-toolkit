@@ -116,7 +116,7 @@ export const FunctionSelector = ({
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={isOpen}
-          className="h-8 text-sm pr-8"
+          className="h-10 body-m pr-8"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
           {value && (
@@ -145,25 +145,25 @@ export const FunctionSelector = ({
           {functionNames.map((functionName, index) => (
             <div
               key={functionName}
-              className={`px-3 py-2 text-sm cursor-pointer hover:bg-accent ${
+              className={`px-3 py-2 body-s cursor-pointer hover:bg-accent ${
                 selectedIndex >= 0 && index === selectedIndex ? 'bg-accent' : ''
               }`}
               onClick={() => handleFunctionSelect(functionName)}
             >
-              <div className="font-medium text-popover-foreground">{functionName}</div>
+              <div className="body-s-bold text-popover-foreground">{functionName}</div>
             </div>
           ))}
           {value.trim() && !functionNames.some(f => f === value.trim()) && (
             <div className="border-t border-border">
               <div
-                className="px-3 py-2 text-sm cursor-pointer hover:bg-accent"
+                className="px-3 py-2 body-s cursor-pointer hover:bg-accent"
                 onClick={() => {
                   onChange(value.trim());
                   setIsOpen(false);
                 }}
               >
-                <div className="font-medium text-foreground">Use "{value.trim()}"</div>
-                <div className="text-xs text-muted-foreground">Custom function</div>
+                <div className="body-s-bold text-foreground">Use "{value.trim()}"</div>
+                <div className="body-s text-muted-foreground">Custom function</div>
               </div>
             </div>
           )}
