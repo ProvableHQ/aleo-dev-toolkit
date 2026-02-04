@@ -213,11 +213,6 @@
   border-radius: 50%;
 }
 
-.wallet-adapter-modal-button-close:hover {
-  border: none;
-  background-color: transparent !important;
-}
-
 .wallet-adapter-modal-button-close:focus-visible,
 .wallet-adapter-modal-button-close:focus {
   outline: 2px solid var(--wallet-adapter-primary);
@@ -231,7 +226,8 @@
 }
 
 .wallet-adapter-modal-button-close:hover svg {
-  fill: #fff;
+  opacity: 0.8;
+  transition: opacity 200ms ease 0s;
 }
 
 .wallet-adapter-modal-overlay {

@@ -178,7 +178,7 @@ export function ConnectSection() {
 
         {!connected && (
           <p className="body-s text-muted-foreground">
-            Connect your wallet to get started. We support Leo Wallet, Puzzle, Fox, and more.
+            Connect your wallet to get started. We support Shield, Leo, Puzzle, Fox, and more.
           </p>
         )}
       </div>
