@@ -11,11 +11,13 @@ import {
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 import { Network } from '@provablehq/aleo-types';
 
-interface CodeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface ProviderCodeProps {
   customCode?: string;
   componentCode?: string;
+}
+interface CodeModalProps extends ProviderCodeProps {
+  isOpen: boolean;
+  onClose: () => void;
   title?: string;
   description?: string;
 }
@@ -48,6 +50,8 @@ import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { Network } from '@provablehq/aleo-types';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+// Import wallet adapter CSS
+import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 export function App() {
   return (
@@ -91,19 +95,11 @@ export function wrapWithProvider(
   ).replace('export function App()', `${componentCode}\n\nexport function App()`);
 }
 
-export function CodeModal({
-  isOpen,
-  onClose,
-  customCode,
-  componentCode,
-  title = 'AleoWalletProvider Configuration',
-  description = 'This reflects the current selected options',
-}: CodeModalProps) {
+export function useProviderCode({ customCode = '', componentCode = '' }: ProviderCodeProps) {
   const network = useAtomValue(networkAtom);
   const decryptPermission = useAtomValue(decryptPermissionAtom);
   const autoConnect = useAtomValue(autoConnectAtom);
   const programs = useAtomValue(programsAtom);
-  const [copied, setCopied] = useState(false);
 
   const generateCode = () => {
     if (componentCode) {
@@ -120,9 +116,27 @@ export function CodeModal({
     );
   };
 
+  return generateCode();
+}
+
+export function CodeModal({
+  isOpen,
+  onClose,
+  title = 'AleoWalletProvider Configuration',
+  description = 'This reflects the current selected options',
+  customCode,
+  componentCode,
+}: CodeModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  const providerCode = useProviderCode({
+    customCode,
+    componentCode,
+  });
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(generateCode());
+      await navigator.clipboard.writeText(providerCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -163,7 +177,7 @@ export function CodeModal({
         <div className="p-6 overflow-auto max-h-[calc(90vh-120px)]">
           <div className="bg-muted rounded-lg p-4 border border-border">
             <pre className="label-s text-muted-foreground overflow-x-auto normal-case">
-              <code>{generateCode()}</code>
+              <code>{providerCode}</code>
             </pre>
           </div>
         </div>

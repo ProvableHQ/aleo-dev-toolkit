@@ -16,11 +16,11 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { useAtomValue } from 'jotai';
 import { networkAtom } from '@/lib/store/global';
-import { CustomButtonExamples } from './CustomButtonExamples';
 import { CodePanel } from './CodePanel';
 import { Link } from 'react-router-dom';
+import { useProviderCode } from './CodeModal';
 
-const walletCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+const useWalletCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 
 const { connected, address, network, switchNetwork } = useWallet();
@@ -33,36 +33,10 @@ console.log('Connected:', connected);
 console.log('Address:', address);
 console.log('Network:', network);`;
 
-const themingCode = `/* Customize the wallet adapter with CSS variables */
-:root {
-  /* Primary button colors */
-  --wallet-adapter-primary: #9565fb;
-  --wallet-adapter-primary-hover: #7952ca;
-  --wallet-adapter-primary-foreground: #ffffff;
+const connectComponentCode = `import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
 
-  /* Background & surfaces */
-  --wallet-adapter-background: #0a0606;
-  --wallet-adapter-surface: #0a0606;
-  --wallet-adapter-surface-hover: #1a1616;
-
-  /* Text colors */
-  --wallet-adapter-text: #f0e9e6;
-  --wallet-adapter-text-secondary: #b3aea9;
-
-  /* Border colors */
-  --wallet-adapter-border: #2a2626;
-  --wallet-adapter-border-light: #3a3636;
-
-  /* Border radius */
-  --wallet-adapter-radius-sm: 6px;
-  --wallet-adapter-radius: 8px;
-  --wallet-adapter-radius-lg: 12px;
-  --wallet-adapter-radius-xl: 32px;
-
-  /* Shadows */
-  --wallet-adapter-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --wallet-adapter-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-}`;
+// Pre-built button component
+<WalletMultiButton />`;
 
 const features = [
   {
@@ -113,6 +87,8 @@ export function ConnectSection() {
   const neededNetwork = useAtomValue(networkAtom);
   const { connected, connecting, reconnecting, address, network, switchNetwork } = useWallet();
   const wrongNetwork = connected && !connecting && network !== neededNetwork;
+
+  const providerCode = useProviderCode({});
 
   return (
     <section className="space-y-8">
@@ -185,7 +161,7 @@ export function ConnectSection() {
 
       {/* Features Grid */}
       <div className="space-y-4">
-        <h2 className="h4 text-foreground">What you can do</h2>
+        <h2 className="h3 text-foreground">What you can do</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {features.map(feature => (
             <Link
@@ -208,20 +184,85 @@ export function ConnectSection() {
         </div>
       </div>
 
-      {/* Code Example */}
+      {/* Installation Section */}
       <div className="space-y-4">
-        <h2 className="h4 text-foreground">Quick Start</h2>
-        <CodePanel code={walletCode} language="tsx" />
+        <h2 className="h2 text-foreground">Installation</h2>
+        <span className="body-s text-muted-foreground">Follow the installation guide on our </span>
+        <Link
+          to="https://aleo-dev-toolkit-documentation.vercel.app/docs/wallet-adapter#-installation"
+          className="body-s text-primary"
+          target="_blank"
+        >
+          Wallet Adapter Documentation
+        </Link>
       </div>
 
-      {/* Theming */}
+      {/* Code Example */}
       <div className="space-y-4">
-        <h2 className="h4 text-foreground">Theming</h2>
-        <p className="body-m text-muted-foreground">
-          Customize the wallet adapter appearance using CSS variables. Override these in your
-          stylesheet to match your app&apos;s design system.
+        <h2 className="h2 text-foreground">Quick Start</h2>
+        <p className="body-s text-muted-foreground">
+          Wrap your application with the{' '}
+          <code className="font-mono bg-muted px-1 py-0.5 rounded normal-case ">
+            &lt;AleoWalletProvider /&gt;
+          </code>{' '}
+          for quick integration:
         </p>
-        <CodePanel code={themingCode} language="css" />
+
+        <CodePanel code={providerCode} language="tsx" />
+        <p className="body-s text-muted-foreground">
+          Options configured on this page header are reflected in the code above.
+        </p>
+        <p className="body-s text-muted-foreground">
+          More details on provider configuration can be found in the{' '}
+          <Link
+            to="https://aleo-dev-toolkit-documentation.vercel.app/docs/wallet-adapter#provider-props"
+            className="body-s text-primary"
+            target="_blank"
+          >
+            documentation
+          </Link>
+        </p>
+      </div>
+
+      {/* useWallet Example */}
+      <div className="space-y-4">
+        <h2 className="h3 text-foreground">
+          <span className="font-mono bg-muted px-1 py-0.5 rounded normal-case text-foreground">
+            useWallet
+          </span>{' '}
+          hook
+        </h2>
+        <p className="body-s text-muted-foreground">
+          The useWallet hook provides access to wallet state and methods:
+        </p>
+
+        <CodePanel code={useWalletCode} language="tsx" />
+        <p className="body-s text-muted-foreground">
+          More details on useWallet hook can be found in the{' '}
+          <Link
+            to="https://aleo-dev-toolkit-documentation.vercel.app/docs/wallet-adapter#using-the-usewallet-hook"
+            className="body-s text-primary"
+            target="_blank"
+          >
+            documentation
+          </Link>
+        </p>
+      </div>
+
+      {/* Connect Component Example */}
+      <div className="space-y-4">
+        <h2 className="h3 text-foreground">
+          <span className="font-mono bg-muted px-1 py-0.5 rounded normal-case text-foreground">
+            &lt;WalletMultiButton /&gt;
+          </span>{' '}
+          component
+        </h2>
+        <p className="body-s text-muted-foreground">
+          The Connect component provides a ready-to-use button and modal for connecting to a wallet:
+        </p>
+        <WalletMultiButton />
+
+        <CodePanel code={connectComponentCode} language="tsx" />
       </div>
     </section>
   );
@@ -231,7 +272,6 @@ export function ConnectSectionWithExamples() {
   return (
     <div className="space-y-4">
       <ConnectSection />
-      <CustomButtonExamples />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   X,
   Book,
   Github,
+  Brush,
 } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,10 @@ interface NavGroup {
 
 const navigationGroups: NavGroup[] = [
   {
-    items: [{ to: '/wallet', label: 'Get Started', icon: Wallet }],
+    items: [
+      { to: '/wallet', label: 'Get Started', icon: Wallet },
+      { to: '/customizations', label: 'Customizations', icon: Brush },
+    ],
   },
   {
     title: 'Transactions',

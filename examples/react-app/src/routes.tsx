@@ -10,6 +10,7 @@ import {
   ViewKeysPage,
   TransactionHistoryPage,
 } from '@/pages';
+import { CustomizationsPage } from './pages/CustomizationsPage';
 
 export const routes: RouteObject[] = [
   {
@@ -23,6 +24,10 @@ export const routes: RouteObject[] = [
       {
         path: 'wallet',
         element: <WalletConnectPage />,
+      },
+      {
+        path: 'customizations',
+        element: <CustomizationsPage />,
       },
       {
         path: 'execute',

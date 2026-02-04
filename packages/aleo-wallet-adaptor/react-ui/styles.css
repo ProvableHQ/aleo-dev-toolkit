@@ -344,14 +344,14 @@
   display: flex;
   align-items: center;
   background-color: transparent;
-  color: #fff;
+  color: var(--wallet-adapter-text);
   margin-bottom: 6px;
   margin-right: 24px;
 }
 
 .wallet-adapter-modal-list-more svg {
   transition: all 0.1s ease;
-  fill: rgba(255, 255, 255, 1);
+  fill: var(--wallet-adapter-text);
   margin-left: 0.5rem;
 }
 
@@ -402,9 +402,12 @@
   padding: 24px;
   margin-top: auto;
   opacity: 0.88;
-  filter: invert(1);
   opacity: 50%;
   max-width: 120px;
+}
+
+.wallet-adapter-modal-footer svg {
+  color: var(--wallet-adapter-text);
 }
 
 .wallet-adapter-button:focus-visible,

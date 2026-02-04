@@ -11,6 +11,37 @@ import { CodePanel } from './CodePanel';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
 
+const themingCode = `/* Customize the wallet adapter with CSS variables */
+:root {
+  /* Primary button colors */
+  --wallet-adapter-primary: #9565fb;
+  --wallet-adapter-primary-hover: #7952ca;
+  --wallet-adapter-primary-foreground: #ffffff;
+
+  /* Background & surfaces */
+  --wallet-adapter-background: #0a0606;
+  --wallet-adapter-surface: #0a0606;
+  --wallet-adapter-surface-hover: #1a1616;
+
+  /* Text colors */
+  --wallet-adapter-text: #f0e9e6;
+  --wallet-adapter-text-secondary: #b3aea9;
+
+  /* Border colors */
+  --wallet-adapter-border: #2a2626;
+  --wallet-adapter-border-light: #3a3636;
+
+  /* Border radius */
+  --wallet-adapter-radius-sm: 6px;
+  --wallet-adapter-radius: 8px;
+  --wallet-adapter-radius-lg: 12px;
+  --wallet-adapter-radius-xl: 32px;
+
+  /* Shadows */
+  --wallet-adapter-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --wallet-adapter-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}`;
+
 const selectWalletCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 
 const { wallets, selectWallet, connected, wallet } = useWallet();
@@ -267,13 +298,22 @@ export function CustomButtonExamples() {
 
   return (
     <section className="space-y-6">
+      {/* Theming */}
+      <div className="space-y-4">
+        <h2 className="h4 text-foreground">Theming</h2>
+        <p className="body-m text-muted-foreground">
+          Customize the wallet adapter appearance using CSS variables. Override these in your
+          stylesheet to match your app&apos;s design system.
+        </p>
+        <CodePanel code={themingCode} language="css" />
+      </div>
       <div className="space-y-2">
         <h2 className="h4 text-foreground">Build Custom Components</h2>
         <p className="body-s text-muted-foreground">
           Use the{' '}
-          <code className="label-xs bg-muted px-1 py-0.5 rounded normal-case">useWallet()</code>{' '}
+          <code className="font-mono bg-muted px-1 py-0.5 rounded normal-case">useWallet()</code>{' '}
           hook to build your own wallet UI. Make sure components are wrapped with{' '}
-          <code className="label-xs bg-muted px-1 py-0.5 rounded normal-case">
+          <code className="font-mono bg-muted px-1 py-0.5 rounded normal-case">
             &lt;WalletModalProvider /&gt;
           </code>
           .
@@ -288,14 +328,14 @@ export function CustomButtonExamples() {
             <CustomWalletButton key={w.adapter.name} wallet={w} />
           ))}
         </div>
-        <div className="flex items-center space-x-2 pt-2">
+        <div className="flex items-center space-x-2 py-2">
           <Switch
             id="auto-connect-toggle"
             checked={autoConnect}
             onCheckedChange={(checked: boolean) => setAutoConnect(checked)}
           />
           <Label htmlFor="auto-connect-toggle" className="body-s cursor-pointer normal-case">
-            Auto Connect on select
+            Auto Connect (on selection)
           </Label>
         </div>
         <CodePanel code={selectWalletCode} language="tsx" />
@@ -317,7 +357,7 @@ export function CustomButtonExamples() {
         <h3 className="body-m-bold text-foreground">Pre-built Component</h3>
         <p className="body-s text-muted-foreground">
           Or use our ready-made{' '}
-          <code className="label-xs bg-muted px-1 py-0.5 rounded normal-case">
+          <code className="font-mono bg-muted px-1 py-0.5 rounded normal-case">
             &lt;WalletMultiButton /&gt;
           </code>{' '}
           for quick integration:
