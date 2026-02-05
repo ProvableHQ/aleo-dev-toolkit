@@ -1,5 +1,16 @@
 # @provablehq/aleo-wallet-standard
 
+## 0.3.0-alpha.3
+
+### Minor Changes
+
+- Minor UI fixes
+
+### Patch Changes
+
+- Updated dependencies
+  - @provablehq/aleo-types@0.3.0-alpha.3
+
 ## 0.3.0-alpha.2
 
 ### Patch Changes

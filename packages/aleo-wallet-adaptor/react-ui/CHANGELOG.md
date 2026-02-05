@@ -1,5 +1,20 @@
 # @provablehq/aleo-wallet-adaptor-react-ui
 
+## 0.3.0-alpha.3
+
+### Minor Changes
+
+- Minor UI fixes
+
+### Patch Changes
+
+- 154f88c: Updated Shield wallet icon and wallet icon border-radius styling
+- Updated dependencies
+  - @provablehq/aleo-types@0.3.0-alpha.3
+  - @provablehq/aleo-wallet-adaptor-core@0.3.0-alpha.3
+  - @provablehq/aleo-wallet-adaptor-react@0.3.0-alpha.3
+  - @provablehq/aleo-wallet-standard@0.3.0-alpha.3
+
 ## 0.3.0-alpha.2
 
 ### Patch Changes
