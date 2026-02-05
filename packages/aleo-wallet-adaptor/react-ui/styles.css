@@ -384,7 +384,7 @@
   font-weight: 600;
   border: none;
   border-radius: var(--wallet-adapter-radius-xl);
-  color: var(--wallet-adapter-text);
+  color: var(--wallet-adapter-primary-foreground, var(--wallet-adapter-text));
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.01em;
 }
