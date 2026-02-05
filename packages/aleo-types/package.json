@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-types",
-  "version": "0.3.0-alpha.2",
+  "version": "0.3.0-alpha.3",
   "description": "Types for Aleo blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

@@ -1,5 +1,11 @@
 # @provablehq/aleo-types
 
+## 0.3.0-alpha.3
+
+### Minor Changes
+
+- Minor UI fixes
+
 ## 0.3.0-alpha.2
 
 ### Patch Changes
