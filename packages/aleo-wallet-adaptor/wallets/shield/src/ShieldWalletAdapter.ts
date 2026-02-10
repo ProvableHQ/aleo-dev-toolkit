@@ -24,7 +24,7 @@ import {
   WalletDecryptionNotAllowedError,
   scopePollingDetectionStrategy,
 } from '@provablehq/aleo-wallet-adaptor-core';
-import { ShieldWallet, ShieldWalletAdapterConfig, ShieldWindow } from './types';
+import { ShieldWallet, ShieldWindow } from './types';
 
 /**
  * Shield wallet adapter
@@ -79,9 +79,8 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * Create a new Shield wallet adapter
    * @param config Adapter configuration
    */
-  constructor(config?: ShieldWalletAdapterConfig) {
+  constructor() {
     super();
-    console.debug('ShieldWalletAdapter constructor', config);
     this.network = Network.TESTNET;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());

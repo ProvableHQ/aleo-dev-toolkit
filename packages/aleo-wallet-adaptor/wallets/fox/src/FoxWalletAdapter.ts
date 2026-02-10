@@ -23,12 +23,7 @@ import {
   WalletSignMessageError,
   WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
-import {
-  AleoTransaction,
-  LEO_NETWORK_MAP,
-  LeoWallet,
-  LeoWalletAdapterConfig,
-} from '@provablehq/aleo-wallet-adaptor-leo';
+import { AleoTransaction, LEO_NETWORK_MAP, LeoWallet } from '@provablehq/aleo-wallet-adaptor-leo';
 
 export interface FoxWindow extends Window {
   foxwallet?: { aleo?: LeoWallet };
@@ -87,17 +82,13 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
    * Create a new Fox wallet adapter
    * @param config Adapter configuration
    */
-  constructor(config?: LeoWalletAdapterConfig) {
+  constructor() {
     super();
-    console.debug('FoxWalletAdapter constructor', config);
     this.network = Network.MAINNET;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());
     }
     this._foxWallet = this._window?.foxwallet?.aleo;
-    if (config?.isMobile) {
-      this.url = `https://app.leo.app/browser?url=${config.mobileWebviewUrl}`;
-    }
   }
 
   /**
