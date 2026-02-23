@@ -31,8 +31,8 @@ export function ProgramsDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2">
-          <Code className="h-4 w-4" />
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2.5">
+          <Code className="h-3.5 w-3.5" />
           <span className="hidden sm:inline label-xs">Programs</span>
           {programs.length > 0 && (
             <span className="bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] font-medium min-w-[18px] text-center">

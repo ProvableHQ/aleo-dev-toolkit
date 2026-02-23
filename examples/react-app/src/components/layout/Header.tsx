@@ -9,26 +9,22 @@ import { ProgramsDropdown } from './ProgramsDropdown';
 export function Header() {
   return (
     <header className="h-14 border-b border-border flex items-center justify-end pl-14 pr-4 md:px-6 bg-background relative z-40">
-      {/* Right side - Settings and actions */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Desktop: Show all settings inline */}
-        <div className="hidden sm:flex items-center gap-2">
+      <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3">
+        {/* Large screens: all settings inline */}
+        <div className="hidden lg:flex items-center gap-2">
           <NetworkSwitcher />
           <DecryptPermissionSelect />
           <ProgramsDropdown />
           <AutoConnectToggle />
         </div>
 
-        {/* Mobile: Collapsible menu with all settings */}
-        <div className="sm:hidden">
+        {/* Mobile & tablet: compact config dropdown + programs */}
+        <div className="flex lg:hidden items-center gap-1.5">
           <SettingsPopover />
           <ProgramsDropdown />
         </div>
 
-        {/* Wallet connection */}
         <WalletMultiButton />
-
-        {/* Theme toggle */}
         <ThemeToggle />
       </div>
     </header>

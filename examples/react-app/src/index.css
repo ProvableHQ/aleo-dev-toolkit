@@ -454,6 +454,27 @@
   --wallet-adapter-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
+/* Wallet Adapter - Responsive overrides for this app's layout */
+@media (max-width: 1023px) {
+  .wallet-adapter-button {
+    height: 36px;
+    line-height: 36px;
+    padding: 0 12px;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .wallet-adapter-button-trigger {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  .wallet-adapter-dropdown-list {
+    min-width: 180px;
+  }
+}
+
 /* Wallet Adapter Theme Overrides - Dark Mode */
 .dark {
   --wallet-adapter-primary: oklch(0.92 0.006 85);
