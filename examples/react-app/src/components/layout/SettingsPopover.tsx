@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { Menu } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,9 +23,9 @@ export function SettingsPopover() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Menu className="h-4 w-4" />
-          <span className="sr-only">Menu</span>
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2.5">
+          <Settings2 className="h-3.5 w-3.5" />
+          <span className="label-xs">Config</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
