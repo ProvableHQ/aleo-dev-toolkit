@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { Network } from '@provablehq/aleo-types';
 import { getAPIEndpoint } from '../utils/api';
+import { useAtomValue } from 'jotai';
+import { networkAtom } from '../store/global';
 
 const fetchProgram = async (programId: string, network: Network): Promise<string> => {
   const endpoint = getAPIEndpoint(network);
-  const response = await fetch(`${endpoint}/programs/${programId}`);
+  const response = await fetch(`${endpoint}/program/${programId}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch program: ${response.statusText}`);
@@ -13,7 +15,8 @@ const fetchProgram = async (programId: string, network: Network): Promise<string
   return response.text();
 };
 
-export const useProgram = (programId: string, network?: Network) => {
+export const useProgram = (programId: string) => {
+  const network = useAtomValue(networkAtom);
   return useQuery({
     queryKey: ['program', programId, network],
     queryFn: () => fetchProgram(programId, network || Network.TESTNET),

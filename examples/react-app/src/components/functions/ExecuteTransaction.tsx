@@ -49,7 +49,7 @@ export function ExecuteTransaction() {
     data: programData,
     isLoading: programIsLoading,
     error: programIsError,
-  } = useProgram(program, network || undefined);
+  } = useProgram(program);
 
   // Parse program code to get function information - memoized to prevent re-renders
   const functions = useMemo(() => {
@@ -89,7 +89,7 @@ export function ExecuteTransaction() {
   // Update program code when program data is fetched
   useEffect(() => {
     if (programData && typeof programData === 'string') {
-      setProgramCode(JSON.parse(programData).program);
+      setProgramCode(JSON.parse(programData));
     }
   }, [programData]);
 
