@@ -425,6 +425,12 @@
   text-transform: uppercase;
 }
 
+.label-s.lowercase,
+.label-m.lowercase,
+.label-xs.lowercase {
+  text-transform: lowercase;
+}
+
 /* Wallet Adapter Theme Overrides - Light Mode */
 :root {
   --wallet-adapter-primary: oklch(0.25 0.01 75);

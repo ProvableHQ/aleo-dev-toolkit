@@ -18,7 +18,7 @@ import { useAtomValue } from 'jotai';
 import { networkAtom } from '@/lib/store/global';
 import { CodePanel } from './CodePanel';
 import { Link } from 'react-router-dom';
-import { useProviderCode } from './CodeModal';
+import { useProviderCode } from '../lib/hooks/useProviderCode';
 
 const useWalletCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';

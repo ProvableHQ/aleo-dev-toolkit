@@ -67,7 +67,7 @@ export function ProgramCodeModal({
         </div>
         <div className="p-6 overflow-auto max-h-[calc(90vh-120px)]">
           <div className="bg-muted rounded-lg p-4 border border-border">
-            <pre className="label-s text-muted-foreground overflow-x-auto whitespace-pre-wrap normal-case">
+            <pre className="label-s text-muted-foreground overflow-x-auto whitespace-pre-wrap lowercase">
               <code>{programCode || 'No program code available'}</code>
             </pre>
           </div>
