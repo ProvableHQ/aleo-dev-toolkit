@@ -101,16 +101,10 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
     if (this._window.soter || this._window.soterWallet) {
       this.readyState = WalletReadyState.INSTALLED;
       this._soterWallet = this._window?.soter || this._window?.soterWallet;
+      this.emit('readyStateChange', this.readyState);
       return true;
-    } else {
-      // Check if user is on a mobile device
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        this.readyState = WalletReadyState.LOADABLE;
-        return true;
-      }
-      return false;
     }
+    return false;
   }
 
   /**

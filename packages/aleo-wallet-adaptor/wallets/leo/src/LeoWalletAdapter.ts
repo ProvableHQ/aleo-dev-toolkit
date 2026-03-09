@@ -106,16 +106,14 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
 
     if (this._window.leoWallet || this._window.leo) {
       this.readyState = WalletReadyState.INSTALLED;
-      return true;
-    } else {
-      // Check if user is on a mobile device
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        this.readyState = WalletReadyState.LOADABLE;
-        return true;
+      this.emit('readyStateChange', this.readyState);
+      // Wake up service worker
+      if (this._window?.leoWallet?.isAvailable) {
+        this._window?.leoWallet.isAvailable();
       }
-      return false;
+      return true;
     }
+    return false;
   }
 
   /**
