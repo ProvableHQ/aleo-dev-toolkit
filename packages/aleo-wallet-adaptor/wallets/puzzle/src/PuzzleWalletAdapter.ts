@@ -118,16 +118,10 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
 
     if (this._window.puzzle) {
       this.readyState = WalletReadyState.INSTALLED;
+      this.emit('readyStateChange', this.readyState);
       return true;
-    } else {
-      // Check if user is on a mobile device
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        this.readyState = WalletReadyState.LOADABLE;
-        return true;
-      }
-      return false;
     }
+    return false;
   }
 
   /**

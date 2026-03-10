@@ -1,5 +1,5 @@
 import type { FC, MouseEvent } from 'react';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Collapse } from './Collapse';
@@ -9,6 +9,9 @@ import { useWallet, Wallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { Network } from '@provablehq/aleo-types';
 import { ProvableLogo } from './ProvableLogo';
+
+const INSTALL_REDIRECT_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+const WALLET_INSTALL_REDIRECT_KEY = 'aleo-wallet-adaptor-install-redirect-timestamp';
 
 export interface WalletModalProps {
   className?: string;
@@ -61,6 +64,26 @@ export const WalletModal: FC<WalletModalProps> = ({
           otherWallets[0]!;
   }, [installedWallets, wallets, otherWallets]);
 
+  // Refresh page when user returns from being redirected to a wallet install page
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const raw = sessionStorage.getItem(WALLET_INSTALL_REDIRECT_KEY);
+        if (!raw) return;
+        const timestamp = Number(raw);
+        if (Number.isNaN(timestamp) || Date.now() - timestamp > INSTALL_REDIRECT_MAX_AGE_MS) return;
+        sessionStorage.removeItem(WALLET_INSTALL_REDIRECT_KEY);
+        window.location.reload();
+      } catch {
+        // ignore sessionStorage errors
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const hideModal = useCallback(() => {
     setFadeIn(false);
     setTimeout(() => setVisible(false), 150);
@@ -80,6 +103,27 @@ export const WalletModal: FC<WalletModalProps> = ({
       handleClose(event);
     },
     [selectWallet, handleClose],
+  );
+
+  const handleNotInstalledWalletClick = useCallback(
+    (event: MouseEvent, walletName: WalletName) => {
+      event.preventDefault();
+      const wallet = wallets.find(
+        (wallet: { adapter: { name: WalletName } }) => wallet.adapter.name === walletName,
+      );
+      if (wallet) {
+        try {
+          // Set a key in sessionStorage to refresh the page when user returns from being redirected to a wallet install page
+          sessionStorage.setItem(WALLET_INSTALL_REDIRECT_KEY, String(Date.now()));
+        } catch {
+          // ignore sessionStorage errors
+        }
+
+        // Redirect to the wallet install page
+        window.open(wallet.adapter.url, '_blank');
+      }
+    },
+    [wallets],
   );
 
   const handleCollapseClick = useCallback(() => setExpanded(!expanded), [expanded]);
@@ -217,7 +261,9 @@ export const WalletModal: FC<WalletModalProps> = ({
                   <button
                     type="button"
                     className="wallet-adapter-modal-middle-button"
-                    onClick={event => handleWalletClick(event, getStartedWallet.adapter.name)}
+                    onClick={event =>
+                      handleNotInstalledWalletClick(event, getStartedWallet?.adapter.name)
+                    }
                   >
                     Get started
                   </button>
@@ -247,7 +293,9 @@ export const WalletModal: FC<WalletModalProps> = ({
                         {otherWallets.map(wallet => (
                           <WalletListItem
                             key={wallet.adapter.name}
-                            handleClick={event => handleWalletClick(event, wallet.adapter.name)}
+                            handleClick={event =>
+                              handleNotInstalledWalletClick(event, wallet.adapter.name)
+                            }
                             tabIndex={expanded ? 0 : -1}
                             wallet={wallet}
                           />
