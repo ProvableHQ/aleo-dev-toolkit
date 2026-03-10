@@ -217,7 +217,7 @@ export const WalletModal: FC<WalletModalProps> = ({
                   <button
                     type="button"
                     className="wallet-adapter-modal-middle-button"
-                    onClick={event => handleWalletClick(event, getStartedWallet.adapter.name)}
+                    onClick={() => window.open(getStartedWallet.adapter.url, '_blank')}
                   >
                     Get started
                   </button>
