@@ -5,6 +5,7 @@ import {
   WalletReadyState,
   WalletAdapter,
   AleoDeployment,
+  RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
 import { Network, TransactionOptions } from '@provablehq/aleo-types';
 import { Wallet, WalletContext } from './context';
@@ -409,12 +410,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   );
 
   const requestRecords = useCallback(
-    async (program: string, includePlaintext?: boolean) => {
+    async (program: string, includePlaintext?: boolean, statusFilter?: RecordStatusFilter) => {
       if (!connected) throw handleError(new WalletNotConnectedError());
       if (!adapter || !('requestRecords' in adapter))
         throw handleError(new MethodNotImplementedError('requestRecords'));
 
-      return await adapter.requestRecords(program, includePlaintext);
+      return await adapter.requestRecords(program, includePlaintext, statusFilter);
     },
     [adapter, handleError, connected],
   );

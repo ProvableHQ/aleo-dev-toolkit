@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import {
   AleoDeployment,
+  RecordStatusFilter,
   WalletAdapter,
   WalletName,
   WalletReadyState,
@@ -112,7 +113,11 @@ export interface WalletContextState {
   /**
    * Request records
    */
-  requestRecords: (program: string, includePlaintext?: boolean) => Promise<unknown[]>;
+  requestRecords: (
+    program: string,
+    includePlaintext?: boolean,
+    statusFilter?: RecordStatusFilter,
+  ) => Promise<unknown[]>;
 
   /**
    * Execute a deployment

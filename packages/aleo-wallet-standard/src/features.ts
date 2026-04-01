@@ -9,6 +9,8 @@ import { AleoChain } from './chains';
 import { WalletDecryptPermission } from './wallet';
 import { AleoDeployment } from './adapter';
 
+export type RecordStatusFilter = 'all' | 'spent' | 'unspent';
+
 /**
  * Base interface for all wallet features
  */
@@ -160,9 +162,14 @@ export interface RequestRecordsFeature extends WalletFeature {
    * Request records
    * @param program The program to request records from
    * @param includePlaintext Whether to include plaintext on each record, default is false
+   * @param statusFilter Whether to filter records by status, default is all
    * @returns The records
    */
-  requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
+  requestRecords(
+    program: string,
+    includePlaintext?: boolean,
+    statusFilter?: RecordStatusFilter,
+  ): Promise<unknown[]>;
 }
 
 export interface ExecuteDeploymentFeature extends WalletFeature {

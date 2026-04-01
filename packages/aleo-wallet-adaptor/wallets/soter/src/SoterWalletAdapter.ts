@@ -5,12 +5,14 @@ import {
   TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
+  RecordStatusFilter,
   WalletDecryptPermission,
   WalletName,
   WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
 import {
   BaseAleoWalletAdapter,
+  filterRecordsByStatus,
   scopePollingDetectionStrategy,
   MethodNotImplementedError,
   WalletConnectionError,
@@ -314,9 +316,14 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
    * Request records from Soter wallet
    * @param program The program to request records from
    * @param includePlaintext Whether to include plaintext on each record
+   * @param statusFilter Whether to filter records by status
    * @returns The records
    */
-  async requestRecords(program: string, includePlaintext: boolean): Promise<unknown[]> {
+  async requestRecords(
+    program: string,
+    includePlaintext: boolean,
+    statusFilter: RecordStatusFilter = 'all',
+  ): Promise<unknown[]> {
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -326,7 +333,7 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
         ? await this._soterWallet?.requestRecordPlaintexts(program)
         : await this._soterWallet?.requestRecords(program);
 
-      return result?.records || [];
+      return filterRecordsByStatus(result?.records || [], statusFilter);
     } catch (error: Error | unknown) {
       throw new WalletError(error instanceof Error ? error.message : 'Failed to request records');
     }

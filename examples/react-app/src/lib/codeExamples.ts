@@ -1,6 +1,7 @@
 // Placeholders that can be replaced with dynamic values
 export const PLACEHOLDERS = {
   PROGRAM: '{{PROGRAM}}',
+  STATUS_FILTER: '{{STATUS_FILTER}}',
   FUNCTION: '{{FUNCTION}}',
   INPUTS: '{{INPUTS}}',
   FEE: '{{FEE}}',
@@ -52,7 +53,7 @@ console.log('Decrypted:', decrypted);`,
 const { requestRecords } = useWallet();
 
 // Fetch records for a program
-const records = await requestRecords('${PLACEHOLDERS.PROGRAM}', false);
+const records = await requestRecords('${PLACEHOLDERS.PROGRAM}', false, '${PLACEHOLDERS.STATUS_FILTER}');
 console.log('Records:', records);`,
 
   executeDeployment: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';

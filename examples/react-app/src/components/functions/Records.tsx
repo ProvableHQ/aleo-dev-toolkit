@@ -3,6 +3,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Database, Copy, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,6 +19,8 @@ import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import { ProgramAutocomplete } from '../ProgramAutocomplete';
 
+type RecordStatusFilter = 'all' | 'spent' | 'unspent';
+
 export default function Records() {
   const { connected, requestRecords } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
@@ -20,6 +29,7 @@ export default function Records() {
   const [error, setError] = useState<string>('');
   const [programId, setProgramId] = useState('credits.aleo');
   const [includePlaintext, setIncludePlaintext] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<RecordStatusFilter>('all');
 
   const fetchRecords = async () => {
     if (!connected) {
@@ -36,7 +46,7 @@ export default function Records() {
     setError('');
 
     try {
-      const recordsData = await requestRecords(programId.trim(), includePlaintext);
+      const recordsData = await requestRecords(programId.trim(), includePlaintext, statusFilter);
       setRecords(recordsData || []);
       toast.success('Successfully fetched records');
     } catch (err) {
@@ -62,20 +72,41 @@ export default function Records() {
 
   return (
     <section className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="programId" className="transition-colors duration-300">
-          Program ID
-        </Label>
-        <ProgramAutocomplete
-          value={programId}
-          onChange={setProgramId}
-          onAdd={handleProgramAdd}
-          disabled={loading}
-        />
+      <div className="flex flex-col gap-4 md:flex-row md:items-end">
+        <div className="space-y-2 flex-1">
+          <Label htmlFor="programId" className="transition-colors duration-300">
+            Program ID
+          </Label>
+          <ProgramAutocomplete
+            value={programId}
+            onChange={setProgramId}
+            onAdd={handleProgramAdd}
+            disabled={loading}
+          />
+        </div>
+
+        <div className="space-y-2 w-full md:w-[150px] md:max-w-[150px]">
+          <Label htmlFor="statusFilter" className="transition-colors duration-300">
+            Status
+          </Label>
+          <Select
+            value={statusFilter}
+            onValueChange={(value: RecordStatusFilter) => setStatusFilter(value)}
+          >
+            <SelectTrigger id="statusFilter" className="h-10" disabled={loading}>
+              <SelectValue placeholder="Select a status filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="unspent">Unspent</SelectItem>
+              <SelectItem value="spent">Spent</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between md:flex-row flex-col">
           <div className="flex items-center space-x-2">
             <Checkbox
               id="includePlaintext"
@@ -173,6 +204,7 @@ export default function Records() {
         language="tsx"
         highlightValues={{
           [PLACEHOLDERS.PROGRAM]: programId || 'credits.aleo',
+          [PLACEHOLDERS.STATUS_FILTER]: statusFilter,
         }}
       />
     </section>
