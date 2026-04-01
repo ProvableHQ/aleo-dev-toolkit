@@ -168,7 +168,7 @@ export default function Records() {
               {records.map((record, index) => (
                 <div
                   key={index}
-                  className="relative w-full bg-muted p-3 rounded-lg label-xs max-h-60 overflow-auto border transition-all duration-300"
+                  className="relative w-full bg-muted p-3 rounded-lg label-xs lowercase max-h-60 overflow-auto border transition-all duration-300"
                 >
                   <pre className="whitespace-pre-wrap break-all">
                     {JSON.stringify(record, null, 2)}
