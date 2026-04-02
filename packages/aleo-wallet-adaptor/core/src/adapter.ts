@@ -16,6 +16,7 @@ import {
   WalletName,
   WalletDecryptPermission,
   AleoDeployment,
+  RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
 import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
 import { WalletConnectionError } from './errors';
@@ -214,7 +215,11 @@ export abstract class BaseAleoWalletAdapter
     return feature.decrypt(cipherText, tpk, programId, functionName, index);
   }
 
-  async requestRecords(program: string, includePlaintext: boolean): Promise<unknown[]> {
+  async requestRecords(
+    program: string,
+    includePlaintext: boolean,
+    statusFilter?: RecordStatusFilter,
+  ): Promise<unknown[]> {
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -223,7 +228,7 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_RECORDS);
     }
 
-    return feature.requestRecords(program, includePlaintext);
+    return feature.requestRecords(program, includePlaintext, statusFilter);
   }
 
   async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {

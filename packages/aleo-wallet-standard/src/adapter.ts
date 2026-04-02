@@ -6,6 +6,7 @@ import {
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
+import type { RecordStatusFilter } from './features';
 import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
 
@@ -127,9 +128,14 @@ export interface WalletAdapterProps<Name extends string = string> {
    * Request records
    * @param program The program to request records from
    * @param includePlaintext Whether to include plaintext on each record
+   * @param statusFilter Whether to filter records by status
    * @returns The records
    */
-  requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
+  requestRecords(
+    program: string,
+    includePlaintext?: boolean,
+    statusFilter?: RecordStatusFilter,
+  ): Promise<unknown[]>;
 
   /**
    * Execute a deployment

@@ -283,9 +283,17 @@ export const RequestRecords: FC = () => {
     const records = await requestRecords(program);
     console.log('Records:', records);
 
-    // Request records with plaintext (requires appropriate decrypt permission)
-    const recordsWithPlaintext = await requestRecords(program, true);
-    console.log('Records with plaintext:', recordsWithPlaintext);
+    // Request all the records with plaintext (requires appropriate decrypt permission)
+    const recordsWithPlaintext = await requestRecords(program, true, 'all');
+    console.log('All Records with plaintext:', recordsWithPlaintext);
+
+    // Request all the unspent records
+    const unspentRecordsWithPlaintext = await requestRecords(program, true, 'unspent');
+    console.log('Unspent Records with plaintext:', unspentRecordsWithPlaintext);
+
+    // Request all the spent records
+    const spentRecordsWithPlaintext = await requestRecords(program, true, 'spent');
+    console.log('Spent Records with plaintext:', spentRecordsWithPlaintext);
   }, [address, requestRecords, connected]);
 
   return (

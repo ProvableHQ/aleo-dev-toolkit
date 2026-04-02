@@ -7,6 +7,7 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  RecordStatusFilter,
   WalletDecryptPermission,
   WalletName,
   WalletReadyState,
@@ -32,6 +33,7 @@ import {
   requestSignature,
   EventType,
   decrypt as puzzleDecrypt,
+  type GetRecordsRequest,
   getRecords,
   getEvent,
 } from '@puzzlehq/sdk-core';
@@ -331,18 +333,30 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    * Request records from Leo wallet
    * @param program The program to request records from
    * @param includePlaintext Whether to include plaintext on each record
+   * @param statusFilter Whether to filter records by status
    * @returns The records
    */
-  async requestRecords(program: string): Promise<unknown[]> {
+  async requestRecords(
+    program: string,
+    _includePlaintext?: boolean,
+    statusFilter: RecordStatusFilter = 'all',
+  ): Promise<unknown[]> {
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
 
     try {
+      const puzzleStatusFilter =
+        statusFilter === 'spent'
+          ? ('Spent' as NonNullable<GetRecordsRequest['filter']>['status'])
+          : statusFilter === 'unspent'
+            ? ('Unspent' as NonNullable<GetRecordsRequest['filter']>['status'])
+            : 'All';
+
       const result = await getRecords({
         filter: {
           programIds: [program],
-          status: 'All',
+          status: puzzleStatusFilter,
         },
         address: this._publicKey,
         network: PUZZLE_NETWORK_MAP[this.network],
