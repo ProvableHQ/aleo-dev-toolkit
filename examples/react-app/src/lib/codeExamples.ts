@@ -8,6 +8,11 @@ export const PLACEHOLDERS = {
   CIPHER_TEXT: '{{CIPHER_TEXT}}',
   MESSAGE: '{{MESSAGE}}',
   TX_ID: '{{TX_ID}}',
+  TARGET_PROGRAM: '{{TARGET_PROGRAM}}',
+  FROM: '{{FROM}}',
+  TO: '{{TO}}',
+  AMOUNT: '{{AMOUNT}}',
+  MINT_AMOUNT: '{{MINT_AMOUNT}}',
 } as const;
 
 export const codeExamples = {
@@ -85,6 +90,35 @@ const { requestTransactionHistory } = useWallet();
 // Get transaction history for a program
 const history = await requestTransactionHistory('${PLACEHOLDERS.PROGRAM}');
 console.log('Transactions:', history.transactions);`,
+
+  dynamicDispatch: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { programIdToField } from '@/lib/programIdField';
+
+const { executeTransaction, address } = useWallet();
+
+// 1) (optional prep) mint yourself a balance on the target token — no imports needed
+await executeTransaction({
+  program: '${PLACEHOLDERS.TARGET_PROGRAM}',
+  function: 'mint_public',
+  inputs: [address, '${PLACEHOLDERS.MINT_AMOUNT}u128'],
+  fee: ${PLACEHOLDERS.FEE},
+});
+
+// 2) dynamic-dispatch route_transfer through token_router — passes the new \`imports\` option
+const targetField = programIdToField('${PLACEHOLDERS.TARGET_PROGRAM}');
+const result = await executeTransaction({
+  program: 'token_router.aleo',
+  function: 'route_transfer',
+  inputs: [
+    targetField,
+    '${PLACEHOLDERS.FROM}',
+    '${PLACEHOLDERS.TO}',
+    '${PLACEHOLDERS.AMOUNT}u128',
+  ],
+  imports: ['${PLACEHOLDERS.TARGET_PROGRAM}'],
+  fee: ${PLACEHOLDERS.FEE},
+});
+console.log('Dispatch TX ID:', result.transactionId);`,
 } as const;
 
 export type CodeExampleKey = keyof typeof codeExamples;
