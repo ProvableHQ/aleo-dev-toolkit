@@ -14,6 +14,9 @@ export const autoConnectAtom = atomWithStorage<boolean>('autoConnect', true);
 export const programsAtom = atomWithStorage<string[]>('programs', [
   'credits.aleo',
   'hello_world.aleo',
+  'token_router.aleo',
+  'toka_token.aleo',
+  'tokb_token.aleo',
 ]);
 
 /**
