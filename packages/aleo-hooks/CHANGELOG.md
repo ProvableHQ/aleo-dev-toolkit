@@ -1,5 +1,18 @@
 # @provablehq/aleo-hooks
 
+## 0.3.0-alpha.4
+
+### Minor Changes
+
+- Support to Dynamic Dispatch imports on executeTransaction
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [fa21e65]
+  - @provablehq/aleo-types@0.3.0-alpha.4
+  - @provablehq/aleo-wallet-standard@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes
