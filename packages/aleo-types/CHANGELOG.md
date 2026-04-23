@@ -1,5 +1,15 @@
 # @provablehq/aleo-types
 
+## 0.3.0-alpha.4
+
+### Minor Changes
+
+- Support to Dynamic Dispatch imports on executeTransaction
+
+### Patch Changes
+
+- fa21e65: Added the ability to specify the names of programs that needs to be imported during dynamic dispatch calls.
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes
