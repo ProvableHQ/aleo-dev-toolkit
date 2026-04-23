@@ -71,6 +71,11 @@ export interface TransactionOptions {
    * Whether the fee is private
    */
   privateFee?: boolean;
+
+  /**
+  * List of program names that should be imported when calling a dynamic dispatch function.
+  */ 
+  imports?: string[];
 }
 
 /**
