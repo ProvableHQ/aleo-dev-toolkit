@@ -226,9 +226,6 @@ export function ExecuteTransaction() {
 
   // Initialize inputs when function changes
   useEffect(() => {
-    if (!isLoading) {
-      return;
-    }
     if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
       // Initialize with empty values for dynamic inputs when we have a known function
       const emptyValues = currentFunction.inputs.map(() => '');
@@ -239,7 +236,10 @@ export function ExecuteTransaction() {
       setDynamicInputValues([]);
       setInputs('');
     }
-  }, [currentFunction, useDynamicInputs, functionName, program, isLoading]);
+    // Resets values on actual function/program change. Intentionally excludes
+    // useDynamicInputs from deps so toggling input mode does not wipe typed
+    // values.
+  }, [currentFunction, functionName, program]);
 
   useEffect(() => {
     if (programIsError) {
