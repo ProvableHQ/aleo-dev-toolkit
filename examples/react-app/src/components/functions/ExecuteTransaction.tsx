@@ -390,7 +390,7 @@ export function ExecuteTransaction() {
                 className="rounded border-input"
               />
               <Label htmlFor="filterToDispatch" className="text-sm">
-                Dynamic dispatch only
+                Dynamic dispatch programs
               </Label>
             </div>
           </div>
@@ -489,7 +489,7 @@ export function ExecuteTransaction() {
                 className="rounded border-input"
               />
               <Label htmlFor="useDynamicInputs" className="text-sm">
-                Show individual input fields
+                Show function inputs
               </Label>
             </div>
           </div>
