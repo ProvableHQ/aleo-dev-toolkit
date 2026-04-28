@@ -324,12 +324,20 @@ export function ExecuteTransaction() {
         inputArray = parseInputs(inputs);
       }
 
+      const importsArray = showImportsField
+        ? importsField
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean)
+        : [];
+
       const tx = await executeTransaction({
         program: program.trim(),
         function: functionName.trim(),
         inputs: inputArray,
         fee: Number(fee),
         privateFee,
+        ...(importsArray.length > 0 ? { imports: importsArray } : {}),
       });
 
       if (tx?.transactionId) {
