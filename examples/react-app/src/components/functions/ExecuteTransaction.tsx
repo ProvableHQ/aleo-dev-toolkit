@@ -5,6 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle, Info, X, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -59,6 +66,7 @@ export function ExecuteTransaction() {
   const [privateFee, setPrivateFee] = useState(false);
   const [filterToDispatch, setFilterToDispatch] = useState(false);
   const [importsField, setImportsField] = useState('');
+  const [importsSelectKey, setImportsSelectKey] = useState(0);
 
   const dispatchAlertStorageKey = (programId: string) => `dispatch-alert-dismissed:${programId}`;
 
@@ -83,6 +91,18 @@ export function ExecuteTransaction() {
       window.sessionStorage.setItem(dispatchAlertStorageKey(program), '1');
     }
     setDispatchAlertDismissed(true);
+  };
+
+  const handleAddImport = (target: string) => {
+    const existing = importsField
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (!existing.includes(target)) {
+      setImportsField([...existing, target].join(', '));
+    }
+    // Bump key so the Select trigger resets to placeholder after a pick.
+    setImportsSelectKey(k => k + 1);
   };
 
   // Use the useProgram hook to fetch program data
@@ -608,6 +628,20 @@ export function ExecuteTransaction() {
               onChange={e => setImportsField(e.target.value)}
               className="transition-all duration-300"
             />
+            {knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0 && (
+              <Select key={importsSelectKey} onValueChange={handleAddImport}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Add a known target" />
+                </SelectTrigger>
+                <SelectContent>
+                  {knownDispatchProgram.knownTargets.map(t => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <p className="body-s text-muted-foreground">
               Comma-separated program IDs. The first import is the active target for this dispatch
               call — its field representation is auto-filled into the function's target input.
