@@ -14,12 +14,21 @@ export interface FunctionInput {
 export interface FunctionInfo {
   name: string;
   inputs: FunctionInput[];
+  /**
+   * True if the function's body contains a `call.dynamic` instruction. Used by
+   * the Execute page to reveal the Imports field for any dispatch-using
+   * function, including programs not in the curated registry.
+   */
+  usesDynamicCall: boolean;
 }
 
 /**
- * Parses Leo program code and returns an array of function information including inputs
- * @param programCode - The Leo program code as a string
- * @returns Array of function information with names and inputs
+ * Parses Aleo program source and returns one entry per `function NAME:` block.
+ *
+ * Inputs are collected only from the leading `input … as …` lines of each
+ * function (the existing behavior). The full function body, up to the next
+ * top-level `function` / `closure` / `finalize` keyword, is also scanned for
+ * the `call.dynamic` instruction so we can flag dispatch-using functions.
  */
 export function parseLeoProgramFunctions(programCode: string): FunctionInfo[] {
   if (!programCode || typeof programCode !== 'string') {
@@ -30,34 +39,54 @@ export function parseLeoProgramFunctions(programCode: string): FunctionInfo[] {
   const functions: FunctionInfo[] = [];
   let currentFunction: FunctionInfo | null = null;
   let inFunction = false;
+  let inFunctionInputs = false;
 
-  for (const line of lines) {
-    const trimmedLine = line.trim();
+  // Matches `call.dynamic` as a whole word. Aleo source from the network has
+  // no comments, so a plain substring check is acceptable; word boundaries
+  // guard against future false positives like `call.dynamic_extra`.
+  const dynamicCallPattern = /\bcall\.dynamic\b/;
 
-    // Check for function definition start
+  // Top-level keywords that terminate the current function's body.
+  const isFunctionTerminator = (trimmed: string): boolean =>
+    /^function\s+[a-zA-Z_]/.test(trimmed) ||
+    /^closure\s+[a-zA-Z_]/.test(trimmed) ||
+    trimmed.startsWith('finalize ') ||
+    trimmed === 'finalize:' ||
+    /^finalize\s+[a-zA-Z_]/.test(trimmed);
+
+  for (const rawLine of lines) {
+    const trimmedLine = rawLine.trim();
+
     const functionMatch = trimmedLine.match(/^function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:/);
     if (functionMatch) {
-      // Save previous function if exists
       if (currentFunction) {
         functions.push(currentFunction);
       }
-
       currentFunction = {
         name: functionMatch[1],
         inputs: [],
+        usesDynamicCall: false,
       };
       inFunction = true;
+      inFunctionInputs = true;
       continue;
     }
 
-    // Check for finalize function (skip these for input parsing)
-    if (trimmedLine.startsWith('finalize ')) {
+    if (!inFunction || !currentFunction) {
+      continue;
+    }
+
+    // Function body terminator: next top-level definition. Push current and stop.
+    if (isFunctionTerminator(trimmedLine)) {
+      functions.push(currentFunction);
+      currentFunction = null;
       inFunction = false;
+      inFunctionInputs = false;
       continue;
     }
 
-    // Check for input statements within function
-    if (inFunction && currentFunction && trimmedLine.startsWith('input ')) {
+    // Input collection: only while we're still in the leading input block.
+    if (inFunctionInputs && trimmedLine.startsWith('input ')) {
       const inputMatch = trimmedLine.match(
         /input\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+as\s+([a-zA-Z0-9_.]+)\.([a-zA-Z]+)/,
       );
@@ -69,18 +98,25 @@ export function parseLeoProgramFunctions(programCode: string): FunctionInfo[] {
           visibility: visibility as 'public' | 'private',
         });
       }
+      continue;
     }
 
-    // Check for function end (empty line or non-input statement)
-    if (inFunction && currentFunction && trimmedLine && !trimmedLine.startsWith('input ')) {
-      // If we hit a non-input statement, the function definition is complete
-      if (trimmedLine !== '{' && !trimmedLine.startsWith('//')) {
-        inFunction = false;
-      }
+    // First non-input, non-comment, non-empty line means we've left the input block.
+    if (
+      inFunctionInputs &&
+      trimmedLine.length > 0 &&
+      trimmedLine !== '{' &&
+      !trimmedLine.startsWith('//')
+    ) {
+      inFunctionInputs = false;
+    }
+
+    // Scan body for call.dynamic regardless of input-block state.
+    if (dynamicCallPattern.test(trimmedLine)) {
+      currentFunction.usesDynamicCall = true;
     }
   }
 
-  // Add the last function
   if (currentFunction) {
     functions.push(currentFunction);
   }
