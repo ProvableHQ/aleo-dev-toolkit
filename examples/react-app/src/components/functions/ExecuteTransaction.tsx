@@ -438,9 +438,11 @@ export function ExecuteTransaction() {
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p className="body-s">
-                    Dynamic dispatch in Aleo (via <code>call.dynamic</code>) lets a program invoke a
-                    function on a target program chosen at runtime. Toggle this on to filter the
-                    list to programs known to use it.
+                    Dynamic dispatch in Aleo (via <code>call.dynamic</code>) lets an Aleo program
+                    function call a function on ANY other Aleo program if the function has the same
+                    name, inputs and outputs. This is similar to interfaces in Ethereum and enables
+                    ERC20-like functionality in Aleo. Toggle this on to filter for programs that use
+                    dynamic dispatch.
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -604,9 +606,10 @@ export function ExecuteTransaction() {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p className="body-s">
-                      The wallet needs source for any program reached via <code>call.dynamic</code>.
-                      List target programs here so the wallet knows which sources to fetch when
-                      building the proof.
+                      The wallet needs program source code for the program(s) being called via
+                      dynamic dispatch. Enter the name of the program(s) that contain the desired
+                      functions you wish to call via dynamic dispatch so the wallet knows which
+                      program(s) to fetch when calling the dynamic dispatch function.
                     </p>
                   </TooltipContent>
                 </Tooltip>
