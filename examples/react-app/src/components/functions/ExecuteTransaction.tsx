@@ -202,6 +202,12 @@ export function ExecuteTransaction() {
     }
   }, [functionNames, functionName, isLoading, wasManuallyCleared]);
 
+  useEffect(() => {
+    if (filterToDispatch && KNOWN_DISPATCH_PROGRAM_IDS.length > 0) {
+      setProgram(KNOWN_DISPATCH_PROGRAM_IDS[0]);
+    }
+  }, [filterToDispatch]);
+
   // Initialize inputs when function changes
   useEffect(() => {
     if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
