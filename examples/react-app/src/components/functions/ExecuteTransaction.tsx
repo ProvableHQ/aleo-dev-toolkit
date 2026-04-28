@@ -480,7 +480,7 @@ export function ExecuteTransaction() {
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                       aria-label="What are imports?"
                     >
                       <HelpCircle className="h-4 w-4" />
