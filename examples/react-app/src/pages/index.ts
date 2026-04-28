@@ -1,6 +1,5 @@
 export { WalletConnectPage } from './WalletConnectPage';
 export { ExecuteTransactionPage } from './ExecuteTransactionPage';
-export { DynamicDispatchPage } from './DynamicDispatchPage';
 export { DeployProgramPage } from './DeployProgramPage';
 export { SignMessagePage } from './SignMessagePage';
 export { DecryptPage } from './DecryptPage';

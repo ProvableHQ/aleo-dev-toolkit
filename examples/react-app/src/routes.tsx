@@ -3,7 +3,6 @@ import { Layout } from '@/components/layout';
 import {
   WalletConnectPage,
   ExecuteTransactionPage,
-  DynamicDispatchPage,
   DeployProgramPage,
   SignMessagePage,
   DecryptPage,
@@ -33,10 +32,6 @@ export const routes: RouteObject[] = [
       {
         path: 'execute',
         element: <ExecuteTransactionPage />,
-      },
-      {
-        path: 'dynamic-dispatch',
-        element: <DynamicDispatchPage />,
       },
       {
         path: 'deploy',

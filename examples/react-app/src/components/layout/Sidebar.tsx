@@ -13,7 +13,6 @@ import {
   Book,
   Github,
   Brush,
-  Workflow,
 } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
@@ -41,7 +40,6 @@ const navigationGroups: NavGroup[] = [
     title: 'Transactions',
     items: [
       { to: '/execute', label: 'Execute', icon: Send },
-      { to: '/dynamic-dispatch', label: 'Dynamic Dispatch', icon: Workflow },
       { to: '/deploy', label: 'Deploy', icon: Rocket },
     ],
   },
