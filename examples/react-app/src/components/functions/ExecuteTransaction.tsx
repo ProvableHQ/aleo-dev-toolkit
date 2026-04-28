@@ -65,8 +65,7 @@ export function ExecuteTransaction() {
   const [wasManuallyCleared, setWasManuallyCleared] = useState(false);
   const [privateFee, setPrivateFee] = useState(false);
   const [filterToDispatch, setFilterToDispatch] = useState(false);
-  const [importsField, setImportsField] = useState('');
-  const [importsSelectKey, setImportsSelectKey] = useState(0);
+  const [selectedImport, setSelectedImport] = useState('');
 
   const dispatchAlertStorageKey = (programId: string) => `dispatch-alert-dismissed:${programId}`;
 
@@ -91,18 +90,6 @@ export function ExecuteTransaction() {
       window.sessionStorage.setItem(dispatchAlertStorageKey(program), '1');
     }
     setDispatchAlertDismissed(true);
-  };
-
-  const handleAddImport = (target: string) => {
-    const existing = importsField
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean);
-    if (!existing.includes(target)) {
-      setImportsField([...existing, target].join(', '));
-    }
-    // Bump key so the Select trigger resets to placeholder after a pick.
-    setImportsSelectKey(k => k + 1);
   };
 
   // Use the useProgram hook to fetch program data
@@ -149,21 +136,15 @@ export function ExecuteTransaction() {
     targetInputDirtyRef.current = { key: dirtyKey, dirty: false };
   };
 
-  const firstImport = useMemo(() => {
-    return importsField
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean)[0];
-  }, [importsField]);
-
   const resolvedTargetField = useMemo(() => {
-    if (!firstImport) return undefined;
+    const trimmed = selectedImport.trim();
+    if (!trimmed) return undefined;
     try {
-      return programIdToField(firstImport);
+      return programIdToField(trimmed);
     } catch {
       return undefined;
     }
-  }, [firstImport]);
+  }, [selectedImport]);
 
   useEffect(() => {
     if (!connected) {
@@ -197,10 +178,10 @@ export function ExecuteTransaction() {
   }, [program]);
 
   useEffect(() => {
-    if (knownDispatchProgram) {
-      setImportsField(knownDispatchProgram.knownTargets.join(', '));
+    if (knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0) {
+      setSelectedImport(knownDispatchProgram.knownTargets[0]);
     } else {
-      setImportsField('');
+      setSelectedImport('');
     }
     resetTargetInputDirty();
     // Fires on program change only (knownDispatchProgram intentionally omitted).
@@ -349,12 +330,7 @@ export function ExecuteTransaction() {
         inputArray = parseInputs(inputs);
       }
 
-      const importsArray = showImportsField
-        ? importsField
-            .split(',')
-            .map(s => s.trim())
-            .filter(Boolean)
-        : [];
+      const importsArray = showImportsField && selectedImport.trim() ? [selectedImport.trim()] : [];
 
       const tx = await executeTransaction({
         program: program.trim(),
@@ -632,17 +608,10 @@ export function ExecuteTransaction() {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <Input
-              id="imports"
-              placeholder="e.g. target_program.aleo, other_program.aleo"
-              value={importsField}
-              onChange={e => setImportsField(e.target.value)}
-              className="transition-all duration-300"
-            />
-            {knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0 && (
-              <Select key={importsSelectKey} onValueChange={handleAddImport}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Add a known target" />
+            {knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0 ? (
+              <Select value={selectedImport} onValueChange={setSelectedImport}>
+                <SelectTrigger className="w-full" id="imports">
+                  <SelectValue placeholder="Select an import" />
                 </SelectTrigger>
                 <SelectContent>
                   {knownDispatchProgram.knownTargets.map(t => (
@@ -652,10 +621,18 @@ export function ExecuteTransaction() {
                   ))}
                 </SelectContent>
               </Select>
+            ) : (
+              <Input
+                id="imports"
+                placeholder="e.g. target_program.aleo"
+                value={selectedImport}
+                onChange={e => setSelectedImport(e.target.value)}
+                className="transition-all duration-300"
+              />
             )}
             <p className="body-s text-muted-foreground">
-              Comma-separated program IDs. The first import is the active target for this dispatch
-              call — its field representation is auto-filled into the function's target input.
+              The selected import is the active target — its field representation is auto-filled
+              into the function's target input.
             </p>
           </div>
         )}
