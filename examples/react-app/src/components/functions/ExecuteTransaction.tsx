@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle } from 'lucide-react';
+import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle, Info, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -49,6 +49,31 @@ export function ExecuteTransaction() {
   const [wasManuallyCleared, setWasManuallyCleared] = useState(false);
   const [privateFee, setPrivateFee] = useState(false);
   const [filterToDispatch, setFilterToDispatch] = useState(false);
+
+  const dispatchAlertStorageKey = (programId: string) => `dispatch-alert-dismissed:${programId}`;
+
+  const [dispatchAlertDismissed, setDispatchAlertDismissed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    if (!program) return false;
+    return window.sessionStorage.getItem(dispatchAlertStorageKey(program)) === '1';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !program) {
+      setDispatchAlertDismissed(false);
+      return;
+    }
+    setDispatchAlertDismissed(
+      window.sessionStorage.getItem(dispatchAlertStorageKey(program)) === '1',
+    );
+  }, [program]);
+
+  const dismissDispatchAlert = () => {
+    if (typeof window !== 'undefined' && program) {
+      window.sessionStorage.setItem(dispatchAlertStorageKey(program), '1');
+    }
+    setDispatchAlertDismissed(true);
+  };
 
   // Use the useProgram hook to fetch program data
   const {
@@ -324,6 +349,33 @@ export function ExecuteTransaction() {
             </div>
           )}
         </div>
+
+        {knownDispatchProgram && !dispatchAlertDismissed && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <div className="flex items-start justify-between gap-2">
+                <p className="body-m">
+                  <span className="body-m-bold">{knownDispatchProgram.program}</span> uses{' '}
+                  <span className="body-m-bold">call.dynamic</span> to invoke a function on
+                  whichever target program you put in <span className="body-m-bold">imports</span>.
+                  The first import is the active target — its field representation auto-fills the
+                  function's target input.
+                  {knownDispatchProgram.description ? ` ${knownDispatchProgram.description}` : ''}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={dismissDispatchAlert}
+                  className="h-6 w-6 p-0 shrink-0"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="functionName" className="transition-colors duration-300">
