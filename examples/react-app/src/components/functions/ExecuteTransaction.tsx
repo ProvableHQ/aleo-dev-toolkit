@@ -24,6 +24,7 @@ import {
   KNOWN_DISPATCH_PROGRAM_IDS,
 } from '@/lib/dispatchPrograms';
 import { programIdToField } from '@/lib/programIdField';
+import { DispatchPrepPanel } from './DispatchPrepPanel';
 
 export function ExecuteTransaction() {
   const {
@@ -472,6 +473,10 @@ export function ExecuteTransaction() {
               </div>
             </AlertDescription>
           </Alert>
+        )}
+
+        {knownDispatchProgram?.prepFlow && knownDispatchProgram.prepFlow.length > 0 && (
+          <DispatchPrepPanel entry={knownDispatchProgram} />
         )}
 
         <div className="space-y-2">

@@ -1,3 +1,17 @@
+export interface DispatchPrepStep {
+  /** Button label shown to the user. */
+  label: string;
+  /** Program to call for this prep step. */
+  program: string;
+  /** Function on that program. */
+  function: string;
+  /**
+   * Inputs to pass. May contain `${address}` which is replaced with the
+   * connected wallet's address at click time.
+   */
+  inputs: string[];
+}
+
 export interface DispatchFunctionEntry {
   name: string;
   /**
@@ -13,6 +27,11 @@ export interface DispatchProgramEntry {
   knownTargets: string[];
   dispatchFunctions: DispatchFunctionEntry[];
   description?: string;
+  /**
+   * Optional first-time setup steps (e.g. mint balance + approve router) shown
+   * as buttons in a "DispatchPrepPanel" when this program is selected.
+   */
+  prepFlow?: DispatchPrepStep[];
 }
 
 export const KNOWN_DISPATCH_PROGRAMS: DispatchProgramEntry[] = [
@@ -27,6 +46,32 @@ export const KNOWN_DISPATCH_PROGRAMS: DispatchProgramEntry[] = [
     description:
       'Token router that uses call.dynamic to forward transfers, deposits, and ' +
       'withdrawals to whichever target token program is supplied via `imports`.',
+    prepFlow: [
+      {
+        label: 'Mint 10000 toka_token',
+        program: 'toka_token.aleo',
+        function: 'mint_public',
+        inputs: ['${address}', '10000u128'],
+      },
+      {
+        label: 'Approve router for toka_token',
+        program: 'toka_token.aleo',
+        function: 'approve_public',
+        inputs: ['token_router.aleo', '10000u128'],
+      },
+      {
+        label: 'Mint 10000 tokb_token',
+        program: 'tokb_token.aleo',
+        function: 'mint_public',
+        inputs: ['${address}', '10000u128'],
+      },
+      {
+        label: 'Approve router for tokb_token',
+        program: 'tokb_token.aleo',
+        function: 'approve_public',
+        inputs: ['token_router.aleo', '10000u128'],
+      },
+    ],
   },
 ];
 
