@@ -30,11 +30,15 @@ export const ProgramAutocomplete = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: searchResults, isLoading } = useProgramsSearch(network, searchTerm);
+  const { data: searchResults, isLoading: networkLoading } = useProgramsSearch(network, searchTerm);
 
-  const programs = (searchResults?.programs || []).filter(p =>
-    programIdAllowlist ? programIdAllowlist.includes(p.id) : true,
-  );
+  const programs = programIdAllowlist
+    ? programIdAllowlist
+        .filter(id => (!searchTerm ? true : id.toLowerCase().includes(searchTerm.toLowerCase())))
+        .map(id => ({ id, name: id }))
+    : searchResults?.programs || [];
+
+  const isLoading = programIdAllowlist ? false : networkLoading;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
