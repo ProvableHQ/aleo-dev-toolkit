@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle, Info, X } from 'lucide-react';
+import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle, Info, X, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -49,6 +50,7 @@ export function ExecuteTransaction() {
   const [wasManuallyCleared, setWasManuallyCleared] = useState(false);
   const [privateFee, setPrivateFee] = useState(false);
   const [filterToDispatch, setFilterToDispatch] = useState(false);
+  const [importsField, setImportsField] = useState('');
 
   const dispatchAlertStorageKey = (programId: string) => `dispatch-alert-dismissed:${programId}`;
 
@@ -467,6 +469,46 @@ export function ExecuteTransaction() {
             </>
           )}
         </div>
+        {showImportsField && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="imports" className="transition-colors duration-300">
+                Imports
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="What are imports?"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="body-s">
+                      The wallet needs source for any program reached via <code>call.dynamic</code>.
+                      List target programs here so the wallet knows which sources to fetch when
+                      building the proof.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Input
+              id="imports"
+              placeholder="e.g. target_program.aleo, other_program.aleo"
+              value={importsField}
+              onChange={e => setImportsField(e.target.value)}
+              className="transition-all duration-300"
+            />
+            <p className="body-s text-muted-foreground">
+              Comma-separated program IDs. The first import is the active target for this dispatch
+              call — its field representation is auto-filled into the function's target input.
+            </p>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="fee" className="transition-colors duration-300">
             Fee
