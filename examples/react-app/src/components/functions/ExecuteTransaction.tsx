@@ -180,16 +180,19 @@ export function ExecuteTransaction() {
     }
   }, [functionNames, isLoading]);
 
-  // Update program code when program data is fetched
+  // Update program code when program data is fetched. When programData is
+  // undefined (e.g. mid-fetch on an uncached load), clear programCode so the
+  // parser doesn't briefly surface the previous program's functions.
   useEffect(() => {
     if (programData && typeof programData === 'string') {
       setProgramCode(JSON.parse(programData));
+    } else {
+      setProgramCode('');
     }
   }, [programData]);
 
   useEffect(() => {
     setFunctionName('');
-    setProgramCode('');
     setWasManuallyCleared(false);
   }, [program]);
 
