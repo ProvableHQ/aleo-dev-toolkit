@@ -489,7 +489,7 @@ export function ExecuteTransaction() {
                 className="rounded border-input"
               />
               <Label htmlFor="useDynamicInputs" className="text-sm">
-                Use dynamic inputs
+                Show individual input fields
               </Label>
             </div>
           </div>
