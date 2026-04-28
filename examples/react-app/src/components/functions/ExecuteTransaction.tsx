@@ -48,6 +48,7 @@ export function ExecuteTransaction() {
   const [isLoading, setIsLoading] = useState(true);
   const [wasManuallyCleared, setWasManuallyCleared] = useState(false);
   const [privateFee, setPrivateFee] = useState(false);
+  const [filterToDispatch, setFilterToDispatch] = useState(false);
 
   // Use the useProgram hook to fetch program data
   const {
@@ -272,12 +273,31 @@ export function ExecuteTransaction() {
     <section className="space-y-4">
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="program" className="transition-colors duration-300">
-            Program ID
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="program" className="transition-colors duration-300">
+              Program ID
+            </Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="filterToDispatch"
+                checked={filterToDispatch}
+                onChange={e => setFilterToDispatch(e.target.checked)}
+                className="rounded border-input"
+              />
+              <Label htmlFor="filterToDispatch" className="text-sm">
+                Dynamic dispatch only
+              </Label>
+            </div>
+          </div>
           <div className="flex gap-2">
             <div className="flex-1">
-              <ProgramAutocomplete value={program} onChange={setProgram} onAdd={handleProgramAdd} />
+              <ProgramAutocomplete
+                value={program}
+                onChange={setProgram}
+                onAdd={handleProgramAdd}
+                programIdAllowlist={filterToDispatch ? KNOWN_DISPATCH_PROGRAM_IDS : undefined}
+              />
             </div>
             <Button
               size="sm"
