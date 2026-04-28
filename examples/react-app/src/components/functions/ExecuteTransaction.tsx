@@ -180,12 +180,6 @@ export function ExecuteTransaction() {
     }
   }, [functionNames, isLoading]);
 
-  useEffect(() => {
-    if (programCode && functionNames.length > 0 && functionName && !currentFunction) {
-      setUseDynamicInputs(false);
-    }
-  }, [currentFunction, functionNames, functionName, programCode]);
-
   // Update program code when program data is fetched
   useEffect(() => {
     if (programData && typeof programData === 'string') {
@@ -194,11 +188,9 @@ export function ExecuteTransaction() {
   }, [programData]);
 
   useEffect(() => {
-    if (!isLoading) {
-      setFunctionName('');
-      setProgramCode('');
-      setWasManuallyCleared(false);
-    }
+    setFunctionName('');
+    setProgramCode('');
+    setWasManuallyCleared(false);
   }, [program]);
 
   useEffect(() => {
@@ -221,8 +213,14 @@ export function ExecuteTransaction() {
 
   // Reset function name when program changes, but allow custom function names
   useEffect(() => {
-    if (functionNames.length > 0 && !functionName && !isLoading && !wasManuallyCleared) {
-      // Only reset if functionName is empty, we're not loading, and it wasn't manually cleared
+    if (
+      functionNames.length > 0 &&
+      !isLoading &&
+      !wasManuallyCleared &&
+      (!functionName || !functionNames.includes(functionName))
+    ) {
+      // Reset functionName to the first parsed function when it's empty or stale
+      // (i.e. doesn't match any parsed function).
       setFunctionName(functionNames[0]);
     }
   }, [functionNames, functionName, isLoading, wasManuallyCleared]);
@@ -574,9 +572,19 @@ export function ExecuteTransaction() {
           ) : useDynamicInputs && !currentFunction && functionName.trim() ? (
             <div className="space-y-3">
               <div className="body-s text-muted-foreground">
-                Custom function "{functionName}" - use manual inputs below since function signature
-                is unknown.
+                Custom function "{functionName}" — signature unknown, use manual inputs below.
               </div>
+              <textarea
+                id="inputs"
+                placeholder="Input arguments separated by a newline"
+                value={inputs}
+                onChange={e => setInputs(e.target.value)}
+                className="body-m w-full rounded-xl border border-input px-4 py-3 shadow-sm transition-all duration-300"
+                rows={4}
+              />
+              <p className="body-s text-muted-foreground">
+                Input arguments separated by a newline. Objects and arrays can span multiple lines.
+              </p>
             </div>
           ) : (
             <>
