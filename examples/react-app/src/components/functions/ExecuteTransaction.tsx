@@ -377,23 +377,9 @@ export function ExecuteTransaction() {
     <section className="space-y-4">
       <div className="space-y-4">
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="program" className="transition-colors duration-300">
-              Program ID
-            </Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="filterToDispatch"
-                checked={filterToDispatch}
-                onChange={e => setFilterToDispatch(e.target.checked)}
-                className="rounded border-input"
-              />
-              <Label htmlFor="filterToDispatch" className="text-sm">
-                Dynamic dispatch programs
-              </Label>
-            </div>
-          </div>
+          <Label htmlFor="program" className="transition-colors duration-300">
+            Program ID
+          </Label>
           <div className="flex gap-2">
             <div className="flex-1">
               <ProgramAutocomplete
@@ -427,6 +413,38 @@ export function ExecuteTransaction() {
               </span>
             </div>
           )}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="filterToDispatch"
+              checked={filterToDispatch}
+              onChange={e => setFilterToDispatch(e.target.checked)}
+              className="rounded border-input"
+            />
+            <Label htmlFor="filterToDispatch" className="text-sm">
+              Dynamic dispatch programs
+            </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                    aria-label="What is dynamic dispatch?"
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="body-s">
+                    Dynamic dispatch in Aleo (via <code>call.dynamic</code>) lets a program invoke a
+                    function on a target program chosen at runtime. Toggle this on to filter the
+                    list to programs known to use it.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         {knownDispatchProgram && !dispatchAlertDismissed && (
