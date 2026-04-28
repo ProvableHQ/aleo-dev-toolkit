@@ -12,6 +12,7 @@ interface ProgramAutocompleteProps {
   onAdd: (programId?: string) => void;
   disabled?: boolean;
   selectedPrograms?: string[];
+  programIdAllowlist?: string[];
 }
 
 export const ProgramAutocomplete = ({
@@ -20,6 +21,7 @@ export const ProgramAutocomplete = ({
   onAdd,
   disabled,
   selectedPrograms = [],
+  programIdAllowlist,
 }: ProgramAutocompleteProps) => {
   const [network] = useAtom(networkAtom);
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +32,9 @@ export const ProgramAutocomplete = ({
 
   const { data: searchResults, isLoading } = useProgramsSearch(network, searchTerm);
 
-  const programs = searchResults?.programs || [];
+  const programs = (searchResults?.programs || []).filter(p =>
+    programIdAllowlist ? programIdAllowlist.includes(p.id) : true,
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
