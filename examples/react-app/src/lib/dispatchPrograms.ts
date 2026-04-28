@@ -30,9 +30,7 @@ export const KNOWN_DISPATCH_PROGRAMS: DispatchProgramEntry[] = [
   },
 ];
 
-export function getKnownDispatchProgram(
-  programId: string,
-): DispatchProgramEntry | undefined {
+export function getKnownDispatchProgram(programId: string): DispatchProgramEntry | undefined {
   return KNOWN_DISPATCH_PROGRAMS.find(p => p.program === programId);
 }
 
@@ -44,11 +42,7 @@ export function getKnownDispatchFunction(
   programId: string,
   functionName: string,
 ): DispatchFunctionEntry | undefined {
-  return getKnownDispatchProgram(programId)?.dispatchFunctions.find(
-    f => f.name === functionName,
-  );
+  return getKnownDispatchProgram(programId)?.dispatchFunctions.find(f => f.name === functionName);
 }
 
-export const KNOWN_DISPATCH_PROGRAM_IDS: string[] = KNOWN_DISPATCH_PROGRAMS.map(
-  p => p.program,
-);
+export const KNOWN_DISPATCH_PROGRAM_IDS: string[] = KNOWN_DISPATCH_PROGRAMS.map(p => p.program);
