@@ -23,6 +23,7 @@ import {
   getKnownDispatchFunction,
   KNOWN_DISPATCH_PROGRAM_IDS,
 } from '@/lib/dispatchPrograms';
+import { programIdToField } from '@/lib/programIdField';
 
 export function ExecuteTransaction() {
   const {
@@ -43,6 +44,13 @@ export function ExecuteTransaction() {
   const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
   const [transactionError, setTransactionError] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Tracks whether the user has manually edited the target input for the current
+  // (program, function). When dirty, auto-populate skips this input until the
+  // program or function changes.
+  const targetInputDirtyRef = useRef<{ key: string; dirty: boolean }>({
+    key: '',
+    dirty: false,
+  });
   const [isProgramCodeModalOpen, setIsProgramCodeModalOpen] = useState(false);
   const [programCode, setProgramCode] = useState<string>('');
   const [useDynamicInputs, setUseDynamicInputs] = useAtom(useDynamicInputsAtom);
@@ -111,6 +119,32 @@ export function ExecuteTransaction() {
   const showImportsField =
     Boolean(knownDispatchFunction) || Boolean(currentFunction?.usesDynamicCall);
 
+  const dirtyKey = `${program}::${functionName}`;
+  const isTargetInputDirty = () =>
+    targetInputDirtyRef.current.key === dirtyKey && targetInputDirtyRef.current.dirty;
+  const markTargetInputDirty = () => {
+    targetInputDirtyRef.current = { key: dirtyKey, dirty: true };
+  };
+  const resetTargetInputDirty = () => {
+    targetInputDirtyRef.current = { key: dirtyKey, dirty: false };
+  };
+
+  const firstImport = useMemo(() => {
+    return importsField
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)[0];
+  }, [importsField]);
+
+  const resolvedTargetField = useMemo(() => {
+    if (!firstImport) return undefined;
+    try {
+      return programIdToField(firstImport);
+    } catch {
+      return undefined;
+    }
+  }, [firstImport]);
+
   useEffect(() => {
     if (!connected) {
       setTransactionStatus(null);
@@ -146,6 +180,41 @@ export function ExecuteTransaction() {
       setWasManuallyCleared(false);
     }
   }, [program]);
+
+  useEffect(() => {
+    if (knownDispatchProgram) {
+      setImportsField(knownDispatchProgram.knownTargets.join(', '));
+    } else {
+      setImportsField('');
+    }
+    resetTargetInputDirty();
+    // Fires on program change only (knownDispatchProgram intentionally omitted).
+  }, [program]);
+
+  useEffect(() => {
+    if (knownDispatchFunction) {
+      setUseDynamicInputs(true);
+      resetTargetInputDirty();
+    }
+    // knownDispatchFunction intentionally omitted from deps (derived from program+functionName).
+  }, [program, functionName]);
+
+  useEffect(() => {
+    if (!knownDispatchFunction) return;
+    if (!useDynamicInputs) return;
+    if (!resolvedTargetField) return;
+    if (isTargetInputDirty()) return;
+
+    const idx = knownDispatchFunction.targetInputIndex;
+    setDynamicInputValues(prev => {
+      if (prev[idx] === resolvedTargetField) return prev;
+      const next = [...prev];
+      while (next.length <= idx) next.push('');
+      next[idx] = resolvedTargetField;
+      return next;
+    });
+    // dirtyKey and setDynamicInputValues intentionally omitted from deps.
+  }, [resolvedTargetField, knownDispatchFunction, useDynamicInputs]);
 
   // Reset function name when program changes, but allow custom function names
   useEffect(() => {
@@ -436,6 +505,12 @@ export function ExecuteTransaction() {
                       setDynamicInputValues(newValues);
                       // Also update the inputs string for compatibility
                       setInputs(newValues.join('\n'));
+                      if (
+                        knownDispatchFunction &&
+                        knownDispatchFunction.targetInputIndex === index
+                      ) {
+                        markTargetInputDirty();
+                      }
                     }}
                     className="transition-all duration-300"
                   />
