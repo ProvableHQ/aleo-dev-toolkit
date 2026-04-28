@@ -5,13 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle, Info, X, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -608,28 +601,18 @@ export function ExecuteTransaction() {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            {knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0 ? (
-              <Select value={selectedImport} onValueChange={setSelectedImport}>
-                <SelectTrigger className="w-full" id="imports">
-                  <SelectValue placeholder="Select an import" />
-                </SelectTrigger>
-                <SelectContent>
-                  {knownDispatchProgram.knownTargets.map(t => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                id="imports"
-                placeholder="e.g. target_program.aleo"
-                value={selectedImport}
-                onChange={e => setSelectedImport(e.target.value)}
-                className="transition-all duration-300"
-              />
-            )}
+            <ProgramAutocomplete
+              value={selectedImport}
+              onChange={setSelectedImport}
+              onAdd={programId => {
+                if (programId) setSelectedImport(programId);
+              }}
+              programIdAllowlist={
+                knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0
+                  ? knownDispatchProgram.knownTargets
+                  : undefined
+              }
+            />
             <p className="body-s text-muted-foreground">
               The selected import is the active target — its field representation is auto-filled
               into the function's target input.
