@@ -199,23 +199,6 @@ export function ExecuteTransaction() {
     // knownDispatchFunction intentionally omitted from deps (derived from program+functionName).
   }, [program, functionName]);
 
-  useEffect(() => {
-    if (!knownDispatchFunction) return;
-    if (!useDynamicInputs) return;
-    if (!resolvedTargetField) return;
-    if (isTargetInputDirty()) return;
-
-    const idx = knownDispatchFunction.targetInputIndex;
-    setDynamicInputValues(prev => {
-      if (prev[idx] === resolvedTargetField) return prev;
-      const next = [...prev];
-      while (next.length <= idx) next.push('');
-      next[idx] = resolvedTargetField;
-      return next;
-    });
-    // dirtyKey and setDynamicInputValues intentionally omitted from deps.
-  }, [resolvedTargetField, knownDispatchFunction, useDynamicInputs]);
-
   // Reset function name when program changes, but allow custom function names
   useEffect(() => {
     if (functionNames.length > 0 && !functionName && !isLoading && !wasManuallyCleared) {
@@ -240,6 +223,27 @@ export function ExecuteTransaction() {
     // useDynamicInputs from deps so toggling input mode does not wipe typed
     // values.
   }, [currentFunction, functionName, program]);
+
+  // Auto-populate the dispatch target input. Declared AFTER the input-init
+  // effect so that within the same render commit, input-init's reset runs
+  // first and this functional updater's field-literal write is preserved
+  // (otherwise input-init's direct setter would overwrite it).
+  useEffect(() => {
+    if (!knownDispatchFunction) return;
+    if (!useDynamicInputs) return;
+    if (!resolvedTargetField) return;
+    if (isTargetInputDirty()) return;
+
+    const idx = knownDispatchFunction.targetInputIndex;
+    setDynamicInputValues(prev => {
+      if (prev[idx] === resolvedTargetField) return prev;
+      const next = [...prev];
+      while (next.length <= idx) next.push('');
+      next[idx] = resolvedTargetField;
+      return next;
+    });
+    // dirtyKey and setDynamicInputValues intentionally omitted from deps.
+  }, [resolvedTargetField, knownDispatchFunction, useDynamicInputs]);
 
   useEffect(() => {
     if (programIsError) {
