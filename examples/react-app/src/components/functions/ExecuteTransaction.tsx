@@ -17,6 +17,11 @@ import { parseInputs, parseLeoProgramFunctions } from '@/lib/utils';
 import { useProgram } from '@/lib/hooks/useProgram';
 import { functionNameAtom, programAtom, useDynamicInputsAtom } from '@/lib/store/global';
 import { useAtom } from 'jotai';
+import {
+  getKnownDispatchProgram,
+  getKnownDispatchFunction,
+  KNOWN_DISPATCH_PROGRAM_IDS,
+} from '@/lib/dispatchPrograms';
 
 export function ExecuteTransaction() {
   const {
@@ -64,6 +69,19 @@ export function ExecuteTransaction() {
   const currentFunction = useMemo(() => {
     return functions.find(f => f.name === functionName);
   }, [functions, functionName]);
+
+  const knownDispatchProgram = useMemo(
+    () => (program ? getKnownDispatchProgram(program) : undefined),
+    [program],
+  );
+
+  const knownDispatchFunction = useMemo(
+    () => (program && functionName ? getKnownDispatchFunction(program, functionName) : undefined),
+    [program, functionName],
+  );
+
+  const showImportsField =
+    Boolean(knownDispatchFunction) || Boolean(currentFunction?.usesDynamicCall);
 
   useEffect(() => {
     if (!connected) {
