@@ -131,10 +131,10 @@ export function ExecuteTransaction() {
   };
 
   const resolvedTargetField = useMemo(() => {
-    const trimmed = selectedImport.trim();
-    if (!trimmed) return undefined;
+    const first = selectedImport.split(',')[0]?.trim();
+    if (!first) return undefined;
     try {
-      return programIdToField(trimmed);
+      return programIdToField(first);
     } catch {
       return undefined;
     }
@@ -330,7 +330,12 @@ export function ExecuteTransaction() {
         inputArray = parseInputs(inputs);
       }
 
-      const importsArray = showImportsField && selectedImport.trim() ? [selectedImport.trim()] : [];
+      const importsArray = showImportsField
+        ? selectedImport
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean)
+        : [];
 
       const tx = await executeTransaction({
         program: program.trim(),
