@@ -21,6 +21,7 @@ const result = await executeTransaction({
   function: '${PLACEHOLDERS.FUNCTION}',
   inputs: [${PLACEHOLDERS.INPUTS}],
   fee: ${PLACEHOLDERS.FEE},
+  // imports: ['target_program.aleo'], // required when calling functions that use call.dynamic
 });
 
 // Poll for transaction status

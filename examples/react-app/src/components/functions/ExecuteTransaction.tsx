@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle } from 'lucide-react';
+import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle, Info, X, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -17,6 +18,14 @@ import { parseInputs, parseLeoProgramFunctions } from '@/lib/utils';
 import { useProgram } from '@/lib/hooks/useProgram';
 import { functionNameAtom, programAtom, useDynamicInputsAtom } from '@/lib/store/global';
 import { useAtom } from 'jotai';
+import {
+  getKnownDispatchProgram,
+  getKnownDispatchFunction,
+  KNOWN_DISPATCH_PROGRAM_IDS,
+} from '@/lib/dispatchPrograms';
+import { programIdToField } from '@/lib/programIdField';
+import { DispatchPrepPanel } from './DispatchPrepPanel';
+import { Switch } from '../ui/switch';
 
 export function ExecuteTransaction() {
   const {
@@ -37,12 +46,46 @@ export function ExecuteTransaction() {
   const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
   const [transactionError, setTransactionError] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Tracks whether the user has manually edited the target input for the current
+  // (program, function). When dirty, auto-populate skips this input until the
+  // program or function changes.
+  const targetInputDirtyRef = useRef<{ key: string; dirty: boolean }>({
+    key: '',
+    dirty: false,
+  });
   const [isProgramCodeModalOpen, setIsProgramCodeModalOpen] = useState(false);
   const [programCode, setProgramCode] = useState<string>('');
   const [useDynamicInputs, setUseDynamicInputs] = useAtom(useDynamicInputsAtom);
   const [isLoading, setIsLoading] = useState(true);
   const [wasManuallyCleared, setWasManuallyCleared] = useState(false);
   const [privateFee, setPrivateFee] = useState(false);
+  const [filterToDispatch, setFilterToDispatch] = useState(false);
+  const [selectedImport, setSelectedImport] = useState('');
+
+  const dispatchAlertStorageKey = (programId: string) => `dispatch-alert-dismissed:${programId}`;
+
+  const [dispatchAlertDismissed, setDispatchAlertDismissed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    if (!program) return false;
+    return window.sessionStorage.getItem(dispatchAlertStorageKey(program)) === '1';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !program) {
+      setDispatchAlertDismissed(false);
+      return;
+    }
+    setDispatchAlertDismissed(
+      window.sessionStorage.getItem(dispatchAlertStorageKey(program)) === '1',
+    );
+  }, [program]);
+
+  const dismissDispatchAlert = () => {
+    if (typeof window !== 'undefined' && program) {
+      window.sessionStorage.setItem(dispatchAlertStorageKey(program), '1');
+    }
+    setDispatchAlertDismissed(true);
+  };
 
   // Use the useProgram hook to fetch program data
   const {
@@ -65,6 +108,39 @@ export function ExecuteTransaction() {
     return functions.find(f => f.name === functionName);
   }, [functions, functionName]);
 
+  const knownDispatchProgram = useMemo(
+    () => (program ? getKnownDispatchProgram(program) : undefined),
+    [program],
+  );
+
+  const knownDispatchFunction = useMemo(
+    () => (program && functionName ? getKnownDispatchFunction(program, functionName) : undefined),
+    [program, functionName],
+  );
+
+  const showImportsField =
+    Boolean(knownDispatchFunction) || Boolean(currentFunction?.usesDynamicCall);
+
+  const dirtyKey = `${program}::${functionName}`;
+  const isTargetInputDirty = () =>
+    targetInputDirtyRef.current.key === dirtyKey && targetInputDirtyRef.current.dirty;
+  const markTargetInputDirty = () => {
+    targetInputDirtyRef.current = { key: dirtyKey, dirty: true };
+  };
+  const resetTargetInputDirty = () => {
+    targetInputDirtyRef.current = { key: dirtyKey, dirty: false };
+  };
+
+  const resolvedTargetField = useMemo(() => {
+    const first = selectedImport.split(',')[0]?.trim();
+    if (!first) return undefined;
+    try {
+      return programIdToField(first);
+    } catch {
+      return undefined;
+    }
+  }, [selectedImport]);
+
   useEffect(() => {
     if (!connected) {
       setTransactionStatus(null);
@@ -80,40 +156,62 @@ export function ExecuteTransaction() {
     }
   }, [functionNames, isLoading]);
 
-  useEffect(() => {
-    if (programCode && functionNames.length > 0 && functionName && !currentFunction) {
-      setUseDynamicInputs(false);
-    }
-  }, [currentFunction, functionNames, functionName, programCode]);
-
-  // Update program code when program data is fetched
+  // Update program code when program data is fetched. When programData is
+  // undefined (e.g. mid-fetch on an uncached load), clear programCode so the
+  // parser doesn't briefly surface the previous program's functions.
   useEffect(() => {
     if (programData && typeof programData === 'string') {
       setProgramCode(JSON.parse(programData));
+    } else {
+      setProgramCode('');
     }
   }, [programData]);
 
   useEffect(() => {
-    if (!isLoading) {
-      setFunctionName('');
-      setProgramCode('');
-      setWasManuallyCleared(false);
-    }
+    setFunctionName('');
+    setWasManuallyCleared(false);
   }, [program]);
+
+  useEffect(() => {
+    if (knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0) {
+      setSelectedImport(knownDispatchProgram.knownTargets[0]);
+    } else {
+      setSelectedImport('');
+    }
+    resetTargetInputDirty();
+    // Fires on program change only (knownDispatchProgram intentionally omitted).
+  }, [program]);
+
+  useEffect(() => {
+    if (knownDispatchFunction) {
+      setUseDynamicInputs(true);
+      resetTargetInputDirty();
+    }
+    // knownDispatchFunction intentionally omitted from deps (derived from program+functionName).
+  }, [program, functionName]);
 
   // Reset function name when program changes, but allow custom function names
   useEffect(() => {
-    if (functionNames.length > 0 && !functionName && !isLoading && !wasManuallyCleared) {
-      // Only reset if functionName is empty, we're not loading, and it wasn't manually cleared
+    if (
+      functionNames.length > 0 &&
+      !isLoading &&
+      !wasManuallyCleared &&
+      (!functionName || !functionNames.includes(functionName))
+    ) {
+      // Reset functionName to the first parsed function when it's empty or stale
+      // (i.e. doesn't match any parsed function).
       setFunctionName(functionNames[0]);
     }
   }, [functionNames, functionName, isLoading, wasManuallyCleared]);
 
+  useEffect(() => {
+    if (filterToDispatch && KNOWN_DISPATCH_PROGRAM_IDS.length > 0) {
+      setProgram(KNOWN_DISPATCH_PROGRAM_IDS[0]);
+    }
+  }, [filterToDispatch]);
+
   // Initialize inputs when function changes
   useEffect(() => {
-    if (!isLoading) {
-      return;
-    }
     if (useDynamicInputs && currentFunction && currentFunction.inputs.length > 0) {
       // Initialize with empty values for dynamic inputs when we have a known function
       const emptyValues = currentFunction.inputs.map(() => '');
@@ -124,7 +222,31 @@ export function ExecuteTransaction() {
       setDynamicInputValues([]);
       setInputs('');
     }
-  }, [currentFunction, useDynamicInputs, functionName, program, isLoading]);
+    // Resets values on actual function/program change. Intentionally excludes
+    // useDynamicInputs from deps so toggling input mode does not wipe typed
+    // values.
+  }, [currentFunction, functionName, program]);
+
+  // Auto-populate the dispatch target input. Declared AFTER the input-init
+  // effect so that within the same render commit, input-init's reset runs
+  // first and this functional updater's field-literal write is preserved
+  // (otherwise input-init's direct setter would overwrite it).
+  useEffect(() => {
+    if (!knownDispatchFunction) return;
+    if (!useDynamicInputs) return;
+    if (!resolvedTargetField) return;
+    if (isTargetInputDirty()) return;
+
+    const idx = knownDispatchFunction.targetInputIndex;
+    setDynamicInputValues(prev => {
+      if (prev[idx] === resolvedTargetField) return prev;
+      const next = [...prev];
+      while (next.length <= idx) next.push('');
+      next[idx] = resolvedTargetField;
+      return next;
+    });
+    // dirtyKey and setDynamicInputValues intentionally omitted from deps.
+  }, [resolvedTargetField, knownDispatchFunction, useDynamicInputs]);
 
   useEffect(() => {
     if (programIsError) {
@@ -209,12 +331,20 @@ export function ExecuteTransaction() {
         inputArray = parseInputs(inputs);
       }
 
+      const importsArray = showImportsField
+        ? selectedImport
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean)
+        : [];
+
       const tx = await executeTransaction({
         program: program.trim(),
         function: functionName.trim(),
         inputs: inputArray,
         fee: Number(fee),
         privateFee,
+        ...(importsArray.length > 0 ? { imports: importsArray } : {}),
       });
 
       if (tx?.transactionId) {
@@ -254,12 +384,52 @@ export function ExecuteTransaction() {
     <section className="space-y-4">
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="program" className="transition-colors duration-300">
-            Program ID
-          </Label>
+          <div className="flex justify-between items-center gap-2">
+            <Label htmlFor="program" className="transition-colors duration-300">
+              Program ID
+            </Label>
+            <div className="flex items-center gap-2">
+              <Switch
+                className="scale-80"
+                id="filterToDispatch2"
+                checked={filterToDispatch}
+                onCheckedChange={(checked: boolean) => setFilterToDispatch(checked)}
+              />
+              <Label htmlFor="filterToDispatch" className="label-xs normal-case">
+                Dynamic dispatch programs
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                      aria-label="What is dynamic dispatch?"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="body-s">
+                      Dynamic dispatch in Aleo (via <code>call.dynamic</code>) lets an Aleo program
+                      function call a function on ANY other Aleo program if the function has the
+                      same name, inputs and outputs. This is similar to interfaces in Ethereum and
+                      enables ERC20-like functionality in Aleo. Toggle this on to filter for
+                      programs that use dynamic dispatch.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
           <div className="flex gap-2">
             <div className="flex-1">
-              <ProgramAutocomplete value={program} onChange={setProgram} onAdd={handleProgramAdd} />
+              <ProgramAutocomplete
+                value={program}
+                onChange={setProgram}
+                onAdd={handleProgramAdd}
+                programIdAllowlist={filterToDispatch ? KNOWN_DISPATCH_PROGRAM_IDS : undefined}
+              />
             </div>
             <Button
               size="sm"
@@ -287,7 +457,38 @@ export function ExecuteTransaction() {
           )}
         </div>
 
-        <div className="space-y-2">
+        {knownDispatchProgram && !dispatchAlertDismissed && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <div className="flex items-start justify-between gap-2">
+                <p className="body-m">
+                  <span className="body-m-bold">{knownDispatchProgram.program}</span> uses{' '}
+                  <span className="body-m-bold">call.dynamic</span> to invoke a function on
+                  whichever target program you put in <span className="body-m-bold">imports</span>.
+                  The first import is the active target — its field representation auto-fills the
+                  function's target input.
+                  {knownDispatchProgram.description ? ` ${knownDispatchProgram.description}` : ''}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={dismissDispatchAlert}
+                  className="h-6 w-6 p-0 shrink-0"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {knownDispatchProgram?.prepFlow && knownDispatchProgram.prepFlow.length > 0 && (
+          <DispatchPrepPanel entry={knownDispatchProgram} />
+        )}
+
+        <div className="space-y-2 mb-6">
           <Label htmlFor="functionName" className="transition-colors duration-300">
             Function Name
           </Label>
@@ -305,7 +506,7 @@ export function ExecuteTransaction() {
             placeholder="Enter function name"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 mb-6">
           <div className="flex items-center justify-between">
             <Label htmlFor="inputs" className="transition-colors duration-300">
               Inputs
@@ -320,7 +521,7 @@ export function ExecuteTransaction() {
                 className="rounded border-input"
               />
               <Label htmlFor="useDynamicInputs" className="text-sm">
-                Use dynamic inputs
+                Show function inputs
               </Label>
             </div>
           </div>
@@ -344,6 +545,12 @@ export function ExecuteTransaction() {
                       setDynamicInputValues(newValues);
                       // Also update the inputs string for compatibility
                       setInputs(newValues.join('\n'));
+                      if (
+                        knownDispatchFunction &&
+                        knownDispatchFunction.targetInputIndex === index
+                      ) {
+                        markTargetInputDirty();
+                      }
                     }}
                     className="transition-all duration-300"
                   />
@@ -357,9 +564,19 @@ export function ExecuteTransaction() {
           ) : useDynamicInputs && !currentFunction && functionName.trim() ? (
             <div className="space-y-3">
               <div className="body-s text-muted-foreground">
-                Custom function "{functionName}" - use manual inputs below since function signature
-                is unknown.
+                Custom function "{functionName}" — signature unknown, use manual inputs below.
               </div>
+              <textarea
+                id="inputs"
+                placeholder="Input arguments separated by a newline"
+                value={inputs}
+                onChange={e => setInputs(e.target.value)}
+                className="body-m w-full rounded-xl border border-input px-4 py-3 shadow-sm transition-all duration-300"
+                rows={4}
+              />
+              <p className="body-s text-muted-foreground">
+                Input arguments separated by a newline. Objects and arrays can span multiple lines.
+              </p>
             </div>
           ) : (
             <>
@@ -377,6 +594,52 @@ export function ExecuteTransaction() {
             </>
           )}
         </div>
+        {showImportsField && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="imports" className="transition-colors duration-300">
+                Imports
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                      aria-label="What are imports?"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="body-s">
+                      The wallet needs program source code for the program(s) being called via
+                      dynamic dispatch. Enter the name of the program(s) that contain the desired
+                      functions you wish to call via dynamic dispatch so the wallet knows which
+                      program(s) to fetch when calling the dynamic dispatch function.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <ProgramAutocomplete
+              value={selectedImport}
+              onChange={setSelectedImport}
+              onAdd={programId => {
+                if (programId) setSelectedImport(programId);
+              }}
+              programIdAllowlist={
+                knownDispatchProgram && knownDispatchProgram.knownTargets.length > 0
+                  ? knownDispatchProgram.knownTargets
+                  : undefined
+              }
+            />
+            <p className="body-s text-muted-foreground">
+              The selected import is the active target — its field representation is auto-filled
+              into the function's target input.
+            </p>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="fee" className="transition-colors duration-300">
             Fee
