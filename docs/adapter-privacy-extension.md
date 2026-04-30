@@ -42,6 +42,7 @@ Replace `programs?: string[]` with a structured grant; add a separate `viewKeyEx
 interface ConnectHistory {
   // ...unchanged fields...
   decryptPermission: DecryptPermission;
+  readAddress: bool;
   recordAccess?: RecordAccessGrant;
   viewKeyExposure?: "DENY" | "PER_TX_PROMPT";   // default DENY
 }
