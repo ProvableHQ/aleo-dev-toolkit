@@ -25,6 +25,7 @@ import {
 } from '@/lib/dispatchPrograms';
 import { programIdToField } from '@/lib/programIdField';
 import { DispatchPrepPanel } from './DispatchPrepPanel';
+import { Switch } from '../ui/switch';
 
 export function ExecuteTransaction() {
   const {
@@ -383,9 +384,44 @@ export function ExecuteTransaction() {
     <section className="space-y-4">
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="program" className="transition-colors duration-300">
-            Program ID
-          </Label>
+          <div className="flex justify-between items-center gap-2">
+            <Label htmlFor="program" className="transition-colors duration-300">
+              Program ID
+            </Label>
+            <div className="flex items-center gap-2">
+              <Switch
+                className="scale-80"
+                id="filterToDispatch2"
+                checked={filterToDispatch}
+                onCheckedChange={(checked: boolean) => setFilterToDispatch(checked)}
+              />
+              <Label htmlFor="filterToDispatch" className="label-xs normal-case">
+                Dynamic dispatch programs
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                      aria-label="What is dynamic dispatch?"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="body-s">
+                      Dynamic dispatch in Aleo (via <code>call.dynamic</code>) lets an Aleo program
+                      function call a function on ANY other Aleo program if the function has the
+                      same name, inputs and outputs. This is similar to interfaces in Ethereum and
+                      enables ERC20-like functionality in Aleo. Toggle this on to filter for
+                      programs that use dynamic dispatch.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
           <div className="flex gap-2">
             <div className="flex-1">
               <ProgramAutocomplete
@@ -419,40 +455,6 @@ export function ExecuteTransaction() {
               </span>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="filterToDispatch"
-              checked={filterToDispatch}
-              onChange={e => setFilterToDispatch(e.target.checked)}
-              className="rounded border-input"
-            />
-            <Label htmlFor="filterToDispatch" className="text-sm">
-              Dynamic dispatch programs
-            </Label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                    aria-label="What is dynamic dispatch?"
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="body-s">
-                    Dynamic dispatch in Aleo (via <code>call.dynamic</code>) lets an Aleo program
-                    function call a function on ANY other Aleo program if the function has the same
-                    name, inputs and outputs. This is similar to interfaces in Ethereum and enables
-                    ERC20-like functionality in Aleo. Toggle this on to filter for programs that use
-                    dynamic dispatch.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
         </div>
 
         {knownDispatchProgram && !dispatchAlertDismissed && (
@@ -486,7 +488,7 @@ export function ExecuteTransaction() {
           <DispatchPrepPanel entry={knownDispatchProgram} />
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-2 mb-6">
           <Label htmlFor="functionName" className="transition-colors duration-300">
             Function Name
           </Label>
@@ -504,7 +506,7 @@ export function ExecuteTransaction() {
             placeholder="Enter function name"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 mb-6">
           <div className="flex items-center justify-between">
             <Label htmlFor="inputs" className="transition-colors duration-300">
               Inputs
