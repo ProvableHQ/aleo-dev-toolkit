@@ -10,13 +10,12 @@ Let dapps emit `TransactionOptions` whose `inputs` slots are not always literal 
 type Input = string | InputRequest;
 
 type InputRequest =
-  | { kind: "user"; label?: string } // Provides a form for the user to enter inputs. Only applies to .private inputs.
-  | { kind: "address"; label?: string } // Specification to fill the input field with the active address, possible in an address, group, scalar, or field input.
-  | { kind: "record";  program: string; filters?: RecordFilters } // Specification to use a record from a specific program with given filters.
-  | { kind: "viewKey"; label?: string }; // Specification to fill the input field with the view key behind the active address, possible in a scalar or field input.
+  | { type: "address"; label?: string } // Specification to fill the input field with the active address. Allowed in an input position with an aleo type of: `address, group, scalar, or field`.
+  | { type: "record";  program: string; filters?: RecordFilters } // Specification to use a record from a specific program with given filters. Allowed in an input position with an aleo type of: `record, dynamic_record, or external_record`.
+  | { type: "viewKey"; label?: string }; // Specification to fill the input field with the view key behind the active address. Allowed in a input position with an aleo type of: `scalar or field`.
 
-type RecordFilters = Record<string, RecordMatcher>;
-type RecordMatcher = { eq?: string, gte?: string, lte?: string, neq?: string, }; // potential matching conditions.
+type RecordFilters = Record<string, RecordFieldFilter>; // keys are top-level record field names or dotted paths into struct fields, e.g. "amount" or "data.amount".
+type RecordFieldFilter = { eq?: string, gte?: string, lte?: string, neq?: string, }; // potential matching conditions, AND-combined.
 ```
 
 The `InputRequest` sends a request to the wallet (which is then authorized by the user) to do the following:
@@ -32,54 +31,72 @@ Adapters are ONLY allowed to successfully execute this if the user has authorize
 
 ### Today
 
-`ConnectHistory` (`src/app/common/types/IAdapterService.ts:92`) carries `decryptPermission` plus a flat `programs?: string[]` allowlist used at `AdapterService.ts:494` as `programs.includes(program)`.
+`ConnectHistory` (`src/app/common/types/IAdapterService.ts:92`) carries `decryptPermission` plus a flat `programs?: string[]` allowlist. Two gates consult `programs` via `programs.includes(target)`: `executeTransaction` at `AdapterService.ts:240` and `requestRecords` at `:494`. Permissions are scoped per-dapp via `siteInfo.origin`; every gated method runs `getMatchingConnectHistoryAndDecryptPermission` (`:412-437`) first, which loads exactly one `ConnectHistory` row keyed on `(origin, network, address)`.
 
 ### Proposed
 
-Replace `programs?: string[]` with a structured grant; add a separate `viewKeyExposure`.
+Add three new fields to `ConnectHistory`, all additive. The existing `decryptPermission` and `programs?: string[]` are preserved exactly, and the `connect()` signature does not change.
 
 ```ts
 interface ConnectHistory {
-  // ...unchanged fields...
-  decryptPermission: DecryptPermission;
-  readAddress: bool;
-  recordAccess?: RecordAccessGrant;
-  viewKeyExposure?: "DENY" | "PER_TX_PROMPT";   // default DENY
+  // ...existing fields...
+  decryptPermission: DecryptPermission;         // unchanged
+  programs?: string[];                          // unchanged — program-level gate for both transaction execution and record operations
+  readAddress: bool;                            // already on this branch
+  recordAccess?: RecordAccessGrant;             // new — opt-in record/field narrowing
+  viewKeyExposure?: "DENY" | "PER_TX_PROMPT";   // new — default DENY
 }
 
 type RecordAccessGrant =
   | { level: "none" }
-  | { level: "anyProgram" }
   | { level: "byProgram"; programs: ProgramGrant[] };
 
 interface ProgramGrant {
   program: string;
-  records?: RecordName[], // Optional list of records and their fields which can be read. Undefined means all records for the program.
+  records?: RecordGrant[];   // undefined → all records of this program; present → only the listed records
 }
 
 interface RecordGrant {
-   recordname: string; // The name of the record in the program.
-   fields: FieldGrant[] // The name of the field which can be read.
+  recordname: string;
+  fields?: FieldGrant[];     // undefined → all fields; present → only the listed fields
 }
 
 interface FieldGrant {
-   name: string; // The name of the record field to require access to.
-   read: true; // Whether or not this field is readable or the dapp can only request
+  name: string;
 }
 ```
 
-| Level | Meaning | Maps to today |
-|---|---|---|
-| `none` | Refuse every `kind: "record"` request and `requestRecords` call. | New. |
-| `anyProgram` | Records from any program. | `programs === undefined` |
-| `byProgram` (no `records`) | Rcords only from listed programs. All records, all fields. | `programs: string[]` |
-| `byProgram` (with `records`) | Within each program, only named records and fields can be read or requested access to. Empty fields in `RecordGrant` means all fields. | New. |
+| Configuration | Meaning |
+|---|---|
+| `recordAccess: undefined` | Today's broad behavior — all records of programs allowed by `programs`, all fields. |
+| `recordAccess: { level: "none" }` | Refuse every `requestRecords` call and every `type: "record"` request. Transaction execution with literal inputs is unaffected. |
+| `recordAccess: { level: "byProgram", programs: [...] }`, `ProgramGrant.records` undefined | All records of the listed program; all fields. |
+| `recordAccess: { level: "byProgram", programs: [...] }`, `RecordGrant.fields` undefined | Only the listed records; all fields within them. |
+| `recordAccess: { level: "byProgram", programs: [...] }`, `fields` listed | Only the listed records, and only the listed fields within each. |
 
-Legacy `programs: string[]` migrates to `{ level: "byProgram", programs: programs.map(p => ({ program: p })) }` once on read, in `DappStorage`.
+### Backward compatibility
 
-Dapps can request usage of records via filters, but without 
+The pre-existing dapp surface is preserved exactly:
 
-### Independent rule for `kind: "user"`
+- **`connect()` signature unchanged**: still `(siteInfo, network, decryptPermission, programs?)`. A dapp that called `connect({ programs: ["foo.aleo"] })` before this change behaves identically after.
+- **Existing gates unchanged**: the `programs.includes(program)` checks at `AdapterService.ts:240` and `:494` keep producing the same outcome for any connection where `recordAccess` is undefined.
+- **`recordAccess` defaults to undefined**: the wallet never synthesizes a grant from the legacy `programs` list. `undefined` reads as "today's broad behavior."
+- **`viewKeyExposure` defaults to `DENY`**: matches today's de-facto behavior, since no view-key-derived inputs were possible.
+- **Per-dapp scoping**: `recordAccess` lives on the `ConnectHistory` row keyed on `(origin, network, address)`; one dapp's grant never affects another's access. No change to today's scoping.
+
+A strict opt-in security model would require an explicit grant for any record access. Keeping the default broad here is a deliberate trade-off to avoid breaking dapps that connected before `recordAccess` existed. Dapps that want narrower scopes opt in by populating `recordAccess` at connect time.
+
+### Interaction rules
+
+When `recordAccess` is set, these rules apply on top of the unchanged `programs` allowlist:
+
+1. **Subset constraint**: every `recordAccess.programs[].program` must appear in `programs`. Connect-time validation rejects mismatches.
+2. **Programs without record grants lose record access**: a program in `programs` but not in `recordAccess.programs[]` keeps transaction-execution access (literal inputs only). It cannot be queried via `requestRecords` and cannot be the target of a `type: "record"` request.
+3. **Record narrowing**: when `ProgramGrant.records` is present, only the listed `recordname`s of that program are accessible. `undefined` → all records.
+4. **Field narrowing**: when `RecordGrant.fields` is present, only the listed field names may be (a) decrypted in plaintext via `requestRecords`, or (b) referenced as filter keys in a `type: "record"` request. `undefined` → all fields. Filter keys outside the listed fields are a permission error at the gate.
+5. **`level: "none"`** refuses all record operations regardless of `programs`. Transaction execution with literal inputs is unaffected.
+
+### Independent rule for `type: "user"`
 
 A wallet only renders a user-input prompt for parameters declared `.private` in the program source. Public parameters must be supplied as literals by the dapp. Enforced statically in the resolver, not in `ConnectHistory`.
 
@@ -92,9 +109,9 @@ flowchart TD
   C -- "violates recordAccess<br/>or viewKeyExposure" --> X["error to dapp"]
   C -- ok --> D["ExecuteTransaction page"]
   D --> R["fulfillInputRequests.ts"]
-  R -- "kind: record" --> R1["filter unspent records<br/>by where clause"]
-  R -- "kind: viewKey" --> R2["derive value via SDK"]
-  R -- "kind: user" --> R3["render typed form<br/>from program signature"]
+  R -- "type: record" --> R1["filter unspent records<br/>by where clause"]
+  R -- "type: viewKey" --> R2["derive value via SDK"]
+  R -- "type: user" --> R3["render typed form<br/>from program signature"]
   R1 --> F["confirm screen<br/>shows every fulfilled value"]
   R2 --> F
   R3 --> F
@@ -111,7 +128,11 @@ The worker boundary still receives `string[]`. All fulfillment is wallet-side; t
 
 | Request | Condition | Result |
 |---|---|---|
-| `kind: "record"` | zero matches for `where` | fail loudly (matches `imports` precedent) |
-| `kind: "record"` | field outside `ProgramGrant.fields` | permission error at gate |
-| `kind: "user"` | parameter declared `.public` | fulfillment error before prompting |
-| `kind: "viewKey"` | `viewKeyExposure: "DENY"` | permission error at gate |
+| `type: "record"` | zero matches for `where` | fail loudly (matches `imports` precedent) |
+| `type: "record"` | filter key does not resolve to a field in the record's signature (including dotted struct paths) | validation error before gate |
+| `type: "record"` | operator illegal for the field's Aleo type (e.g. `gte` on `boolean`) | validation error before gate |
+| `type: "record"` | filter value does not parse as a literal of the field's Aleo type | validation error before gate |
+| `type: "record"` | `gte` and `lte` form an empty range, or `eq` contradicts `neq` | validation error before gate |
+| `type: "record"` | field outside `ProgramGrant.fields` | permission error at gate |
+| `type: "user"` | parameter declared `.public` | fulfillment error before prompting |
+| `type: "viewKey"` | `viewKeyExposure: "DENY"` | permission error at gate |
