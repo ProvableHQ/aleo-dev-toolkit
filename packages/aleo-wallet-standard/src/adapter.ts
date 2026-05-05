@@ -7,7 +7,7 @@ import {
 } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import type { RecordStatusFilter } from './features';
-import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
+import { ConnectOptions, WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
 
 export interface AleoDeployment {
@@ -71,12 +71,14 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @param network The network to connect to
    * @param decryptPermission The decrypt permission
    * @param programs The programs to connect to
+   * @param options Optional additive connect-time options (record access, view-key exposure, address withholding)
    * @returns The connected account
    */
   connect(
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account>;
 
   /**

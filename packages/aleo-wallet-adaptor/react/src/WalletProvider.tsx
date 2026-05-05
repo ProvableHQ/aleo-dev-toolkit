@@ -5,7 +5,10 @@ import {
   WalletReadyState,
   WalletAdapter,
   AleoDeployment,
+  ConnectOptions,
+  RecordAccessGrant,
   RecordStatusFilter,
+  ViewKeyExposure,
 } from '@provablehq/aleo-wallet-standard';
 import { Network, TransactionOptions } from '@provablehq/aleo-types';
 import { Wallet, WalletContext } from './context';
@@ -29,6 +32,20 @@ export interface WalletProviderProps {
   localStorageKey?: string;
   decryptPermission?: DecryptPermission;
   programs?: string[];
+  /**
+   * Opt-in record/field narrowing on top of `programs`. Forwarded to the
+   * wallet's connect call. Only honored by wallets that support it (e.g. shield).
+   */
+  recordAccess?: RecordAccessGrant;
+  /**
+   * View-key exposure preference. Defaults to `DENY` when omitted.
+   */
+  viewKeyExposure?: ViewKeyExposure;
+  /**
+   * When `false`, the dapp transacts without learning the user's address.
+   * Defaults to `true`. Only valid with `decryptPermission: NoDecrypt`.
+   */
+  readAddress?: boolean;
 }
 
 const initialState: {
@@ -54,7 +71,16 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   localStorageKey = 'walletName',
   decryptPermission = DecryptPermission.NoDecrypt,
   programs,
+  recordAccess,
+  viewKeyExposure,
+  readAddress,
 }) => {
+  const connectOptions = useMemo<ConnectOptions | undefined>(() => {
+    if (recordAccess === undefined && viewKeyExposure === undefined && readAddress === undefined) {
+      return undefined;
+    }
+    return { recordAccess, viewKeyExposure, readAddress };
+  }, [recordAccess, viewKeyExposure, readAddress]);
   const [name, setName] = useLocalStorage<WalletName | null>(localStorageKey, null);
   const [{ wallet, adapter, publicKey, connected, network }, setState] = useState(initialState);
   const readyState = adapter?.readyState || WalletReadyState.UNSUPPORTED;
@@ -211,7 +237,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     }));
 
     try {
-      const account = await adapter.connect(initialNetwork, decryptPermission, programs);
+      const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
       setState(state => ({
         ...state,
         publicKey: account.address,
@@ -226,7 +252,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       setReconnecting(false);
       isReconnecting.current = false;
     }
-  }, [adapter, disconnect, handleError, initialNetwork, decryptPermission, programs]);
+  }, [adapter, disconnect, handleError, initialNetwork, decryptPermission, programs, connectOptions]);
 
   // Setup and teardown event listeners when the adapter changes
   useEffect(() => {
@@ -269,7 +295,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = true;
       setConnecting(true);
       try {
-        const account = await adapter.connect(initialNetwork, decryptPermission, programs);
+        const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
         lastAuthorizedAccount.current = account.address ?? null;
       } catch (error: unknown) {
         // Clear the selected wallet
@@ -298,7 +324,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     if (adapter && connected) {
       disconnect();
     }
-  }, [decryptPermission, programs]);
+  }, [decryptPermission, programs, connectOptions]);
 
   // Connect the adapter to the wallet
   const connect = useCallback(async () => {
@@ -319,7 +345,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     isConnecting.current = true;
     setConnecting(true);
     try {
-      const account = await adapter.connect(initialNetwork, decryptPermission, programs);
+      const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
       lastAuthorizedAccount.current = account.address ?? null;
     } catch (error: unknown) {
       // Clear the selected wallet
