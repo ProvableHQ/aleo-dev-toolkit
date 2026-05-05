@@ -42,7 +42,7 @@ interface ConnectHistory {
   // ...existing fields...
   decryptPermission: DecryptPermission;         // unchanged
   programs?: string[];                          // unchanged — program-level gate for both transaction execution and record operations
-  readAddress: bool;                            // already on this branch
+  readAddress?: boolean;                        // new — opt-in address withholding; default true
   recordAccess?: RecordAccessGrant;             // new — opt-in record/field narrowing
   viewKeyExposure?: "DENY" | "PER_TX_PROMPT";   // new — default DENY
 }
@@ -95,6 +95,39 @@ When `recordAccess` is set, these rules apply on top of the unchanged `programs`
 3. **Record narrowing**: when `ProgramGrant.records` is present, only the listed `recordname`s of that program are accessible. `undefined` → all records.
 4. **Field narrowing**: when `RecordGrant.fields` is present, only the listed field names may be (a) decrypted in plaintext via `requestRecords`, or (b) referenced as filter keys in a `type: "record"` request. `undefined` → all fields. Filter keys outside the listed fields are a permission error at the gate.
 5. **`level: "none"`** refuses all record operations regardless of `programs`. Transaction execution with literal inputs is unaffected.
+
+### Address exposure
+
+`readAddress?: boolean` controls whether the dapp learns the user's address. Defaults to `true` (undefined treated as `true`); `false` is opt-in for privacy-preserving dapps.
+
+#### `readAddress: undefined | true` — current behavior, with notification
+
+The dapp learns the address through the same paths as today. The only change is **UX**: the connect dialog adds an explicit line item disclosing that the dapp will see the address. The user already approves the connection itself; this surfaces what the approval implies. No API or return-type change.
+
+#### `readAddress: false` — withholding
+
+The dapp transacts on the user's behalf without learning the address. Every direct-exposure path is closed and every operation that would let the dapp enumerate, decrypt, or otherwise derive the address from wallet-mediated state is refused.
+
+| Surface | Behavior under `readAddress: false` |
+|---|---|
+| `connect()` return value (`Account.address`) | `null` (type becomes `string \| null`) |
+| `provider._publicKey` getter | returns `""` regardless of connection state |
+| `init` message handler | must return `address: null` if ever extended to populate; today's `undefined` already complies |
+| `decrypt(record)` | refused with permission error |
+| `requestRecords(program, includePlaintext?)` | refused with permission error — use `type: "record"` requests for transaction inputs instead |
+| `transitionViewKeys(txid)` | refused with permission error (view keys derive the address via `address = view_key · G`) |
+| `requestTransactionHistory(program)` | refused with permission error (same view-key-derivation reasoning) |
+| `executeTransaction` with literal inputs | allowed |
+| `executeTransaction` with `type: "address"` slot | allowed — the wallet injects the active address into the transaction; the dapp never observes it |
+| `signMessage(message)` | allowed — the signature plus message reveals the signer's public key, which is the address. The privacy guarantee leaks here by design; dapps that need a strict guarantee should not call `signMessage` under `readAddress: false`. |
+
+#### Compatibility constraint with `decryptPermission`
+
+Because every plaintext-bearing decrypt operation is refused under `readAddress: false`, the only coherent `decryptPermission` value is `NoDecrypt`. Connecting with `readAddress: false` together with `UponRequest`, `AutoDecrypt`, or `OnChainHistory` is a connect-time error.
+
+#### Backward compatibility
+
+The default (`undefined` or `true`) preserves today's behavior verbatim at every API surface. The connect-dialog notification is a UI-only change visible to the user, not the dapp. No existing dapp's wire calls or return values change.
 
 ### Independent rule for `type: "user"`
 
