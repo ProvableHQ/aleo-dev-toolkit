@@ -6,6 +6,7 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  ConnectOptions,
   EventEmitter,
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
@@ -32,6 +33,7 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<{ address: string }>;
   disconnect(): Promise<void>;
   signMessage(message: Uint8Array): Promise<Uint8Array>;

@@ -63,6 +63,7 @@ interface RecordGrant {
 
 interface FieldGrant {
   name: string;
+  readAccess?: boolean;       // undefined → true; false → field is usable as a filter key but plaintext is withheld on decrypt
 }
 ```
 
@@ -93,7 +94,7 @@ When `recordAccess` is set, these rules apply on top of the unchanged `programs`
 1. **Subset constraint**: every `recordAccess.programs[].program` must appear in `programs`. Connect-time validation rejects mismatches.
 2. **Programs without record grants lose record access**: a program in `programs` but not in `recordAccess.programs[]` keeps transaction-execution access (literal inputs only). It cannot be queried via `requestRecords` and cannot be the target of a `type: "record"` request.
 3. **Record narrowing**: when `ProgramGrant.records` is present, only the listed `recordname`s of that program are accessible. `undefined` → all records.
-4. **Field narrowing**: when `RecordGrant.fields` is present, only the listed field names may be (a) decrypted in plaintext via `requestRecords`, or (b) referenced as filter keys in a `type: "record"` request. `undefined` → all fields. Filter keys outside the listed fields are a permission error at the gate.
+4. **Field narrowing**: when `RecordGrant.fields` is present, only the listed field names may be referenced as filter keys in a `type: "record"` request. `undefined` → all fields. Filter keys outside the listed fields are a permission error at the gate. Plaintext exposure is further controlled by `FieldGrant.readAccess`: when `readAccess` is `true` (or omitted, which defaults to `true`) the field's plaintext value is included in `requestRecords` decrypt output; when `false` the field remains usable as a filter key but its plaintext is redacted from decrypt results.
 5. **`level: "none"`** refuses all record operations regardless of `programs`. Transaction execution with literal inputs is unaffected.
 
 ### Address exposure
@@ -110,9 +111,9 @@ The dapp transacts on the user's behalf without learning the address. Every dire
 
 | Surface | Behavior under `readAddress: false` |
 |---|---|
-| `connect()` return value (`Account.address`) | `null` (type becomes `string \| null`) |
+| `connect()` return value (`Account.address`) | `""` (empty string) — type stays `string` |
 | `provider._publicKey` getter | returns `""` regardless of connection state |
-| `init` message handler | must return `address: null` if ever extended to populate; today's `undefined` already complies |
+| `init` message handler | must return `address: ""` if ever extended to populate; today's `undefined` already complies |
 | `decrypt(record)` | refused with permission error |
 | `requestRecords(program, includePlaintext?)` | refused with permission error — use `type: "record"` requests for transaction inputs instead |
 | `transitionViewKeys(txid)` | refused with permission error (view keys derive the address via `address = view_key · G`) |

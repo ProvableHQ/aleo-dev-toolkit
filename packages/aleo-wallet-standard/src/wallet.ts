@@ -168,3 +168,72 @@ export enum WalletDecryptPermission {
   AutoDecrypt = 'AUTO_DECRYPT', // The dapp can decrypt any requested records
   OnChainHistory = 'ON_CHAIN_HISTORY', // The dapp can request on-chain record plain texts and transaction ids, but cannot decrypt them
 }
+
+/**
+ * Field-level grant within a `RecordGrant`.
+ *
+ * `readAccess` controls plaintext exposure independently of filterability:
+ * - `readAccess === true` (or omitted): the field's plaintext is included in `requestRecords` decrypt output.
+ * - `readAccess === false`: the field remains usable as a filter key in `type: "record"` requests, but its plaintext is redacted from decrypt results.
+ */
+export interface FieldGrant {
+  name: string;
+  readAccess?: boolean;
+}
+
+/**
+ * Per-record grant within a `ProgramGrant`. `fields === undefined` permits all fields.
+ */
+export interface RecordGrant {
+  recordname: string;
+  fields?: FieldGrant[];
+}
+
+/**
+ * Per-program grant within a `RecordAccessGrant`. `records === undefined` permits all records.
+ */
+export interface ProgramGrant {
+  program: string;
+  records?: RecordGrant[];
+}
+
+/**
+ * Optional fine-grained record access grant the dapp can supply at connect time.
+ * When undefined, the wallet falls back to the existing `programs` allowlist for
+ * broad record access. See `docs/adapter-privacy-extension.md` for full semantics.
+ */
+export type RecordAccessGrant =
+  | { level: 'none' }
+  | { level: 'byProgram'; programs: ProgramGrant[] };
+
+/**
+ * View-key exposure preference. Defaults to `DENY` when omitted.
+ */
+export type ViewKeyExposure = 'DENY' | 'PER_TX_PROMPT';
+
+/**
+ * Optional, additive connect-time options. All fields are opt-in; omitting them
+ * preserves today's behavior.
+ */
+export interface ConnectOptions {
+  /** Opt-in record/field narrowing on top of `programs`. */
+  recordAccess?: RecordAccessGrant;
+  /** View-key exposure preference; defaults to `DENY`. */
+  viewKeyExposure?: ViewKeyExposure;
+  /** When `false`, the dapp transacts without learning the user's address. Defaults to `true`. */
+  readAddress?: boolean;
+}
+
+/**
+ * Returns true if `options` requests any capability beyond the legacy default.
+ * Wallet adapters that do not yet implement these capabilities should throw
+ * before attempting to connect.
+ */
+export function hasUnsupportedConnectOptions(options?: ConnectOptions): boolean {
+  if (!options) return false;
+  return (
+    options.recordAccess !== undefined ||
+    options.viewKeyExposure !== undefined ||
+    options.readAddress === false
+  );
+}

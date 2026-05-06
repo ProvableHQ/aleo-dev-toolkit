@@ -133,3 +133,51 @@ export class MethodNotImplementedError extends WalletError {
     super(`Method not implemented: ${method}`);
   }
 }
+
+/**
+ * Thrown by a wallet adapter that does not yet support `InputRequest` slots
+ * in `TransactionOptions.inputs`. The dapp should pass literal Aleo string
+ * values, or switch to a wallet that supports wallet-specified inputs.
+ */
+export class WalletInputRequestNotSupportedError extends WalletError {
+  name = 'WalletInputRequestNotSupportedError';
+
+  constructor(walletName: string) {
+    super(
+      `Wallet "${walletName}" does not yet support InputRequest inputs. ` +
+        'Pass literal Aleo string values, or switch to a wallet that supports wallet-specified inputs.',
+    );
+  }
+}
+
+/**
+ * Thrown by a wallet adapter that does not yet honor the new `ConnectOptions`
+ * fields (`recordAccess`, `viewKeyExposure`, `readAddress: false`).
+ */
+export class WalletConnectOptionsNotSupportedError extends WalletError {
+  name = 'WalletConnectOptionsNotSupportedError';
+
+  constructor(walletName: string) {
+    super(
+      `Wallet "${walletName}" does not yet support ConnectOptions ` +
+        '(recordAccess, viewKeyExposure, readAddress). ' +
+        'Connect without these options, or switch to a wallet that supports them.',
+    );
+  }
+}
+
+/**
+ * Thrown when a dapp tries to call a method that the wallet refuses while
+ * the connection was made with `readAddress: false` (e.g. `decrypt`,
+ * `requestRecords`, `transitionViewKeys`, `requestTransactionHistory`).
+ */
+export class WalletAddressWithheldError extends WalletError {
+  name = 'WalletAddressWithheldError';
+
+  constructor(method: string) {
+    super(
+      `"${method}" is not available when the connection was made with readAddress: false. ` +
+        'Reconnect with readAddress: true to use this method.',
+    );
+  }
+}

@@ -1,5 +1,6 @@
 import {
   Account,
+  hasInputRequest,
   TransactionOptions,
   Network,
   TransactionStatusResponse,
@@ -7,6 +8,8 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  ConnectOptions,
+  hasUnsupportedConnectOptions,
   RecordStatusFilter,
   WalletDecryptPermission,
   WalletName,
@@ -18,10 +21,12 @@ import {
   MethodNotImplementedError,
   scopePollingDetectionStrategy,
   WalletConnectionError,
+  WalletConnectOptionsNotSupportedError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
+  WalletInputRequestNotSupportedError,
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletTransactionError,
@@ -135,7 +140,11 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account> {
+    if (hasUnsupportedConnectOptions(options)) {
+      throw new WalletConnectOptionsNotSupportedError(this.name);
+    }
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Puzzle Wallet is not available');
@@ -256,6 +265,9 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The executed temporary transaction ID
    */
   async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
+    if (hasInputRequest(options.inputs)) {
+      throw new WalletInputRequestNotSupportedError(this.name);
+    }
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }
@@ -272,7 +284,8 @@ export class PuzzleWalletAdapter extends BaseAleoWalletAdapter {
         programId: options.program,
         functionId: options.function,
         fee,
-        inputs: options.inputs,
+        // hasInputRequest guard above ensures every element is a string literal.
+        inputs: options.inputs as string[],
         address: this._publicKey,
         network: PUZZLE_NETWORK_MAP[this.network],
       };

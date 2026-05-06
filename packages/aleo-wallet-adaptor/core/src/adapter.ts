@@ -7,6 +7,7 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoChain,
+  ConnectOptions,
   StandardWallet,
   WalletAdapter,
   WalletFeatureName,
@@ -18,7 +19,11 @@ import {
   AleoDeployment,
   RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
-import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
+import {
+  WalletAddressWithheldError,
+  WalletFeatureNotAvailableError,
+  WalletNotConnectedError,
+} from './errors';
 import { WalletConnectionError } from './errors';
 
 /**
@@ -92,27 +97,49 @@ export abstract class BaseAleoWalletAdapter
   }
 
   /**
+   * Tracks `options.readAddress` from the most recent successful connect.
+   * `false` means the dapp opted into address withholding; methods that would
+   * leak the address (decrypt, requestRecords, transitionViewKeys,
+   * requestTransactionHistory) short-circuit with `WalletAddressWithheldError`.
+   */
+  protected _readAddress: boolean = true;
+
+  /**
    * Connect to the wallet
    * @param network The network to connect to
    * @param decryptPermission The decrypt permission
    * @param programs The programs to connect to
+   * @param options Optional additive connect-time options
    * @returns The connected account
    */
   async connect(
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account> {
     if (!this._wallet) {
       throw new WalletConnectionError('No wallet provider found');
+    }
+    // Precondition: readAddress: false is only coherent with NoDecrypt, since every
+    // plaintext-bearing decrypt operation reveals the owner address.
+    if (
+      options?.readAddress === false &&
+      decryptPermission !== WalletDecryptPermission.NoDecrypt
+    ) {
+      throw new WalletConnectionError(
+        'readAddress: false is only valid with decryptPermission: NoDecrypt. ' +
+          'Plaintext-bearing operations would leak the owner address.',
+      );
     }
     const feature = this._wallet.features[WalletFeatureName.CONNECT];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
     }
     try {
-      const account = await feature.connect(network, decryptPermission, programs);
+      const account = await feature.connect(network, decryptPermission, programs, options);
       this.account = account;
+      this._readAddress = options?.readAddress !== false;
       this.emit('connect', account);
       return account;
     } catch (err) {
@@ -135,6 +162,7 @@ export abstract class BaseAleoWalletAdapter
       }
     }
     this.account = undefined;
+    this._readAddress = true;
     this.emit('disconnect');
   }
 
@@ -208,6 +236,9 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    if (!this._readAddress) {
+      throw new WalletAddressWithheldError('decrypt');
+    }
     const feature = this._wallet.features[WalletFeatureName.DECRYPT];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.DECRYPT);
@@ -222,6 +253,9 @@ export abstract class BaseAleoWalletAdapter
   ): Promise<unknown[]> {
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
+    }
+    if (!this._readAddress) {
+      throw new WalletAddressWithheldError('requestRecords');
     }
     const feature = this._wallet.features[WalletFeatureName.REQUEST_RECORDS];
     if (!feature || !feature.available) {
@@ -246,6 +280,9 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    if (!this._readAddress) {
+      throw new WalletAddressWithheldError('transitionViewKeys');
+    }
     const feature = this._wallet.features[WalletFeatureName.TRANSITION_VIEWKEYS];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.TRANSITION_VIEWKEYS);
@@ -256,6 +293,9 @@ export abstract class BaseAleoWalletAdapter
   async requestTransactionHistory(program: string): Promise<TxHistoryResult> {
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
+    }
+    if (!this._readAddress) {
+      throw new WalletAddressWithheldError('requestTransactionHistory');
     }
     const feature = this._wallet.features[WalletFeatureName.REQUEST_TRANSACTION_HISTORY];
     if (!feature || !feature.available) {

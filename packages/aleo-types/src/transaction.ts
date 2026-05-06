@@ -39,6 +39,61 @@ export interface Transaction {
 }
 
 /**
+ * Per-field comparison conditions on a record field. All present operators are AND-combined.
+ */
+export interface RecordFieldFilter {
+  eq?: string;
+  gte?: string;
+  lte?: string;
+  neq?: string;
+}
+
+/**
+ * Map from a record field name (or dotted struct path, e.g. "data.amount") to a filter.
+ * Multiple entries are AND-combined.
+ */
+export type RecordFilters = Record<string, RecordFieldFilter>;
+
+/**
+ * A request the dapp emits in place of a literal input. The wallet fulfills the
+ * request before passing the transaction to the SDK. See
+ * `docs/adapter-privacy-extension.md` for the full specification.
+ */
+export type InputRequest =
+  | {
+      /** Fill the input slot with the active address. Allowed in `address`, `group`, `scalar`, or `field` positions. */
+      type: 'address';
+      label?: string;
+    }
+  | {
+      /** Auto-select an owned record from `program` matching `filters`. Allowed in `record`, `dynamic_record`, or `external_record` positions. */
+      type: 'record';
+      program: string;
+      filters?: RecordFilters;
+    }
+  | {
+      /** Fill the input slot with the view key behind the active address. Allowed in `scalar` or `field` positions. */
+      type: 'viewKey';
+      label?: string;
+    };
+
+/**
+ * One element of a transaction's `inputs` array. A literal Aleo value (string)
+ * or an `InputRequest` describing a value the wallet should supply.
+ */
+export type TransactionInput = string | InputRequest;
+
+/** Type guard for a literal input slot. */
+export function isLiteralInput(input: TransactionInput): input is string {
+  return typeof input === 'string';
+}
+
+/** Returns true if any element of `inputs` is an `InputRequest` rather than a literal. */
+export function hasInputRequest(inputs: TransactionInput[]): boolean {
+  return inputs.some(i => typeof i !== 'string');
+}
+
+/**
  * Transaction creation options
  */
 export interface TransactionOptions {
@@ -53,9 +108,10 @@ export interface TransactionOptions {
   function: string;
 
   /**
-   * The function inputs
+   * The function inputs. Each entry is either a literal Aleo value (string)
+   * or an `InputRequest` describing a value the wallet should supply.
    */
-  inputs: string[];
+  inputs: TransactionInput[];
 
   /**
    * The transaction fee to pay

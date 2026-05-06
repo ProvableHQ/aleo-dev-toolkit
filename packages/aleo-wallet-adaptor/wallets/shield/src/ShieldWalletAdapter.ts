@@ -7,6 +7,7 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  ConnectOptions,
   RecordStatusFilter,
   WalletDecryptPermission,
   WalletName,
@@ -112,6 +113,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
@@ -124,6 +126,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
           network,
           decryptPermission,
           programs,
+          options,
         );
         this._publicKey = connectResult?.address || '';
         this._onNetworkChange(network);
@@ -133,7 +136,9 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
         );
       }
 
-      if (!this._publicKey) {
+      // When the dapp opted into address withholding (readAddress: false),
+      // an empty address is the expected result, not an error.
+      if (!this._publicKey && options?.readAddress !== false) {
         throw new WalletConnectionError('No address returned from wallet');
       }
 
