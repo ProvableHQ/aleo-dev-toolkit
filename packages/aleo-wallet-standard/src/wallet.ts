@@ -172,6 +172,19 @@ export enum WalletDecryptPermission {
 /**
  * Field-level grant within a `RecordGrant`.
  *
+ * `name` accepts either a record-body field name (e.g. `"amount"`,
+ * `"data.amount"` for dotted paths into struct fields) or a `$`-prefixed
+ * envelope-metadata token from this reserved set:
+ *
+ *   `$commitment`, `$tag`, `$transitionId`, `$transactionId`, `$outputIndex`,
+ *   `$transactionIndex`, `$transitionIndex`, `$owner`, `$sender`
+ *
+ * The `$` prefix prevents collision with body fields named identically. When
+ * `RecordGrant.fields` is present, body fields not listed are stripped from
+ * `recordView.fields`, and envelope metadata not listed via `$`-prefixed
+ * entries is stripped from the returned record. See
+ * `docs/adapter-privacy-extension.md` for the full grant matrix.
+ *
  * `readAccess` controls plaintext exposure independently of filterability:
  * - `readAccess === true` (or omitted): the field's plaintext is included in `requestRecords` decrypt output.
  * - `readAccess === false`: the field remains usable as a filter key in `type: "record"` requests, but its plaintext is redacted from decrypt results.

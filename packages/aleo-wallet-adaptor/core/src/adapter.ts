@@ -1,6 +1,7 @@
 import {
   Account,
   Network,
+  TransactionInput,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
@@ -22,6 +23,7 @@ import {
 import {
   WalletAddressWithheldError,
   WalletFeatureNotAvailableError,
+  WalletInputRequestInvalidError,
   WalletNotConnectedError,
 } from './errors';
 import { WalletConnectionError } from './errors';
@@ -191,6 +193,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    validateInputRequests(options.inputs);
     const feature = this._wallet.features[WalletFeatureName.EXECUTE];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.EXECUTE);
@@ -346,4 +349,16 @@ export function scopePollingDetectionStrategy(detect: () => boolean): void {
 
   // Strategy #4: Detect synchronously, now.
   detectAndDispose();
+}
+
+function validateInputRequests(inputs: TransactionInput[]): void {
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    if (typeof input === 'string') continue;
+    if (input.type === 'record' && input.uid !== undefined && input.filters !== undefined) {
+      throw new WalletInputRequestInvalidError(
+        `inputs[${i}]: type "record" cannot specify both \`uid\` and \`filters\`. \`uid\` pins a specific record returned by requestRecords; filters are ignored when \`uid\` is set.`,
+      );
+    }
+  }
 }

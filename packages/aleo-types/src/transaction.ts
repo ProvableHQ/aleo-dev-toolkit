@@ -66,10 +66,18 @@ export type InputRequest =
       label?: string;
     }
   | {
-      /** Auto-select an owned record from `program` matching `filters`. Allowed in `record`, `dynamic_record`, or `external_record` positions. */
+      /**
+       * Use an owned record from `program` as the input. When `uid` is present,
+       * it pins a specific record previously returned by `requestRecords` and
+       * `filters` is ignored. When absent, the wallet auto-selects an unspent
+       * record matching `filters`. The two are mutually exclusive — supplying
+       * both is rejected before reaching the wallet. Allowed in `record`,
+       * `dynamic_record`, or `external_record` positions.
+       */
       type: 'record';
       program: string;
       filters?: RecordFilters;
+      uid?: string;
     }
   | {
       /** Fill the input slot with the view key behind the active address. Allowed in `scalar` or `field` positions. */
@@ -82,6 +90,37 @@ export type InputRequest =
  * or an `InputRequest` describing a value the wallet should supply.
  */
 export type TransactionInput = string | InputRequest;
+
+/**
+ * Structured form of a record's plaintext fields, returned alongside the
+ * wallet-defined record envelope from `requestRecords`. Only fields the dapp
+ * has read access to are present; redacted fields are omitted (not
+ * present-with-undefined). See `docs/adapter-privacy-extension.md` for the
+ * grant rules that govern field exposure.
+ */
+export interface RecordView {
+  fields: Record<string, string>;
+}
+
+/**
+ * Additive contract for the per-record envelope returned by `requestRecords`.
+ * Wallets keep their existing record shape (e.g. Shield's `OwnedRecord`); this
+ * interface declares the two new fields conforming wallets emit on top.
+ *
+ * - `recordView` — structured form of the plaintext, populated whenever the
+ *   wallet decrypted the record.
+ * - `uid` — wallet-issued opaque handle, stable for the lifetime of the
+ *   connection. Pass back as `uid` in a `type: "record"` `InputRequest` to pin
+ *   this exact record. Not derived from the record's commitment, nonce, or tag.
+ *
+ * Both are optional in the type because pre-spec wallets won't emit them;
+ * conforming wallets always populate them.
+ */
+export interface RecordEnvelope {
+  recordView?: RecordView;
+  uid?: string;
+  [legacyField: string]: unknown;
+}
 
 /** Type guard for a literal input slot. */
 export function isLiteralInput(input: TransactionInput): input is string {

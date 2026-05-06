@@ -167,6 +167,19 @@ export class WalletConnectOptionsNotSupportedError extends WalletError {
 }
 
 /**
+ * Thrown when an `InputRequest` of `type: "record"` provides both `uid` and
+ * `filters`. `uid` pins a specific record returned by `requestRecords`; when
+ * present, filters cannot apply. The two are mutually exclusive.
+ */
+export class WalletInputRequestInvalidError extends WalletError {
+  name = 'WalletInputRequestInvalidError';
+
+  constructor(reason: string) {
+    super(`InputRequest is invalid: ${reason}`);
+  }
+}
+
+/**
  * Thrown when a dapp tries to call a method that the wallet refuses while
  * the connection was made with `readAddress: false` (e.g. `decrypt`,
  * `requestRecords`, `transitionViewKeys`, `requestTransactionHistory`).
