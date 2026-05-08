@@ -7,16 +7,21 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoChain,
+  AleoDeployment,
+  DerivedAddress,
+  EventEmitter,
+  EvmChain,
+  EvmTransactionRequest,
+  RecordStatusFilter,
+  RevealStatus,
   StandardWallet,
   WalletAdapter,
-  WalletFeatureName,
-  WalletReadyState,
-  EventEmitter,
-  WalletEvents,
-  WalletName,
+  WalletChain,
   WalletDecryptPermission,
-  AleoDeployment,
-  RecordStatusFilter,
+  WalletEvents,
+  WalletFeatureName,
+  WalletName,
+  WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
 import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
 import { WalletConnectionError } from './errors';
@@ -262,6 +267,82 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_TRANSACTION_HISTORY);
     }
     return feature.requestTransactionHistory(program);
+  }
+
+  async deriveEvmAddressAtDerived(chain: EvmChain): Promise<DerivedAddress> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.DERIVED_ACCOUNTS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.DERIVED_ACCOUNTS);
+    }
+    return feature.deriveEvmAddressAtDerived(chain);
+  }
+
+  async deriveAleoAddressAtDerived(): Promise<DerivedAddress> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.DERIVED_ACCOUNTS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.DERIVED_ACCOUNTS);
+    }
+    return feature.deriveAleoAddressAtDerived();
+  }
+
+  async listDerivedAddresses(chain?: WalletChain): Promise<DerivedAddress[]> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.DERIVED_ACCOUNTS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.DERIVED_ACCOUNTS);
+    }
+    return feature.listDerivedAddresses(chain);
+  }
+
+  async signEvmTransactionAtDerived(
+    chain: EvmChain,
+    index: number,
+    txParams: EvmTransactionRequest,
+  ): Promise<{ signedTransaction: string }> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.DERIVED_ACCOUNTS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.DERIVED_ACCOUNTS);
+    }
+    return feature.signEvmTransactionAtDerived(chain, index, txParams);
+  }
+
+  async signAleoTransitionAtDerived(
+    index: number,
+    transition: TransactionOptions,
+  ): Promise<{ transactionId: string }> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.DERIVED_ACCOUNTS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.DERIVED_ACCOUNTS);
+    }
+    return feature.signAleoTransitionAtDerived(index, transition);
+  }
+
+  async revealDerivedPrivateKey(
+    chain: WalletChain,
+    index: number,
+  ): Promise<{ status: RevealStatus }> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const feature = this._wallet.features[WalletFeatureName.DERIVED_ACCOUNTS];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.DERIVED_ACCOUNTS);
+    }
+    return feature.revealDerivedPrivateKey(chain, index);
   }
 }
 

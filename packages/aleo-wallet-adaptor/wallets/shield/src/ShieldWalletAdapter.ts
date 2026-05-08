@@ -7,7 +7,12 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  DerivedAddress,
+  EvmChain,
+  EvmTransactionRequest,
   RecordStatusFilter,
+  RevealStatus,
+  WalletChain,
   WalletDecryptPermission,
   WalletName,
   WalletReadyState,
@@ -16,6 +21,7 @@ import {
   BaseAleoWalletAdapter,
   filterRecordsByStatus,
   WalletConnectionError,
+  WalletDerivationError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
@@ -405,6 +411,149 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     } catch (error: Error | unknown) {
       this.emit('error', error instanceof Error ? error : new Error(String(error)));
       throw error;
+    }
+  }
+
+  /**
+   * Derive a fresh EVM address at the next available index for the given chain.
+   */
+  async deriveEvmAddressAtDerived(chain: EvmChain): Promise<DerivedAddress> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._shieldWallet?.deriveEvmAddressAtDerived(chain);
+      if (!result?.address) {
+        throw new WalletDerivationError('Failed to derive EVM address');
+      }
+      return result;
+    } catch (error: Error | unknown) {
+      if (error instanceof WalletError) throw error;
+      throw new WalletDerivationError(
+        error instanceof Error ? error.message : 'Failed to derive EVM address',
+      );
+    }
+  }
+
+  /**
+   * Derive a fresh Aleo address at the next available index.
+   */
+  async deriveAleoAddressAtDerived(): Promise<DerivedAddress> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._shieldWallet?.deriveAleoAddressAtDerived();
+      if (!result?.address) {
+        throw new WalletDerivationError('Failed to derive Aleo address');
+      }
+      return result;
+    } catch (error: Error | unknown) {
+      if (error instanceof WalletError) throw error;
+      throw new WalletDerivationError(
+        error instanceof Error ? error.message : 'Failed to derive Aleo address',
+      );
+    }
+  }
+
+  /**
+   * List all derived addresses managed by the wallet, optionally filtered to a single chain.
+   */
+  async listDerivedAddresses(chain?: WalletChain): Promise<DerivedAddress[]> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._shieldWallet?.listDerivedAddresses(chain);
+      if (!Array.isArray(result)) {
+        throw new WalletDerivationError('Failed to list derived addresses');
+      }
+      return result;
+    } catch (error: Error | unknown) {
+      if (error instanceof WalletError) throw error;
+      throw new WalletDerivationError(
+        error instanceof Error ? error.message : 'Failed to list derived addresses',
+      );
+    }
+  }
+
+  /**
+   * Sign an EVM transaction with the derived account at `index` on `chain`.
+   */
+  async signEvmTransactionAtDerived(
+    chain: EvmChain,
+    index: number,
+    txParams: EvmTransactionRequest,
+  ): Promise<{ signedTransaction: string }> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._shieldWallet?.signEvmTransactionAtDerived(chain, index, txParams);
+      if (!result?.signedTransaction) {
+        throw new WalletSignMessageError('Failed to sign EVM transaction');
+      }
+      return result;
+    } catch (error: Error | unknown) {
+      if (error instanceof WalletError) throw error;
+      throw new WalletSignMessageError(
+        error instanceof Error ? error.message : 'Failed to sign EVM transaction',
+      );
+    }
+  }
+
+  /**
+   * Sign and broadcast an Aleo transition with the derived account at `index`.
+   */
+  async signAleoTransitionAtDerived(
+    index: number,
+    transition: TransactionOptions,
+  ): Promise<{ transactionId: string }> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._shieldWallet?.signAleoTransitionAtDerived(index, transition);
+      if (!result?.transactionId) {
+        throw new WalletSignMessageError('Failed to sign Aleo transition');
+      }
+      return result;
+    } catch (error: Error | unknown) {
+      if (error instanceof WalletError) throw error;
+      throw new WalletSignMessageError(
+        error instanceof Error ? error.message : 'Failed to sign Aleo transition',
+      );
+    }
+  }
+
+  /**
+   * Reveal the private key of the derived account at `index` on `chain` to the user.
+   * Returns status only — the key never flows back to the dApp.
+   */
+  async revealDerivedPrivateKey(
+    chain: WalletChain,
+    index: number,
+  ): Promise<{ status: RevealStatus }> {
+    if (!this._publicKey || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+
+    try {
+      const result = await this._shieldWallet?.revealDerivedPrivateKey(chain, index);
+      if (!result?.status) {
+        throw new WalletDerivationError('Failed to reveal derived private key');
+      }
+      return result;
+    } catch (error: Error | unknown) {
+      if (error instanceof WalletError) throw error;
+      throw new WalletDerivationError(
+        error instanceof Error ? error.message : 'Failed to reveal derived private key',
+      );
     }
   }
 

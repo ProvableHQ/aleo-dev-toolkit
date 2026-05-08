@@ -133,3 +133,17 @@ export class MethodNotImplementedError extends WalletError {
     super(`Method not implemented: ${method}`);
   }
 }
+
+/**
+ * Error thrown when a derived-account operation fails — e.g. the wallet
+ * refused to derive, the requested index is out of range, or the chain is
+ * unsupported. Used by `deriveEvmAddressAtDerived`, `deriveAleoAddressAtDerived`,
+ * `listDerivedAddresses`, and `revealDerivedPrivateKey`.
+ */
+export class WalletDerivationError extends WalletError {
+  name = 'WalletDerivationError';
+
+  constructor(message = 'Derived-account operation failed') {
+    super(message);
+  }
+}

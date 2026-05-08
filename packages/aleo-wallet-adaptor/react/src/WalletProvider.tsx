@@ -5,7 +5,10 @@ import {
   WalletReadyState,
   WalletAdapter,
   AleoDeployment,
+  EvmChain,
+  EvmTransactionRequest,
   RecordStatusFilter,
+  WalletChain,
 } from '@provablehq/aleo-wallet-standard';
 import { Network, TransactionOptions } from '@provablehq/aleo-types';
 import { Wallet, WalletContext } from './context';
@@ -453,6 +456,69 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const deriveEvmAddressAtDerived = useCallback(
+    async (chain: EvmChain) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('deriveEvmAddressAtDerived' in adapter))
+        throw handleError(new MethodNotImplementedError('deriveEvmAddressAtDerived'));
+
+      return await adapter.deriveEvmAddressAtDerived(chain);
+    },
+    [adapter, handleError, connected],
+  );
+
+  const deriveAleoAddressAtDerived = useCallback(async () => {
+    if (!connected) throw handleError(new WalletNotConnectedError());
+    if (!adapter || !('deriveAleoAddressAtDerived' in adapter))
+      throw handleError(new MethodNotImplementedError('deriveAleoAddressAtDerived'));
+
+    return await adapter.deriveAleoAddressAtDerived();
+  }, [adapter, handleError, connected]);
+
+  const listDerivedAddresses = useCallback(
+    async (chain?: WalletChain) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('listDerivedAddresses' in adapter))
+        throw handleError(new MethodNotImplementedError('listDerivedAddresses'));
+
+      return await adapter.listDerivedAddresses(chain);
+    },
+    [adapter, handleError, connected],
+  );
+
+  const signEvmTransactionAtDerived = useCallback(
+    async (chain: EvmChain, index: number, txParams: EvmTransactionRequest) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('signEvmTransactionAtDerived' in adapter))
+        throw handleError(new MethodNotImplementedError('signEvmTransactionAtDerived'));
+
+      return await adapter.signEvmTransactionAtDerived(chain, index, txParams);
+    },
+    [adapter, handleError, connected],
+  );
+
+  const signAleoTransitionAtDerived = useCallback(
+    async (index: number, transition: TransactionOptions) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('signAleoTransitionAtDerived' in adapter))
+        throw handleError(new MethodNotImplementedError('signAleoTransitionAtDerived'));
+
+      return await adapter.signAleoTransitionAtDerived(index, transition);
+    },
+    [adapter, handleError, connected],
+  );
+
+  const revealDerivedPrivateKey = useCallback(
+    async (chain: WalletChain, index: number) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter || !('revealDerivedPrivateKey' in adapter))
+        throw handleError(new MethodNotImplementedError('revealDerivedPrivateKey'));
+
+      return await adapter.revealDerivedPrivateKey(chain, index);
+    },
+    [adapter, handleError, connected],
+  );
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -486,6 +552,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         executeDeployment,
         transitionViewKeys,
         requestTransactionHistory,
+        deriveEvmAddressAtDerived,
+        deriveAleoAddressAtDerived,
+        listDerivedAddresses,
+        signEvmTransactionAtDerived,
+        signAleoTransitionAtDerived,
+        revealDerivedPrivateKey,
       }}
     >
       {children}

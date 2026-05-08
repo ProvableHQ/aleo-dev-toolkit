@@ -6,7 +6,12 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  DerivedAddress,
   EventEmitter,
+  EvmChain,
+  EvmTransactionRequest,
+  RevealStatus,
+  WalletChain,
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
 
@@ -43,6 +48,19 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   executeDeployment(deployment: ShieldDeployment): Promise<{ transactionId: string }>;
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+  deriveEvmAddressAtDerived(chain: EvmChain): Promise<DerivedAddress>;
+  deriveAleoAddressAtDerived(): Promise<DerivedAddress>;
+  listDerivedAddresses(chain?: WalletChain): Promise<DerivedAddress[]>;
+  signEvmTransactionAtDerived(
+    chain: EvmChain,
+    index: number,
+    txParams: EvmTransactionRequest,
+  ): Promise<{ signedTransaction: string }>;
+  signAleoTransitionAtDerived(
+    index: number,
+    transition: TransactionOptions,
+  ): Promise<{ transactionId: string }>;
+  revealDerivedPrivateKey(chain: WalletChain, index: number): Promise<{ status: RevealStatus }>;
 }
 
 export interface ShieldWindow extends Window {

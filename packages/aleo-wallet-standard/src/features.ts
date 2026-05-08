@@ -5,7 +5,7 @@ import {
   TransactionStatusResponse,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
-import { AleoChain } from './chains';
+import { AleoChain, EvmChain, WalletChain } from './chains';
 import { WalletDecryptPermission } from './wallet';
 import { AleoDeployment } from './adapter';
 
@@ -203,4 +203,105 @@ export interface RequestTransactionHistoryFeature extends WalletFeature {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+}
+
+/**
+ * A derived address managed by the wallet.
+ */
+export interface DerivedAddress {
+  /**
+   * The chain the address is scoped to (CAIP-2).
+   */
+  chain: WalletChain;
+
+  /**
+   * The derivation index relative to the connected account.
+   */
+  index: number;
+
+  /**
+   * The derived address as a string. Encoding depends on the chain
+   * (e.g. checksummed hex for `eip155:*`, bech32m `aleo1...` for Aleo).
+   */
+  address: string;
+}
+
+/**
+ * Status returned by `revealDerivedPrivateKey`. The private key itself is
+ * never returned through this API — the wallet handles the reveal flow
+ * (clipboard, modal, etc.) and only reports outcome.
+ */
+export type RevealStatus = 'revealed' | 'cancelled' | 'unavailable';
+
+/**
+ * Minimal EIP-1559-compatible transaction request shape. All numeric fields
+ * are encoded as 0x-prefixed hex strings to avoid `bigint` interop issues
+ * across the postMessage boundary.
+ */
+export interface EvmTransactionRequest {
+  to?: string;
+  from?: string;
+  value?: string;
+  data?: string;
+  nonce?: number;
+  gasLimit?: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+  chainId?: number;
+  type?: number;
+}
+
+/**
+ * Feature for managing addresses derived on demand from the connected
+ * account, signing on those derived addresses, and revealing their keys for
+ * recovery. The umbrella covers both Aleo and EVM chains so a single wallet
+ * surface can serve dApps that need cross-chain account material.
+ */
+export interface DerivedAccountsFeature extends WalletFeature {
+  name: 'aleo:derived-accounts';
+
+  /**
+   * Derive a fresh EVM address at the next available index for the given
+   * chain and return it.
+   */
+  deriveEvmAddressAtDerived(chain: EvmChain): Promise<DerivedAddress>;
+
+  /**
+   * Derive a fresh Aleo address at the next available index and return it.
+   */
+  deriveAleoAddressAtDerived(): Promise<DerivedAddress>;
+
+  /**
+   * List all derived addresses managed by the wallet, optionally filtered
+   * to a single chain.
+   */
+  listDerivedAddresses(chain?: WalletChain): Promise<DerivedAddress[]>;
+
+  /**
+   * Sign an EVM transaction with the derived account at `index` on `chain`.
+   * Returns the serialized signed transaction (0x-prefixed RLP).
+   */
+  signEvmTransactionAtDerived(
+    chain: EvmChain,
+    index: number,
+    txParams: EvmTransactionRequest,
+  ): Promise<{ signedTransaction: string }>;
+
+  /**
+   * Sign and broadcast an Aleo transition with the derived account at
+   * `index`. Returns the wallet's temporary transaction ID, matching
+   * `executeTransaction`.
+   */
+  signAleoTransitionAtDerived(
+    index: number,
+    transition: TransactionOptions,
+  ): Promise<{ transactionId: string }>;
+
+  /**
+   * Reveal the private key of the derived account at `index` on `chain`
+   * to the user. The key never flows back to the dApp; only the user-facing
+   * outcome is reported.
+   */
+  revealDerivedPrivateKey(chain: WalletChain, index: number): Promise<{ status: RevealStatus }>;
 }

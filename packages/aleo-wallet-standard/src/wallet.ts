@@ -4,6 +4,7 @@ import {
   ChainFeature,
   ConnectFeature,
   DecryptFeature,
+  DerivedAccountsFeature,
   ExecuteDeploymentFeature,
   ExecuteFeature,
   RequestRecordsFeature,
@@ -108,6 +109,11 @@ export interface WalletFeatures {
   [WalletFeatureName.REQUEST_TRANSACTION_HISTORY]?: RequestTransactionHistoryFeature;
 
   /**
+   * The derived-accounts feature
+   */
+  [WalletFeatureName.DERIVED_ACCOUNTS]?: DerivedAccountsFeature;
+
+  /**
    * Other features
    */
   [featureName: string]: WalletFeature | undefined;
@@ -129,6 +135,7 @@ export enum WalletFeatureName {
   EXECUTE_DEPLOYMENT = 'standard:execute-deployment',
   TRANSITION_VIEWKEYS = 'standard:transition_viewkeys',
   REQUEST_TRANSACTION_HISTORY = 'standard:request_transaction_history',
+  DERIVED_ACCOUNTS = 'aleo:derived-accounts',
 }
 
 /**

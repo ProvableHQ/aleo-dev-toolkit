@@ -1,8 +1,13 @@
 import { createContext, useContext } from 'react';
 import {
   AleoDeployment,
+  DerivedAddress,
+  EvmChain,
+  EvmTransactionRequest,
   RecordStatusFilter,
+  RevealStatus,
   WalletAdapter,
+  WalletChain,
   WalletName,
   WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
@@ -133,6 +138,44 @@ export interface WalletContextState {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+
+  /**
+   * Derive a fresh EVM address at the next available index for the given chain.
+   */
+  deriveEvmAddressAtDerived: (chain: EvmChain) => Promise<DerivedAddress>;
+
+  /**
+   * Derive a fresh Aleo address at the next available index.
+   */
+  deriveAleoAddressAtDerived: () => Promise<DerivedAddress>;
+
+  /**
+   * List all derived addresses managed by the wallet, optionally filtered to a single chain.
+   */
+  listDerivedAddresses: (chain?: WalletChain) => Promise<DerivedAddress[]>;
+
+  /**
+   * Sign an EVM transaction with the derived account at `index` on `chain`.
+   */
+  signEvmTransactionAtDerived: (
+    chain: EvmChain,
+    index: number,
+    txParams: EvmTransactionRequest,
+  ) => Promise<{ signedTransaction: string }>;
+
+  /**
+   * Sign and broadcast an Aleo transition with the derived account at `index`.
+   */
+  signAleoTransitionAtDerived: (
+    index: number,
+    transition: TransactionOptions,
+  ) => Promise<{ transactionId: string }>;
+
+  /**
+   * Reveal the private key of the derived account at `index` on `chain` to the user.
+   * Returns status only — the key never flows back to the dApp.
+   */
+  revealDerivedPrivateKey: (chain: WalletChain, index: number) => Promise<{ status: RevealStatus }>;
 }
 
 /**

@@ -5,7 +5,12 @@ import {
   TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
+  DerivedAddress,
+  EvmChain,
+  EvmTransactionRequest,
   RecordStatusFilter,
+  RevealStatus,
+  WalletChain,
   WalletDecryptPermission,
   WalletName,
   WalletReadyState,
@@ -348,4 +353,43 @@ export class SoterWalletAdapter extends BaseAleoWalletAdapter {
     console.error('Soter Wallet does not support switching networks');
     throw new MethodNotImplementedError('switchNetwork');
   }
+
+  // Derived-account stubs: parameters are unused because Soter Wallet does not
+  // yet implement these methods. Each one throws MethodNotImplementedError so
+  // dApps can detect the gap at runtime without bypassing the adapter.
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  async deriveEvmAddressAtDerived(_chain: EvmChain): Promise<DerivedAddress> {
+    throw new MethodNotImplementedError('deriveEvmAddressAtDerived');
+  }
+
+  async deriveAleoAddressAtDerived(): Promise<DerivedAddress> {
+    throw new MethodNotImplementedError('deriveAleoAddressAtDerived');
+  }
+
+  async listDerivedAddresses(_chain?: WalletChain): Promise<DerivedAddress[]> {
+    throw new MethodNotImplementedError('listDerivedAddresses');
+  }
+
+  async signEvmTransactionAtDerived(
+    _chain: EvmChain,
+    _index: number,
+    _txParams: EvmTransactionRequest,
+  ): Promise<{ signedTransaction: string }> {
+    throw new MethodNotImplementedError('signEvmTransactionAtDerived');
+  }
+
+  async signAleoTransitionAtDerived(
+    _index: number,
+    _transition: TransactionOptions,
+  ): Promise<{ transactionId: string }> {
+    throw new MethodNotImplementedError('signAleoTransitionAtDerived');
+  }
+
+  async revealDerivedPrivateKey(
+    _chain: WalletChain,
+    _index: number,
+  ): Promise<{ status: RevealStatus }> {
+    throw new MethodNotImplementedError('revealDerivedPrivateKey');
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }

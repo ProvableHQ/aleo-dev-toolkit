@@ -5,8 +5,13 @@ import {
   TransactionStatusResponse,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
-import { AleoChain } from './chains';
-import type { RecordStatusFilter } from './features';
+import { AleoChain, EvmChain, WalletChain } from './chains';
+import type {
+  DerivedAddress,
+  EvmTransactionRequest,
+  RecordStatusFilter,
+  RevealStatus,
+} from './features';
 import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
 
@@ -157,6 +162,44 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+
+  /**
+   * Derive a fresh EVM address at the next available index for the given chain.
+   */
+  deriveEvmAddressAtDerived(chain: EvmChain): Promise<DerivedAddress>;
+
+  /**
+   * Derive a fresh Aleo address at the next available index.
+   */
+  deriveAleoAddressAtDerived(): Promise<DerivedAddress>;
+
+  /**
+   * List all derived addresses managed by the wallet, optionally filtered to a single chain.
+   */
+  listDerivedAddresses(chain?: WalletChain): Promise<DerivedAddress[]>;
+
+  /**
+   * Sign an EVM transaction with the derived account at `index` on `chain`.
+   */
+  signEvmTransactionAtDerived(
+    chain: EvmChain,
+    index: number,
+    txParams: EvmTransactionRequest,
+  ): Promise<{ signedTransaction: string }>;
+
+  /**
+   * Sign and broadcast an Aleo transition with the derived account at `index`.
+   */
+  signAleoTransitionAtDerived(
+    index: number,
+    transition: TransactionOptions,
+  ): Promise<{ transactionId: string }>;
+
+  /**
+   * Reveal the private key of the derived account at `index` on `chain` to the user.
+   * Returns status only — the key never flows back to the dApp.
+   */
+  revealDerivedPrivateKey(chain: WalletChain, index: number): Promise<{ status: RevealStatus }>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &
