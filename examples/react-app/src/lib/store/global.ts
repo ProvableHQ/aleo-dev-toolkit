@@ -1,6 +1,10 @@
 import { atomWithStorage } from 'jotai/utils';
 import { Network } from '@provablehq/aleo-types';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import {
+  DecryptPermission,
+  RecordAccessGrant,
+  ViewKeyExposure,
+} from '@provablehq/aleo-wallet-adaptor-core';
 
 /**
  * Adapter default values
@@ -18,6 +22,15 @@ export const programsAtom = atomWithStorage<string[]>('programs', [
   'toka_token.aleo',
   'tokb_token.aleo',
 ]);
+export const recordAccessAtom = atomWithStorage<RecordAccessGrant | undefined>(
+  'recordAccess',
+  undefined,
+);
+export const readAddressAtom = atomWithStorage<boolean | undefined>('readAddress', undefined);
+export const viewKeyExposureAtom = atomWithStorage<ViewKeyExposure | undefined>(
+  'viewKeyExposure',
+  undefined,
+);
 
 /**
  * UI state

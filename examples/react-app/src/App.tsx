@@ -14,6 +14,9 @@ import {
   decryptPermissionAtom,
   networkAtom,
   programsAtom,
+  readAddressAtom,
+  recordAccessAtom,
+  viewKeyExposureAtom,
 } from './lib/store/global';
 import { routes } from './routes';
 // Import wallet adapter CSS after our own styles
@@ -37,6 +40,9 @@ export function App() {
   const decryptPermission = useAtomValue(decryptPermissionAtom);
   const autoConnect = useAtomValue(autoConnectAtom);
   const programs = useAtomValue(programsAtom);
+  const recordAccess = useAtomValue(recordAccessAtom);
+  const readAddress = useAtomValue(readAddressAtom);
+  const viewKeyExposure = useAtomValue(viewKeyExposureAtom);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -47,6 +53,9 @@ export function App() {
         onError={error => toast.error(error.message)}
         decryptPermission={decryptPermission}
         programs={programs}
+        recordAccess={recordAccess}
+        readAddress={readAddress}
+        viewKeyExposure={viewKeyExposure}
       >
         <WalletModalProvider>
           <AppRoutes />

@@ -86,6 +86,48 @@ const { requestTransactionHistory } = useWallet();
 // Get transaction history for a program
 const history = await requestTransactionHistory('${PLACEHOLDERS.PROGRAM}');
 console.log('Transactions:', history.transactions);`,
+
+  privateInputs: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import type { RecordEnvelope } from '@provablehq/aleo-types';
+
+const { requestRecords, executeTransaction } = useWallet();
+
+// 1. Connect with a narrowed grant — only \`microcredits\` body field plus the
+//    \`$commitment\` envelope-metadata token (passed at <AleoWalletProvider/>).
+//
+//    recordAccess: {
+//      level: 'byProgram',
+//      programs: [
+//        {
+//          program: '${PLACEHOLDERS.PROGRAM}',
+//          records: [
+//            { recordname: 'credits', fields: [
+//              { name: 'microcredits' },
+//              { name: '$commitment' },
+//            ]},
+//          ],
+//        },
+//      ],
+//    }
+
+// 2. Fetch records — the wallet returns RecordEnvelope[] with recordView and uid.
+const records = (await requestRecords('${PLACEHOLDERS.PROGRAM}', true, 'unspent')) as RecordEnvelope[];
+const chosen = records[0];
+
+// 3. Pin that exact record by uid in a type: "record" InputRequest. Sending the
+//    transfer to self via { type: "address" } proves end-to-end privacy: the
+//    dapp never reads the owner address.
+const tx = await executeTransaction({
+  program: '${PLACEHOLDERS.PROGRAM}',
+  function: '${PLACEHOLDERS.FUNCTION}',
+  inputs: [
+    { type: 'record', program: '${PLACEHOLDERS.PROGRAM}', uid: chosen.uid! },
+    { type: 'address' },
+    '100u64',
+  ],
+  fee: 200000,
+});
+console.log('Transaction Id:', tx?.transactionId);`,
 } as const;
 
 export type CodeExampleKey = keyof typeof codeExamples;

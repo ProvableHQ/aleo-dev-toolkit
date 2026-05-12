@@ -351,7 +351,7 @@ export function scopePollingDetectionStrategy(detect: () => boolean): void {
   detectAndDispose();
 }
 
-function validateInputRequests(inputs: TransactionInput[]): void {
+export function validateInputRequests(inputs: TransactionInput[]): void {
   for (let i = 0; i < inputs.length; i++) {
     const input = inputs[i];
     if (typeof input === 'string') continue;

@@ -295,6 +295,13 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = true;
       setConnecting(true);
       try {
+        // eslint-disable-next-line no-console
+        console.log('[WalletProvider] autoConnect about to call adapter.connect with:', {
+          initialNetwork,
+          decryptPermission,
+          programs,
+          connectOptions,
+        });
         const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
         lastAuthorizedAccount.current = account.address ?? null;
       } catch (error: unknown) {
@@ -307,7 +314,18 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         isConnecting.current = false;
       }
     })();
-  }, [isConnecting, connected, autoConnect, adapter, readyState, setName]);
+  }, [
+    isConnecting,
+    connected,
+    autoConnect,
+    adapter,
+    readyState,
+    setName,
+    initialNetwork,
+    decryptPermission,
+    programs,
+    connectOptions,
+  ]);
 
   useEffect(() => {
     if (adapter && connected && adapter.network !== initialNetwork) {
@@ -345,6 +363,13 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     isConnecting.current = true;
     setConnecting(true);
     try {
+      // eslint-disable-next-line no-console
+      console.log('[WalletProvider] connect() about to call adapter.connect with:', {
+        initialNetwork,
+        decryptPermission,
+        programs,
+        connectOptions,
+      });
       const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
       lastAuthorizedAccount.current = account.address ?? null;
     } catch (error: unknown) {
@@ -357,7 +382,19 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       setConnecting(false);
       isConnecting.current = false;
     }
-  }, [isConnecting, isDisconnecting, connected, adapter, readyState, handleError, setName]);
+  }, [
+    isConnecting,
+    isDisconnecting,
+    connected,
+    adapter,
+    readyState,
+    handleError,
+    setName,
+    initialNetwork,
+    decryptPermission,
+    programs,
+    connectOptions,
+  ]);
 
   const executeTransaction = useCallback(
     async (transaction: TransactionOptions) => {

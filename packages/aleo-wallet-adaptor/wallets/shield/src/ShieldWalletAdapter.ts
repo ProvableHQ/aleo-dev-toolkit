@@ -16,16 +16,17 @@ import {
 import {
   BaseAleoWalletAdapter,
   filterRecordsByStatus,
+  scopePollingDetectionStrategy,
+  validateInputRequests,
   WalletConnectionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
-  WalletSwitchNetworkError,
   WalletSignMessageError,
+  WalletSwitchNetworkError,
   WalletTransactionError,
-  WalletDecryptionError,
-  WalletDecryptionNotAllowedError,
-  scopePollingDetectionStrategy,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { ShieldWallet, ShieldWindow } from './types';
 
@@ -181,7 +182,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The signed message
    */
   async signMessage(message: Uint8Array): Promise<Uint8Array> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -201,7 +202,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   async decrypt(cipherText: string) {
-    if (!this._shieldWallet || !this._publicKey) {
+    if (!this._shieldWallet || !this.account) {
       throw new WalletNotConnectedError();
     }
     switch (this.decryptPermission) {
@@ -229,9 +230,10 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The executed temporary transaction ID
    */
   async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
+    validateInputRequests(options.inputs);
 
     try {
       const result = await this._shieldWallet?.executeTransaction({
@@ -263,7 +265,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The transaction status
    */
   async transactionStatus(transactionId: string): Promise<TransactionStatusResponse> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -288,7 +290,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async switchNetwork(_network: Network): Promise<void> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -314,7 +316,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     includePlaintext: boolean,
     statusFilter: RecordStatusFilter = 'all',
   ): Promise<unknown[]> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -334,7 +336,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {
     try {
-      if (!this._publicKey || !this.account) {
+      if (!this.account) {
         throw new WalletNotConnectedError();
       }
       try {
@@ -366,7 +368,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   async transitionViewKeys(transactionId: string): Promise<string[]> {
     try {
-      if (!this._publicKey || !this.account) {
+      if (!this.account) {
         throw new WalletNotConnectedError();
       }
       try {
@@ -393,7 +395,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   async requestTransactionHistory(program: string): Promise<TxHistoryResult> {
     try {
-      if (!this._publicKey || !this.account) {
+      if (!this.account) {
         throw new WalletNotConnectedError();
       }
       try {
