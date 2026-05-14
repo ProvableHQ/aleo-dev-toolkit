@@ -10,6 +10,7 @@ import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { useAtomValue } from 'jotai';
 import {
+  algorithmsAllowedAtom,
   autoConnectAtom,
   decryptPermissionAtom,
   networkAtom,
@@ -41,6 +42,7 @@ export function App() {
   const programs = useAtomValue(programsAtom);
   const recordAccess = useAtomValue(recordAccessAtom);
   const readAddress = useAtomValue(readAddressAtom);
+  const algorithmsAllowed = useAtomValue(algorithmsAllowedAtom);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -53,6 +55,7 @@ export function App() {
         programs={programs}
         recordAccess={recordAccess}
         readAddress={readAddress}
+        algorithmsAllowed={algorithmsAllowed}
       >
         <WalletModalProvider>
           <AppRoutes />

@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlgorithmGrant,
   WalletName,
   WalletReadyState,
   WalletAdapter,
@@ -41,6 +42,12 @@ export interface WalletProviderProps {
    * Defaults to `true`. Only valid with `decryptPermission: NoDecrypt`.
    */
   readAddress?: boolean;
+  /**
+   * Strict opt-in allowlist for `type: "derived"` InputRequests. Each grant
+   * authorizes exactly one (algorithm, program, function, inputPosition)
+   * call site. Default undefined → every derived request is refused.
+   */
+  algorithmsAllowed?: AlgorithmGrant[];
 }
 
 const initialState: {
@@ -68,13 +75,18 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   programs,
   recordAccess,
   readAddress,
+  algorithmsAllowed,
 }) => {
   const connectOptions = useMemo<ConnectOptions | undefined>(() => {
-    if (recordAccess === undefined && readAddress === undefined) {
+    if (
+      recordAccess === undefined &&
+      readAddress === undefined &&
+      (algorithmsAllowed === undefined || algorithmsAllowed.length === 0)
+    ) {
       return undefined;
     }
-    return { recordAccess, readAddress };
-  }, [recordAccess, readAddress]);
+    return { recordAccess, readAddress, algorithmsAllowed };
+  }, [recordAccess, readAddress, algorithmsAllowed]);
   const [name, setName] = useLocalStorage<WalletName | null>(localStorageKey, null);
   const [{ wallet, adapter, publicKey, connected, network }, setState] = useState(initialState);
   const readyState = adapter?.readyState || WalletReadyState.UNSUPPORTED;
@@ -510,6 +522,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  // Doesn't require a connection — dapps may call this before connect to discover
+  // which algorithms a wallet supports and to populate `algorithmsAllowed`.
+  const algorithmsSupported = useCallback(async () => {
+    if (!adapter || !('algorithmsSupported' in adapter)) return [];
+    try {
+      return await adapter.algorithmsSupported();
+    } catch {
+      return [];
+    }
+  }, [adapter]);
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -543,6 +566,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         executeDeployment,
         transitionViewKeys,
         requestTransactionHistory,
+        algorithmsSupported,
       }}
     >
       {children}

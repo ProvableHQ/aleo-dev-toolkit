@@ -1,3 +1,5 @@
+import { LiteralType } from './data';
+
 /**
  * Status of a transaction
  */
@@ -78,7 +80,69 @@ export type InputRequest =
       program: string;
       filters?: RecordFilters;
       uid?: string;
+    }
+  | {
+      /**
+       * Fill the input slot with the output of a wallet-evaluated cryptographic
+       * algorithm. The wallet runs the named `algorithm` over its own state
+       * (view key, wallet-maintained counters, etc.) plus the dapp's `args`,
+       * and substitutes the result into the slot. The dapp never observes the
+       * wallet-side inputs — only the output.
+       *
+       * Strictly opt-in: the wallet refuses every derived request whose
+       * `(algorithm, program, function, inputPosition)` tuple is not present
+       * in the connection's `algorithmsAllowed`. Each algorithm declares its
+       * `args` schema and output Aleo type; the output type determines which
+       * input positions are valid (same rules as `type: "address"`).
+       */
+      type: 'derived';
+      algorithm: AlgorithmName;
+      args: Record<string, AlgorithmArg>;
+      label?: string;
     };
+
+/**
+ * Algorithms that conforming wallets are expected to implement. The
+ * `(string & {})` extension permits unknown values for forward-compat:
+ * a wallet shipping a new algorithm before this union is updated can still
+ * be addressed. The wallet validates at runtime against its own
+ * `algorithmsSupported()` list.
+ */
+export type KnownAlgorithm = 'program-scoped-address-blind';
+export type AlgorithmName = KnownAlgorithm | (string & {});
+
+/**
+ * One typed argument passed to a wallet-side cryptographic algorithm. The
+ * wallet parses `value` according to `type` (an Aleo primitive type) before
+ * invoking the algorithm.
+ */
+export interface AlgorithmArg {
+  type: LiteralType;
+  value: string;
+}
+
+/**
+ * Static catalog of known algorithms — their dapp-provided `args` schema, the
+ * Aleo type of their output, and the input-slot positions where they are
+ * valid. The wallet is the source of truth at runtime; this registry lets the
+ * SDK and dapp tooling render correct forms and pre-validate shapes.
+ */
+export const ALGORITHM_SCHEMAS = {
+  'program-scoped-address-blind': {
+    args: {
+      'domain-separator': { type: 'field' as LiteralType },
+    },
+    outputType: 'address' as LiteralType,
+    validSlotTypes: ['address', 'group', 'scalar', 'field'] as LiteralType[],
+  },
+} as const satisfies Record<
+  KnownAlgorithm,
+  {
+    args: Record<string, { type: LiteralType }>;
+    outputType: LiteralType;
+    validSlotTypes: LiteralType[];
+  }
+>;
 
 /**
  * One element of a transaction's `inputs` array. A literal Aleo value (string)

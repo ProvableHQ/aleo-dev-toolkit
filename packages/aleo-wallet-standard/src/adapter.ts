@@ -159,6 +159,13 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+
+  /**
+   * Return the algorithm names this wallet implements for `type: "derived"`
+   * InputRequests. Wallets without derived-input support return `[]`.
+   * No connection required.
+   */
+  algorithmsSupported: () => Promise<string[]>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

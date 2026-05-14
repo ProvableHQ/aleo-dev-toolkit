@@ -2,7 +2,7 @@
 
 ## Goal
 
-Let dapps emit `TransactionOptions` whose `inputs` slots are not always literal Aleo values. Each non-literal slot is a **request** to the wallet — to prompt the user or to auto-select an owned record matching dapp-supplied criteria. The wallet fulfills the request before passing the transaction to the SDK.
+Let dapps emit `TransactionOptions` whose `inputs` slots are not always literal Aleo values. Each non-literal slot is a **request** to the wallet — to prompt the user, to auto-select an owned record matching dapp-supplied criteria, or to compute a value by running a named cryptographic algorithm over the user's wallet state. The wallet fulfills the request before passing the transaction to the SDK.
 
 ## Wire-level types
 
@@ -11,13 +11,31 @@ type Input = string | InputRequest;
 
 type InputRequest =
   | { type: "address"; label?: string } // Specification to fill the input field with the active address. Allowed in an input position with an aleo type of: `address, group, scalar, or field`.
-  | { type: "record";  program: string; filters?: RecordFilters; uid?: string }; // Specification to use a record from a specific program. When `uid` is present, it pins the exact record previously returned by `requestRecords` and `filters` is ignored. When absent, the wallet picks any unspent record matching `filters`. Allowed in an input position with an aleo type of: `record, dynamic_record, or external_record`.
+  | { type: "record";  program: string; filters?: RecordFilters; uid?: string } // Specification to use a record from a specific program. When `uid` is present, it pins the exact record previously returned by `requestRecords` and `filters` is ignored. When absent, the wallet picks any unspent record matching `filters`. Allowed in an input position with an aleo type of: `record, dynamic_record, or external_record`.
+  | { type: "derived"; algorithm: AlgorithmName; args: Record<string, AlgorithmArg>; label?: string }; // Specification to fill the input field with the output of a wallet-evaluated cryptographic algorithm. Each algorithm declares its expected `args` schema and its output Aleo type; the output type determines which input positions are valid. Strictly opt-in — the wallet refuses every derived request whose (algorithm, program, function, inputPosition) tuple is not in the connection's `algorithmsAllowed`. See "Derived inputs" below.
 
 type RecordFilters = Record<string, RecordFieldFilter>; // keys are top-level record field names or dotted paths into struct fields, e.g. "amount" or "data.amount".
 type RecordFieldFilter = { eq?: string, gte?: string, lte?: string, neq?: string, }; // potential matching conditions, AND-combined.
 
 interface RecordView {
   fields: Record<string, string>; // parsed structured form of the record's plaintext. Only fields the dapp has read access to are present; redacted fields are omitted (not present-with-undefined).
+}
+
+// Re-exports the existing LiteralType enum from `@provablehq/aleo-types` (`packages/aleo-types/src/data.ts`).
+type LiteralType =
+  | "address" | "bool" | "group"
+  | "u8" | "u16" | "u32" | "u64" | "u128"
+  | "i8" | "i16" | "i32" | "i64" | "i128"
+  | "field" | "scalar" | "signature";
+
+// New algorithms are added to this literal union as they're standardized. The `(string & {})` permits
+// unknown values for forward-compat — the wallet validates against its own `algorithmsSupported()` list at runtime.
+type KnownAlgorithm = "program-scoped-address-blind";
+type AlgorithmName  = KnownAlgorithm | (string & {});
+
+interface AlgorithmArg {
+  type: LiteralType;  // parsing directive — the wallet decodes `value` according to this Aleo primitive type
+  value: string;       // an Aleo literal in canonical string form (e.g. "12345field", "100u64", "true")
 }
 ```
 
@@ -33,6 +51,7 @@ The remaining (legacy) fields — including `recordPlaintext`, `commitment`, `ta
 The `InputRequest` sends a request to the wallet (which is then authorized by the user) to do the following:
 1. Input the user's address into a position where there's an address, group, scalar, or field input.
 2. Use a record whose fields match the `filters` on specific record's members and filter for records that match them if applicable, returning an error if the condition cannot be applied or a record matching it cannot be found.
+3. Run a named cryptographic algorithm over the wallet's state (view key, program-scoped counters, etc.) plus dapp-supplied arguments, and use the output as input. Authorized only at exact `(algorithm, program, function, inputPosition)` call sites.
 
 The wallet has the program's source, so it reads a function's parameter signature for input position `i` and renders the form control accordingly. `label` is UX-only.
 
@@ -55,6 +74,7 @@ interface ConnectHistory {
   programs?: string[];                          // unchanged — program-level gate for both transaction execution and record operations
   readAddress?: boolean;                        // new — opt-in address withholding; default true
   recordAccess?: RecordAccessGrant;             // new — opt-in record/field narrowing
+  algorithmsAllowed?: AlgorithmGrant[];         // new — strict opt-in derived-input allowlist; default undefined → every `type: "derived"` request is refused
 }
 
 type RecordAccessGrant =
@@ -74,6 +94,16 @@ interface RecordGrant {
 interface FieldGrant {
   name: string;               // a record-body field name (e.g. "amount", "data.amount"), or a `$`-prefixed envelope-metadata name from the reserved set: `$commitment`, `$tag`, `$transitionId`, `$transactionId`, `$outputIndex`, `$transactionIndex`, `$transitionIndex`, `$owner`, `$sender`. The `$` prefix prevents collision with any body field named identically.
   readAccess?: boolean;       // undefined → true; false → field is usable as a filter key but plaintext is withheld on decrypt
+}
+
+// Each grant authorizes one specific call site. All four fields are required and exact-match;
+// there is no wildcard. A dapp that wants to use the same algorithm at multiple call sites lists
+// each one as its own entry.
+interface AlgorithmGrant {
+  algorithm: AlgorithmName;   // must appear in the wallet's `algorithmsSupported()` list
+  program: string;            // must also appear in `programs`
+  function: string;           // exact transition name within `program`
+  inputPosition: number;      // 0-based index into the function's input slots
 }
 ```
 
@@ -121,6 +151,55 @@ Rationale: when the dapp asks for narrow field access, it has explicitly given u
 
 Under `readAddress: false`, the strip rules tighten further independently of the grant: `owner`, `sender`, `commitment`, `tag`, `transitionId`, `transactionId`, and `recordPlaintext` are always omitted, and any `recordView.fields` whose Aleo type is `address` and whose plaintext equals the active address is omitted. `uid` and `recordView` (with non-address fields) remain the dapp's only handles to the record.
 
+### Derived inputs
+
+A `type: "derived"` request asks the wallet to compute a value by running a named cryptographic algorithm over the wallet's own state (the view key, a per-(origin, program) counter, etc.) combined with the dapp's `args`, then substitute the result into the input slot. The dapp never observes the wallet-side inputs — only the final output.
+
+Derived inputs are **strictly opt-in**: the wallet refuses every derived request whose `(algorithm, program, function, inputPosition)` tuple is not present in `algorithmsAllowed`. There is no broad default. The four fields are required and exact-match — a grant for `(algorithm: X, program: "p.aleo", function: "f", inputPosition: 0)` does not authorize the same algorithm at `inputPosition: 1`, at a different function, or at a different program. A dapp that wants the same algorithm at multiple call sites lists each one as its own entry.
+
+#### Discovery
+
+Adapters expose `algorithmsSupported(): Promise<AlgorithmName[]>`. A dapp calls this before connect to learn which algorithms a wallet implements, then requests a matching subset in `algorithmsAllowed`. Wallets that don't implement derived inputs at all return an empty array or throw `MethodNotImplementedError`.
+
+Every `algorithmsAllowed[].algorithm` is validated at connect time against the wallet's `algorithmsSupported()`. Unknown names are rejected.
+
+#### Output type and slot compatibility
+
+Each `KnownAlgorithm` has a fixed Aleo output type, declared in the catalog below. The wallet additionally validates at execute time that the function's signature at `inputs[i]` is a valid position for that output type — same rules as `type: "address"` (e.g. an `address`-typed output is valid in `address` / `group` / `scalar` / `field` slots).
+
+#### Algorithm catalog
+
+##### `program-scoped-address-blind`
+
+Produces a blinded address scoped to a specific program. Two dapps using the same wallet against different programs derive different blinded addresses. Whether the same dapp derives the same blinded address across executions is governed by wallet-internal state; the dapp can neither control nor observe that state.
+
+| Property | Value |
+|---|---|
+| `args` (dapp-provided) | `{ "domain-separator": AlgorithmArg<field> }` |
+| wallet-derived inputs | program address (as field), active view key (as field), wallet-maintained counter (as field) |
+| output type | `address` |
+| valid input slot positions | `address`, `group`, `scalar`, `field` |
+
+Algorithm (pseudo, matching the wallet's reference implementation):
+
+```
+r        = Poseidon4.hashToScalar([programAddrField, domainSeparatorField, viewKeyField, counterField])
+blinded  = BHP256.commitToGroup(signerGroup.toBitsLE(), r)
+result   = Address.fromGroup(blinded)
+```
+
+The dapp never observes the view key, the counter, or the intermediate scalar `r`. The output is an address whose link to the active address is hidden by the BHP256 commitment — recovering the active address from the output is computationally infeasible without `r`.
+
+Future algorithms are added to `KnownAlgorithm` and documented under their own catalog subsection in this spec.
+
+#### Interaction with `readAddress: false`
+
+Derived inputs are allowed under `readAddress: false`. The dapp does not learn the active address through the derived flow — it only sees the algorithm's output. For `program-scoped-address-blind` the output is itself a fresh blinded address, so it does not leak the active address even when the dapp inspects the resulting transaction. Algorithms whose output is the active address itself (or trivially reversible to it) must not be admitted to `KnownAlgorithm` for this reason.
+
+#### Interaction with `programs`
+
+`algorithmsAllowed[].program` must appear in `programs`. The wallet rejects mismatches at connect time. This mirrors the subset constraint already enforced for `recordAccess.programs[].program`.
+
 ### Address exposure
 
 `readAddress?: boolean` controls whether the dapp learns the user's address. Defaults to `true` (undefined treated as `true`); `false` is opt-in for privacy-preserving dapps.
@@ -165,8 +244,10 @@ flowchart TD
   D --> R["fulfillInputRequests.ts"]
   R -- "type: record" --> R1["filter unspent records<br/>by where clause"]
   R -- "type: user" --> R3["render typed form<br/>from program signature"]
+  R -- "type: derived" --> R4["run algorithm via SDK<br/>using wallet-derived secrets"]
   R1 --> F["confirm screen<br/>shows every fulfilled value"]
   R3 --> F
+  R4 --> F
   F -- user confirms --> G["initializeGenericTransaction<br/>(fulfilled string[], lockedRecords)"]
   G ===> H["worker.ts → SDK<br/>UNCHANGED"]
 
@@ -195,3 +276,10 @@ The worker boundary still receives `string[]`. All fulfillment is wallet-side; t
 | `connect()` | `recordAccess.programs[].program` not present in `programs` | connect-time validation error |
 | `requestRecords` | called against a program in `programs` but absent from `recordAccess.programs[]` (when `recordAccess` is set) | permission error at gate |
 | `requestRecords` | `includePlaintext: true` while `decryptPermission: NoDecrypt` | permission error at gate (today's behavior, restated) |
+| `type: "derived"` | `(algorithm, program, function, inputPosition)` tuple not in `algorithmsAllowed` | permission error at gate |
+| `type: "derived"` | `algorithm` not in the wallet's `algorithmsSupported()` list | permission error at gate (also caught at connect time if the dapp listed it in `algorithmsAllowed`) |
+| `type: "derived"` | `args` missing a key required by the algorithm's schema, has an extra key, or an `AlgorithmArg.type` mismatches the algorithm's expected type for that key | validation error before gate |
+| `type: "derived"` | `AlgorithmArg.value` does not parse as a literal of `AlgorithmArg.type` | validation error before gate |
+| `type: "derived"` | algorithm output type incompatible with the function signature at `inputs[i]` (e.g. an `address`-producing algorithm used in a `u64` slot) | validation error before gate |
+| `connect()` | `algorithmsAllowed[].program` not present in `programs` | connect-time validation error |
+| `connect()` | `algorithmsAllowed[].algorithm` not in the wallet's `algorithmsSupported()` | connect-time validation error |

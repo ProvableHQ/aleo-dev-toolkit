@@ -416,6 +416,19 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
+   * Shield's currently-supported derived-input algorithms. Returns the SDK's
+   * known-algorithm catalog; the wallet itself is the source of truth at
+   * runtime and will reject any algorithm it doesn't implement.
+   *
+   * TODO(wallet): when the injector exposes an `algorithmsSupported` message,
+   * replace this static list with a real round-trip so dapps see what THIS
+   * Shield build supports, not just the SDK's static catalog.
+   */
+  async algorithmsSupported(): Promise<string[]> {
+    return ['program-scoped-address-blind'];
+  }
+
+  /**
    * EVENTS HANDLING
    */
 
