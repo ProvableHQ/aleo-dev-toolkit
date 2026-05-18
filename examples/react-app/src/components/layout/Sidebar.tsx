@@ -13,6 +13,7 @@ import {
   Book,
   Github,
   Brush,
+  Shield,
 } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
@@ -55,6 +56,10 @@ const navigationGroups: NavGroup[] = [
       { to: '/view-keys', label: 'View Keys', icon: Key },
       { to: '/history', label: 'Tx History', icon: History },
     ],
+  },
+  {
+    title: 'Custom',
+    items: [{ to: '/shield-pay', label: 'Shield Pay', icon: Shield }],
   },
 ];
 

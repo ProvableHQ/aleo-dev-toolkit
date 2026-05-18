@@ -8,6 +8,7 @@ export const PLACEHOLDERS = {
   CIPHER_TEXT: '{{CIPHER_TEXT}}',
   MESSAGE: '{{MESSAGE}}',
   TX_ID: '{{TX_ID}}',
+  ACCOUNT_INDEX: '{{ACCOUNT_INDEX}}',
 } as const;
 
 export const codeExamples = {
@@ -86,6 +87,53 @@ const { requestTransactionHistory } = useWallet();
 // Get transaction history for a program
 const history = await requestTransactionHistory('${PLACEHOLDERS.PROGRAM}');
 console.log('Transactions:', history.transactions);`,
+
+  deriveEvmAddress: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+const evmAddress = await adapter.deriveEvmAddress(${PLACEHOLDERS.ACCOUNT_INDEX});
+console.log('EVM address:', evmAddress);`,
+
+  deriveAleoAddress: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+const aleoAddress = await adapter.deriveAleoAddress(${PLACEHOLDERS.ACCOUNT_INDEX});
+console.log('Aleo address:', aleoAddress);`,
+
+  executeTransactionOnDerivedAccount: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet, transactionStatus } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+const result = await adapter.executeTransactionOnDerivedAccount(${PLACEHOLDERS.ACCOUNT_INDEX}, {
+  program: '${PLACEHOLDERS.PROGRAM}',
+  function: '${PLACEHOLDERS.FUNCTION}',
+  inputs: [${PLACEHOLDERS.INPUTS}],
+  fee: ${PLACEHOLDERS.FEE},
+});
+
+const status = await transactionStatus(result.transactionId);
+console.log('Status:', status.status);
+console.log('Transaction ID:', status.transactionId);`,
 } as const;
 
 export type CodeExampleKey = keyof typeof codeExamples;
