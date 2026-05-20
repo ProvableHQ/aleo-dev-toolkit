@@ -30,13 +30,10 @@ export class State {
         );
         return callback(value);
       } catch (error) {
+        retries--;
         if (retries === 0) {
           throw error;
         }
-        console.error(error);
-        retries--;
-        console.log('Retrying...');
-        console.log(retries, 'retries left');
         await new Promise(resolve => setTimeout(resolve, interval));
       }
     }

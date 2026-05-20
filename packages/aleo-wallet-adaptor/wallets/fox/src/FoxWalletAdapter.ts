@@ -90,7 +90,6 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());
     }
-    this._foxWallet = this._window?.foxwallet?.aleo;
   }
 
   /**
@@ -106,6 +105,7 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
     this._window = window as FoxWindow;
 
     if (this._window.foxwallet?.aleo) {
+      this._foxWallet = this._window.foxwallet.aleo;
       this.readyState = WalletReadyState.INSTALLED;
       this.emit('readyStateChange', this.readyState);
       return true;
@@ -139,10 +139,8 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
         if (
           error instanceof Object &&
           'name' in error &&
-          (error.name === 'InvalidParamsAleoWalletError' ||
-            error.name !== 'NotGrantedAleoWalletError')
+          error.name === 'InvalidParamsAleoWalletError'
         ) {
-          // TODO: Handle wrongNetwork at WalletProvider level?
           throw new WalletConnectionError(
             'Connection failed: Likely due to a difference in configured network and the selected wallet network. Configured network: ' +
               network,

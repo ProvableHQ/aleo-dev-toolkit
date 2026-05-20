@@ -94,7 +94,6 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       scopePollingDetectionStrategy(() => this._checkAvailability());
     }
-    this._leoWallet = this._window?.leoWallet || this._window?.leo;
     if (config?.isMobile) {
       this.url = `https://app.leo.app/browser?url=${config.mobileWebviewUrl}`;
     }
@@ -107,6 +106,7 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     this._window = window as LeoWindow;
 
     if (this._window.leoWallet || this._window.leo) {
+      this._leoWallet = this._window.leoWallet ?? this._window.leo;
       this.readyState = WalletReadyState.INSTALLED;
       this.emit('readyStateChange', this.readyState);
       // Wake up service worker
@@ -140,10 +140,8 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
         if (
           error instanceof Object &&
           'name' in error &&
-          (error.name === 'InvalidParamsAleoWalletError' ||
-            error.name !== 'NotGrantedAleoWalletError')
+          error.name === 'InvalidParamsAleoWalletError'
         ) {
-          // TODO: Handle wrongNetwork at WalletProvider level?
           throw new WalletConnectionError(
             'Connection failed: Likely due to a difference in configured network and the selected wallet network. Configured network: ' +
               network,
