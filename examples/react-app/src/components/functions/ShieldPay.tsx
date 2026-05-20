@@ -5,15 +5,52 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Copy, CheckCircle, Loader2, AlertCircle, Shield, Wallet, Zap } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Copy, CheckCircle, Loader2, AlertCircle, Shield, Wallet, Zap, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { TransactionStatus } from '@provablehq/aleo-types';
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
-import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+import {
+  EVM_CHAINS,
+  EvmChain,
+  EvmTransactionParams,
+  isShieldPayAdapter,
+} from '@/lib/shieldPayAdapter';
 import { parseInputs } from '@/lib/utils';
+
+const EVM_TX_TYPES = ['legacy', 'eip1559', 'eip2930'] as const;
+
+function parseOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function parseOptionalGas(value: string): string | number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith('0x')) return trimmed;
+  const parsed = Number(trimmed);
+  return Number.isNaN(parsed) ? trimmed : parsed;
+}
+
+function formatEvmTransactionForCode(tx: EvmTransactionParams): string {
+  const entries = Object.entries(tx).map(([key, value]) => {
+    const formatted = typeof value === 'string' ? `'${value.replace(/'/g, "\\'")}'` : String(value);
+    return `  ${key}: ${formatted},`;
+  });
+  return `{\n${entries.join('\n')}\n}`;
+}
 
 export function ShieldPay() {
   const { connected, wallet, transactionStatus: getTransactionStatus } = useWallet();
@@ -36,12 +73,61 @@ export function ShieldPay() {
   const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
   const [transactionError, setTransactionError] = useState<string | null>(null);
   const [executeError, setExecuteError] = useState('');
+  const [evmChain, setEvmChain] = useState<EvmChain>('ethereum-sepolia');
+  const [evmTo, setEvmTo] = useState('');
+  const [evmData, setEvmData] = useState('');
+  const [evmValue, setEvmValue] = useState('0x0');
+  const [evmType, setEvmType] = useState<(typeof EVM_TX_TYPES)[number]>('eip1559');
+  const [evmGas, setEvmGas] = useState('');
+  const [evmGasPrice, setEvmGasPrice] = useState('');
+  const [evmMaxFeePerGas, setEvmMaxFeePerGas] = useState('');
+  const [evmMaxPriorityFeePerGas, setEvmMaxPriorityFeePerGas] = useState('');
+  const [evmNonce, setEvmNonce] = useState('');
+  const [evmChainId, setEvmChainId] = useState('');
+  const [isExecutingEvm, setIsExecutingEvm] = useState(false);
+  const [evmTransactionHash, setEvmTransactionHash] = useState('');
+  const [evmExecuteError, setEvmExecuteError] = useState('');
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const shieldPayAdapter =
     wallet?.adapter && isShieldPayAdapter(wallet.adapter) ? wallet.adapter : null;
 
-  const isBusy = isDerivingEvm || isDerivingAleo || isExecutingTransaction;
+  const isBusy = isDerivingEvm || isDerivingAleo || isExecutingTransaction || isExecutingEvm;
+
+  const buildEvmTransactionParams = (options?: {
+    requireTo?: boolean;
+  }): EvmTransactionParams | null => {
+    const requireTo = options?.requireTo ?? false;
+
+    if (!evmTo.trim()) {
+      if (requireTo) toast.error('Recipient address (to) is required');
+      return null;
+    }
+
+    const transaction: EvmTransactionParams = {
+      to: evmTo.trim(),
+    };
+
+    if (evmData.trim()) transaction.data = evmData.trim();
+    if (evmValue.trim()) transaction.value = evmValue.trim();
+    if (evmType) transaction.type = evmType;
+
+    const gas = parseOptionalGas(evmGas);
+    if (gas !== undefined) transaction.gas = gas;
+    if (evmGasPrice.trim()) transaction.gasPrice = evmGasPrice.trim();
+    if (evmMaxFeePerGas.trim()) transaction.maxFeePerGas = evmMaxFeePerGas.trim();
+    if (evmMaxPriorityFeePerGas.trim()) {
+      transaction.maxPriorityFeePerGas = evmMaxPriorityFeePerGas.trim();
+    }
+
+    const nonce = parseOptionalNumber(evmNonce);
+    if (nonce !== undefined) transaction.nonce = nonce;
+
+    const chainId = parseOptionalNumber(evmChainId);
+    if (chainId !== undefined) transaction.chainId = chainId;
+
+    return transaction;
+  };
 
   useEffect(() => {
     return () => {
@@ -215,10 +301,56 @@ export function ShieldPay() {
     }
   };
 
+  const handleExecuteEvmTransaction = async () => {
+    if (!connected) {
+      openWalletModal(true);
+      return;
+    }
+    if (!shieldPayAdapter) {
+      toast.error('Connect with Shield wallet to use Shield Pay');
+      return;
+    }
+
+    const accountIndex = parseIndex();
+    if (accountIndex === null) return;
+
+    const transaction = buildEvmTransactionParams({ requireTo: true });
+    if (!transaction) return;
+
+    setIsExecutingEvm(true);
+    setEvmExecuteError('');
+    setEvmTransactionHash('');
+
+    try {
+      const result = await shieldPayAdapter.executeEvmTransaction(
+        evmChain,
+        accountIndex,
+        transaction,
+      );
+      setEvmTransactionHash(result.transactionHash);
+      toast.success('EVM transaction submitted');
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to execute EVM transaction';
+      setEvmExecuteError(errorMessage);
+      toast.error('Failed to execute EVM transaction');
+    } finally {
+      setIsExecutingEvm(false);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
   };
+
+  const evmTransactionPreview =
+    buildEvmTransactionParams() ??
+    ({
+      to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+      value: evmValue.trim() || '0x0',
+      type: evmType,
+    } satisfies EvmTransactionParams);
 
   const derivedAddressAlert = (label: string, address: string) => (
     <Alert>
@@ -250,8 +382,8 @@ export function ShieldPay() {
       <div className="space-y-2">
         <h1 className="h2 text-foreground">Shield Pay</h1>
         <p className="body-l text-muted-foreground max-w-2xl">
-          Derive addresses and execute Aleo transactions on derived accounts at a specific index
-          using the Shield wallet extension.
+          Derive addresses and execute Aleo or EVM transactions on derived accounts at a specific
+          index using the Shield wallet extension.
         </p>
       </div>
 
@@ -501,6 +633,177 @@ export function ShieldPay() {
             </Alert>
           )}
         </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="body-m-bold text-foreground">Execute EVM transaction</h2>
+            <p className="body-s text-muted-foreground">
+              Runs{' '}
+              <code className="label-xs">executeEvmTransaction(chain, index, transaction)</code> on
+              the account index above.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="evmChain">Chain</Label>
+              <Select value={evmChain} onValueChange={value => setEvmChain(value as EvmChain)}>
+                <SelectTrigger id="evmChain" className="h-10">
+                  <SelectValue placeholder="Select chain" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVM_CHAINS.map(chain => (
+                    <SelectItem key={chain} value={chain}>
+                      {chain}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmType">Transaction type</Label>
+              <Select
+                value={evmType}
+                onValueChange={value => setEvmType(value as (typeof EVM_TX_TYPES)[number])}
+              >
+                <SelectTrigger id="evmType" className="h-10">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVM_TX_TYPES.map(type => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="evmTo">To</Label>
+              <Input
+                id="evmTo"
+                placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+                value={evmTo}
+                onChange={e => setEvmTo(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="evmData">Data (optional)</Label>
+              <Textarea
+                id="evmData"
+                placeholder="0x"
+                value={evmData}
+                onChange={e => setEvmData(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmValue">Value</Label>
+              <Input
+                id="evmValue"
+                placeholder="0x0"
+                value={evmValue}
+                onChange={e => setEvmValue(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmGas">Gas (optional)</Label>
+              <Input
+                id="evmGas"
+                placeholder="21000 or 0x5208"
+                value={evmGas}
+                onChange={e => setEvmGas(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmGasPrice">Gas price (optional)</Label>
+              <Input
+                id="evmGasPrice"
+                placeholder="0x..."
+                value={evmGasPrice}
+                onChange={e => setEvmGasPrice(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmMaxFeePerGas">Max fee per gas (optional)</Label>
+              <Input
+                id="evmMaxFeePerGas"
+                placeholder="0x..."
+                value={evmMaxFeePerGas}
+                onChange={e => setEvmMaxFeePerGas(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmMaxPriorityFeePerGas">Max priority fee (optional)</Label>
+              <Input
+                id="evmMaxPriorityFeePerGas"
+                placeholder="0x..."
+                value={evmMaxPriorityFeePerGas}
+                onChange={e => setEvmMaxPriorityFeePerGas(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmNonce">Nonce (optional)</Label>
+              <Input
+                id="evmNonce"
+                type="number"
+                min={0}
+                placeholder="0"
+                value={evmNonce}
+                onChange={e => setEvmNonce(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="evmChainId">Chain ID (optional)</Label>
+              <Input
+                id="evmChainId"
+                type="number"
+                min={1}
+                placeholder="Auto from chain"
+                value={evmChainId}
+                onChange={e => setEvmChainId(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <Button
+            onClick={handleExecuteEvmTransaction}
+            disabled={isBusy || isPollingStatus}
+            variant="secondary"
+            className="w-full transition-all duration-200"
+          >
+            {isExecutingEvm ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Executing EVM transaction...
+              </>
+            ) : !connected ? (
+              <>
+                <Wallet className="mr-2 h-4 w-4" />
+                Connect Wallet to Execute EVM
+              </>
+            ) : (
+              <>
+                <Coins className="mr-2 h-4 w-4" />
+                Execute EVM Transaction
+              </>
+            )}
+          </Button>
+
+          {evmExecuteError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="body-m-bold">Error executing EVM transaction</p>
+                <p className="body-s mt-1">{evmExecuteError}</p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {evmTransactionHash && derivedAddressAlert('Transaction hash', evmTransactionHash)}
+        </div>
       </div>
 
       <CodePanel
@@ -528,6 +831,16 @@ export function ShieldPay() {
           [PLACEHOLDERS.FUNCTION]: functionName || 'main',
           [PLACEHOLDERS.INPUTS]: inputs ? `'${inputs.split('\n').join("', '")}'` : "'1u32', '1u32'",
           [PLACEHOLDERS.FEE]: fee || '10000',
+        }}
+      />
+
+      <CodePanel
+        code={codeExamples.executeEvmTransaction}
+        language="tsx"
+        highlightValues={{
+          [PLACEHOLDERS.ACCOUNT_INDEX]: index || '0',
+          [PLACEHOLDERS.EVM_CHAIN]: evmChain,
+          [PLACEHOLDERS.EVM_TRANSACTION]: formatEvmTransactionForCode(evmTransactionPreview),
         }}
       />
     </section>

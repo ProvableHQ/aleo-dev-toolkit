@@ -9,6 +9,32 @@ export type ShieldPayExecutedTransaction = {
   transactionId: string;
 };
 
+export type EvmChain = 'ethereum' | 'ethereum-sepolia' | 'base' | 'base-sepolia';
+
+export const EVM_CHAINS: readonly EvmChain[] = [
+  'ethereum',
+  'ethereum-sepolia',
+  'base',
+  'base-sepolia',
+] as const;
+
+export type EvmTransactionParams = {
+  to?: string;
+  data?: string;
+  value?: string | number;
+  gas?: string | number;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+  nonce?: number;
+  chainId?: number;
+  type?: 'legacy' | 'eip1559' | 'eip2930';
+};
+
+export type ExecutedEvmTransaction = {
+  transactionHash: string;
+};
+
 export type ExtendedShieldWallet = ShieldWallet & {
   deriveEvmAddress(index: number): Promise<string>;
   deriveAleoAddress(index: number): Promise<string>;
@@ -16,6 +42,11 @@ export type ExtendedShieldWallet = ShieldWallet & {
     index: number,
     transaction: ShieldTransaction,
   ): Promise<ShieldPayExecutedTransaction>;
+  executeEvmTransaction(
+    chain: string,
+    index: number,
+    transaction: EvmTransactionParams,
+  ): Promise<ExecutedEvmTransaction>;
   signEvmTransaction?(chain: string, index: number, tx: string): Promise<string>;
   openRecoveryFlow?(chain: string, index: number): Promise<string>;
 };
@@ -63,6 +94,18 @@ export class ShieldPayAdapter extends ShieldWalletAdapter {
       ...transaction,
       network,
     });
+  }
+
+  executeEvmTransaction(
+    chain: EvmChain,
+    index: number,
+    transaction: EvmTransactionParams,
+  ): Promise<ExecutedEvmTransaction> {
+    const shield = getExtendedShieldWallet();
+    if (!shield?.executeEvmTransaction) {
+      return Promise.reject(new Error('Shield Pay: executeEvmTransaction is not available'));
+    }
+    return shield.executeEvmTransaction(chain, index, transaction);
   }
 }
 
