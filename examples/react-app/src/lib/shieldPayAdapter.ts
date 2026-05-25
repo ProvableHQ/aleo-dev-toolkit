@@ -35,9 +35,12 @@ export type ExecutedEvmTransaction = {
   transactionHash: string;
 };
 
+export const DEFAULT_DERIVE_CHAINS: readonly string[] = ['aleo', 'ethereum'] as const;
+
+export type DerivedAddresses = Record<string, string>;
+
 export type ExtendedShieldWallet = ShieldWallet & {
-  deriveEvmAddress(index: number): Promise<string>;
-  deriveAleoAddress(index: number): Promise<string>;
+  deriveAddresses(index: number, chains?: string[]): Promise<DerivedAddresses>;
   executeTransactionOnDerivedAccount(
     index: number,
     transaction: ShieldTransaction,
@@ -60,20 +63,15 @@ function getExtendedShieldWallet(): ExtendedShieldWallet | undefined {
 }
 
 export class ShieldPayAdapter extends ShieldWalletAdapter {
-  deriveEvmAddress(index: number): Promise<string> {
+  deriveAddresses(
+    index: number,
+    chains: string[] = [...DEFAULT_DERIVE_CHAINS],
+  ): Promise<DerivedAddresses> {
     const shield = getExtendedShieldWallet();
-    if (!shield?.deriveEvmAddress) {
-      return Promise.reject(new Error('Shield Pay: deriveEvmAddress is not available'));
+    if (!shield?.deriveAddresses) {
+      return Promise.reject(new Error('Shield Pay: deriveAddresses is not available'));
     }
-    return shield.deriveEvmAddress(index);
-  }
-
-  deriveAleoAddress(index: number): Promise<string> {
-    const shield = getExtendedShieldWallet();
-    if (!shield?.deriveAleoAddress) {
-      return Promise.reject(new Error('Shield Pay: deriveAleoAddress is not available'));
-    }
-    return shield.deriveAleoAddress(index);
+    return shield.deriveAddresses(index, chains);
   }
 
   executeTransactionOnDerivedAccount(

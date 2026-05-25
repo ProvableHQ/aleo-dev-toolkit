@@ -20,6 +20,7 @@ import { TransactionStatus } from '@provablehq/aleo-types';
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import {
+  DerivedAddresses,
   EVM_CHAINS,
   EvmChain,
   EvmTransactionParams,
@@ -56,12 +57,9 @@ export function ShieldPay() {
   const { connected, wallet, transactionStatus: getTransactionStatus } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
   const [index, setIndex] = useState('0');
-  const [evmAddress, setEvmAddress] = useState('');
-  const [aleoAddress, setAleoAddress] = useState('');
-  const [isDerivingEvm, setIsDerivingEvm] = useState(false);
-  const [isDerivingAleo, setIsDerivingAleo] = useState(false);
-  const [evmError, setEvmError] = useState('');
-  const [aleoError, setAleoError] = useState('');
+  const [derivedAddresses, setDerivedAddresses] = useState<DerivedAddresses>({});
+  const [isDeriving, setIsDeriving] = useState(false);
+  const [deriveError, setDeriveError] = useState('');
   const [program, setProgram] = useState('hello_world.aleo');
   const [functionName, setFunctionName] = useState('main');
   const [inputs, setInputs] = useState('1u32\n1u32');
@@ -92,7 +90,7 @@ export function ShieldPay() {
   const shieldPayAdapter =
     wallet?.adapter && isShieldPayAdapter(wallet.adapter) ? wallet.adapter : null;
 
-  const isBusy = isDerivingEvm || isDerivingAleo || isExecutingTransaction || isExecutingEvm;
+  const isBusy = isDeriving || isExecutingTransaction || isExecutingEvm;
 
   const buildEvmTransactionParams = (options?: {
     requireTo?: boolean;
@@ -146,7 +144,7 @@ export function ShieldPay() {
     return parsed;
   };
 
-  const handleDeriveEvmAddress = async () => {
+  const handleDeriveAddresses = async () => {
     if (!connected) {
       openWalletModal(true);
       return;
@@ -159,50 +157,20 @@ export function ShieldPay() {
     const accountIndex = parseIndex();
     if (accountIndex === null) return;
 
-    setIsDerivingEvm(true);
-    setEvmError('');
-    setEvmAddress('');
+    setIsDeriving(true);
+    setDeriveError('');
+    setDerivedAddresses({});
 
     try {
-      const address = await shieldPayAdapter.deriveEvmAddress(accountIndex);
-      setEvmAddress(address);
-      toast.success('EVM address derived');
+      const addresses = await shieldPayAdapter.deriveAddresses(accountIndex);
+      setDerivedAddresses(addresses);
+      toast.success('Addresses derived');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to derive EVM address';
-      setEvmError(errorMessage);
-      toast.error('Failed to derive EVM address');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to derive addresses';
+      setDeriveError(errorMessage);
+      toast.error('Failed to derive addresses');
     } finally {
-      setIsDerivingEvm(false);
-    }
-  };
-
-  const handleDeriveAleoAddress = async () => {
-    if (!connected) {
-      openWalletModal(true);
-      return;
-    }
-    if (!shieldPayAdapter) {
-      toast.error('Connect with Shield wallet to use Shield Pay');
-      return;
-    }
-
-    const accountIndex = parseIndex();
-    if (accountIndex === null) return;
-
-    setIsDerivingAleo(true);
-    setAleoError('');
-    setAleoAddress('');
-
-    try {
-      const address = await shieldPayAdapter.deriveAleoAddress(accountIndex);
-      setAleoAddress(address);
-      toast.success('Aleo address derived');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to derive Aleo address';
-      setAleoError(errorMessage);
-      toast.error('Failed to derive Aleo address');
-    } finally {
-      setIsDerivingAleo(false);
+      setIsDeriving(false);
     }
   };
 
@@ -416,76 +384,45 @@ export function ShieldPay() {
 
         <div className="space-y-3">
           <Button
-            onClick={handleDeriveEvmAddress}
+            onClick={handleDeriveAddresses}
             disabled={isBusy || isPollingStatus}
             className="w-full transition-all duration-200"
           >
-            {isDerivingEvm ? (
+            {isDeriving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deriving EVM address...
+                Deriving addresses...
               </>
             ) : !connected ? (
               <>
                 <Wallet className="mr-2 h-4 w-4" />
-                Connect Wallet to Derive EVM Address
+                Connect Wallet to Derive Addresses
               </>
             ) : (
               <>
                 <Shield className="mr-2 h-4 w-4" />
-                Derive EVM Address
+                Derive Addresses
               </>
             )}
           </Button>
 
-          {evmError && (
+          {deriveError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <p className="body-m-bold">Error deriving EVM address</p>
-                <p className="body-s mt-1">{evmError}</p>
+                <p className="body-m-bold">Error deriving addresses</p>
+                <p className="body-s mt-1">{deriveError}</p>
               </AlertDescription>
             </Alert>
           )}
 
-          {evmAddress && derivedAddressAlert('EVM address', evmAddress)}
-        </div>
-
-        <div className="space-y-3">
-          <Button
-            onClick={handleDeriveAleoAddress}
-            disabled={isBusy || isPollingStatus}
-            className="w-full transition-all duration-200"
-          >
-            {isDerivingAleo ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deriving Aleo address...
-              </>
-            ) : !connected ? (
-              <>
-                <Wallet className="mr-2 h-4 w-4" />
-                Connect Wallet to Derive Aleo Address
-              </>
-            ) : (
-              <>
-                <Shield className="mr-2 h-4 w-4" />
-                Derive Aleo Address
-              </>
-            )}
-          </Button>
-
-          {aleoError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <p className="body-m-bold">Error deriving Aleo address</p>
-                <p className="body-s mt-1">{aleoError}</p>
-              </AlertDescription>
-            </Alert>
+          {Object.entries(derivedAddresses).map(([chain, address]) =>
+            address ? (
+              <div className="capitalize" key={chain}>
+                {derivedAddressAlert(`${chain} address`, address)}
+              </div>
+            ) : null,
           )}
-
-          {aleoAddress && derivedAddressAlert('Aleo address', aleoAddress)}
         </div>
 
         <Separator />
@@ -807,15 +744,7 @@ export function ShieldPay() {
       </div>
 
       <CodePanel
-        code={codeExamples.deriveEvmAddress}
-        language="tsx"
-        highlightValues={{
-          [PLACEHOLDERS.ACCOUNT_INDEX]: index || '0',
-        }}
-      />
-
-      <CodePanel
-        code={codeExamples.deriveAleoAddress}
+        code={codeExamples.deriveAddresses}
         language="tsx"
         highlightValues={{
           [PLACEHOLDERS.ACCOUNT_INDEX]: index || '0',

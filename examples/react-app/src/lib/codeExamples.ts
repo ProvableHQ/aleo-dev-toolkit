@@ -90,7 +90,7 @@ const { requestTransactionHistory } = useWallet();
 const history = await requestTransactionHistory('${PLACEHOLDERS.PROGRAM}');
 console.log('Transactions:', history.transactions);`,
 
-  deriveEvmAddress: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  deriveAddresses: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
 
 const { wallet } = useWallet();
@@ -100,21 +100,10 @@ if (!adapter || !isShieldPayAdapter(adapter)) {
   throw new Error('Shield Pay requires the Shield wallet');
 }
 
-const evmAddress = await adapter.deriveEvmAddress(${PLACEHOLDERS.ACCOUNT_INDEX});
-console.log('EVM address:', evmAddress);`,
-
-  deriveAleoAddress: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
-
-const { wallet } = useWallet();
-const adapter = wallet?.adapter;
-
-if (!adapter || !isShieldPayAdapter(adapter)) {
-  throw new Error('Shield Pay requires the Shield wallet');
-}
-
-const aleoAddress = await adapter.deriveAleoAddress(${PLACEHOLDERS.ACCOUNT_INDEX});
-console.log('Aleo address:', aleoAddress);`,
+// chains defaults to ['aleo', 'ethereum'] when omitted
+const addresses = await adapter.deriveAddresses(${PLACEHOLDERS.ACCOUNT_INDEX});
+console.log('Aleo address:', addresses.aleo);
+console.log('EVM address:', addresses.ethereum);`,
 
   executeTransactionOnDerivedAccount: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
