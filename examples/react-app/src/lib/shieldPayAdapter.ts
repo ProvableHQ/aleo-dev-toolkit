@@ -39,7 +39,7 @@ export const DEFAULT_DERIVE_CHAINS: readonly string[] = ['aleo', 'ethereum'] as 
 
 export type DerivedAddresses = Record<string, string>;
 
-export type ExtendedShieldWallet = ShieldWallet & {
+export type ShieldExperimentalApi = {
   deriveAddresses(index: number, chains?: string[]): Promise<DerivedAddresses>;
   executeTransactionOnDerivedAccount(
     index: number,
@@ -50,8 +50,11 @@ export type ExtendedShieldWallet = ShieldWallet & {
     index: number,
     transaction: EvmTransactionParams,
   ): Promise<ExecutedEvmTransaction>;
-  signEvmTransaction?(chain: string, index: number, tx: string): Promise<string>;
   openRecoveryFlow?(chain: string, index: number): Promise<string>;
+};
+
+export type ExtendedShieldWallet = ShieldWallet & {
+  experimental?: ShieldExperimentalApi;
 };
 
 interface ExtendedShieldWindow extends Window {
@@ -62,33 +65,37 @@ function getExtendedShieldWallet(): ExtendedShieldWallet | undefined {
   return (window as ExtendedShieldWindow).shield;
 }
 
+function getShieldExperimentalApi(): ShieldExperimentalApi | undefined {
+  return getExtendedShieldWallet()?.experimental;
+}
+
 export class ShieldPayAdapter extends ShieldWalletAdapter {
   deriveAddresses(
     index: number,
     chains: string[] = [...DEFAULT_DERIVE_CHAINS],
   ): Promise<DerivedAddresses> {
-    const shield = getExtendedShieldWallet();
-    if (!shield?.deriveAddresses) {
-      return Promise.reject(new Error('Shield Pay: deriveAddresses is not available'));
+    const experimental = getShieldExperimentalApi();
+    if (!experimental?.deriveAddresses) {
+      return Promise.reject(new Error('Shield Pay: experimental.deriveAddresses is not available'));
     }
-    return shield.deriveAddresses(index, chains);
+    return experimental.deriveAddresses(index, chains);
   }
 
   executeTransactionOnDerivedAccount(
     index: number,
     transaction: TransactionOptions,
   ): Promise<ShieldPayExecutedTransaction> {
-    const shield = getExtendedShieldWallet();
+    const experimental = getShieldExperimentalApi();
     const network = this.network;
     if (!network) {
       return Promise.reject(new Error('Shield Pay: network is not available'));
     }
-    if (!shield?.executeTransactionOnDerivedAccount) {
+    if (!experimental?.executeTransactionOnDerivedAccount) {
       return Promise.reject(
-        new Error('Shield Pay: executeTransactionOnDerivedAccount is not available'),
+        new Error('Shield Pay: experimental.executeTransactionOnDerivedAccount is not available'),
       );
     }
-    return shield.executeTransactionOnDerivedAccount(index, {
+    return experimental.executeTransactionOnDerivedAccount(index, {
       ...transaction,
       network,
     });
@@ -99,11 +106,13 @@ export class ShieldPayAdapter extends ShieldWalletAdapter {
     index: number,
     transaction: EvmTransactionParams,
   ): Promise<ExecutedEvmTransaction> {
-    const shield = getExtendedShieldWallet();
-    if (!shield?.executeEvmTransaction) {
-      return Promise.reject(new Error('Shield Pay: executeEvmTransaction is not available'));
+    const experimental = getShieldExperimentalApi();
+    if (!experimental?.executeEvmTransaction) {
+      return Promise.reject(
+        new Error('Shield Pay: experimental.executeEvmTransaction is not available'),
+      );
     }
-    return shield.executeEvmTransaction(chain, index, transaction);
+    return experimental.executeEvmTransaction(chain, index, transaction);
   }
 }
 
