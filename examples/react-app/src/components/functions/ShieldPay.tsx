@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -12,7 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Copy, CheckCircle, Loader2, AlertCircle, Shield, Wallet, Zap, Coins } from 'lucide-react';
+import {
+  Copy,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+  Shield,
+  Wallet,
+  Zap,
+  Coins,
+  Database,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -85,12 +96,17 @@ export function ShieldPay() {
   const [isExecutingEvm, setIsExecutingEvm] = useState(false);
   const [evmTransactionHash, setEvmTransactionHash] = useState('');
   const [evmExecuteError, setEvmExecuteError] = useState('');
+  const [recordsProgram, setRecordsProgram] = useState('credits.aleo');
+  const [recordsIncludePlaintext, setRecordsIncludePlaintext] = useState(false);
+  const [isFetchingRecords, setIsFetchingRecords] = useState(false);
+  const [derivedRecords, setDerivedRecords] = useState<unknown[]>([]);
+  const [recordsError, setRecordsError] = useState('');
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const shieldPayAdapter =
     wallet?.adapter && isShieldPayAdapter(wallet.adapter) ? wallet.adapter : null;
 
-  const isBusy = isDeriving || isExecutingTransaction || isExecutingEvm;
+  const isBusy = isDeriving || isExecutingTransaction || isExecutingEvm || isFetchingRecords;
 
   const buildEvmTransactionParams = (options?: {
     requireTo?: boolean;
@@ -304,6 +320,45 @@ export function ShieldPay() {
       toast.error('Failed to execute EVM transaction');
     } finally {
       setIsExecutingEvm(false);
+    }
+  };
+
+  const handleRequestRecordsOnDerivedAccount = async () => {
+    if (!connected) {
+      openWalletModal(true);
+      return;
+    }
+    if (!shieldPayAdapter) {
+      toast.error('Connect with Shield wallet to use Shield Pay');
+      return;
+    }
+
+    const accountIndex = parseIndex();
+    if (accountIndex === null) return;
+
+    if (!recordsProgram.trim()) {
+      toast.error('Please enter a program ID');
+      return;
+    }
+
+    setIsFetchingRecords(true);
+    setRecordsError('');
+    setDerivedRecords([]);
+
+    try {
+      const records = await shieldPayAdapter.requestRecordsOnDerivedAccount(
+        accountIndex,
+        recordsProgram.trim(),
+        recordsIncludePlaintext,
+      );
+      setDerivedRecords(records ?? []);
+      toast.success('Records fetched');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch records';
+      setRecordsError(errorMessage);
+      toast.error('Failed to fetch records on derived account');
+    } finally {
+      setIsFetchingRecords(false);
     }
   };
 
@@ -741,6 +796,110 @@ export function ShieldPay() {
 
           {evmTransactionHash && derivedAddressAlert('Transaction hash', evmTransactionHash)}
         </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="body-m-bold text-foreground">Request records on derived account</h2>
+            <p className="body-s text-muted-foreground">
+              Runs{' '}
+              <code className="label-xs">
+                requestRecordsOnDerivedAccount(index, program, includePlaintext)
+              </code>{' '}
+              on the account index above.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="recordsProgram">Program ID</Label>
+              <Input
+                id="recordsProgram"
+                placeholder="credits.aleo"
+                value={recordsProgram}
+                onChange={e => setRecordsProgram(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-2 sm:col-span-2">
+              <Checkbox
+                id="recordsIncludePlaintext"
+                checked={recordsIncludePlaintext}
+                onCheckedChange={(checked: boolean | 'indeterminate') =>
+                  setRecordsIncludePlaintext(checked === true)
+                }
+                disabled={isBusy || isPollingStatus}
+              />
+              <Label htmlFor="recordsIncludePlaintext" className="body-s-bold normal-case">
+                Include plaintext on each record
+              </Label>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleRequestRecordsOnDerivedAccount}
+            disabled={isBusy || isPollingStatus || !recordsProgram.trim()}
+            variant="secondary"
+            className="w-full transition-all duration-200"
+          >
+            {isFetchingRecords ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Fetching records...
+              </>
+            ) : !connected ? (
+              <>
+                <Wallet className="mr-2 h-4 w-4" />
+                Connect Wallet to Fetch Records
+              </>
+            ) : (
+              <>
+                <Database className="mr-2 h-4 w-4" />
+                Fetch Records on Derived Account
+              </>
+            )}
+          </Button>
+
+          {recordsError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="body-m-bold">Error fetching records</p>
+                <p className="body-s mt-1">{recordsError}</p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {derivedRecords.length > 0 && (
+            <Alert>
+              <CheckCircle className="h-4 w-4 text-success" />
+              <AlertDescription>
+                <p className="body-m-bold">Records fetched</p>
+                <div className="space-y-2 mt-2">
+                  {derivedRecords.map((record, idx) => {
+                    const serialized = JSON.stringify(record, null, 2);
+                    return (
+                      <div
+                        key={idx}
+                        className="relative w-full bg-muted p-3 rounded-lg label-xs lowercase max-h-60 overflow-auto border transition-all duration-300"
+                      >
+                        <pre className="whitespace-pre-wrap break-all">{serialized}</pre>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-2 transition-all duration-200"
+                          onClick={() => copyToClipboard(serialized)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       </div>
 
       <CodePanel
@@ -770,6 +929,16 @@ export function ShieldPay() {
           [PLACEHOLDERS.ACCOUNT_INDEX]: index || '0',
           [PLACEHOLDERS.EVM_CHAIN]: evmChain,
           [PLACEHOLDERS.EVM_TRANSACTION]: formatEvmTransactionForCode(evmTransactionPreview),
+        }}
+      />
+
+      <CodePanel
+        code={codeExamples.requestRecordsOnDerivedAccount}
+        language="tsx"
+        highlightValues={{
+          [PLACEHOLDERS.ACCOUNT_INDEX]: index || '0',
+          [PLACEHOLDERS.PROGRAM]: recordsProgram || 'credits.aleo',
+          [PLACEHOLDERS.INCLUDE_PLAINTEXT]: String(recordsIncludePlaintext),
         }}
       />
     </section>

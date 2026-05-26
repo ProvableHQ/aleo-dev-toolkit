@@ -50,6 +50,11 @@ export type ShieldExperimentalApi = {
     index: number,
     transaction: EvmTransactionParams,
   ): Promise<ExecutedEvmTransaction>;
+  requestRecordsOnDerivedAccount(
+    index: number,
+    program: string,
+    includePlaintext?: boolean,
+  ): Promise<unknown[]>;
   openRecoveryFlow?(chain: string, index: number): Promise<string>;
 };
 
@@ -113,6 +118,20 @@ export class ShieldPayAdapter extends ShieldWalletAdapter {
       );
     }
     return experimental.executeEvmTransaction(chain, index, transaction);
+  }
+
+  requestRecordsOnDerivedAccount(
+    index: number,
+    program: string,
+    includePlaintext?: boolean,
+  ): Promise<unknown[]> {
+    const experimental = getShieldExperimentalApi();
+    if (!experimental?.requestRecordsOnDerivedAccount) {
+      return Promise.reject(
+        new Error('Shield Pay: experimental.requestRecordsOnDerivedAccount is not available'),
+      );
+    }
+    return experimental.requestRecordsOnDerivedAccount(index, program, includePlaintext);
   }
 }
 

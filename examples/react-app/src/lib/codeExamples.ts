@@ -11,6 +11,7 @@ export const PLACEHOLDERS = {
   ACCOUNT_INDEX: '{{ACCOUNT_INDEX}}',
   EVM_CHAIN: '{{EVM_CHAIN}}',
   EVM_TRANSACTION: '{{EVM_TRANSACTION}}',
+  INCLUDE_PLAINTEXT: '{{INCLUDE_PLAINTEXT}}',
 } as const;
 
 export const codeExamples = {
@@ -143,6 +144,24 @@ const result = await adapter.executeEvmTransaction(
 );
 
 console.log('Transaction hash:', result.transactionHash);`,
+
+  requestRecordsOnDerivedAccount: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+const records = await adapter.requestRecordsOnDerivedAccount(
+  ${PLACEHOLDERS.ACCOUNT_INDEX},
+  '${PLACEHOLDERS.PROGRAM}',
+  ${PLACEHOLDERS.INCLUDE_PLAINTEXT},
+);
+
+console.log('Records:', records);`,
 } as const;
 
 export type CodeExampleKey = keyof typeof codeExamples;
