@@ -8,7 +8,6 @@ import {
   ConnectOptions,
   RecordAccessGrant,
   RecordStatusFilter,
-  ViewKeyExposure,
 } from '@provablehq/aleo-wallet-standard';
 import { Network, TransactionOptions } from '@provablehq/aleo-types';
 import { Wallet, WalletContext } from './context';
@@ -37,10 +36,6 @@ export interface WalletProviderProps {
    * wallet's connect call. Only honored by wallets that support it (e.g. shield).
    */
   recordAccess?: RecordAccessGrant;
-  /**
-   * View-key exposure preference. Defaults to `DENY` when omitted.
-   */
-  viewKeyExposure?: ViewKeyExposure;
   /**
    * When `false`, the dapp transacts without learning the user's address.
    * Defaults to `true`. Only valid with `decryptPermission: NoDecrypt`.
@@ -72,15 +67,14 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   decryptPermission = DecryptPermission.NoDecrypt,
   programs,
   recordAccess,
-  viewKeyExposure,
   readAddress,
 }) => {
   const connectOptions = useMemo<ConnectOptions | undefined>(() => {
-    if (recordAccess === undefined && viewKeyExposure === undefined && readAddress === undefined) {
+    if (recordAccess === undefined && readAddress === undefined) {
       return undefined;
     }
-    return { recordAccess, viewKeyExposure, readAddress };
-  }, [recordAccess, viewKeyExposure, readAddress]);
+    return { recordAccess, readAddress };
+  }, [recordAccess, readAddress]);
   const [name, setName] = useLocalStorage<WalletName | null>(localStorageKey, null);
   const [{ wallet, adapter, publicKey, connected, network }, setState] = useState(initialState);
   const readyState = adapter?.readyState || WalletReadyState.UNSUPPORTED;

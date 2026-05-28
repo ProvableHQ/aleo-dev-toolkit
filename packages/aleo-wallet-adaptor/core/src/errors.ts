@@ -152,7 +152,7 @@ export class WalletInputRequestNotSupportedError extends WalletError {
 
 /**
  * Thrown by a wallet adapter that does not yet honor the new `ConnectOptions`
- * fields (`recordAccess`, `viewKeyExposure`, `readAddress: false`).
+ * fields (`recordAccess`, `readAddress: false`).
  */
 export class WalletConnectOptionsNotSupportedError extends WalletError {
   name = 'WalletConnectOptionsNotSupportedError';
@@ -160,7 +160,7 @@ export class WalletConnectOptionsNotSupportedError extends WalletError {
   constructor(walletName: string) {
     super(
       `Wallet "${walletName}" does not yet support ConnectOptions ` +
-        '(recordAccess, viewKeyExposure, readAddress). ' +
+        '(recordAccess, readAddress). ' +
         'Connect without these options, or switch to a wallet that supports them.',
     );
   }

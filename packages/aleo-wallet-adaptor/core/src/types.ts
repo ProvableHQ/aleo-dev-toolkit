@@ -7,7 +7,6 @@ export type {
   ProgramGrant,
   RecordAccessGrant,
   RecordGrant,
-  ViewKeyExposure,
 } from '@provablehq/aleo-wallet-standard';
 export { hasUnsupportedConnectOptions } from '@provablehq/aleo-wallet-standard';
 export type {

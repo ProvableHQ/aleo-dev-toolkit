@@ -4,18 +4,16 @@ How to use the wallet-adapter's new privacy features from a dapp. For the full s
 
 ## What's new
 
-Three connect-time grants and three transaction-input request types:
+Two connect-time grants and two transaction-input request types:
 
 | Grant | Type | Effect |
 |---|---|---|
 | `readAddress` | `boolean` (default `true`) | When `false`, the dapp transacts without learning the active address. Requires `decryptPermission: NoDecrypt`. |
-| `viewKeyExposure` | `"DENY" \| "PER_TX_PROMPT"` (default `"DENY"`) | Whether `type: "viewKey"` slots are allowed. |
 | `recordAccess` | `RecordAccessGrant` (default `undefined` = broad) | Per-program / per-record / per-field narrowing of record reads. |
 
 | `InputRequest` slot type | Shape | Valid in |
 |---|---|---|
 | `{ type: "address" }` | wallet injects active address | `address`, `group`, `scalar`, `field` |
-| `{ type: "viewKey" }` | wallet injects active view key | `scalar`, `field` |
 | `{ type: "record", program, uid }` | pin specific record by handle | `record`, `dynamic_record`, `external_record` |
 | `{ type: "record", program, filters }` | wallet auto-selects matching record | same |
 
@@ -33,7 +31,6 @@ import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
   decryptPermission={DecryptPermission.NoDecrypt}   // required when readAddress: false
   programs={['credits.aleo']}                       // existing per-program allowlist
   readAddress={false}                               // withhold address
-  viewKeyExposure="PER_TX_PROMPT"                   // allow view-key slots
   recordAccess={{
     level: 'byProgram',
     programs: [

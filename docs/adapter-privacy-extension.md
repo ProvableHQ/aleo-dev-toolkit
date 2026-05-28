@@ -2,7 +2,7 @@
 
 ## Goal
 
-Let dapps emit `TransactionOptions` whose `inputs` slots are not always literal Aleo values. Each non-literal slot is a **request** to the wallet — to prompt the user, to auto-select an owned record matching dapp-supplied criteria, or to derive a value from the user's view key. The wallet fulfills the request before passing the transaction to the SDK.
+Let dapps emit `TransactionOptions` whose `inputs` slots are not always literal Aleo values. Each non-literal slot is a **request** to the wallet — to prompt the user or to auto-select an owned record matching dapp-supplied criteria. The wallet fulfills the request before passing the transaction to the SDK.
 
 ## Wire-level types
 
@@ -11,8 +11,7 @@ type Input = string | InputRequest;
 
 type InputRequest =
   | { type: "address"; label?: string } // Specification to fill the input field with the active address. Allowed in an input position with an aleo type of: `address, group, scalar, or field`.
-  | { type: "record";  program: string; filters?: RecordFilters; uid?: string } // Specification to use a record from a specific program. When `uid` is present, it pins the exact record previously returned by `requestRecords` and `filters` is ignored. When absent, the wallet picks any unspent record matching `filters`. Allowed in an input position with an aleo type of: `record, dynamic_record, or external_record`.
-  | { type: "viewKey"; label?: string }; // Specification to fill the input field with the view key behind the active address. Allowed in a input position with an aleo type of: `scalar or field`.
+  | { type: "record";  program: string; filters?: RecordFilters; uid?: string }; // Specification to use a record from a specific program. When `uid` is present, it pins the exact record previously returned by `requestRecords` and `filters` is ignored. When absent, the wallet picks any unspent record matching `filters`. Allowed in an input position with an aleo type of: `record, dynamic_record, or external_record`.
 
 type RecordFilters = Record<string, RecordFieldFilter>; // keys are top-level record field names or dotted paths into struct fields, e.g. "amount" or "data.amount".
 type RecordFieldFilter = { eq?: string, gte?: string, lte?: string, neq?: string, }; // potential matching conditions, AND-combined.
@@ -33,8 +32,7 @@ The remaining (legacy) fields — including `recordPlaintext`, `commitment`, `ta
 
 The `InputRequest` sends a request to the wallet (which is then authorized by the user) to do the following:
 1. Input the user's address into a position where there's an address, group, scalar, or field input.
-2. Input a view key if where there's a field or scalar input.
-3. Use a record whose fields match the `filters` on specific record's members and filter for records that match them if applicable, returning an error if the condition cannot be applied or a record matching it cannot be found.
+2. Use a record whose fields match the `filters` on specific record's members and filter for records that match them if applicable, returning an error if the condition cannot be applied or a record matching it cannot be found.
 
 The wallet has the program's source, so it reads a function's parameter signature for input position `i` and renders the form control accordingly. `label` is UX-only.
 
@@ -48,7 +46,7 @@ Adapters are ONLY allowed to successfully execute this if the user has authorize
 
 ### Proposed
 
-Add three new fields to `ConnectHistory`, all additive. The existing `decryptPermission` and `programs?: string[]` are preserved exactly, and the `connect()` signature does not change.
+Add two new fields to `ConnectHistory`, both additive. The existing `decryptPermission` and `programs?: string[]` are preserved exactly, and the `connect()` signature does not change.
 
 ```ts
 interface ConnectHistory {
@@ -57,7 +55,6 @@ interface ConnectHistory {
   programs?: string[];                          // unchanged — program-level gate for both transaction execution and record operations
   readAddress?: boolean;                        // new — opt-in address withholding; default true
   recordAccess?: RecordAccessGrant;             // new — opt-in record/field narrowing
-  viewKeyExposure?: "DENY" | "PER_TX_PROMPT";   // new — default DENY
 }
 
 type RecordAccessGrant =
@@ -95,7 +92,6 @@ The pre-existing dapp surface is preserved exactly:
 - **`connect()` signature unchanged**: still `(siteInfo, network, decryptPermission, programs?)`. A dapp that called `connect({ programs: ["foo.aleo"] })` before this change behaves identically after.
 - **Existing gates unchanged**: the `programs.includes(program)` checks at `AdapterService.ts:240` and `:494` keep producing the same outcome for any connection where `recordAccess` is undefined.
 - **`recordAccess` defaults to undefined**: the wallet never synthesizes a grant from the legacy `programs` list. `undefined` reads as "today's broad behavior."
-- **`viewKeyExposure` defaults to `DENY`**: matches today's de-facto behavior, since no view-key-derived inputs were possible.
 - **Per-dapp scoping**: `recordAccess` lives on the `ConnectHistory` row keyed on `(origin, network, address)`; one dapp's grant never affects another's access. No change to today's scoping.
 
 A strict opt-in security model would require an explicit grant for any record access. Keeping the default broad here is a deliberate trade-off to avoid breaking dapps that connected before `recordAccess` existed. Dapps that want narrower scopes opt in by populating `recordAccess` at connect time.
@@ -164,14 +160,12 @@ The default (`undefined` or `true`) preserves today's behavior verbatim at every
 flowchart TD
   A["dapp: executeTransaction<br/>inputs: Input[]"] --> B["validation.ts<br/>schema accepts string | InputRequest"]
   B --> C{"AdapterService<br/>permission gate"}
-  C -- "violates recordAccess<br/>or viewKeyExposure" --> X["error to dapp"]
+  C -- "violates recordAccess" --> X["error to dapp"]
   C -- ok --> D["ExecuteTransaction page"]
   D --> R["fulfillInputRequests.ts"]
   R -- "type: record" --> R1["filter unspent records<br/>by where clause"]
-  R -- "type: viewKey" --> R2["derive value via SDK"]
   R -- "type: user" --> R3["render typed form<br/>from program signature"]
   R1 --> F["confirm screen<br/>shows every fulfilled value"]
-  R2 --> F
   R3 --> F
   F -- user confirms --> G["initializeGenericTransaction<br/>(fulfilled string[], lockedRecords)"]
   G ===> H["worker.ts → SDK<br/>UNCHANGED"]
@@ -201,4 +195,3 @@ The worker boundary still receives `string[]`. All fulfillment is wallet-side; t
 | `connect()` | `recordAccess.programs[].program` not present in `programs` | connect-time validation error |
 | `requestRecords` | called against a program in `programs` but absent from `recordAccess.programs[]` (when `recordAccess` is set) | permission error at gate |
 | `requestRecords` | `includePlaintext: true` while `decryptPermission: NoDecrypt` | permission error at gate (today's behavior, restated) |
-| `type: "viewKey"` | `viewKeyExposure: "DENY"` | permission error at gate |

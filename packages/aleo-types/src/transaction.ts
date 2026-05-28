@@ -78,11 +78,6 @@ export type InputRequest =
       program: string;
       filters?: RecordFilters;
       uid?: string;
-    }
-  | {
-      /** Fill the input slot with the view key behind the active address. Allowed in `scalar` or `field` positions. */
-      type: 'viewKey';
-      label?: string;
     };
 
 /**

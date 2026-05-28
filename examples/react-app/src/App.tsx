@@ -16,7 +16,6 @@ import {
   programsAtom,
   readAddressAtom,
   recordAccessAtom,
-  viewKeyExposureAtom,
 } from './lib/store/global';
 import { routes } from './routes';
 // Import wallet adapter CSS after our own styles
@@ -42,7 +41,6 @@ export function App() {
   const programs = useAtomValue(programsAtom);
   const recordAccess = useAtomValue(recordAccessAtom);
   const readAddress = useAtomValue(readAddressAtom);
-  const viewKeyExposure = useAtomValue(viewKeyExposureAtom);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -55,7 +53,6 @@ export function App() {
         programs={programs}
         recordAccess={recordAccess}
         readAddress={readAddress}
-        viewKeyExposure={viewKeyExposure}
       >
         <WalletModalProvider>
           <AppRoutes />

@@ -34,7 +34,6 @@ import {
   ProgramGrant,
   RecordAccessGrant,
   RecordGrant,
-  ViewKeyExposure,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
@@ -42,7 +41,6 @@ import {
   decryptPermissionAtom,
   readAddressAtom,
   recordAccessAtom,
-  viewKeyExposureAtom,
 } from '@/lib/store/global';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 import { useProgram } from '@/lib/hooks/useProgram';
@@ -63,7 +61,7 @@ type ParsedSlot =
     };
 
 type RecordSlotMode = 'plaintext' | 'pick' | 'filter';
-type PrimitiveSlotMode = 'literal' | 'address' | 'viewKey';
+type PrimitiveSlotMode = 'literal' | 'address';
 type SlotState =
   | { kind: 'primitive'; mode: PrimitiveSlotMode; value: string }
   | {
@@ -78,14 +76,12 @@ const RECORD_SUFFIXES = ['record', 'external_record', 'dynamic_record'] as const
 const DEFAULT_CREDITS_FILTER: FilterRow[] = [{ field: 'microcredits', op: 'gte', value: '101u64' }];
 
 // Per the spec (docs/adapter-privacy-extension.md): type:"address" InputRequest is allowed in
-// `address` | `group` | `scalar` | `field` slots; type:"viewKey" is allowed in `scalar` | `field`.
+// `address` | `group` | `scalar` | `field` slots.
 const ADDRESS_REQUEST_ALLOWED = new Set(['address', 'group', 'scalar', 'field']);
-const VIEWKEY_REQUEST_ALLOWED = new Set(['scalar', 'field']);
 
 function primitiveSlotModes(baseType: string): PrimitiveSlotMode[] {
   const modes: PrimitiveSlotMode[] = ['literal'];
   if (ADDRESS_REQUEST_ALLOWED.has(baseType)) modes.push('address');
-  if (VIEWKEY_REQUEST_ALLOWED.has(baseType)) modes.push('viewKey');
   return modes;
 }
 
@@ -181,7 +177,6 @@ function buildInputs(
     if (!state) throw new Error(`slot ${i} (${slot.name}) has no state`);
     if (state.kind === 'primitive') {
       if (state.mode === 'address') return { type: 'address' };
-      if (state.mode === 'viewKey') return { type: 'viewKey' };
       if (!state.value.trim()) {
         throw new Error(`slot ${i} (${slot.name}: ${slot.raw}) is empty`);
       }
@@ -276,7 +271,6 @@ export function PrivateInputs() {
   const { setVisible: openWalletModal } = useWalletModal();
   const [, setRecordAccess] = useAtom(recordAccessAtom);
   const [readAddress, setReadAddress] = useAtom(readAddressAtom);
-  const [viewKeyExposure, setViewKeyExposure] = useAtom(viewKeyExposureAtom);
   const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
 
   const [form, setForm] = useState<FormState>(DEFAULTS);
@@ -413,7 +407,6 @@ export function PrivateInputs() {
   const clearGrantAndDisconnect = async () => {
     setRecordAccess(undefined);
     setReadAddress(undefined);
-    setViewKeyExposure(undefined);
     toast.success('All grants cleared. Reconnect to apply (broad legacy behavior restored).');
     if (connected) {
       try {
@@ -672,11 +665,7 @@ export function PrivateInputs() {
                 variant={state.mode === m ? 'default' : 'outline'}
                 onClick={() => updateSlot(i, { mode: m })}
               >
-                {m === 'literal'
-                  ? 'Literal'
-                  : m === 'address'
-                    ? 'Wallet active address'
-                    : 'Wallet view key'}
+                {m === 'literal' ? 'Literal' : 'Wallet active address'}
               </Button>
             ))}
           </div>
@@ -689,17 +678,8 @@ export function PrivateInputs() {
           />
         ) : (
           <p className="body-s text-muted-foreground">
-            {state.mode === 'address' ? (
-              <>
-                Sends <code>{`{type:"address"}`}</code>. The wallet fills the slot with the active
-                address; the dapp never sees it.
-              </>
-            ) : (
-              <>
-                Sends <code>{`{type:"viewKey"}`}</code>. The wallet derives the value from the
-                active view key (gated by <code>viewKeyExposure</code>).
-              </>
-            )}
+            Sends <code>{`{type:"address"}`}</code>. The wallet fills the slot with the active
+            address; the dapp never sees it.
           </p>
         )}
       </div>
@@ -876,8 +856,7 @@ export function PrivateInputs() {
             envelope-metadata grants in <code className="mx-1">FieldGrant.name</code>;{' '}
             <code className="mx-1">type: "record"</code> by <code>uid</code>, by{' '}
             <code>filters</code>, or as plaintext; and the privacy-preserving{' '}
-            <code className="mx-1">type: "address"</code>/
-            <code className="mx-1">type: "viewKey"</code> slots.
+            <code className="mx-1">type: "address"</code> slots.
           </p>
           <p className="body-s mt-2 text-muted-foreground">
             Function inputs are auto-derived from the program source. Defaults satisfy{' '}
@@ -931,29 +910,6 @@ export function PrivateInputs() {
                 </AlertDescription>
               </Alert>
             )}
-          </div>
-
-          {/* View-key grant */}
-          <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-            <div className="flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <Label className="body-s-bold">View-key exposure</Label>
-                <p className="body-s text-muted-foreground">
-                  {viewKeyExposure === 'PER_TX_PROMPT'
-                    ? 'Dapp may request the active view key per transaction (user is prompted each time).'
-                    : 'Deny view-key access (default). { type: "viewKey" } slots are refused.'}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="body-s text-muted-foreground">per-tx prompt</span>
-                <Switch
-                  checked={viewKeyExposure === 'PER_TX_PROMPT'}
-                  onCheckedChange={checked =>
-                    setViewKeyExposure(checked ? ('PER_TX_PROMPT' as ViewKeyExposure) : undefined)
-                  }
-                />
-              </div>
-            </div>
           </div>
 
           {/* Record grant intro */}
@@ -1130,7 +1086,6 @@ export function PrivateInputs() {
                 {
                   recordAccess: { level: 'byProgram', programs: programGrants },
                   readAddress,
-                  viewKeyExposure,
                 },
                 null,
                 2,

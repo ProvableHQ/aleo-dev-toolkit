@@ -220,19 +220,12 @@ export type RecordAccessGrant =
   | { level: 'byProgram'; programs: ProgramGrant[] };
 
 /**
- * View-key exposure preference. Defaults to `DENY` when omitted.
- */
-export type ViewKeyExposure = 'DENY' | 'PER_TX_PROMPT';
-
-/**
  * Optional, additive connect-time options. All fields are opt-in; omitting them
  * preserves today's behavior.
  */
 export interface ConnectOptions {
   /** Opt-in record/field narrowing on top of `programs`. */
   recordAccess?: RecordAccessGrant;
-  /** View-key exposure preference; defaults to `DENY`. */
-  viewKeyExposure?: ViewKeyExposure;
   /** When `false`, the dapp transacts without learning the user's address. Defaults to `true`. */
   readAddress?: boolean;
 }
@@ -244,9 +237,5 @@ export interface ConnectOptions {
  */
 export function hasUnsupportedConnectOptions(options?: ConnectOptions): boolean {
   if (!options) return false;
-  return (
-    options.recordAccess !== undefined ||
-    options.viewKeyExposure !== undefined ||
-    options.readAddress === false
-  );
+  return options.recordAccess !== undefined || options.readAddress === false;
 }
