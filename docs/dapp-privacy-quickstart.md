@@ -4,18 +4,20 @@ How to use the wallet-adapter's new privacy features from a dapp. For the full s
 
 ## What's new
 
-Two connect-time grants and two transaction-input request types:
+Three connect-time grants and three transaction-input request types:
 
 | Grant | Type | Effect |
 |---|---|---|
 | `readAddress` | `boolean` (default `true`) | When `false`, the dapp transacts without learning the active address. Requires `decryptPermission: NoDecrypt`. |
 | `recordAccess` | `RecordAccessGrant` (default `undefined` = broad) | Per-program / per-record / per-field narrowing of record reads. |
+| `algorithmsAllowed` | `AlgorithmGrant[]` (default `undefined` = none) | Strict opt-in allowlist for `type: "derived"` requests. Each entry authorizes one exact `(algorithm, program, function, inputPosition)` call site. |
 
 | `InputRequest` slot type | Shape | Valid in |
 |---|---|---|
 | `{ type: "address" }` | wallet injects active address | `address`, `group`, `scalar`, `field` |
 | `{ type: "record", program, uid }` | pin specific record by handle | `record`, `dynamic_record`, `external_record` |
 | `{ type: "record", program, filters }` | wallet auto-selects matching record | same |
+| `{ type: "derived", algorithm, args }` | wallet runs a named crypto algorithm | depends on algorithm — see catalog |
 
 ## Wiring connect-time options
 
@@ -133,6 +135,49 @@ await executeTransaction({
 });
 ```
 
+## Derived inputs (`type: "derived"`)
+
+A `type: "derived"` slot tells the wallet to compute a value by running a named cryptographic algorithm over its own state (view key, wallet-maintained counters, etc.) plus your `args`, and substitute the result. **You never see the wallet-side inputs — only the output.**
+
+Strictly opt-in via `algorithmsAllowed` at connect time. Each grant authorizes exactly one `(algorithm, program, function, inputPosition)` call site:
+
+```ts
+import { ALGORITHM_SCHEMAS } from '@provablehq/aleo-types';
+
+<AleoWalletProvider
+  // ...
+  algorithmsAllowed={[
+    { algorithm: 'program-scoped-address-blind',
+      program: 'myapp.aleo', function: 'vote', inputPosition: 0 },
+  ]}
+>
+```
+
+Discovery: call `useWallet().algorithmsSupported()` (no connection required) to see which algorithms the active adapter implements. Wallets without derived-input support return `[]`.
+
+At execute time, pass `{ type: "derived", algorithm, args }` in the matching slot:
+
+```ts
+await executeTransaction({
+  program: 'myapp.aleo',
+  function: 'vote',
+  inputs: [
+    { type: 'derived',
+      algorithm: 'program-scoped-address-blind',
+      args: {
+        // Pre-encode anything non-primitive to an Aleo literal; the wallet only
+        // accepts AlgorithmArg values that are LiteralType-parseable strings.
+        'domain-separator': { type: 'field', value: '12345field' },
+      },
+      label: 'Your private voter handle',
+    },
+    // ...rest of the function's inputs
+  ],
+});
+```
+
+`ALGORITHM_SCHEMAS` from `@provablehq/aleo-types` ships the args schema, output type, and valid slot positions for every known algorithm — use it to render correct forms or pre-validate shapes. Full algorithm catalog: see [`adapter-privacy-extension.md`](./adapter-privacy-extension.md) § "Algorithm catalog".
+
 ## Error classes
 
 Imported from `@provablehq/aleo-wallet-adaptor-core`:
@@ -152,3 +197,4 @@ If your existing dapp:
 - **Reads records via `requestRecords`** — return shape is unchanged when no grant is set. The new `recordView` / `uid` fields are additive optional keys you can ignore.
 - **Composes `TransactionOptions.inputs` as plain strings** — keep doing that. The new `InputRequest` shapes are opt-in per-slot.
 - **Wants to adopt narrowed grants** — populate `recordAccess` at the provider level; use `RecordGrant.fields: []` to mint records usable purely for `uid` pinning with zero plaintext leakage.
+- **Wants to use derived inputs** — populate `algorithmsAllowed` with one grant per call site, then place `{ type: "derived", algorithm, args }` in the corresponding `inputs[i]`. There is no broad default — empty `algorithmsAllowed` refuses every derived request.

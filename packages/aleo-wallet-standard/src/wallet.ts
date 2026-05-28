@@ -220,6 +220,26 @@ export type RecordAccessGrant =
   | { level: 'byProgram'; programs: ProgramGrant[] };
 
 /**
+ * Authorization for a `type: "derived"` InputRequest at one specific call site.
+ * All four fields are required and exact-match; the wallet refuses every
+ * derived request whose `(algorithm, program, function, inputPosition)` tuple
+ * is not in the connection's `algorithmsAllowed`. A dapp that wants to use
+ * the same algorithm at multiple call sites lists each one as its own entry.
+ *
+ * See `docs/adapter-privacy-extension.md` § "Derived inputs".
+ */
+export interface AlgorithmGrant {
+  /** Must appear in the wallet's `algorithmsSupported()` list. */
+  algorithm: string;
+  /** Must also appear in the connection's `programs` allowlist. */
+  program: string;
+  /** Exact transition name within `program`. */
+  function: string;
+  /** 0-based index into the function's input slots. */
+  inputPosition: number;
+}
+
+/**
  * Optional, additive connect-time options. All fields are opt-in; omitting them
  * preserves today's behavior.
  */
@@ -228,6 +248,11 @@ export interface ConnectOptions {
   recordAccess?: RecordAccessGrant;
   /** When `false`, the dapp transacts without learning the user's address. Defaults to `true`. */
   readAddress?: boolean;
+  /**
+   * Strict opt-in allowlist for `type: "derived"` InputRequests. Default
+   * undefined → every derived request is refused. There is no broad default.
+   */
+  algorithmsAllowed?: AlgorithmGrant[];
 }
 
 /**
@@ -237,5 +262,9 @@ export interface ConnectOptions {
  */
 export function hasUnsupportedConnectOptions(options?: ConnectOptions): boolean {
   if (!options) return false;
-  return options.recordAccess !== undefined || options.readAddress === false;
+  return (
+    options.recordAccess !== undefined ||
+    options.readAddress === false ||
+    (options.algorithmsAllowed !== undefined && options.algorithmsAllowed.length > 0)
+  );
 }

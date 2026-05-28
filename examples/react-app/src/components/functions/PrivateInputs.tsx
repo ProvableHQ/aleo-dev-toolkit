@@ -22,6 +22,10 @@ import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import {
+  ALGORITHM_SCHEMAS,
+  AlgorithmArg,
+  AlgorithmName,
+  KnownAlgorithm,
   Network,
   RecordEnvelope,
   RecordFieldFilter,
@@ -30,6 +34,7 @@ import {
   TransactionStatus,
 } from '@provablehq/aleo-types';
 import {
+  AlgorithmGrant,
   FieldGrant,
   ProgramGrant,
   RecordAccessGrant,
@@ -38,6 +43,7 @@ import {
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import {
+  algorithmsAllowedAtom,
   decryptPermissionAtom,
   readAddressAtom,
   recordAccessAtom,
@@ -61,9 +67,15 @@ type ParsedSlot =
     };
 
 type RecordSlotMode = 'plaintext' | 'pick' | 'filter';
-type PrimitiveSlotMode = 'literal' | 'address';
+type PrimitiveSlotMode = 'literal' | 'address' | 'derived';
 type SlotState =
-  | { kind: 'primitive'; mode: PrimitiveSlotMode; value: string }
+  | {
+      kind: 'primitive';
+      mode: PrimitiveSlotMode;
+      value: string;
+      derivedAlgorithm: KnownAlgorithm | '';
+      derivedArgs: Record<string, string>; // arg name → user-typed value (parsed lazily at submit)
+    }
   | {
       kind: 'record';
       mode: RecordSlotMode;
@@ -82,7 +94,16 @@ const ADDRESS_REQUEST_ALLOWED = new Set(['address', 'group', 'scalar', 'field'])
 function primitiveSlotModes(baseType: string): PrimitiveSlotMode[] {
   const modes: PrimitiveSlotMode[] = ['literal'];
   if (ADDRESS_REQUEST_ALLOWED.has(baseType)) modes.push('address');
+  // Derived is offered when at least one known algorithm's `validSlotTypes`
+  // includes this baseType. Grant validation happens wallet-side at execute.
+  if (eligibleAlgorithmsForBaseType(baseType).length > 0) modes.push('derived');
   return modes;
+}
+
+function eligibleAlgorithmsForBaseType(baseType: string): KnownAlgorithm[] {
+  return (Object.keys(ALGORITHM_SCHEMAS) as KnownAlgorithm[]).filter(name =>
+    (ALGORITHM_SCHEMAS[name].validSlotTypes as readonly string[]).includes(baseType),
+  );
 }
 
 function parseTypeExpr(name: string, typeExpr: string): ParsedSlot | null {
@@ -142,7 +163,7 @@ function defaultSlotState(slot: ParsedSlot, fallbackProgram: string): SlotState 
   if (slot.kind === 'primitive') {
     // Default address-typed slots to wallet-provided active address (privacy-preserving default).
     const mode: PrimitiveSlotMode = slot.baseType === 'address' ? 'address' : 'literal';
-    return { kind: 'primitive', mode, value: '' };
+    return { kind: 'primitive', mode, value: '', derivedAlgorithm: '', derivedArgs: {} };
   }
   const slotProgram = slot.program || fallbackProgram;
   const isCredits = slotProgram === 'credits.aleo' && slot.recordname === 'credits';
@@ -177,6 +198,23 @@ function buildInputs(
     if (!state) throw new Error(`slot ${i} (${slot.name}) has no state`);
     if (state.kind === 'primitive') {
       if (state.mode === 'address') return { type: 'address' };
+      if (state.mode === 'derived') {
+        if (!state.derivedAlgorithm) {
+          throw new Error(`slot ${i} (${slot.name}) — pick an algorithm for the derived input`);
+        }
+        const schema = ALGORITHM_SCHEMAS[state.derivedAlgorithm];
+        const args: Record<string, AlgorithmArg> = {};
+        for (const [argName, argSchema] of Object.entries(schema.args)) {
+          const raw = (state.derivedArgs[argName] ?? '').trim();
+          if (!raw) {
+            throw new Error(
+              `slot ${i} (${slot.name}) — derived arg "${argName}" (${argSchema.type}) is empty`,
+            );
+          }
+          args[argName] = { type: argSchema.type, value: raw };
+        }
+        return { type: 'derived', algorithm: state.derivedAlgorithm as AlgorithmName, args };
+      }
       if (!state.value.trim()) {
         throw new Error(`slot ${i} (${slot.name}: ${slot.raw}) is empty`);
       }
@@ -271,6 +309,7 @@ export function PrivateInputs() {
   const { setVisible: openWalletModal } = useWalletModal();
   const [, setRecordAccess] = useAtom(recordAccessAtom);
   const [readAddress, setReadAddress] = useAtom(readAddressAtom);
+  const [algorithmsAllowed, setAlgorithmsAllowed] = useAtom(algorithmsAllowedAtom);
   const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
 
   const [form, setForm] = useState<FormState>(DEFAULTS);
@@ -407,6 +446,7 @@ export function PrivateInputs() {
   const clearGrantAndDisconnect = async () => {
     setRecordAccess(undefined);
     setReadAddress(undefined);
+    setAlgorithmsAllowed(undefined);
     toast.success('All grants cleared. Reconnect to apply (broad legacy behavior restored).');
     if (connected) {
       try {
@@ -477,7 +517,12 @@ export function PrivateInputs() {
   };
 
   const handleExecute = async () => {
-    console.log('[PrivateInputs] handleExecute: connected=', connected, 'readAddress=', readAddress);
+    console.log(
+      '[PrivateInputs] handleExecute: connected=',
+      connected,
+      'readAddress=',
+      readAddress,
+    );
     if (!connected) {
       openWalletModal(true);
       return;
@@ -649,6 +694,8 @@ export function PrivateInputs() {
     const state = slotStates[i];
     if (!state || state.kind !== 'primitive') return null;
     const modes = primitiveSlotModes(slot.baseType);
+    const eligibleAlgs = eligibleAlgorithmsForBaseType(slot.baseType);
+    const algSchema = state.derivedAlgorithm ? ALGORITHM_SCHEMAS[state.derivedAlgorithm] : null;
     return (
       <div key={i} className="space-y-2 border border-dashed border-border rounded-lg p-3">
         <Label className="body-s-bold">
@@ -656,31 +703,100 @@ export function PrivateInputs() {
           <span className="label-xs text-muted-foreground normal-case">({slot.raw})</span>
         </Label>
         {modes.length > 1 && (
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {modes.map(m => (
               <Button
                 key={m}
                 type="button"
                 size="sm"
                 variant={state.mode === m ? 'default' : 'outline'}
-                onClick={() => updateSlot(i, { mode: m })}
+                onClick={() => {
+                  // When switching INTO derived, default-select the first eligible algorithm.
+                  const patch: Partial<SlotState> = { mode: m };
+                  if (m === 'derived' && !state.derivedAlgorithm && eligibleAlgs[0]) {
+                    (patch as { derivedAlgorithm?: KnownAlgorithm }).derivedAlgorithm =
+                      eligibleAlgs[0];
+                  }
+                  updateSlot(i, patch);
+                }}
               >
-                {m === 'literal' ? 'Literal' : 'Wallet active address'}
+                {m === 'literal'
+                  ? 'Literal'
+                  : m === 'address'
+                    ? 'Wallet active address'
+                    : 'Derived (wallet computes)'}
               </Button>
             ))}
           </div>
         )}
-        {state.mode === 'literal' ? (
+        {state.mode === 'literal' && (
           <Input
             placeholder={`aleo literal (e.g. ${slot.baseType}.${slot.visibility === 'public' ? 'public value' : 'value'})`}
             value={state.value}
             onChange={e => updateSlot(i, { value: e.target.value })}
           />
-        ) : (
+        )}
+        {state.mode === 'address' && (
           <p className="body-s text-muted-foreground">
             Sends <code>{`{type:"address"}`}</code>. The wallet fills the slot with the active
             address; the dapp never sees it.
           </p>
+        )}
+        {state.mode === 'derived' && (
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <Label className="body-s">Algorithm</Label>
+              <select
+                value={state.derivedAlgorithm}
+                onChange={e =>
+                  updateSlot(i, {
+                    derivedAlgorithm: e.target.value as KnownAlgorithm | '',
+                    derivedArgs: {},
+                  })
+                }
+                className="body-s w-full font-mono rounded-xl border border-input px-3 py-2 shadow-sm bg-background"
+              >
+                <option value="">— pick an algorithm —</option>
+                {eligibleAlgs.map(name => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {algSchema && (
+              <div className="space-y-2 border-l-2 border-muted-foreground/20 pl-3">
+                <p className="body-s text-muted-foreground">
+                  Output type: <code>{algSchema.outputType}</code>. Sends{' '}
+                  <code>{`{type:"derived", algorithm, args}`}</code>. Authorized only if a matching{' '}
+                  <code>algorithmsAllowed</code> grant exists for{' '}
+                  <code>
+                    {form.programName.trim()}/{form.functionName.trim()}@{i}
+                  </code>
+                  .
+                </p>
+                {Object.entries(algSchema.args).map(([argName, argSchema]) => (
+                  <div key={argName} className="space-y-1">
+                    <Label className="body-s">
+                      {argName}{' '}
+                      <span className="label-xs text-muted-foreground normal-case">
+                        ({argSchema.type})
+                      </span>
+                    </Label>
+                    <Input
+                      placeholder={`aleo literal of type ${argSchema.type} (e.g. "12345${argSchema.type}")`}
+                      value={state.derivedArgs[argName] ?? ''}
+                      onChange={e =>
+                        updateSlot(i, {
+                          derivedArgs: { ...state.derivedArgs, [argName]: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     );
@@ -912,6 +1028,141 @@ export function PrivateInputs() {
             )}
           </div>
 
+          {/* Algorithm grants (derived inputs) */}
+          <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+            <div className="space-y-1">
+              <Label className="body-s-bold">Algorithm grants (derived inputs)</Label>
+              <p className="body-s text-muted-foreground">
+                Strict opt-in allowlist for <code>{`type: "derived"`}</code> InputRequests. Each
+                grant authorizes exactly one{' '}
+                <code>{`(algorithm, program, function, inputPosition)`}</code> call site. Empty list
+                → every derived request is refused.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {(algorithmsAllowed ?? []).length === 0 && (
+                <p className="body-s text-muted-foreground">
+                  (no grants — derived inputs disabled)
+                </p>
+              )}
+              {(algorithmsAllowed ?? []).map((g, gi) => (
+                <div key={gi} className="flex flex-wrap gap-2 items-center">
+                  <select
+                    className="body-s rounded-xl border border-input px-3 py-2 shadow-sm bg-background font-mono"
+                    value={g.algorithm}
+                    onChange={e =>
+                      setAlgorithmsAllowed(prev =>
+                        (prev ?? []).map((row, j) =>
+                          j === gi ? { ...row, algorithm: e.target.value } : row,
+                        ),
+                      )
+                    }
+                  >
+                    {(Object.keys(ALGORITHM_SCHEMAS) as KnownAlgorithm[]).map(name => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    className="flex-1 min-w-[8rem] font-mono"
+                    placeholder="program.aleo"
+                    value={g.program}
+                    onChange={e =>
+                      setAlgorithmsAllowed(prev =>
+                        (prev ?? []).map((row, j) =>
+                          j === gi ? { ...row, program: e.target.value } : row,
+                        ),
+                      )
+                    }
+                  />
+                  <Input
+                    className="flex-1 min-w-[6rem] font-mono"
+                    placeholder="function"
+                    value={g.function}
+                    onChange={e =>
+                      setAlgorithmsAllowed(prev =>
+                        (prev ?? []).map((row, j) =>
+                          j === gi ? { ...row, function: e.target.value } : row,
+                        ),
+                      )
+                    }
+                  />
+                  <Input
+                    className="w-20 font-mono"
+                    type="number"
+                    min={0}
+                    placeholder="pos"
+                    value={String(g.inputPosition)}
+                    onChange={e =>
+                      setAlgorithmsAllowed(prev =>
+                        (prev ?? []).map((row, j) =>
+                          j === gi ? { ...row, inputPosition: Number(e.target.value) || 0 } : row,
+                        ),
+                      )
+                    }
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setAlgorithmsAllowed(prev => (prev ?? []).filter((_, j) => j !== gi))
+                    }
+                    aria-label="Remove algorithm grant"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setAlgorithmsAllowed(prev => [
+                      ...(prev ?? []),
+                      {
+                        algorithm: (Object.keys(ALGORITHM_SCHEMAS) as KnownAlgorithm[])[0] ?? '',
+                        program: form.programName.trim(),
+                        function: form.functionName.trim(),
+                        inputPosition: 0,
+                      },
+                    ])
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add grant
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={parsedSlots.length === 0}
+                  onClick={() => {
+                    const newGrants: AlgorithmGrant[] = [];
+                    parsedSlots.forEach((slot, idx) => {
+                      if (slot.kind !== 'primitive') return;
+                      for (const alg of eligibleAlgorithmsForBaseType(slot.baseType)) {
+                        newGrants.push({
+                          algorithm: alg,
+                          program: form.programName.trim(),
+                          function: form.functionName.trim(),
+                          inputPosition: idx,
+                        });
+                      }
+                    });
+                    if (newGrants.length === 0) {
+                      toast.error('No eligible primitive slots in this function.');
+                      return;
+                    }
+                    setAlgorithmsAllowed(prev => [...(prev ?? []), ...newGrants]);
+                  }}
+                >
+                  Auto-grant this function's eligible slots
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* Record grant intro */}
           <p className="body-s text-muted-foreground pt-1">
             <b>Record access:</b> one entry per program. <b>Records</b> narrows to specific record
@@ -1086,6 +1337,7 @@ export function PrivateInputs() {
                 {
                   recordAccess: { level: 'byProgram', programs: programGrants },
                   readAddress,
+                  algorithmsAllowed,
                 },
                 null,
                 2,
