@@ -1,3 +1,4 @@
+import type { ArgConstraint } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import {
   AccountsFeature,
@@ -237,6 +238,12 @@ export interface AlgorithmGrant {
   function: string;
   /** 0-based index into the function's input slots. */
   inputPosition: number;
+  /**
+   * Optional per-arg bounds on the derived InputRequest's `args`: for each arg
+   * name, a fixed allowlist of acceptable values or "any" (omitted ⇒ "any").
+   * Enforced by the wallet. Matched against each `AlgorithmArg.value`.
+   */
+  argConstraints?: Record<string, ArgConstraint>;
 }
 
 /**
