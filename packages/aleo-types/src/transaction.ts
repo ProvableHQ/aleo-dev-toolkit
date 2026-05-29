@@ -115,18 +115,33 @@ export type InputRequest =
  * be addressed. The wallet validates at runtime against its own
  * `algorithmsSupported()` list.
  */
-export type KnownAlgorithm = 'program-scoped-address-blind';
+export type KnownAlgorithm =
+  | 'program-scoped-blinding-factor'
+  | 'program-scoped-blinded-address';
 export type AlgorithmName = KnownAlgorithm | (string & {});
+
+/** Arg-level type: an Aleo literal type, or "string" for non-literal args (enums, identifiers). */
+export type ArgType = LiteralType | 'string';
 
 /**
  * One typed argument passed to a wallet-side cryptographic algorithm. The
- * wallet parses `value` according to `type` (an Aleo primitive type) before
- * invoking the algorithm.
+ * wallet parses `value` according to `type` — either an Aleo primitive type
+ * (`LiteralType`) or `"string"` for non-literal args such as enum identifiers.
  */
 export interface AlgorithmArg {
-  type: LiteralType;
+  type: ArgType;
   value: string;
 }
+
+/** A per-arg grant constraint: a fixed allowlist of acceptable values, or "any". */
+export type ArgConstraint = string[] | 'any';
+
+const BLINDING_ARGS = {
+  mode: { type: 'string' as ArgType, possibleValues: ['issue', 'resolve'] as const },
+  membershipProgram: { type: 'string' as ArgType },
+  membershipMapping: { type: 'string' as ArgType },
+  targetAddress: { type: 'address' as ArgType, optional: true },
+} as const;
 
 /**
  * Static catalog of known algorithms — their dapp-provided `args` schema, the
@@ -135,17 +150,20 @@ export interface AlgorithmArg {
  * SDK and dapp tooling render correct forms and pre-validate shapes.
  */
 export const ALGORITHM_SCHEMAS = {
-  'program-scoped-address-blind': {
-    args: {
-      'domain-separator': { type: 'field' as LiteralType },
-    },
+  'program-scoped-blinding-factor': {
+    args: BLINDING_ARGS,
+    outputType: 'field' as LiteralType,
+    validSlotTypes: ['field', 'scalar', 'group'] as LiteralType[],
+  },
+  'program-scoped-blinded-address': {
+    args: BLINDING_ARGS,
     outputType: 'address' as LiteralType,
     validSlotTypes: ['address', 'group', 'scalar', 'field'] as LiteralType[],
   },
 } as const satisfies Record<
   KnownAlgorithm,
   {
-    args: Record<string, { type: LiteralType }>;
+    args: Record<string, { type: ArgType; possibleValues?: readonly string[]; optional?: boolean }>;
     outputType: LiteralType;
     validSlotTypes: LiteralType[];
   }
