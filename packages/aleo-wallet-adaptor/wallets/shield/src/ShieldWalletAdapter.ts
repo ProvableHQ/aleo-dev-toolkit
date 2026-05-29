@@ -425,7 +425,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * Shield build supports, not just the SDK's static catalog.
    */
   async algorithmsSupported(): Promise<string[]> {
-    return ['program-scoped-address-blind'];
+    return ['program-scoped-blinding-factor', 'program-scoped-blinded-address'];
   }
 
   /**

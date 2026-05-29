@@ -30,13 +30,19 @@ type LiteralType =
 
 // New algorithms are added to this literal union as they're standardized. The `(string & {})` permits
 // unknown values for forward-compat — the wallet validates against its own `algorithmsSupported()` list at runtime.
-type KnownAlgorithm = "program-scoped-address-blind";
+type KnownAlgorithm = "program-scoped-blinding-factor" | "program-scoped-blinded-address";
 type AlgorithmName  = KnownAlgorithm | (string & {});
 
+// Arg-level type: an Aleo literal type, or "string" for non-literal args (enums, identifiers).
+type ArgType = LiteralType | "string";
+
 interface AlgorithmArg {
-  type: LiteralType;  // parsing directive — the wallet decodes `value` according to this Aleo primitive type
-  value: string;       // an Aleo literal in canonical string form (e.g. "12345field", "100u64", "true")
+  type: ArgType;  // parsing directive — the wallet decodes `value` as an Aleo literal (if LiteralType) or treats it as a plain string (if "string")
+  value: string;  // an Aleo literal in canonical string form (e.g. "12345field", "100u64", "true"), or a plain string identifier/enum value when type is "string"
 }
+
+// A per-arg grant constraint: a fixed allowlist of acceptable values, or "any" (omitted ⇒ "any").
+type ArgConstraint = string[] | "any";
 ```
 
 `requestRecords` continues to return its existing wallet-defined record shape (e.g. Shield's `OwnedRecord` at `shield-extension/src/background/types/RecordScanner.ts:83`). Two optional fields are added additively to each returned record:
@@ -96,14 +102,17 @@ interface FieldGrant {
   readAccess?: boolean;       // undefined → true; false → field is usable as a filter key but plaintext is withheld on decrypt
 }
 
-// Each grant authorizes one specific call site. All four fields are required and exact-match;
-// there is no wildcard. A dapp that wants to use the same algorithm at multiple call sites lists
-// each one as its own entry.
+// Each grant authorizes one specific call site. `algorithm`, `program`, `function`, and `inputPosition`
+// are required and exact-match; there is no wildcard. A dapp that wants to use the same algorithm at
+// multiple call sites lists each one as its own entry.
 interface AlgorithmGrant {
-  algorithm: AlgorithmName;   // must appear in the wallet's `algorithmsSupported()` list
-  program: string;            // must also appear in `programs`
-  function: string;           // exact transition name within `program`
-  inputPosition: number;      // 0-based index into the function's input slots
+  algorithm: AlgorithmName;                   // must appear in the wallet's `algorithmsSupported()` list
+  program: string;                            // must also appear in `programs`
+  function: string;                           // exact transition name within `program`
+  inputPosition: number;                      // 0-based index into the function's input slots
+  argConstraints?: Record<string, ArgConstraint>; // optional per-arg allowlist: for each arg name,
+                                              // a fixed array of acceptable `AlgorithmArg.value` strings or "any".
+                                              // Omitted ⇒ "any" for that arg. Enforced by the wallet.
 }
 ```
 
@@ -169,32 +178,39 @@ Each `KnownAlgorithm` has a fixed Aleo output type, declared in the catalog belo
 
 #### Algorithm catalog
 
-##### `program-scoped-address-blind`
+The program-scoped blinding scheme is two-stage and fills **two** circuit inputs from the same wallet-maintained counter: a private `blinding_factor` and a public `blinded_address` (which the contract re-derives and asserts). Each is produced by its own algorithm so a function can request only the slot it needs. Both consume the same `args`:
 
-Produces a blinded address scoped to a specific program. Two dapps using the same wallet against different programs derive different blinded addresses. Whether the same dapp derives the same blinded address across executions is governed by wallet-internal state; the dapp can neither control nor observe that state.
+| Arg | Type | Notes |
+|---|---|---|
+| `mode` | `string` | `possibleValues: ["issue", "resolve"]`. `issue` (swap) advances the wallet's counter; `resolve` (claim) reuses the counter of a past derivation, selected by `targetAddress`. |
+| `membershipProgram` | `string` | program holding the used-address mapping (usually the called program) |
+| `membershipMapping` | `string` | mapping recording used blinded addresses; where the wallet probes to find a free counter (`issue`) or confirm existence (`resolve`) |
+| `targetAddress` | `address` | **optional**; required only for `resolve` — the public blinded address being reclaimed |
 
-| Property | Value |
-|---|---|
-| `args` (dapp-provided) | `{ "domain-separator": AlgorithmArg<field> }` |
-| wallet-derived inputs | program address (as field), active view key (as field), wallet-maintained counter (as field) |
-| output type | `address` |
-| valid input slot positions | `address`, `group`, `scalar`, `field` |
+The counter is wallet-owned and never observed or controllable by the dapp; on `resolve` the wallet inverts the public `targetAddress` to its counter internally — the counter never leaves the wallet.
 
-Algorithm (pseudo, matching the wallet's reference implementation):
+##### `program-scoped-blinding-factor`
+
+Output type `field` (the blinding factor `r`). Valid input slot positions: `field`, `scalar`, `group`.
+
+##### `program-scoped-blinded-address`
+
+Output type `address` (the blinded address). Valid input slot positions: `address`, `group`, `scalar`, `field`. Derives `r` internally so both slots agree on one counter.
+
+Algorithm (pseudo, matching the wallet's reference implementation; `BF_DOMAIN`/`CS_DOMAIN` are fixed program-identifier field constants):
 
 ```
-r        = Poseidon4.hashToScalar([programAddrField, domainSeparatorField, viewKeyField, counterField])
-blinded  = BHP256.commitToGroup(signerGroup.toBitsLE(), r)
-result   = Address.fromGroup(blinded)
+r            = Poseidon8.hash([programAddrField, BF_DOMAIN, viewKeyField, counterField])
+blinded_addr = Address.fromGroup(Poseidon8.hashToGroup(bitpack252([programAddrField, CS_DOMAIN, signerField, r])))
 ```
 
-The dapp never observes the view key, the counter, or the intermediate scalar `r`. The output is an address whose link to the active address is hidden by the BHP256 commitment — recovering the active address from the output is computationally infeasible without `r`.
+The dapp never observes the view key, the counter, or `r`. The blinded address's link to the active address is hidden by `r` (which needs the view key) — recovering the active address from the output is computationally infeasible without it.
 
 Future algorithms are added to `KnownAlgorithm` and documented under their own catalog subsection in this spec.
 
 #### Interaction with `readAddress: false`
 
-Derived inputs are allowed under `readAddress: false`. The dapp does not learn the active address through the derived flow — it only sees the algorithm's output. For `program-scoped-address-blind` the output is itself a fresh blinded address, so it does not leak the active address even when the dapp inspects the resulting transaction. Algorithms whose output is the active address itself (or trivially reversible to it) must not be admitted to `KnownAlgorithm` for this reason.
+Derived inputs are allowed under `readAddress: false`. The dapp does not learn the active address through the derived flow — it only sees the algorithm's output. For `program-scoped-blinded-address` the output is itself a fresh blinded address, so it does not leak the active address even when the dapp inspects the resulting transaction. Algorithms whose output is the active address itself (or trivially reversible to it) must not be admitted to `KnownAlgorithm` for this reason.
 
 #### Interaction with `programs`
 

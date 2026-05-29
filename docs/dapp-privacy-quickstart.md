@@ -139,7 +139,7 @@ await executeTransaction({
 
 A `type: "derived"` slot tells the wallet to compute a value by running a named cryptographic algorithm over its own state (view key, wallet-maintained counters, etc.) plus your `args`, and substitute the result. **You never see the wallet-side inputs — only the output.**
 
-Strictly opt-in via `algorithmsAllowed` at connect time. Each grant authorizes exactly one `(algorithm, program, function, inputPosition)` call site:
+Strictly opt-in via `algorithmsAllowed` at connect time. Each grant authorizes exactly one `(algorithm, program, function, inputPosition)` call site. Optionally pin per-arg values with `argConstraints` (a fixed allowlist of acceptable values, or `"any"`; omitted ⇒ any) so a later call can't even use a different value:
 
 ```ts
 import { ALGORITHM_SCHEMAS } from '@provablehq/aleo-types';
@@ -147,36 +147,54 @@ import { ALGORITHM_SCHEMAS } from '@provablehq/aleo-types';
 <AleoWalletProvider
   // ...
   algorithmsAllowed={[
-    { algorithm: 'program-scoped-address-blind',
-      program: 'myapp.aleo', function: 'vote', inputPosition: 0 },
+    // swap_private fills two slots from the same wallet-side counter:
+    { algorithm: 'program-scoped-blinding-factor',
+      program: 'amm_v3.aleo', function: 'swap_private', inputPosition: 1 },
+    { algorithm: 'program-scoped-blinded-address',
+      program: 'amm_v3.aleo', function: 'swap_private', inputPosition: 2,
+      // pin the operational args so only an `issue` against this mapping is allowed:
+      argConstraints: {
+        mode: ['issue'],
+        membershipMapping: ['used_blinded_addresses'],
+      } },
   ]}
 >
 ```
 
 Discovery: call `useWallet().algorithmsSupported()` (no connection required) to see which algorithms the active adapter implements. Wallets without derived-input support return `[]`.
 
-At execute time, pass `{ type: "derived", algorithm, args }` in the matching slot:
+At execute time, pass `{ type: "derived", algorithm, args }` in the matching slots. `args` is a general `Record<string, AlgorithmArg>` map; each algorithm documents the keys it consumes. The two blinding algorithms share the same `args` aside from the per-slot algorithm name — `mode` (`"issue"` advances the wallet's counter for a swap; `"resolve"` reuses a past counter selected by the public `targetAddress` for a claim — the counter never leaves the wallet), `membershipProgram`/`membershipMapping` (where the wallet probes used-address state), and `targetAddress` (resolve only):
 
 ```ts
 await executeTransaction({
-  program: 'myapp.aleo',
-  function: 'vote',
+  program: 'amm_v3.aleo',
+  function: 'swap_private',
   inputs: [
+    // ...token_in_record slot...
     { type: 'derived',
-      algorithm: 'program-scoped-address-blind',
+      algorithm: 'program-scoped-blinding-factor', // → private blinding_factor
       args: {
-        // Pre-encode anything non-primitive to an Aleo literal; the wallet only
-        // accepts AlgorithmArg values that are LiteralType-parseable strings.
-        'domain-separator': { type: 'field', value: '12345field' },
+        mode: { type: 'string', value: 'issue' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
       },
-      label: 'Your private voter handle',
+    },
+    { type: 'derived',
+      algorithm: 'program-scoped-blinded-address', // → public blinded_address
+      args: {
+        mode: { type: 'string', value: 'issue' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
+      },
     },
     // ...rest of the function's inputs
   ],
 });
 ```
 
-`ALGORITHM_SCHEMAS` from `@provablehq/aleo-types` ships the args schema, output type, and valid slot positions for every known algorithm — use it to render correct forms or pre-validate shapes. Full algorithm catalog: see [`adapter-privacy-extension.md`](./adapter-privacy-extension.md) § "Algorithm catalog".
+For a claim (`claim_swap_output_private`), use `mode: { type: 'string', value: 'resolve' }` and add `targetAddress: { type: 'address', value: 'aleo1…' }` (the public blinded address of the swap to claim) to both slots.
+
+`ALGORITHM_SCHEMAS` from `@provablehq/aleo-types` ships each algorithm's args schema (type + `possibleValues`/`optional`), output type, and valid slot positions — use it to render correct forms or pre-validate shapes. Full algorithm catalog: see [`adapter-privacy-extension.md`](./adapter-privacy-extension.md) § "Algorithm catalog".
 
 ## Error classes
 
