@@ -69,15 +69,22 @@ export type InputRequest =
     }
   | {
       /**
-       * Use an owned record from `program` as the input. When `uid` is present,
-       * it pins a specific record previously returned by `requestRecords` and
-       * `filters` is ignored. When absent, the wallet auto-selects an unspent
-       * record matching `filters`. The two are mutually exclusive — supplying
-       * both is rejected before reaching the wallet. Allowed in `record`,
+       * Use an owned record of type `program/recordname` as the input. When
+       * `uid` is present, it pins a specific record previously returned by
+       * `requestRecords` and `filters` is ignored. When absent, the wallet
+       * auto-selects an unspent record of `recordname` matching `filters`.
+       * `uid` and `filters` are mutually exclusive — supplying both is rejected
+       * before reaching the wallet.
+       *
+       * `recordname` is required so the gate can match the request against the
+       * dapp's grant on the same `(program, recordname, field)` triple the
+       * grant model uses; without it, filter keys that collide across record
+       * types in the same program would be ambiguous. Allowed in `record`,
        * `dynamic_record`, or `external_record` positions.
        */
       type: 'record';
       program: string;
+      recordname: string;
       filters?: RecordFilters;
       uid?: string;
     }

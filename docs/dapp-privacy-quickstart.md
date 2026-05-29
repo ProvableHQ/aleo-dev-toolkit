@@ -15,8 +15,8 @@ Three connect-time grants and three transaction-input request types:
 | `InputRequest` slot type | Shape | Valid in |
 |---|---|---|
 | `{ type: "address" }` | wallet injects active address | `address`, `group`, `scalar`, `field` |
-| `{ type: "record", program, uid }` | pin specific record by handle | `record`, `dynamic_record`, `external_record` |
-| `{ type: "record", program, filters }` | wallet auto-selects matching record | same |
+| `{ type: "record", program, recordname, uid }` | pin specific record by handle | `record`, `dynamic_record`, `external_record` |
+| `{ type: "record", program, recordname, filters }` | wallet auto-selects matching record of `recordname` | same |
 | `{ type: "derived", algorithm, args }` | wallet runs a named crypto algorithm | depends on algorithm — see catalog |
 
 ## Wiring connect-time options

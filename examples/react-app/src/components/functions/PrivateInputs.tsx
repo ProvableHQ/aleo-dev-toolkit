@@ -221,8 +221,9 @@ function buildInputs(
       return state.value.trim();
     }
     // record slot
-    const slotProgram =
-      (slot as Extract<ParsedSlot, { kind: 'record' }>).program || fallbackProgram;
+    const recordSlot = slot as Extract<ParsedSlot, { kind: 'record' }>;
+    const slotProgram = recordSlot.program || fallbackProgram;
+    const recordname = recordSlot.recordname;
     if (state.mode === 'plaintext') {
       if (!state.plaintext.trim()) {
         throw new Error(`slot ${i} (${slot.name}) plaintext is empty`);
@@ -233,14 +234,14 @@ function buildInputs(
       if (!state.uid) {
         throw new Error(`slot ${i} (${slot.name}) — pick a record from the dropdown`);
       }
-      return { type: 'record', program: slotProgram, uid: state.uid };
+      return { type: 'record', program: slotProgram, recordname, uid: state.uid };
     }
     // filter
     const filters = buildFilters(state.filterRows);
     if (Object.keys(filters).length === 0) {
       throw new Error(`slot ${i} (${slot.name}) — add at least one filter row`);
     }
-    return { type: 'record', program: slotProgram, filters };
+    return { type: 'record', program: slotProgram, recordname, filters };
   });
 }
 
@@ -581,9 +582,15 @@ export function PrivateInputs() {
     try {
       const baseInputs = parsedSlots.map((slot, i): TransactionInput => {
         if (i === firstRecordSlotIndex) {
-          const slotProgram =
-            (slot as Extract<ParsedSlot, { kind: 'record' }>).program || form.programName.trim();
-          return { type: 'record', program: slotProgram, uid, filters: {} };
+          const recordSlot = slot as Extract<ParsedSlot, { kind: 'record' }>;
+          const slotProgram = recordSlot.program || form.programName.trim();
+          return {
+            type: 'record',
+            program: slotProgram,
+            recordname: recordSlot.recordname,
+            uid,
+            filters: {},
+          };
         }
         const state = slotStates[i];
         if (state?.kind === 'primitive') return state.value || '0u64';
