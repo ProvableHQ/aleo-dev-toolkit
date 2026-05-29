@@ -11,4 +11,13 @@ packages:
   - 'examples/*'
   - 'website'
 
+# Reduce the likelihood of installing compromised packages by refusing
+# anything published within the last 7 days. Mirrors galileo-extension's
+# `npmMinimalAgeGate: 7d`. The first-party @provablehq registry deps are
+# exempt so we can pick up new SDK / wasm releases immediately; the
+# aleo-wallet-adaptor-* packages live in this workspace and aren't gated.
+# NB: requires pnpm >= 10.16 to take effect (see packageManager pin).
 minimumReleaseAge: 10080 # 7 days in minutes
+minimumReleaseAgeExclude:
+  - '@provablehq/sdk'
+  - '@provablehq/wasm'
