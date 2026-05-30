@@ -391,7 +391,7 @@ export function validateInputRequests(inputs: TransactionInput[]): void {
         }
         if (typeof (arg as { type?: unknown }).type !== 'string') {
           throw new WalletInputRequestInvalidError(
-            `inputs[${i}]: args["${argName}"].type must be a LiteralType string.`,
+            `inputs[${i}]: args["${argName}"].type must be an ArgType string (a LiteralType or "string").`,
           );
         }
         if (typeof (arg as { value?: unknown }).value !== 'string') {

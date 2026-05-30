@@ -136,7 +136,7 @@ export interface AlgorithmArg {
 /** A per-arg grant constraint: a fixed allowlist of acceptable values, or "any". */
 export type ArgConstraint = string[] | 'any';
 
-const BLINDING_ARGS = {
+const PROGRAM_SCOPED_ARGS = {
   mode: { type: 'string' as ArgType, possibleValues: ['issue', 'resolve'] as const },
   membershipProgram: { type: 'string' as ArgType },
   membershipMapping: { type: 'string' as ArgType },
@@ -151,12 +151,12 @@ const BLINDING_ARGS = {
  */
 export const ALGORITHM_SCHEMAS = {
   'program-scoped-blinding-factor': {
-    args: BLINDING_ARGS,
+    args: PROGRAM_SCOPED_ARGS,
     outputType: 'field' as LiteralType,
     validSlotTypes: ['field', 'scalar', 'group'] as LiteralType[],
   },
   'program-scoped-blinded-address': {
-    args: BLINDING_ARGS,
+    args: PROGRAM_SCOPED_ARGS,
     outputType: 'address' as LiteralType,
     validSlotTypes: ['address', 'group', 'scalar', 'field'] as LiteralType[],
   },
