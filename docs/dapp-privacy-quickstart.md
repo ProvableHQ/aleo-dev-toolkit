@@ -104,7 +104,8 @@ await executeTransaction({
   program: 'credits.aleo',
   function: 'transfer_private',
   inputs: [
-    { type: 'record', program: 'credits.aleo', uid: chosen.uid! }, // pin by uid
+    // recordname is REQUIRED on every type: "record" slot (see note below)
+    { type: 'record', program: 'credits.aleo', recordname: 'credits', uid: chosen.uid! }, // pin by uid
     { type: 'address' },                                            // wallet injects active address
     '100u64',                                                       // literal
   ],
@@ -113,6 +114,7 @@ await executeTransaction({
 
 ### Pick the right `type: "record"` shape
 
+- **`program` + `recordname` are always required.** Every `type: "record"` slot names the record type as `program/recordname` (e.g. `credits.aleo/credits`). The wallet matches the request against your `recordAccess` grant on the same `(program, recordname, field)` triple, so without `recordname` filter keys that collide across record types in the same program would be ambiguous. Omitting it is a client-side validation error before the request reaches the wallet.
 - **`{ uid }`** — you've called `requestRecords`, you want **this exact record**. Use uid.
 - **`{ filters }`** — you want the wallet to pick any unspent record matching conditions. Use filters.
 - **Both is an error**: `WalletInputRequestInvalidError` is thrown client-side.
@@ -128,7 +130,7 @@ await executeTransaction({
   program: 'credits.aleo',
   function: 'transfer_private',
   inputs: [
-    { type: 'record', program: 'credits.aleo', filters },
+    { type: 'record', program: 'credits.aleo', recordname: 'credits', filters },
     { type: 'address' },
     '100u64',
   ],
@@ -192,7 +194,43 @@ await executeTransaction({
 });
 ```
 
-For a claim (`claim_swap_output_private`), use `mode: { type: 'string', value: 'resolve' }` and add `targetAddress: { type: 'address', value: 'aleo1…' }` (the public blinded address of the swap to claim) to both slots.
+### Claiming a past swap (`mode: "resolve"`)
+
+The swap above ran in `mode: "issue"` — the wallet picked the next free counter and advanced it. To later **claim** that swap's output (`claim_swap_output_private`), run the same two algorithms in `mode: "resolve"`. Instead of advancing the counter, the wallet re-derives the counter of the *existing* swap by inverting its public blinded address, then reproduces the matching `(blinding_factor, blinded_address)` pair. The counter still never leaves the wallet.
+
+The only differences from the issue call: `mode` is `"resolve"`, and you add `targetAddress` — the public blinded address of the swap you're claiming (the value the issue call's `program-scoped-blinded-address` slot produced and the contract recorded in `used_blinded_addresses`). Both slots must carry the same `targetAddress`, or the wallet rejects the call before deriving:
+
+```ts
+const targetAddress = 'aleo1…'; // public blinded address of the swap being claimed
+
+await executeTransaction({
+  program: 'amm_v3.aleo',
+  function: 'claim_swap_output_private',
+  inputs: [
+    { type: 'derived',
+      algorithm: 'program-scoped-blinding-factor', // → private blinding_factor of the past swap
+      args: {
+        mode: { type: 'string', value: 'resolve' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
+        targetAddress: { type: 'address', value: targetAddress },
+      },
+    },
+    { type: 'derived',
+      algorithm: 'program-scoped-blinded-address', // → the same public blinded_address
+      args: {
+        mode: { type: 'string', value: 'resolve' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
+        targetAddress: { type: 'address', value: targetAddress },
+      },
+    },
+    // ...rest of the function's inputs
+  ],
+});
+```
+
+If you pinned operational args with `argConstraints` at connect time, remember the `resolve` call sites need their own grants — a grant whose `argConstraints.mode` is `['issue']` will refuse this call. Grant `mode: ['issue', 'resolve']` (or omit the `mode` constraint) on the relevant `(program, function, inputPosition)` tuples, and `claim_swap_output_private` is a different `function` than `swap_private`, so it needs grants of its own regardless.
 
 `ALGORITHM_SCHEMAS` from `@provablehq/aleo-types` ships each algorithm's args schema (type + `possibleValues`/`optional`), output type, and valid slot positions — use it to render correct forms or pre-validate shapes. Full algorithm catalog: see [`adapter-privacy-extension.md`](./adapter-privacy-extension.md) § "Algorithm catalog".
 
