@@ -306,6 +306,18 @@ export abstract class BaseAleoWalletAdapter
     }
     return feature.requestTransactionHistory(program);
   }
+
+  /**
+   * Return the algorithm names this wallet implements for `type: "derived"`
+   * InputRequests. A dapp calls this before connect to learn which entries
+   * are valid in `ConnectOptions.algorithmsAllowed`. Wallets that do not
+   * support derived inputs at all should return `[]`.
+   *
+   * Override in adapters that support derived inputs.
+   */
+  async algorithmsSupported(): Promise<string[]> {
+    return [];
+  }
 }
 
 export function scopePollingDetectionStrategy(detect: () => boolean): void {
@@ -359,6 +371,35 @@ export function validateInputRequests(inputs: TransactionInput[]): void {
       throw new WalletInputRequestInvalidError(
         `inputs[${i}]: type "record" cannot specify both \`uid\` and \`filters\`. \`uid\` pins a specific record returned by requestRecords; filters are ignored when \`uid\` is set.`,
       );
+    }
+    if (input.type === 'derived') {
+      if (typeof input.algorithm !== 'string' || input.algorithm.length === 0) {
+        throw new WalletInputRequestInvalidError(
+          `inputs[${i}]: type "derived" requires a non-empty \`algorithm\` string.`,
+        );
+      }
+      if (input.args === null || typeof input.args !== 'object' || Array.isArray(input.args)) {
+        throw new WalletInputRequestInvalidError(
+          `inputs[${i}]: type "derived" requires \`args\` to be an object (Record<string, AlgorithmArg>).`,
+        );
+      }
+      for (const [argName, arg] of Object.entries(input.args)) {
+        if (arg === null || typeof arg !== 'object') {
+          throw new WalletInputRequestInvalidError(
+            `inputs[${i}]: args["${argName}"] must be { type, value }.`,
+          );
+        }
+        if (typeof (arg as { type?: unknown }).type !== 'string') {
+          throw new WalletInputRequestInvalidError(
+            `inputs[${i}]: args["${argName}"].type must be an ArgType string (a LiteralType or "string").`,
+          );
+        }
+        if (typeof (arg as { value?: unknown }).value !== 'string') {
+          throw new WalletInputRequestInvalidError(
+            `inputs[${i}]: args["${argName}"].value must be a string Aleo literal.`,
+          );
+        }
+      }
     }
   }
 }

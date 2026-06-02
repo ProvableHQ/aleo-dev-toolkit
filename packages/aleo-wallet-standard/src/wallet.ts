@@ -1,3 +1,4 @@
+import type { ArgConstraint } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import {
   AccountsFeature,
@@ -220,9 +221,30 @@ export type RecordAccessGrant =
   | { level: 'byProgram'; programs: ProgramGrant[] };
 
 /**
- * View-key exposure preference. Defaults to `DENY` when omitted.
+ * Authorization for a `type: "derived"` InputRequest at one specific call site.
+ * All four fields are required and exact-match; the wallet refuses every
+ * derived request whose `(algorithm, program, function, inputPosition)` tuple
+ * is not in the connection's `algorithmsAllowed`. A dapp that wants to use
+ * the same algorithm at multiple call sites lists each one as its own entry.
+ *
+ * See `docs/adapter-privacy-extension.md` § "Derived inputs".
  */
-export type ViewKeyExposure = 'DENY' | 'PER_TX_PROMPT';
+export interface AlgorithmGrant {
+  /** Must appear in the wallet's `algorithmsSupported()` list. */
+  algorithm: string;
+  /** Must also appear in the connection's `programs` allowlist. */
+  program: string;
+  /** Exact transition name within `program`. */
+  function: string;
+  /** 0-based index into the function's input slots. */
+  inputPosition: number;
+  /**
+   * Optional per-arg bounds on the derived InputRequest's `args`: for each arg
+   * name, a fixed allowlist of acceptable values or "any" (omitted ⇒ "any").
+   * Enforced by the wallet. Matched against each `AlgorithmArg.value`.
+   */
+  argConstraints?: Record<string, ArgConstraint>;
+}
 
 /**
  * Optional, additive connect-time options. All fields are opt-in; omitting them
@@ -231,10 +253,13 @@ export type ViewKeyExposure = 'DENY' | 'PER_TX_PROMPT';
 export interface ConnectOptions {
   /** Opt-in record/field narrowing on top of `programs`. */
   recordAccess?: RecordAccessGrant;
-  /** View-key exposure preference; defaults to `DENY`. */
-  viewKeyExposure?: ViewKeyExposure;
   /** When `false`, the dapp transacts without learning the user's address. Defaults to `true`. */
   readAddress?: boolean;
+  /**
+   * Strict opt-in allowlist for `type: "derived"` InputRequests. Default
+   * undefined → every derived request is refused. There is no broad default.
+   */
+  algorithmsAllowed?: AlgorithmGrant[];
 }
 
 /**
@@ -246,7 +271,7 @@ export function hasUnsupportedConnectOptions(options?: ConnectOptions): boolean 
   if (!options) return false;
   return (
     options.recordAccess !== undefined ||
-    options.viewKeyExposure !== undefined ||
-    options.readAddress === false
+    options.readAddress === false ||
+    (options.algorithmsAllowed !== undefined && options.algorithmsAllowed.length > 0)
   );
 }

@@ -10,13 +10,13 @@ import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { useAtomValue } from 'jotai';
 import {
+  algorithmsAllowedAtom,
   autoConnectAtom,
   decryptPermissionAtom,
   networkAtom,
   programsAtom,
   readAddressAtom,
   recordAccessAtom,
-  viewKeyExposureAtom,
 } from './lib/store/global';
 import { routes } from './routes';
 // Import wallet adapter CSS after our own styles
@@ -42,7 +42,7 @@ export function App() {
   const programs = useAtomValue(programsAtom);
   const recordAccess = useAtomValue(recordAccessAtom);
   const readAddress = useAtomValue(readAddressAtom);
-  const viewKeyExposure = useAtomValue(viewKeyExposureAtom);
+  const algorithmsAllowed = useAtomValue(algorithmsAllowedAtom);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -55,7 +55,7 @@ export function App() {
         programs={programs}
         recordAccess={recordAccess}
         readAddress={readAddress}
-        viewKeyExposure={viewKeyExposure}
+        algorithmsAllowed={algorithmsAllowed}
       >
         <WalletModalProvider>
           <AppRoutes />

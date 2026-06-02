@@ -37,7 +37,7 @@ export interface ConnectFeature extends WalletFeature {
    * @param network The network to connect to
    * @param decryptPermission The decrypt permission
    * @param programs The programs to connect to
-   * @param options Optional additive connect-time options (record access, view-key exposure, address withholding)
+   * @param options Optional additive connect-time options (record access, address withholding)
    * @returns The connected account
    */
   connect(

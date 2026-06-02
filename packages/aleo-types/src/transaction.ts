@@ -1,3 +1,5 @@
+import { LiteralType } from './data';
+
 /**
  * Status of a transaction
  */
@@ -67,23 +69,105 @@ export type InputRequest =
     }
   | {
       /**
-       * Use an owned record from `program` as the input. When `uid` is present,
-       * it pins a specific record previously returned by `requestRecords` and
-       * `filters` is ignored. When absent, the wallet auto-selects an unspent
-       * record matching `filters`. The two are mutually exclusive — supplying
-       * both is rejected before reaching the wallet. Allowed in `record`,
+       * Use an owned record of type `program/recordname` as the input. When
+       * `uid` is present, it pins a specific record previously returned by
+       * `requestRecords` and `filters` is ignored. When absent, the wallet
+       * auto-selects an unspent record of `recordname` matching `filters`.
+       * `uid` and `filters` are mutually exclusive — supplying both is rejected
+       * before reaching the wallet.
+       *
+       * `recordname` is required so the gate can match the request against the
+       * dapp's grant on the same `(program, recordname, field)` triple the
+       * grant model uses; without it, filter keys that collide across record
+       * types in the same program would be ambiguous. Allowed in `record`,
        * `dynamic_record`, or `external_record` positions.
        */
       type: 'record';
       program: string;
+      recordname: string;
       filters?: RecordFilters;
       uid?: string;
     }
   | {
-      /** Fill the input slot with the view key behind the active address. Allowed in `scalar` or `field` positions. */
-      type: 'viewKey';
+      /**
+       * Fill the input slot with the output of a wallet-evaluated cryptographic
+       * algorithm. The wallet runs the named `algorithm` over its own state
+       * (view key, wallet-maintained counters, etc.) plus the dapp's `args`,
+       * and substitutes the result into the slot. The dapp never observes the
+       * wallet-side inputs — only the output.
+       *
+       * Strictly opt-in: the wallet refuses every derived request whose
+       * `(algorithm, program, function, inputPosition)` tuple is not present
+       * in the connection's `algorithmsAllowed`. Each algorithm declares its
+       * `args` schema and output Aleo type; the output type determines which
+       * input positions are valid (same rules as `type: "address"`).
+       */
+      type: 'derived';
+      algorithm: AlgorithmName;
+      args: Record<string, AlgorithmArg>;
       label?: string;
     };
+
+/**
+ * Algorithms that conforming wallets are expected to implement. The
+ * `(string & {})` extension permits unknown values for forward-compat:
+ * a wallet shipping a new algorithm before this union is updated can still
+ * be addressed. The wallet validates at runtime against its own
+ * `algorithmsSupported()` list.
+ */
+export type KnownAlgorithm =
+  | 'program-scoped-blinding-factor'
+  | 'program-scoped-blinded-address';
+export type AlgorithmName = KnownAlgorithm | (string & {});
+
+/** Arg-level type: an Aleo literal type, or "string" for non-literal args (enums, identifiers). */
+export type ArgType = LiteralType | 'string';
+
+/**
+ * One typed argument passed to a wallet-side cryptographic algorithm. The
+ * wallet parses `value` according to `type` — either an Aleo primitive type
+ * (`LiteralType`) or `"string"` for non-literal args such as enum identifiers.
+ */
+export interface AlgorithmArg {
+  type: ArgType;
+  value: string;
+}
+
+/** A per-arg grant constraint: a fixed allowlist of acceptable values, or "any". */
+export type ArgConstraint = string[] | 'any';
+
+const PROGRAM_SCOPED_ARGS = {
+  mode: { type: 'string' as ArgType, possibleValues: ['issue', 'resolve'] as const },
+  membershipProgram: { type: 'string' as ArgType },
+  membershipMapping: { type: 'string' as ArgType },
+  targetAddress: { type: 'address' as ArgType, optional: true },
+} as const;
+
+/**
+ * Static catalog of known algorithms — their dapp-provided `args` schema, the
+ * Aleo type of their output, and the input-slot positions where they are
+ * valid. The wallet is the source of truth at runtime; this registry lets the
+ * SDK and dapp tooling render correct forms and pre-validate shapes.
+ */
+export const ALGORITHM_SCHEMAS = {
+  'program-scoped-blinding-factor': {
+    args: PROGRAM_SCOPED_ARGS,
+    outputType: 'field' as LiteralType,
+    validSlotTypes: ['field', 'scalar', 'group'] as LiteralType[],
+  },
+  'program-scoped-blinded-address': {
+    args: PROGRAM_SCOPED_ARGS,
+    outputType: 'address' as LiteralType,
+    validSlotTypes: ['address', 'group', 'scalar', 'field'] as LiteralType[],
+  },
+} as const satisfies Record<
+  KnownAlgorithm,
+  {
+    args: Record<string, { type: ArgType; possibleValues?: readonly string[]; optional?: boolean }>;
+    outputType: LiteralType;
+    validSlotTypes: LiteralType[];
+  }
+>;
 
 /**
  * One element of a transaction's `inputs` array. A literal Aleo value (string)

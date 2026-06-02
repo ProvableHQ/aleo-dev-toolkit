@@ -9,15 +9,15 @@ Three connect-time grants and three transaction-input request types:
 | Grant | Type | Effect |
 |---|---|---|
 | `readAddress` | `boolean` (default `true`) | When `false`, the dapp transacts without learning the active address. Requires `decryptPermission: NoDecrypt`. |
-| `viewKeyExposure` | `"DENY" \| "PER_TX_PROMPT"` (default `"DENY"`) | Whether `type: "viewKey"` slots are allowed. |
 | `recordAccess` | `RecordAccessGrant` (default `undefined` = broad) | Per-program / per-record / per-field narrowing of record reads. |
+| `algorithmsAllowed` | `AlgorithmGrant[]` (default `undefined` = none) | Strict opt-in allowlist for `type: "derived"` requests. Each entry authorizes one exact `(algorithm, program, function, inputPosition)` call site. |
 
 | `InputRequest` slot type | Shape | Valid in |
 |---|---|---|
 | `{ type: "address" }` | wallet injects active address | `address`, `group`, `scalar`, `field` |
-| `{ type: "viewKey" }` | wallet injects active view key | `scalar`, `field` |
-| `{ type: "record", program, uid }` | pin specific record by handle | `record`, `dynamic_record`, `external_record` |
-| `{ type: "record", program, filters }` | wallet auto-selects matching record | same |
+| `{ type: "record", program, recordname, uid }` | pin specific record by handle | `record`, `dynamic_record`, `external_record` |
+| `{ type: "record", program, recordname, filters }` | wallet auto-selects matching record of `recordname` | same |
+| `{ type: "derived", algorithm, args }` | wallet runs a named crypto algorithm | depends on algorithm — see catalog |
 
 ## Wiring connect-time options
 
@@ -33,7 +33,6 @@ import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
   decryptPermission={DecryptPermission.NoDecrypt}   // required when readAddress: false
   programs={['credits.aleo']}                       // existing per-program allowlist
   readAddress={false}                               // withhold address
-  viewKeyExposure="PER_TX_PROMPT"                   // allow view-key slots
   recordAccess={{
     level: 'byProgram',
     programs: [
@@ -105,7 +104,8 @@ await executeTransaction({
   program: 'credits.aleo',
   function: 'transfer_private',
   inputs: [
-    { type: 'record', program: 'credits.aleo', uid: chosen.uid! }, // pin by uid
+    // recordname is REQUIRED on every type: "record" slot (see note below)
+    { type: 'record', program: 'credits.aleo', recordname: 'credits', uid: chosen.uid! }, // pin by uid
     { type: 'address' },                                            // wallet injects active address
     '100u64',                                                       // literal
   ],
@@ -114,6 +114,7 @@ await executeTransaction({
 
 ### Pick the right `type: "record"` shape
 
+- **`program` + `recordname` are always required.** Every `type: "record"` slot names the record type as `program/recordname` (e.g. `credits.aleo/credits`). The wallet matches the request against your `recordAccess` grant on the same `(program, recordname, field)` triple, so without `recordname` filter keys that collide across record types in the same program would be ambiguous. Omitting it is a client-side validation error before the request reaches the wallet.
 - **`{ uid }`** — you've called `requestRecords`, you want **this exact record**. Use uid.
 - **`{ filters }`** — you want the wallet to pick any unspent record matching conditions. Use filters.
 - **Both is an error**: `WalletInputRequestInvalidError` is thrown client-side.
@@ -129,12 +130,109 @@ await executeTransaction({
   program: 'credits.aleo',
   function: 'transfer_private',
   inputs: [
-    { type: 'record', program: 'credits.aleo', filters },
+    { type: 'record', program: 'credits.aleo', recordname: 'credits', filters },
     { type: 'address' },
     '100u64',
   ],
 });
 ```
+
+## Derived inputs (`type: "derived"`)
+
+A `type: "derived"` slot tells the wallet to compute a value by running a named cryptographic algorithm over its own state (view key, wallet-maintained counters, etc.) plus your `args`, and substitute the result. **You never see the wallet-side inputs — only the output.**
+
+Strictly opt-in via `algorithmsAllowed` at connect time. Each grant authorizes exactly one `(algorithm, program, function, inputPosition)` call site. Optionally pin per-arg values with `argConstraints` (a fixed allowlist of acceptable values, or `"any"`; omitted ⇒ any) so a later call can't even use a different value:
+
+```ts
+import { ALGORITHM_SCHEMAS } from '@provablehq/aleo-types';
+
+<AleoWalletProvider
+  // ...
+  algorithmsAllowed={[
+    // swap_private fills two slots from the same wallet-side counter:
+    { algorithm: 'program-scoped-blinding-factor',
+      program: 'amm_v3.aleo', function: 'swap_private', inputPosition: 1 },
+    { algorithm: 'program-scoped-blinded-address',
+      program: 'amm_v3.aleo', function: 'swap_private', inputPosition: 2,
+      // pin the operational args so only an `issue` against this mapping is allowed:
+      argConstraints: {
+        mode: ['issue'],
+        membershipMapping: ['used_blinded_addresses'],
+      } },
+  ]}
+>
+```
+
+Discovery: call `useWallet().algorithmsSupported()` (no connection required) to see which algorithms the active adapter implements. Wallets without derived-input support return `[]`.
+
+At execute time, pass `{ type: "derived", algorithm, args }` in the matching slots. `args` is a general `Record<string, AlgorithmArg>` map; each algorithm documents the keys it consumes. The two blinding algorithms share the same `args` aside from the per-slot algorithm name — `mode` (`"issue"` advances the wallet's counter for a swap; `"resolve"` reuses a past counter selected by the public `targetAddress` for a claim — the counter never leaves the wallet), `membershipProgram`/`membershipMapping` (where the wallet probes used-address state), and `targetAddress` (resolve only):
+
+```ts
+await executeTransaction({
+  program: 'amm_v3.aleo',
+  function: 'swap_private',
+  inputs: [
+    // ...token_in_record slot...
+    { type: 'derived',
+      algorithm: 'program-scoped-blinding-factor', // → private blinding_factor
+      args: {
+        mode: { type: 'string', value: 'issue' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
+      },
+    },
+    { type: 'derived',
+      algorithm: 'program-scoped-blinded-address', // → public blinded_address
+      args: {
+        mode: { type: 'string', value: 'issue' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
+      },
+    },
+    // ...rest of the function's inputs
+  ],
+});
+```
+
+### Claiming a past swap (`mode: "resolve"`)
+
+The swap above ran in `mode: "issue"` — the wallet picked the next free counter and advanced it. To later **claim** that swap's output (`claim_swap_output_private`), run the same two algorithms in `mode: "resolve"`. Instead of advancing the counter, the wallet re-derives the counter of the *existing* swap by inverting its public blinded address, then reproduces the matching `(blinding_factor, blinded_address)` pair. The counter still never leaves the wallet.
+
+The only differences from the issue call: `mode` is `"resolve"`, and you add `targetAddress` — the public blinded address of the swap you're claiming (the value the issue call's `program-scoped-blinded-address` slot produced and the contract recorded in `used_blinded_addresses`). Both slots must carry the same `targetAddress`, or the wallet rejects the call before deriving:
+
+```ts
+const targetAddress = 'aleo1…'; // public blinded address of the swap being claimed
+
+await executeTransaction({
+  program: 'amm_v3.aleo',
+  function: 'claim_swap_output_private',
+  inputs: [
+    { type: 'derived',
+      algorithm: 'program-scoped-blinding-factor', // → private blinding_factor of the past swap
+      args: {
+        mode: { type: 'string', value: 'resolve' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
+        targetAddress: { type: 'address', value: targetAddress },
+      },
+    },
+    { type: 'derived',
+      algorithm: 'program-scoped-blinded-address', // → the same public blinded_address
+      args: {
+        mode: { type: 'string', value: 'resolve' },
+        membershipProgram: { type: 'string', value: 'amm_v3.aleo' },
+        membershipMapping: { type: 'string', value: 'used_blinded_addresses' },
+        targetAddress: { type: 'address', value: targetAddress },
+      },
+    },
+    // ...rest of the function's inputs
+  ],
+});
+```
+
+If you pinned operational args with `argConstraints` at connect time, remember the `resolve` call sites need their own grants — a grant whose `argConstraints.mode` is `['issue']` will refuse this call. Grant `mode: ['issue', 'resolve']` (or omit the `mode` constraint) on the relevant `(program, function, inputPosition)` tuples, and `claim_swap_output_private` is a different `function` than `swap_private`, so it needs grants of its own regardless.
+
+`ALGORITHM_SCHEMAS` from `@provablehq/aleo-types` ships each algorithm's args schema (type + `possibleValues`/`optional`), output type, and valid slot positions — use it to render correct forms or pre-validate shapes. Full algorithm catalog: see [`adapter-privacy-extension.md`](./adapter-privacy-extension.md) § "Algorithm catalog".
 
 ## Error classes
 
@@ -155,3 +253,4 @@ If your existing dapp:
 - **Reads records via `requestRecords`** — return shape is unchanged when no grant is set. The new `recordView` / `uid` fields are additive optional keys you can ignore.
 - **Composes `TransactionOptions.inputs` as plain strings** — keep doing that. The new `InputRequest` shapes are opt-in per-slot.
 - **Wants to adopt narrowed grants** — populate `recordAccess` at the provider level; use `RecordGrant.fields: []` to mint records usable purely for `uid` pinning with zero plaintext leakage.
+- **Wants to use derived inputs** — populate `algorithmsAllowed` with one grant per call site, then place `{ type: "derived", algorithm, args }` in the corresponding `inputs[i]`. There is no broad default — empty `algorithmsAllowed` refuses every derived request.

@@ -1,9 +1,9 @@
 import { atomWithStorage } from 'jotai/utils';
 import { Network } from '@provablehq/aleo-types';
 import {
+  AlgorithmGrant,
   DecryptPermission,
   RecordAccessGrant,
-  ViewKeyExposure,
 } from '@provablehq/aleo-wallet-adaptor-core';
 
 /**
@@ -27,8 +27,8 @@ export const recordAccessAtom = atomWithStorage<RecordAccessGrant | undefined>(
   undefined,
 );
 export const readAddressAtom = atomWithStorage<boolean | undefined>('readAddress', undefined);
-export const viewKeyExposureAtom = atomWithStorage<ViewKeyExposure | undefined>(
-  'viewKeyExposure',
+export const algorithmsAllowedAtom = atomWithStorage<AlgorithmGrant[] | undefined>(
+  'algorithmsAllowed',
   undefined,
 );
 

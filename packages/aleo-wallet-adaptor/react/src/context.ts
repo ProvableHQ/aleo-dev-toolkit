@@ -133,6 +133,13 @@ export interface WalletContextState {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+  /**
+   * Return the algorithm names this wallet implements for `type: "derived"`
+   * InputRequests. A dapp calls this before connect to pick which entries to
+   * include in `algorithmsAllowed`. Wallets without derived-input support
+   * return `[]`.
+   */
+  algorithmsSupported: () => Promise<string[]>;
 }
 
 /**
