@@ -8,6 +8,10 @@ export const PLACEHOLDERS = {
   CIPHER_TEXT: '{{CIPHER_TEXT}}',
   MESSAGE: '{{MESSAGE}}',
   TX_ID: '{{TX_ID}}',
+  ACCOUNT_INDEX: '{{ACCOUNT_INDEX}}',
+  EVM_CHAIN: '{{EVM_CHAIN}}',
+  EVM_TRANSACTION: '{{EVM_TRANSACTION}}',
+  INCLUDE_PLAINTEXT: '{{INCLUDE_PLAINTEXT}}',
 } as const;
 
 export const codeExamples = {
@@ -86,6 +90,78 @@ const { requestTransactionHistory } = useWallet();
 // Get transaction history for a program
 const history = await requestTransactionHistory('${PLACEHOLDERS.PROGRAM}');
 console.log('Transactions:', history.transactions);`,
+
+  deriveAddresses: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+// chains defaults to ['aleo', 'ethereum'] when omitted
+const addresses = await adapter.deriveAddresses(${PLACEHOLDERS.ACCOUNT_INDEX});
+console.log('Aleo address:', addresses.aleo);
+console.log('EVM address:', addresses.ethereum);`,
+
+  executeTransactionOnDerivedAccount: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet, transactionStatus } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+const result = await adapter.executeTransactionOnDerivedAccount(${PLACEHOLDERS.ACCOUNT_INDEX}, {
+  program: '${PLACEHOLDERS.PROGRAM}',
+  function: '${PLACEHOLDERS.FUNCTION}',
+  inputs: [${PLACEHOLDERS.INPUTS}],
+  fee: ${PLACEHOLDERS.FEE},
+});
+
+const status = await transactionStatus(result.transactionId);
+console.log('Status:', status.status);
+console.log('Transaction ID:', status.transactionId);`,
+
+  executeEvmTransaction: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+const result = await adapter.executeEvmTransaction(
+  '${PLACEHOLDERS.EVM_CHAIN}',
+  ${PLACEHOLDERS.ACCOUNT_INDEX},
+  ${PLACEHOLDERS.EVM_TRANSACTION},
+);
+
+console.log('Transaction hash:', result.transactionHash);`,
+
+  requestRecordsOnDerivedAccount: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { isShieldPayAdapter } from '@/lib/shieldPayAdapter';
+
+const { wallet } = useWallet();
+const adapter = wallet?.adapter;
+
+if (!adapter || !isShieldPayAdapter(adapter)) {
+  throw new Error('Shield Pay requires the Shield wallet');
+}
+
+const records = await adapter.requestRecordsOnDerivedAccount(
+  ${PLACEHOLDERS.ACCOUNT_INDEX},
+  '${PLACEHOLDERS.PROGRAM}',
+  ${PLACEHOLDERS.INCLUDE_PLAINTEXT},
+);
+
+console.log('Records:', records);`,
 } as const;
 
 export type CodeExampleKey = keyof typeof codeExamples;

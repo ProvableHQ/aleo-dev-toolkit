@@ -9,6 +9,7 @@ import {
   RecordsPage,
   ViewKeysPage,
   TransactionHistoryPage,
+  ShieldPayPage,
 } from '@/pages';
 import { CustomizationsPage } from './pages/CustomizationsPage';
 
@@ -56,6 +57,10 @@ export const routes: RouteObject[] = [
       {
         path: 'history',
         element: <TransactionHistoryPage />,
+      },
+      {
+        path: 'shield-pay',
+        element: <ShieldPayPage />,
       },
     ],
   },

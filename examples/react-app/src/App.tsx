@@ -1,11 +1,6 @@
 import { useRoutes } from 'react-router-dom';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
-import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
-import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
-import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { useAtomValue } from 'jotai';
@@ -16,16 +11,11 @@ import {
   programsAtom,
 } from './lib/store/global';
 import { routes } from './routes';
+import { ShieldPayAdapter } from './lib/shieldPayAdapter';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
-const wallets = [
-  new ShieldWalletAdapter(),
-  new PuzzleWalletAdapter(),
-  new LeoWalletAdapter(),
-  new FoxWalletAdapter(),
-  new SoterWalletAdapter(),
-];
+const wallets = [new ShieldPayAdapter()];
 
 function AppRoutes() {
   const element = useRoutes(routes);
