@@ -204,9 +204,17 @@ function buildInputs(
         }
         const schema = ALGORITHM_SCHEMAS[state.derivedAlgorithm];
         const args: Record<string, AlgorithmArg> = {};
-        for (const [argName, argSchema] of Object.entries(schema.args)) {
+        for (const [argName, rawSchema] of Object.entries(schema.args)) {
+          const argSchema = rawSchema as {
+            type: AlgorithmArg['type'];
+            possibleValues?: readonly string[];
+            optional?: boolean;
+          };
           const raw = (state.derivedArgs[argName] ?? '').trim();
           if (!raw) {
+            // Optional args (e.g. `targetAddress`, which `issue` mode doesn't use)
+            // are omitted when left blank; only required args must be present.
+            if (argSchema.optional) continue;
             throw new Error(
               `slot ${i} (${slot.name}) — derived arg "${argName}" (${argSchema.type}) is empty`,
             );
@@ -782,25 +790,56 @@ export function PrivateInputs() {
                   </code>
                   .
                 </p>
-                {Object.entries(algSchema.args).map(([argName, argSchema]) => (
-                  <div key={argName} className="space-y-1">
-                    <Label className="body-s">
-                      {argName}{' '}
-                      <span className="label-xs text-muted-foreground normal-case">
-                        ({argSchema.type})
-                      </span>
-                    </Label>
-                    <Input
-                      placeholder={`aleo literal of type ${argSchema.type} (e.g. "12345${argSchema.type}")`}
-                      value={state.derivedArgs[argName] ?? ''}
-                      onChange={e =>
-                        updateSlot(i, {
-                          derivedArgs: { ...state.derivedArgs, [argName]: e.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                ))}
+                {Object.entries(algSchema.args).map(([argName, rawSchema]) => {
+                  const argSchema = rawSchema as {
+                    type: string;
+                    possibleValues?: readonly string[];
+                    optional?: boolean;
+                  };
+                  const current = state.derivedArgs[argName] ?? '';
+                  const setArg = (value: string) =>
+                    updateSlot(i, {
+                      derivedArgs: { ...state.derivedArgs, [argName]: value },
+                    });
+                  return (
+                    <div key={argName} className="space-y-1">
+                      <Label className="body-s">
+                        {argName}{' '}
+                        <span className="label-xs text-muted-foreground normal-case">
+                          ({argSchema.type}
+                          {argSchema.optional ? ', optional' : ''})
+                        </span>
+                      </Label>
+                      {argSchema.possibleValues ? (
+                        // Enumerated arg (e.g. `mode`) — render its allowed values, not a free text box.
+                        <select
+                          value={current}
+                          onChange={e => setArg(e.target.value)}
+                          className="body-s w-full font-mono rounded-xl border border-input px-3 py-2 shadow-sm bg-background"
+                        >
+                          {argSchema.optional && <option value="">— (omit) —</option>}
+                          {argSchema.possibleValues.map(v => (
+                            <option key={v} value={v}>
+                              {v}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          // `string`-typed args are plain identifiers (program/mapping names,
+                          // addresses), not Aleo numeric literals — don't suggest "12345string".
+                          placeholder={
+                            argSchema.type === 'string'
+                              ? `value for ${argName}${argSchema.optional ? ' (optional)' : ''}`
+                              : `aleo literal of type ${argSchema.type} (e.g. "12345${argSchema.type}")`
+                          }
+                          value={current}
+                          onChange={e => setArg(e.target.value)}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
