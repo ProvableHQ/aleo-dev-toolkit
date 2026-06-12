@@ -243,7 +243,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     }));
 
     try {
-      const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
+      const account = await adapter.connect(
+        initialNetwork,
+        decryptPermission,
+        programs,
+        connectOptions,
+      );
       setState(state => ({
         ...state,
         publicKey: account.address,
@@ -258,7 +263,15 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       setReconnecting(false);
       isReconnecting.current = false;
     }
-  }, [adapter, disconnect, handleError, initialNetwork, decryptPermission, programs, connectOptions]);
+  }, [
+    adapter,
+    disconnect,
+    handleError,
+    initialNetwork,
+    decryptPermission,
+    programs,
+    connectOptions,
+  ]);
 
   // Setup and teardown event listeners when the adapter changes
   useEffect(() => {
@@ -301,14 +314,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       isConnecting.current = true;
       setConnecting(true);
       try {
-        // eslint-disable-next-line no-console
-        console.log('[WalletProvider] autoConnect about to call adapter.connect with:', {
+        const account = await adapter.connect(
           initialNetwork,
           decryptPermission,
           programs,
           connectOptions,
-        });
-        const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
+        );
         lastAuthorizedAccount.current = account.address ?? null;
       } catch (error: unknown) {
         // Clear the selected wallet
@@ -369,14 +380,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     isConnecting.current = true;
     setConnecting(true);
     try {
-      // eslint-disable-next-line no-console
-      console.log('[WalletProvider] connect() about to call adapter.connect with:', {
+      const account = await adapter.connect(
         initialNetwork,
         decryptPermission,
         programs,
         connectOptions,
-      });
-      const account = await adapter.connect(initialNetwork, decryptPermission, programs, connectOptions);
+      );
       lastAuthorizedAccount.current = account.address ?? null;
     } catch (error: unknown) {
       // Clear the selected wallet

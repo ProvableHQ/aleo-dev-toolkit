@@ -183,7 +183,6 @@ export function PrivateInputs() {
       return;
     }
     const grant = buildRecordAccessGrant(programGrants);
-    console.log('[PrivateInputs] applying grant to recordAccessAtom:', grant);
     setRecordAccess(grant);
     toast.success(
       'Grants saved. Reconnect the wallet to apply (grants are bound at connect time).',
@@ -271,12 +270,6 @@ export function PrivateInputs() {
   };
 
   const handleExecute = async () => {
-    console.log(
-      '[PrivateInputs] handleExecute: connected=',
-      connected,
-      'readAddress=',
-      readAddress,
-    );
     if (!connected) {
       openWalletModal(true);
       return;
@@ -292,7 +285,6 @@ export function PrivateInputs() {
     setValidatorMessage(null);
     try {
       const inputs = buildInputs(parsedSlots, slotStates, form.programName.trim());
-      console.log('[PrivateInputs] calling executeTransaction with inputs:', inputs);
       const tx = await executeTransaction({
         program: form.programName.trim(),
         function: form.functionName.trim(),
