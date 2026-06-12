@@ -1,4 +1,4 @@
-import type { ArgConstraint } from '@provablehq/aleo-types';
+import type { AlgorithmName, ArgConstraint } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import {
   AccountsFeature,
@@ -231,7 +231,7 @@ export type RecordAccessGrant =
  */
 export interface AlgorithmGrant {
   /** Must appear in the wallet's `algorithmsSupported()` list. */
-  algorithm: string;
+  algorithm: AlgorithmName;
   /** Must also appear in the connection's `programs` allowlist. */
   program: string;
   /** Exact transition name within `program`. */
