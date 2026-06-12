@@ -99,12 +99,37 @@ export abstract class BaseAleoWalletAdapter
   }
 
   /**
-   * Tracks `options.readAddress` from the most recent successful connect.
-   * `false` means the dapp opted into address withholding; methods that would
-   * leak the address (decrypt, requestRecords, transitionViewKeys,
-   * requestTransactionHistory) short-circuit with `WalletAddressWithheldError`.
+   * Tracks `options.readAddress` for adapters that go through the wallet-standard
+   * feature surface. Concrete extension adapters may forward options directly to
+   * the provider and let the wallet enforce the permission boundary itself.
    */
   protected _readAddress: boolean = true;
+
+  protected assertReadAddressCompatibleWithDecryptPermission(
+    decryptPermission: WalletDecryptPermission,
+    options?: ConnectOptions,
+  ): void {
+    if (options?.readAddress === false && decryptPermission !== WalletDecryptPermission.NoDecrypt) {
+      throw new WalletConnectionError(
+        'readAddress: false is only valid with decryptPermission: NoDecrypt. ' +
+          'Plaintext-bearing operations would leak the owner address.',
+      );
+    }
+  }
+
+  protected setReadAddressFromConnectOptions(options?: ConnectOptions): void {
+    this._readAddress = options?.readAddress !== false;
+  }
+
+  protected resetReadAddress(): void {
+    this._readAddress = true;
+  }
+
+  protected assertReadAddressAllowed(method: string): void {
+    if (!this._readAddress) {
+      throw new WalletAddressWithheldError(method);
+    }
+  }
 
   /**
    * Connect to the wallet
@@ -123,17 +148,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet) {
       throw new WalletConnectionError('No wallet provider found');
     }
-    // Precondition: readAddress: false is only coherent with NoDecrypt, since every
-    // plaintext-bearing decrypt operation reveals the owner address.
-    if (
-      options?.readAddress === false &&
-      decryptPermission !== WalletDecryptPermission.NoDecrypt
-    ) {
-      throw new WalletConnectionError(
-        'readAddress: false is only valid with decryptPermission: NoDecrypt. ' +
-          'Plaintext-bearing operations would leak the owner address.',
-      );
-    }
+    this.assertReadAddressCompatibleWithDecryptPermission(decryptPermission, options);
     const feature = this._wallet.features[WalletFeatureName.CONNECT];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
@@ -141,7 +156,7 @@ export abstract class BaseAleoWalletAdapter
     try {
       const account = await feature.connect(network, decryptPermission, programs, options);
       this.account = account;
-      this._readAddress = options?.readAddress !== false;
+      this.setReadAddressFromConnectOptions(options);
       this.emit('connect', account);
       return account;
     } catch (err) {
@@ -164,7 +179,7 @@ export abstract class BaseAleoWalletAdapter
       }
     }
     this.account = undefined;
-    this._readAddress = true;
+    this.resetReadAddress();
     this.emit('disconnect');
   }
 
@@ -239,9 +254,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
-    if (!this._readAddress) {
-      throw new WalletAddressWithheldError('decrypt');
-    }
+    this.assertReadAddressAllowed('decrypt');
     const feature = this._wallet.features[WalletFeatureName.DECRYPT];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.DECRYPT);
@@ -257,9 +270,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
-    if (!this._readAddress) {
-      throw new WalletAddressWithheldError('requestRecords');
-    }
+    this.assertReadAddressAllowed('requestRecords');
     const feature = this._wallet.features[WalletFeatureName.REQUEST_RECORDS];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_RECORDS);
@@ -283,9 +294,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
-    if (!this._readAddress) {
-      throw new WalletAddressWithheldError('transitionViewKeys');
-    }
+    this.assertReadAddressAllowed('transitionViewKeys');
     const feature = this._wallet.features[WalletFeatureName.TRANSITION_VIEWKEYS];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.TRANSITION_VIEWKEYS);
@@ -297,9 +306,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
-    if (!this._readAddress) {
-      throw new WalletAddressWithheldError('requestTransactionHistory');
-    }
+    this.assertReadAddressAllowed('requestTransactionHistory');
     const feature = this._wallet.features[WalletFeatureName.REQUEST_TRANSACTION_HISTORY];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_TRANSACTION_HISTORY);
