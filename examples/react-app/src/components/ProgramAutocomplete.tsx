@@ -160,7 +160,7 @@ export const ProgramAutocomplete = ({
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={isOpen}
-          className="h-10 body-m pr-8"
+          className="body-m pr-8"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
           {value && (

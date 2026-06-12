@@ -15,7 +15,7 @@ export function RecordRow({ record, index }: RecordRowProps) {
   );
 
   return (
-    <div className="border border-border rounded-lg p-3 space-y-2 transition-all">
+    <div className="border border-border rounded-lg p-3 space-y-3 transition-all">
       <div className="flex items-center justify-between gap-2">
         <code className="label-xs truncate normal-case flex-1 min-w-0">
           {(record.programName as string | undefined) ?? '?'}.

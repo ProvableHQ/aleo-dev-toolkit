@@ -4,9 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Database, Loader2, Lock, Plus, ShieldAlert, Trash2, Zap } from 'lucide-react';
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Database,
+  Loader2,
+  Lock,
+  Plus,
+  ShieldAlert,
+  Trash2,
+  Zap,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
@@ -422,202 +439,214 @@ export function PrivateInputs() {
         </AlertDescription>
       </Alert>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="body-m-bold">1. Connect-time grant</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Address grant */}
-          <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-            <div className="flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <Label className="body-s-bold">Address exposure</Label>
-                <p className="body-s text-muted-foreground">
-                  {readAddress === false
-                    ? 'Withhold the active address from the dapp. The wallet still injects it via { type: "address" } slots.'
-                    : "Dapp reads the active address (today's default behavior)."}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="body-s text-muted-foreground">withhold</span>
-                <Switch
-                  checked={readAddress === false}
-                  onCheckedChange={checked => setReadAddress(checked ? false : undefined)}
-                />
-              </div>
-            </div>
-            {readAddress === false && (
-              <Alert>
-                <AlertDescription>
-                  <p className="body-s">
-                    <b>Interlock:</b> <code>readAddress: false</code> requires{' '}
-                    <code>decryptPermission: NoDecrypt</code>. Current value:{' '}
-                    <code>{decryptPermission}</code>.{' '}
-                    {decryptPermission !== DecryptPermission.NoDecrypt && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="ml-2"
-                        onClick={() => setDecryptPermission(DecryptPermission.NoDecrypt)}
-                      >
-                        Set to NoDecrypt
-                      </Button>
-                    )}
-                  </p>
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          {/* Algorithm grants (derived inputs) */}
-          <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+      <div className="space-y-3 mb-14">
+        <h2 className="h3">1. Connect-time grant</h2>
+        {/* Address exposure */}
+        <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+          <div className="flex items-center justify-between gap-3">
             <div className="space-y-1">
-              <Label className="body-s-bold">Algorithm grants (derived inputs)</Label>
+              <Label className="body-s-bold">Address exposure</Label>
               <p className="body-s text-muted-foreground">
-                Strict opt-in allowlist for <code>{`type: "derived"`}</code> InputRequests. Each
-                grant authorizes exactly one{' '}
-                <code>{`(algorithm, program, function, inputPosition)`}</code> call site. Empty list
-                → every derived request is refused.
+                {readAddress === false
+                  ? 'Withhold the active address from the dapp. The wallet still injects it via { type: "address" } slots.'
+                  : "Dapp reads the active address (today's default behavior)."}
               </p>
             </div>
-            <div className="space-y-2">
-              {(algorithmsAllowed ?? []).length === 0 && (
-                <p className="body-s text-muted-foreground">
-                  (no grants — derived inputs disabled)
-                </p>
-              )}
-              {(algorithmsAllowed ?? []).map((g, gi) => (
-                <div key={gi} className="flex flex-wrap gap-2 items-center">
-                  <select
-                    className="body-s rounded-xl border border-input px-3 py-2 shadow-sm bg-background font-mono"
-                    value={g.algorithm}
-                    onChange={e =>
-                      setAlgorithmsAllowed(prev =>
-                        (prev ?? []).map((row, j) =>
-                          j === gi ? { ...row, algorithm: e.target.value } : row,
-                        ),
-                      )
-                    }
-                  >
-                    {KNOWN_ALGORITHMS.map(name => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                  <Input
-                    className="flex-1 min-w-[8rem] font-mono"
-                    placeholder="program.aleo"
-                    value={g.program}
-                    onChange={e =>
-                      setAlgorithmsAllowed(prev =>
-                        (prev ?? []).map((row, j) =>
-                          j === gi ? { ...row, program: e.target.value } : row,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    className="flex-1 min-w-[6rem] font-mono"
-                    placeholder="function"
-                    value={g.function}
-                    onChange={e =>
-                      setAlgorithmsAllowed(prev =>
-                        (prev ?? []).map((row, j) =>
-                          j === gi ? { ...row, function: e.target.value } : row,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    className="w-20 font-mono"
-                    type="number"
-                    min={0}
-                    placeholder="pos"
-                    value={String(g.inputPosition)}
-                    onChange={e =>
-                      setAlgorithmsAllowed(prev =>
-                        (prev ?? []).map((row, j) =>
-                          j === gi ? { ...row, inputPosition: Number(e.target.value) || 0 } : row,
-                        ),
-                      )
-                    }
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setAlgorithmsAllowed(prev => (prev ?? []).filter((_, j) => j !== gi))
-                    }
-                    aria-label="Remove algorithm grant"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setAlgorithmsAllowed(prev => [
-                      ...(prev ?? []),
-                      {
-                        algorithm: KNOWN_ALGORITHMS[0] ?? '',
-                        program: form.programName.trim(),
-                        function: form.functionName.trim(),
-                        inputPosition: 0,
-                      },
-                    ])
-                  }
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Add grant
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={parsedSlots.length === 0}
-                  onClick={() => {
-                    const newGrants: AlgorithmGrant[] = [];
-                    parsedSlots.forEach((slot, idx) => {
-                      if (slot.kind !== 'primitive') return;
-                      for (const alg of eligibleAlgorithmsForBaseType(slot.baseType)) {
-                        newGrants.push({
-                          algorithm: alg,
-                          program: form.programName.trim(),
-                          function: form.functionName.trim(),
-                          inputPosition: idx,
-                        });
-                      }
-                    });
-                    if (newGrants.length === 0) {
-                      toast.error('No eligible primitive slots in this function.');
-                      return;
-                    }
-                    setAlgorithmsAllowed(prev => [...(prev ?? []), ...newGrants]);
-                  }}
-                >
-                  Auto-grant this function's eligible slots
-                </Button>
-              </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="capitalize text-foreground label-s">withhold</span>
+              <Switch
+                checked={readAddress === false}
+                onCheckedChange={checked => setReadAddress(checked ? false : undefined)}
+              />
             </div>
           </div>
+          {readAddressInterlockError && (
+            <Alert className="border-amber-500/50 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-500">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Configuration conflict</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p className="body-s">
+                  <code>readAddress: false</code> requires <code>decryptPermission: NoDecrypt</code>{' '}
+                  — currently <code>{decryptPermission}</code>.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setDecryptPermission(DecryptPermission.NoDecrypt)}
+                >
+                  Fix: set to NoDecrypt
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
 
-          {/* Record grant intro */}
-          <p className="body-s text-muted-foreground pt-1">
-            <b>Record access:</b> one entry per program. <b>Records</b> narrows to specific record
-            types (omit for broad access). <b>Fields</b> narrows further to specific body fields and{' '}
-            <code>$</code>-prefixed envelope-metadata tokens.
-          </p>
+        {/* Algorithm grants */}
+        <div className="space-y-3 rounded-lg border border-border p-3 bg-muted/30">
+          <div className="space-y-2">
+            <Label className="body-s-bold">Algorithm grants (derived inputs)</Label>
+            <p className="body-s text-muted-foreground">
+              Strict opt-in allowlist for <code>{`type: "derived"`}</code> InputRequests. Each grant
+              authorizes exactly one <code>{`(algorithm, program, function, inputPosition)`}</code>{' '}
+              call site. Empty list → every derived request is refused.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {(algorithmsAllowed ?? []).length === 0 ? (
+              <p className="body-m bg-background text-foreground rounded-md border border-dashed border-foreground/40 px-3 py-2">
+                No grants — derived inputs disabled
+              </p>
+            ) : (
+              <div className="rounded-md border border-border overflow-hidden">
+                {(algorithmsAllowed ?? []).map((g, gi) => (
+                  <div
+                    key={gi}
+                    className="grid grid-cols-[1fr_1fr_1fr_5rem_2.25rem] gap-x-2 px-3 py-2 items-center border-b border-border last:border-b-0 bg-background"
+                  >
+                    <Select
+                      value={g.algorithm}
+                      onValueChange={value =>
+                        setAlgorithmsAllowed(prev =>
+                          (prev ?? []).map((row, j) =>
+                            j === gi ? { ...row, algorithm: value } : row,
+                          ),
+                        )
+                      }
+                    >
+                      <SelectTrigger className="font-mono rounded-sm py-1.5 h-auto">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {KNOWN_ALGORITHMS.map(name => (
+                          <SelectItem key={name} value={name} className="font-mono">
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      className="font-mono rounded-sm py-1.5"
+                      placeholder="program.aleo"
+                      value={g.program}
+                      onChange={e =>
+                        setAlgorithmsAllowed(prev =>
+                          (prev ?? []).map((row, j) =>
+                            j === gi ? { ...row, program: e.target.value } : row,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      className="font-mono rounded-sm py-1.5"
+                      placeholder="function"
+                      value={g.function}
+                      onChange={e =>
+                        setAlgorithmsAllowed(prev =>
+                          (prev ?? []).map((row, j) =>
+                            j === gi ? { ...row, function: e.target.value } : row,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      className="font-mono rounded-sm py-1.5"
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={String(g.inputPosition)}
+                      onChange={e =>
+                        setAlgorithmsAllowed(prev =>
+                          (prev ?? []).map((row, j) =>
+                            j === gi ? { ...row, inputPosition: Number(e.target.value) || 0 } : row,
+                          ),
+                        )
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setAlgorithmsAllowed(prev => (prev ?? []).filter((_, j) => j !== gi))
+                      }
+                      aria-label="Remove algorithm grant"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setAlgorithmsAllowed(prev => [
+                    ...(prev ?? []),
+                    {
+                      algorithm: KNOWN_ALGORITHMS[0] ?? '',
+                      program: form.programName.trim(),
+                      function: form.functionName.trim(),
+                      inputPosition: 0,
+                    },
+                  ])
+                }
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add grant
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={parsedSlots.length === 0}
+                onClick={() => {
+                  const newGrants: AlgorithmGrant[] = [];
+                  parsedSlots.forEach((slot, idx) => {
+                    if (slot.kind !== 'primitive') return;
+                    for (const alg of eligibleAlgorithmsForBaseType(slot.baseType)) {
+                      newGrants.push({
+                        algorithm: alg,
+                        program: form.programName.trim(),
+                        function: form.functionName.trim(),
+                        inputPosition: idx,
+                      });
+                    }
+                  });
+                  if (newGrants.length === 0) {
+                    toast.error('No eligible primitive slots in this function.');
+                    return;
+                  }
+                  setAlgorithmsAllowed(prev => [...(prev ?? []), ...newGrants]);
+                }}
+              >
+                Auto-grant this function's eligible slots
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Record-access grants */}
+        <div className="space-y-3 rounded-lg border border-border p-3 bg-muted/30">
+          <div className="space-y-1">
+            <Label className="body-s-bold">Record-access grants</Label>
+            <p className="body-s text-muted-foreground">
+              One entry per program. <b>Records</b> narrows to specific record types (omit for broad
+              access). <b>Fields</b> narrows further to specific body fields and <code>$</code>
+              -prefixed envelope-metadata tokens.
+            </p>
+          </div>
 
           <div className="space-y-3">
             {programGrants.map((pg, pi) => (
-              <div key={pi} className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
-                <div className="flex gap-2 items-center">
-                  <Label className="body-s-bold whitespace-nowrap">Program</Label>
+              <div
+                key={pi}
+                className="rounded-lg border border-border bg-background overflow-hidden "
+              >
+                {/* Program header row */}
+                <div className="flex gap-2 items-center px-3 py-2 bg-muted border-b border-border">
+                  <Label className="body-s-bold whitespace-nowrap shrink-0">Program</Label>
                   <Input
-                    className="flex-1 font-mono"
+                    className="flex-1 font-mono rounded-sm py-1.5 bg-primary/5"
                     placeholder="x.aleo"
                     value={pg.program}
                     onChange={e => updateProgram(pi, { program: e.target.value })}
@@ -632,11 +661,10 @@ export function PrivateInputs() {
                   </Button>
                 </div>
 
-                <div className="border-l-2 border-muted-foreground/20 pl-3 space-y-2">
+                {/* Records sub-section */}
+                <div className="px-3 py-2 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="body-s-bold">
-                      Records narrowing ({(pg.records ?? []).length})
-                    </span>
+                    <span className="body-s">Records narrowing ({(pg.records ?? []).length})</span>
                     <span className="label-xs text-muted-foreground normal-case">
                       {(pg.records ?? []).length === 0
                         ? '(empty — all records visible)'
@@ -647,12 +675,13 @@ export function PrivateInputs() {
                   {(pg.records ?? []).map((rg, ri) => (
                     <div
                       key={ri}
-                      className="rounded-md border border-border p-2 space-y-2 bg-background"
+                      className="rounded-md border border-border overflow-hidden bg-muted/10"
                     >
-                      <div className="flex gap-2 items-center">
-                        <Label className="body-s whitespace-nowrap">recordname</Label>
+                      {/* Record name row */}
+                      <div className="flex gap-2 items-center px-2 py-1.5 bg-muted border-b border-border">
+                        <span className="label-s text-foreground shrink-0">recordname</span>
                         <Input
-                          className="flex-1 font-mono"
+                          className="flex-1 font-mono rounded-sm py-1.5 bg-primary/5"
                           placeholder="e.g. credits"
                           value={rg.recordname}
                           onChange={e => updateRecord(pi, ri, { recordname: e.target.value })}
@@ -667,9 +696,10 @@ export function PrivateInputs() {
                         </Button>
                       </div>
 
-                      <div className="border-l-2 border-muted-foreground/20 pl-3 space-y-1.5">
+                      {/* Fields sub-section */}
+                      <div className="px-2 py-2 space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="body-s-bold">
+                          <span className="body-s">
                             Fields narrowing ({(rg.fields ?? []).length})
                           </span>
                           <span className="label-xs text-muted-foreground normal-case">
@@ -679,41 +709,43 @@ export function PrivateInputs() {
                           </span>
                         </div>
 
-                        {(rg.fields ?? []).map((fg, fi) => (
-                          <div key={fi} className="flex gap-2 items-center">
-                            <Input
-                              className="flex-1 font-mono"
-                              placeholder='body field (e.g. "microcredits") or "$commitment"'
-                              value={fg.name}
-                              onChange={e => updateField(pi, ri, fi, { name: e.target.value })}
-                            />
-                            <label className="flex items-center gap-1.5 body-s whitespace-nowrap shrink-0">
-                              <input
-                                type="checkbox"
-                                checked={fg.readAccess !== false}
-                                onChange={e =>
-                                  updateField(pi, ri, fi, { readAccess: e.target.checked })
-                                }
-                                className="rounded border-input"
-                              />
-                              read
-                            </label>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeField(pi, ri, fi)}
-                              aria-label="Remove field"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                        {(rg.fields ?? []).length > 0 && (
+                          <div className="rounded-sm overflow-hidden">
+                            {(rg.fields ?? []).map((fg, fi) => (
+                              <div
+                                key={fi}
+                                className="grid grid-cols-[1fr_3rem_2.25rem] gap-x-2 px-1 py-1.5 items-center  "
+                              >
+                                <Input
+                                  className="font-mono rounded-sm py-1.5"
+                                  placeholder='"microcredits" or "$commitment"'
+                                  value={fg.name}
+                                  onChange={e => updateField(pi, ri, fi, { name: e.target.value })}
+                                />
+                                <div className="flex justify-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={fg.readAccess !== false}
+                                    onChange={e =>
+                                      updateField(pi, ri, fi, { readAccess: e.target.checked })
+                                    }
+                                    className="rounded border-input"
+                                  />
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeField(pi, ri, fi)}
+                                  aria-label="Remove field"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addField(pi, ri)}
-                          className="mt-1"
-                        >
+                        )}
+
+                        <Button variant="outline" size="sm" onClick={() => addField(pi, ri)}>
                           <Plus className="h-3.5 w-3.5 mr-1" />
                           Add field
                         </Button>
@@ -729,50 +761,56 @@ export function PrivateInputs() {
               </div>
             ))}
 
-            <Button variant="outline" onClick={addProgram}>
+            <Button variant="outline" size="sm" onClick={addProgram}>
               <Plus className="h-4 w-4 mr-1" />
               Add program
             </Button>
           </div>
+        </div>
 
-          {grantValidationError && (
-            <p className="body-s text-destructive">{grantValidationError}</p>
-          )}
-          {readAddressInterlockError && (
-            <p className="body-s text-destructive">{readAddressInterlockError}</p>
-          )}
+        {grantValidationError && <p className="body-s text-destructive">{grantValidationError}</p>}
+        {readAddressInterlockError && (
+          <p className="body-s text-destructive">{readAddressInterlockError}</p>
+        )}
 
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button
-              size="sm"
-              onClick={applyGrantAndDisconnect}
-              disabled={!!grantValidationError || !!readAddressInterlockError}
-            >
-              Apply grants & disconnect
-            </Button>
-            <Button size="sm" variant="outline" onClick={clearGrantAndDisconnect}>
-              Clear grants (broad behavior)
-            </Button>
-          </div>
-
-          {grantedMetadata.length > 0 && (
-            <Alert>
-              <AlertDescription>
-                <p className="body-s">
-                  Grant requests envelope metadata: <code>{grantedMetadata.join(', ')}</code>. These
-                  should appear in each record's "envelope metadata present" pane in section 3.
-                </p>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <details
-            open={showGrantJson}
-            onToggle={e => setShowGrantJson((e.target as HTMLDetailsElement).open)}
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button
+            onClick={applyGrantAndDisconnect}
+            disabled={!!grantValidationError || !!readAddressInterlockError}
           >
-            <summary className="body-s text-muted-foreground cursor-pointer select-none">
-              JSON preview (for copy-paste into your dapp's AleoWalletProvider)
-            </summary>
+            Apply grants & disconnect
+          </Button>
+          <Button variant="outline" onClick={clearGrantAndDisconnect}>
+            Clear grants (broad behavior)
+          </Button>
+        </div>
+
+        {grantedMetadata.length > 0 && (
+          <Alert>
+            <AlertDescription>
+              <p className="body-s">
+                Grant requests envelope metadata: <code>{grantedMetadata.join(', ')}</code>. These
+                should appear in each record's "envelope metadata present" pane in section 3.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="body-s text-muted-foreground gap-1.5 px-0 hover:text-foreground"
+            onClick={() => setShowGrantJson(v => !v)}
+          >
+            {showGrantJson ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+            JSON preview (for copy-paste into your dapp&apos;s AleoWalletProvider)
+          </Button>
+          {showGrantJson && (
             <pre className="mt-2 bg-muted rounded-lg p-3 label-xs normal-case overflow-auto">
               {JSON.stringify(
                 {
@@ -784,147 +822,137 @@ export function PrivateInputs() {
                 2,
               )}
             </pre>
-          </details>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="body-m-bold">2. Function inputs</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="programName">Program ID</Label>
-            <Input
-              id="programName"
-              value={form.programName}
-              onChange={e => setForm(f => ({ ...f, programName: e.target.value }))}
-            />
-            <p className="body-s text-muted-foreground">
-              Add this program to the header's allowed-programs list before connecting.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="functionName">Function name</Label>
-            <Input
-              id="functionName"
-              value={form.functionName}
-              onChange={e => setForm(f => ({ ...f, functionName: e.target.value }))}
-            />
-            {programQuery.isLoading && (
-              <p className="body-s text-muted-foreground">Loading program source…</p>
-            )}
-            {programQuery.error && (
-              <p className="body-s text-destructive">
-                Failed to fetch program source: {(programQuery.error as Error).message}
-              </p>
-            )}
-            {programSource && parsedSlots.length === 0 && (
-              <p className="body-s text-destructive">
-                No <code>function {form.functionName.trim()}:</code> found in{' '}
-                <code>{form.programName.trim()}</code> source, or it has no inputs.
-              </p>
-            )}
-          </div>
-          {parsedSlots.length > 0 && (
-            <div className="space-y-3">
-              <p className="body-s-bold">Input slots ({parsedSlots.length})</p>
-              {parsedSlots.map((slot, i) =>
-                slot.kind === 'primitive' ? (
-                  <PrimitiveSlotEditor
-                    key={i}
-                    slot={slot}
-                    index={i}
-                    state={slotStates[i]?.kind === 'primitive' ? slotStates[i] : undefined}
-                    form={form}
-                    updateSlot={updateSlot}
-                  />
-                ) : (
-                  <RecordSlotEditor
-                    key={i}
-                    slot={slot}
-                    index={i}
-                    state={slotStates[i]?.kind === 'record' ? slotStates[i] : undefined}
-                    form={form}
-                    records={records}
-                    updateSlot={updateSlot}
-                    updateFilterRows={updateFilterRows}
-                  />
-                ),
-              )}
-            </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-            <Button
-              onClick={handleExecute}
-              disabled={
-                isExecuting || isPolling || parsedSlots.length === 0 || !form.functionName.trim()
-              }
-            >
-              {isExecuting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : isPolling ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Zap className="mr-2 h-4 w-4" />
-              )}
-              {isExecuting ? 'Submitting…' : isPolling ? 'Awaiting confirmation…' : 'Execute'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleTryInvalidCombo}
-              disabled={!negativeTestEnabled}
-            >
-              <Lock className="mr-2 h-4 w-4" />
-              Try uid + filters (negative)
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="body-m-bold">3. Records inspector</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <div className="space-y-3 mb-14">
+        <h2 className="h3">2. Function inputs</h2>
+        <div className="space-y-2">
+          <Label htmlFor="programName">Program ID</Label>
+          <Input
+            id="programName"
+            value={form.programName}
+            onChange={e => setForm(f => ({ ...f, programName: e.target.value }))}
+          />
           <p className="body-s text-muted-foreground">
-            Fetches{' '}
-            <code>requestRecords({form.programName.trim() || 'program'}, true, "unspent")</code> and
-            shows what came back. Use this to verify the grant's strip rules and to copy uids into
-            the "Pick from records" mode above.
+            Add this program to the header's allowed-programs list before connecting.
           </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="functionName">Function name</Label>
+          <Input
+            id="functionName"
+            value={form.functionName}
+            onChange={e => setForm(f => ({ ...f, functionName: e.target.value }))}
+          />
+          {programQuery.isLoading && (
+            <p className="body-s text-muted-foreground">Loading program source…</p>
+          )}
+          {programQuery.error && (
+            <p className="body-s text-destructive">
+              Failed to fetch program source: {(programQuery.error as Error).message}
+            </p>
+          )}
+          {programSource && parsedSlots.length === 0 && (
+            <p className="body-s text-destructive">
+              No <code>function {form.functionName.trim()}:</code> found in{' '}
+              <code>{form.programName.trim()}</code> source, or it has no inputs.
+            </p>
+          )}
+        </div>
+        {parsedSlots.length > 0 && (
+          <div className="space-y-3">
+            <p className="body-s-bold">Input slots ({parsedSlots.length})</p>
+            {parsedSlots.map((slot, i) =>
+              slot.kind === 'primitive' ? (
+                <PrimitiveSlotEditor
+                  key={i}
+                  slot={slot}
+                  index={i}
+                  state={slotStates[i]?.kind === 'primitive' ? slotStates[i] : undefined}
+                  form={form}
+                  updateSlot={updateSlot}
+                />
+              ) : (
+                <RecordSlotEditor
+                  key={i}
+                  slot={slot}
+                  index={i}
+                  state={slotStates[i]?.kind === 'record' ? slotStates[i] : undefined}
+                  form={form}
+                  records={records}
+                  updateSlot={updateSlot}
+                  updateFilterRows={updateFilterRows}
+                />
+              ),
+            )}
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
           <Button
-            onClick={handleFetch}
-            disabled={isFetching || !form.programName.trim()}
-            className="w-full md:w-auto"
+            onClick={handleExecute}
+            disabled={
+              isExecuting || isPolling || parsedSlots.length === 0 || !form.functionName.trim()
+            }
           >
-            {isFetching ? (
+            {isExecuting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : isPolling ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Database className="mr-2 h-4 w-4" />
+              <Zap className="mr-2 h-4 w-4" />
             )}
-            Fetch records
+            {isExecuting ? 'Submitting…' : isPolling ? 'Awaiting confirmation…' : 'Execute'}
           </Button>
-          {records.length > 0 ? (
-            <div className="space-y-3">
-              <p className="body-s-bold">Records ({records.length})</p>
-              <div className="space-y-2">
-                {records.map((record, index) => (
-                  <RecordRow
-                    key={(record.uid as string | undefined) ?? index}
-                    record={record}
-                    index={index}
-                  />
-                ))}
-              </div>
-            </div>
+          <Button variant="outline" onClick={handleTryInvalidCombo} disabled={!negativeTestEnabled}>
+            <Lock className="mr-2 h-4 w-4" />
+            Try uid + filters (negative)
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="h3">3. Records inspector</h2>
+        <p className="body-s text-muted-foreground">
+          Fetches{' '}
+          <code className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded border border-border text-foreground">
+            requestRecords({form.programName.trim() || 'program'}, true, "unspent")
+          </code>{' '}
+          and shows what came back. Use this to verify the grant's strip rules and to copy uids into
+          the "Pick from records" mode above.
+        </p>
+        <Button
+          onClick={handleFetch}
+          disabled={isFetching || !form.programName.trim()}
+          className="w-full md:w-auto"
+        >
+          {isFetching ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <p className="body-s text-muted-foreground">
-              (no records fetched yet, or none available for this program)
-            </p>
+            <Database className="mr-2 h-4 w-4" />
           )}
-        </CardContent>
-      </Card>
+          Fetch records
+        </Button>
+        {records.length > 0 ? (
+          <div className="space-y-3">
+            <p className="body-s-bold">Records ({records.length})</p>
+            <div className="space-y-2">
+              {records.map((record, index) => (
+                <RecordRow
+                  key={(record.uid as string | undefined) ?? index}
+                  record={record}
+                  index={index}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="body-s text-muted-foreground">
+            (no records fetched yet, or none available for this program)
+          </p>
+        )}
+      </div>
 
       {validatorMessage && (
         <Alert>
