@@ -493,7 +493,7 @@ export function PrivateInputs() {
           </div>
           <div className="space-y-2">
             {(algorithmsAllowed ?? []).length === 0 ? (
-              <p className="body-m bg-background text-foreground rounded-md border border-dashed border-foreground/40 px-3 py-2">
+              <p className="body-m bg-background text-foreground w-fit rounded-md border border-dashed border-foreground/40 px-3 py-2">
                 No grants — derived inputs disabled
               </p>
             ) : (
