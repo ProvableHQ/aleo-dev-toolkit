@@ -1,5 +1,6 @@
 import {
   Account,
+  AlgorithmArg,
   Network,
   TransactionInput,
   TransactionOptions,
@@ -391,22 +392,34 @@ export function validateInputRequests(inputs: TransactionInput[]): void {
         );
       }
       for (const [argName, arg] of Object.entries(input.args)) {
-        if (arg === null || typeof arg !== 'object') {
+        const invalidReason = invalidAlgorithmArgReason(arg);
+        if (invalidReason) {
           throw new WalletInputRequestInvalidError(
-            `inputs[${i}]: args["${argName}"] must be { type, value }.`,
-          );
-        }
-        if (typeof (arg as { type?: unknown }).type !== 'string') {
-          throw new WalletInputRequestInvalidError(
-            `inputs[${i}]: args["${argName}"].type must be an ArgType string (a LiteralType or "string").`,
-          );
-        }
-        if (typeof (arg as { value?: unknown }).value !== 'string') {
-          throw new WalletInputRequestInvalidError(
-            `inputs[${i}]: args["${argName}"].value must be a string Aleo literal.`,
+            `inputs[${i}]: args["${argName}"]${invalidReason}`,
           );
         }
       }
     }
   }
+}
+
+function invalidAlgorithmArgReason(arg: unknown): string | null {
+  if (arg === null || typeof arg !== 'object') {
+    return ' must be { type, value }.';
+  }
+  if (!hasAlgorithmArgType(arg)) {
+    return '.type must be an ArgType string (a LiteralType or "string").';
+  }
+  if (!hasAlgorithmArgValue(arg)) {
+    return '.value must be a string Aleo literal.';
+  }
+  return null;
+}
+
+function hasAlgorithmArgType(arg: object): arg is { type: AlgorithmArg['type'] } {
+  return 'type' in arg && typeof arg.type === 'string';
+}
+
+function hasAlgorithmArgValue(arg: object): arg is AlgorithmArg {
+  return 'value' in arg && typeof arg.value === 'string';
 }
