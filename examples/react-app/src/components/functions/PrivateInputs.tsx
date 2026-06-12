@@ -6,30 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import {
-  CheckCircle,
-  Copy,
-  Database,
-  Loader2,
-  Lock,
-  Plus,
-  ShieldAlert,
-  Trash2,
-  XCircle,
-  Zap,
-} from 'lucide-react';
+import { Database, Loader2, Lock, Plus, ShieldAlert, Trash2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import {
   ALGORITHM_SCHEMAS,
-  AlgorithmArg,
-  AlgorithmName,
   KnownAlgorithm,
-  Network,
   RecordEnvelope,
-  RecordFieldFilter,
-  RecordFilters,
   TransactionInput,
   TransactionStatus,
 } from '@provablehq/aleo-types';
@@ -37,7 +21,6 @@ import {
   AlgorithmGrant,
   FieldGrant,
   ProgramGrant,
-  RecordAccessGrant,
   RecordGrant,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { CodePanel } from '../CodePanel';
@@ -50,261 +33,24 @@ import {
 } from '@/lib/store/global';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 import { useProgram } from '@/lib/hooks/useProgram';
-
-type FilterOp = 'eq' | 'gte' | 'lte' | 'neq';
-type FilterRow = { field: string; op: FilterOp; value: string };
-
-type RecordSlotKind = 'record' | 'external_record' | 'dynamic_record';
-type ParsedSlot =
-  | { kind: 'primitive'; name: string; baseType: string; visibility: string; raw: string }
-  | {
-      kind: 'record';
-      name: string;
-      program: string;
-      recordname: string;
-      recordKind: RecordSlotKind;
-      raw: string;
-    };
-
-type RecordSlotMode = 'plaintext' | 'pick' | 'filter';
-type PrimitiveSlotMode = 'literal' | 'address' | 'derived';
-type SlotState =
-  | {
-      kind: 'primitive';
-      mode: PrimitiveSlotMode;
-      value: string;
-      derivedAlgorithm: KnownAlgorithm | '';
-      derivedArgs: Record<string, string>; // arg name → user-typed value (parsed lazily at submit)
-    }
-  | {
-      kind: 'record';
-      mode: RecordSlotMode;
-      plaintext: string;
-      uid: string;
-      filterRows: FilterRow[];
-    };
-
-const RECORD_SUFFIXES = ['record', 'external_record', 'dynamic_record'] as const;
-const DEFAULT_CREDITS_FILTER: FilterRow[] = [{ field: 'microcredits', op: 'gte', value: '101u64' }];
-
-// Per the spec (docs/adapter-privacy-extension.md): type:"address" InputRequest is allowed in
-// `address` | `group` | `scalar` | `field` slots.
-const ADDRESS_REQUEST_ALLOWED = new Set(['address', 'group', 'scalar', 'field']);
-
-function primitiveSlotModes(baseType: string): PrimitiveSlotMode[] {
-  const modes: PrimitiveSlotMode[] = ['literal'];
-  if (ADDRESS_REQUEST_ALLOWED.has(baseType)) modes.push('address');
-  // Derived is offered when at least one known algorithm's `validSlotTypes`
-  // includes this baseType. Grant validation happens wallet-side at execute.
-  if (eligibleAlgorithmsForBaseType(baseType).length > 0) modes.push('derived');
-  return modes;
-}
-
-function eligibleAlgorithmsForBaseType(baseType: string): KnownAlgorithm[] {
-  return (Object.keys(ALGORITHM_SCHEMAS) as KnownAlgorithm[]).filter(name =>
-    (ALGORITHM_SCHEMAS[name].validSlotTypes as readonly string[]).includes(baseType),
-  );
-}
-
-function parseTypeExpr(name: string, typeExpr: string): ParsedSlot | null {
-  const lastDot = typeExpr.lastIndexOf('.');
-  if (lastDot < 0) return null;
-  const head = typeExpr.slice(0, lastDot);
-  const suffix = typeExpr.slice(lastDot + 1);
-  if ((RECORD_SUFFIXES as readonly string[]).includes(suffix)) {
-    const slash = head.lastIndexOf('/');
-    const program = slash >= 0 ? head.slice(0, slash) : '';
-    const recordname = slash >= 0 ? head.slice(slash + 1) : head;
-    return {
-      kind: 'record',
-      name,
-      program,
-      recordname,
-      recordKind: suffix as RecordSlotKind,
-      raw: typeExpr,
-    };
-  }
-  return { kind: 'primitive', name, baseType: head, visibility: suffix, raw: typeExpr };
-}
-
-function parseFunctionInputs(source: string, functionName: string): ParsedSlot[] {
-  const lines = source.split('\n');
-  const slots: ParsedSlot[] = [];
-  let inFunction = false;
-  let inInputs = false;
-  for (const rawLine of lines) {
-    const t = rawLine.trim();
-    const fnMatch = t.match(/^function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:/);
-    if (fnMatch) {
-      if (fnMatch[1] === functionName) {
-        inFunction = true;
-        inInputs = true;
-        continue;
-      }
-      if (inFunction) break;
-      continue;
-    }
-    if (!inFunction) continue;
-    if (/^closure\s+/.test(t) || /^finalize/.test(t)) break;
-    if (inInputs && t.startsWith('input ')) {
-      const m = t.match(/^input\s+(\w+)\s+as\s+(.+?);\s*$/);
-      if (m) {
-        const slot = parseTypeExpr(m[1], m[2]);
-        if (slot) slots.push(slot);
-      }
-      continue;
-    }
-    if (inInputs && t.length > 0 && !t.startsWith('//')) inInputs = false;
-  }
-  return slots;
-}
-
-function defaultSlotState(slot: ParsedSlot, fallbackProgram: string): SlotState {
-  if (slot.kind === 'primitive') {
-    // Default address-typed slots to wallet-provided active address (privacy-preserving default).
-    const mode: PrimitiveSlotMode = slot.baseType === 'address' ? 'address' : 'literal';
-    return { kind: 'primitive', mode, value: '', derivedAlgorithm: '', derivedArgs: {} };
-  }
-  const slotProgram = slot.program || fallbackProgram;
-  const isCredits = slotProgram === 'credits.aleo' && slot.recordname === 'credits';
-  return {
-    kind: 'record',
-    mode: 'filter',
-    plaintext: '',
-    uid: '',
-    filterRows: isCredits ? [...DEFAULT_CREDITS_FILTER] : [{ field: '', op: 'eq', value: '' }],
-  };
-}
-
-function buildFilters(rows: FilterRow[]): RecordFilters {
-  const out: Record<string, RecordFieldFilter> = {};
-  for (const row of rows) {
-    const field = row.field.trim();
-    const value = row.value.trim();
-    if (!field || !value) continue;
-    if (!out[field]) out[field] = {};
-    out[field][row.op] = value;
-  }
-  return out;
-}
-
-function buildInputs(
-  parsedSlots: ParsedSlot[],
-  slotStates: SlotState[],
-  fallbackProgram: string,
-): TransactionInput[] {
-  return parsedSlots.map((slot, i) => {
-    const state = slotStates[i];
-    if (!state) throw new Error(`slot ${i} (${slot.name}) has no state`);
-    if (state.kind === 'primitive') {
-      if (state.mode === 'address') return { type: 'address' };
-      if (state.mode === 'derived') {
-        if (!state.derivedAlgorithm) {
-          throw new Error(`slot ${i} (${slot.name}) — pick an algorithm for the derived input`);
-        }
-        const schema = ALGORITHM_SCHEMAS[state.derivedAlgorithm];
-        const args: Record<string, AlgorithmArg> = {};
-        for (const [argName, rawSchema] of Object.entries(schema.args)) {
-          const argSchema = rawSchema as {
-            type: AlgorithmArg['type'];
-            possibleValues?: readonly string[];
-            optional?: boolean;
-          };
-          const raw = (state.derivedArgs[argName] ?? '').trim();
-          if (!raw) {
-            // Optional args (e.g. `targetAddress`, which `issue` mode doesn't use)
-            // are omitted when left blank; only required args must be present.
-            if (argSchema.optional) continue;
-            throw new Error(
-              `slot ${i} (${slot.name}) — derived arg "${argName}" (${argSchema.type}) is empty`,
-            );
-          }
-          args[argName] = { type: argSchema.type, value: raw };
-        }
-        return { type: 'derived', algorithm: state.derivedAlgorithm as AlgorithmName, args };
-      }
-      if (!state.value.trim()) {
-        throw new Error(`slot ${i} (${slot.name}: ${slot.raw}) is empty`);
-      }
-      return state.value.trim();
-    }
-    // record slot
-    const recordSlot = slot as Extract<ParsedSlot, { kind: 'record' }>;
-    const slotProgram = recordSlot.program || fallbackProgram;
-    const recordname = recordSlot.recordname;
-    if (state.mode === 'plaintext') {
-      if (!state.plaintext.trim()) {
-        throw new Error(`slot ${i} (${slot.name}) plaintext is empty`);
-      }
-      return state.plaintext.trim();
-    }
-    if (state.mode === 'pick') {
-      if (!state.uid) {
-        throw new Error(`slot ${i} (${slot.name}) — pick a record from the dropdown`);
-      }
-      return { type: 'record', program: slotProgram, recordname, uid: state.uid };
-    }
-    // filter
-    const filters = buildFilters(state.filterRows);
-    if (Object.keys(filters).length === 0) {
-      throw new Error(`slot ${i} (${slot.name}) — add at least one filter row`);
-    }
-    return { type: 'record', program: slotProgram, recordname, filters };
-  });
-}
-
-type FormState = {
-  programName: string;
-  functionName: string;
-};
-
-const DEFAULTS: FormState = {
-  programName: 'credits.aleo',
-  functionName: 'transfer_private',
-};
-
-const DEFAULT_PROGRAM_GRANTS: ProgramGrant[] = [
-  {
-    program: 'credits.aleo',
-    records: [
-      {
-        recordname: 'credits',
-        fields: [{ name: 'microcredits' }, { name: '$commitment' }],
-      },
-    ],
-  },
-];
-
-const PRESERVED_ENVELOPE_KEYS = new Set([
-  'programName',
-  'recordName',
-  'spent',
-  'blockHeight',
-  'blockTimestamp',
-  'recordView',
-  'uid',
-]);
-
-const METADATA_TOKEN_TO_LEGACY_KEY: Record<string, string> = {
-  $commitment: 'commitment',
-  $tag: 'tag',
-  $transitionId: 'transitionId',
-  $transactionId: 'transactionId',
-  $outputIndex: 'outputIndex',
-  $transactionIndex: 'transactionIndex',
-  $transitionIndex: 'transitionIndex',
-  $owner: 'owner',
-  $sender: 'sender',
-};
-
-function buildRecordAccessGrant(programGrants: ProgramGrant[]): RecordAccessGrant {
-  return { level: 'byProgram', programs: programGrants };
-}
-
-function shortUid(uid: string): string {
-  if (uid.length <= 14) return uid;
-  return `${uid.slice(0, 6)}…${uid.slice(-6)}`;
-}
+import { PrimitiveSlotEditor } from './private-inputs/PrimitiveSlotEditor';
+import { RecordRow } from './private-inputs/RecordRow';
+import { RecordSlotEditor } from './private-inputs/RecordSlotEditor';
+import { TransactionStatusAlert } from './private-inputs/TransactionStatusAlert';
+import {
+  buildInputs,
+  buildRecordAccessGrant,
+  DEFAULT_PROGRAM_GRANTS,
+  DEFAULTS,
+  defaultSlotState,
+  eligibleAlgorithmsForBaseType,
+  FilterRow,
+  FormState,
+  METADATA_TOKEN_TO_LEGACY_KEY,
+  ParsedSlot,
+  parseFunctionInputs,
+  SlotState,
+} from './private-inputs/model';
 
 export function PrivateInputs() {
   const {
@@ -650,359 +396,6 @@ export function PrivateInputs() {
       prev.map((s, j) =>
         j === i && s.kind === 'record' ? { ...s, filterRows: fn(s.filterRows) } : s,
       ),
-    );
-  };
-
-  const renderRecordRow = (rec: RecordEnvelope, i: number) => {
-    const uid = (rec.uid as string | undefined) ?? `(no-uid-${i})`;
-    const fields =
-      (rec.recordView as { fields?: Record<string, string> } | undefined)?.fields ?? {};
-    const envelope = Object.entries(rec).filter(
-      ([k, v]) => !PRESERVED_ENVELOPE_KEYS.has(k) && v !== undefined,
-    );
-    return (
-      <div key={uid} className="border border-border rounded-lg p-3 space-y-2 transition-all">
-        <div className="flex items-center justify-between gap-2">
-          <code className="label-xs truncate normal-case flex-1 min-w-0">
-            {(rec.programName as string | undefined) ?? '?'}.
-            {(rec.recordName as string | undefined) ?? '?'} · uid={uid}
-          </code>
-          {(rec.spent as boolean | undefined) ? (
-            <span className="label-xs text-muted-foreground">spent</span>
-          ) : (
-            <span className="label-xs text-success">unspent</span>
-          )}
-        </div>
-        <div className="bg-muted rounded p-2 label-xs normal-case">
-          <p className="body-s-bold mb-1">recordView.fields</p>
-          {Object.keys(fields).length === 0 ? (
-            <p className="text-muted-foreground">(empty — no fields granted, or undecrypted)</p>
-          ) : (
-            <ul className="space-y-0.5">
-              {Object.entries(fields).map(([k, v]) => (
-                <li key={k} className="font-mono">
-                  {k}: {String(v)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="bg-muted/50 rounded p-2 label-xs normal-case">
-          <p className="body-s-bold mb-1">envelope metadata present</p>
-          {envelope.length === 0 ? (
-            <p className="text-muted-foreground">(all stripped)</p>
-          ) : (
-            <ul className="space-y-0.5">
-              {envelope.map(([k, v]) => (
-                <li key={k} className="font-mono break-all">
-                  {k}: {typeof v === 'string' ? v : JSON.stringify(v)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderPrimitiveSlot = (slot: Extract<ParsedSlot, { kind: 'primitive' }>, i: number) => {
-    const state = slotStates[i];
-    if (!state || state.kind !== 'primitive') return null;
-    const modes = primitiveSlotModes(slot.baseType);
-    const eligibleAlgs = eligibleAlgorithmsForBaseType(slot.baseType);
-    const algSchema = state.derivedAlgorithm ? ALGORITHM_SCHEMAS[state.derivedAlgorithm] : null;
-    return (
-      <div key={i} className="space-y-2 border border-dashed border-border rounded-lg p-3">
-        <Label className="body-s-bold">
-          {slot.name}{' '}
-          <span className="label-xs text-muted-foreground normal-case">({slot.raw})</span>
-        </Label>
-        {modes.length > 1 && (
-          <div className="flex gap-1 flex-wrap">
-            {modes.map(m => (
-              <Button
-                key={m}
-                type="button"
-                size="sm"
-                variant={state.mode === m ? 'default' : 'outline'}
-                onClick={() => {
-                  // When switching INTO derived, default-select the first eligible algorithm.
-                  const patch: Partial<SlotState> = { mode: m };
-                  if (m === 'derived' && !state.derivedAlgorithm && eligibleAlgs[0]) {
-                    (patch as { derivedAlgorithm?: KnownAlgorithm }).derivedAlgorithm =
-                      eligibleAlgs[0];
-                  }
-                  updateSlot(i, patch);
-                }}
-              >
-                {m === 'literal'
-                  ? 'Literal'
-                  : m === 'address'
-                    ? 'Wallet active address'
-                    : 'Derived (wallet computes)'}
-              </Button>
-            ))}
-          </div>
-        )}
-        {state.mode === 'literal' && (
-          <Input
-            placeholder={`aleo literal (e.g. ${slot.baseType}.${slot.visibility === 'public' ? 'public value' : 'value'})`}
-            value={state.value}
-            onChange={e => updateSlot(i, { value: e.target.value })}
-          />
-        )}
-        {state.mode === 'address' && (
-          <p className="body-s text-muted-foreground">
-            Sends <code>{`{type:"address"}`}</code>. The wallet fills the slot with the active
-            address; the dapp never sees it.
-          </p>
-        )}
-        {state.mode === 'derived' && (
-          <div className="space-y-2">
-            <div className="space-y-1">
-              <Label className="body-s">Algorithm</Label>
-              <select
-                value={state.derivedAlgorithm}
-                onChange={e =>
-                  updateSlot(i, {
-                    derivedAlgorithm: e.target.value as KnownAlgorithm | '',
-                    derivedArgs: {},
-                  })
-                }
-                className="body-s w-full font-mono rounded-xl border border-input px-3 py-2 shadow-sm bg-background"
-              >
-                <option value="">— pick an algorithm —</option>
-                {eligibleAlgs.map(name => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {algSchema && (
-              <div className="space-y-2 border-l-2 border-muted-foreground/20 pl-3">
-                <p className="body-s text-muted-foreground">
-                  Output type: <code>{algSchema.outputType}</code>. Sends{' '}
-                  <code>{`{type:"derived", algorithm, args}`}</code>. Authorized only if a matching{' '}
-                  <code>algorithmsAllowed</code> grant exists for{' '}
-                  <code>
-                    {form.programName.trim()}/{form.functionName.trim()}@{i}
-                  </code>
-                  .
-                </p>
-                {Object.entries(algSchema.args).map(([argName, rawSchema]) => {
-                  const argSchema = rawSchema as {
-                    type: string;
-                    possibleValues?: readonly string[];
-                    optional?: boolean;
-                  };
-                  const current = state.derivedArgs[argName] ?? '';
-                  const setArg = (value: string) =>
-                    updateSlot(i, {
-                      derivedArgs: { ...state.derivedArgs, [argName]: value },
-                    });
-                  return (
-                    <div key={argName} className="space-y-1">
-                      <Label className="body-s">
-                        {argName}{' '}
-                        <span className="label-xs text-muted-foreground normal-case">
-                          ({argSchema.type}
-                          {argSchema.optional ? ', optional' : ''})
-                        </span>
-                      </Label>
-                      {argSchema.possibleValues ? (
-                        // Enumerated arg (e.g. `mode`) — render its allowed values, not a free text box.
-                        <select
-                          value={current}
-                          onChange={e => setArg(e.target.value)}
-                          className="body-s w-full font-mono rounded-xl border border-input px-3 py-2 shadow-sm bg-background"
-                        >
-                          {argSchema.optional && <option value="">— (omit) —</option>}
-                          {argSchema.possibleValues.map(v => (
-                            <option key={v} value={v}>
-                              {v}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <Input
-                          // `string`-typed args are plain identifiers (program/mapping names,
-                          // addresses), not Aleo numeric literals — don't suggest "12345string".
-                          placeholder={
-                            argSchema.type === 'string'
-                              ? `value for ${argName}${argSchema.optional ? ' (optional)' : ''}`
-                              : `aleo literal of type ${argSchema.type} (e.g. "12345${argSchema.type}")`
-                          }
-                          value={current}
-                          onChange={e => setArg(e.target.value)}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderRecordSlot = (slot: Extract<ParsedSlot, { kind: 'record' }>, i: number) => {
-    const state = slotStates[i];
-    if (!state || state.kind !== 'record') return null;
-    const slotProgram = slot.program || form.programName.trim();
-    // Only show records that match this slot's program + recordname in the dropdown.
-    const eligibleRecords = records.filter(
-      r =>
-        (r.programName as string | undefined) === slotProgram &&
-        (r.recordName as string | undefined) === slot.recordname,
-    );
-    return (
-      <div key={i} className="space-y-2 border border-dashed border-border rounded-lg p-3">
-        <Label className="body-s-bold">
-          {slot.name}{' '}
-          <span className="label-xs text-muted-foreground normal-case">({slot.raw})</span>
-        </Label>
-        <div className="flex gap-1">
-          {(['plaintext', 'pick', 'filter'] as RecordSlotMode[]).map(m => (
-            <Button
-              key={m}
-              type="button"
-              size="sm"
-              variant={state.mode === m ? 'default' : 'outline'}
-              onClick={() => updateSlot(i, { mode: m })}
-            >
-              {m === 'plaintext'
-                ? 'Plaintext'
-                : m === 'pick'
-                  ? 'Pick from records'
-                  : 'Auto-select by filter'}
-            </Button>
-          ))}
-        </div>
-
-        {state.mode === 'plaintext' && (
-          <div className="space-y-1">
-            <textarea
-              value={state.plaintext}
-              onChange={e => updateSlot(i, { plaintext: e.target.value })}
-              rows={4}
-              placeholder={`{ owner: aleo1...private, ${slot.recordname === 'credits' ? 'microcredits: 100u64.private' : 'field_name: value.private'}, _nonce: ...group.public }`}
-              className="body-s w-full font-mono rounded-xl border border-input px-4 py-3 shadow-sm"
-            />
-            <p className="body-s text-muted-foreground">
-              Raw Aleo record literal. Passes through to the SDK as a string — no wallet selection.
-            </p>
-          </div>
-        )}
-
-        {state.mode === 'pick' && (
-          <div className="space-y-1">
-            <select
-              value={state.uid}
-              onChange={e => updateSlot(i, { uid: e.target.value })}
-              className="body-s w-full font-mono rounded-xl border border-input px-3 py-2 shadow-sm bg-background"
-            >
-              <option value="">— pick a record —</option>
-              {eligibleRecords.map(r => {
-                const uid = r.uid as string;
-                const fields =
-                  (r.recordView as { fields?: Record<string, string> } | undefined)?.fields ?? {};
-                const fieldsStr = Object.entries(fields)
-                  .map(([k, v]) => `${k}=${v}`)
-                  .join(', ');
-                return (
-                  <option key={uid} value={uid}>
-                    {shortUid(uid)} · {`{${fieldsStr || 'no visible fields'}}`}
-                  </option>
-                );
-              })}
-            </select>
-            <p className="body-s text-muted-foreground">
-              Choose an owned record. Builds <code>{`{type:"record", program, uid}`}</code> for the
-              wallet. Click <b>Fetch records</b> first to populate.
-              {eligibleRecords.length === 0 && records.length > 0 && (
-                <>
-                  {' '}
-                  (None of the fetched records match{' '}
-                  <code>
-                    {slotProgram}/{slot.recordname}.{slot.recordKind}
-                  </code>
-                  .)
-                </>
-              )}
-            </p>
-          </div>
-        )}
-
-        {state.mode === 'filter' && (
-          <div className="space-y-2">
-            {state.filterRows.length === 0 && (
-              <p className="body-s text-muted-foreground">(no conditions — add at least one row)</p>
-            )}
-            {state.filterRows.map((row, j) => (
-              <div key={j} className="flex flex-wrap gap-2 items-center">
-                <Input
-                  className="flex-1 min-w-[8rem] font-mono"
-                  placeholder="field name (e.g. microcredits)"
-                  value={row.field}
-                  onChange={e =>
-                    updateFilterRows(i, rs =>
-                      rs.map((r, k) => (k === j ? { ...r, field: e.target.value } : r)),
-                    )
-                  }
-                />
-                <select
-                  className="body-s rounded-xl border border-input px-3 py-2 shadow-sm bg-background"
-                  value={row.op}
-                  onChange={e =>
-                    updateFilterRows(i, rs =>
-                      rs.map((r, k) => (k === j ? { ...r, op: e.target.value as FilterOp } : r)),
-                    )
-                  }
-                >
-                  <option value="eq">eq</option>
-                  <option value="gte">gte</option>
-                  <option value="lte">lte</option>
-                  <option value="neq">neq</option>
-                </select>
-                <Input
-                  className="flex-1 min-w-[8rem] font-mono"
-                  placeholder="aleo literal (e.g. 100u64)"
-                  value={row.value}
-                  onChange={e =>
-                    updateFilterRows(i, rs =>
-                      rs.map((r, k) => (k === j ? { ...r, value: e.target.value } : r)),
-                    )
-                  }
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => updateFilterRows(i, rs => rs.filter((_, k) => k !== j))}
-                  aria-label="Remove filter row"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateFilterRows(i, rs => [...rs, { field: '', op: 'eq', value: '' }])}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add filter row
-            </Button>
-            <p className="body-s text-muted-foreground">
-              Rows AND-combine. Multiple rows on the same field combine into one{' '}
-              <code>RecordFieldFilter</code>. Builds{' '}
-              <code>{`{type:"record", program, filters}`}</code> for the wallet.
-            </p>
-          </div>
-        )}
-      </div>
     );
   };
 
@@ -1435,9 +828,27 @@ export function PrivateInputs() {
             <div className="space-y-3">
               <p className="body-s-bold">Input slots ({parsedSlots.length})</p>
               {parsedSlots.map((slot, i) =>
-                slot.kind === 'primitive'
-                  ? renderPrimitiveSlot(slot, i)
-                  : renderRecordSlot(slot, i),
+                slot.kind === 'primitive' ? (
+                  <PrimitiveSlotEditor
+                    key={i}
+                    slot={slot}
+                    index={i}
+                    state={slotStates[i]?.kind === 'primitive' ? slotStates[i] : undefined}
+                    form={form}
+                    updateSlot={updateSlot}
+                  />
+                ) : (
+                  <RecordSlotEditor
+                    key={i}
+                    slot={slot}
+                    index={i}
+                    state={slotStates[i]?.kind === 'record' ? slotStates[i] : undefined}
+                    form={form}
+                    records={records}
+                    updateSlot={updateSlot}
+                    updateFilterRows={updateFilterRows}
+                  />
+                ),
               )}
             </div>
           )}
@@ -1495,7 +906,15 @@ export function PrivateInputs() {
           {records.length > 0 ? (
             <div className="space-y-3">
               <p className="body-s-bold">Records ({records.length})</p>
-              <div className="space-y-2">{records.map(renderRecordRow)}</div>
+              <div className="space-y-2">
+                {records.map((record, index) => (
+                  <RecordRow
+                    key={(record.uid as string | undefined) ?? index}
+                    record={record}
+                    index={index}
+                  />
+                ))}
+              </div>
             </div>
           ) : (
             <p className="body-s text-muted-foreground">
@@ -1514,55 +933,13 @@ export function PrivateInputs() {
         </Alert>
       )}
 
-      {(txStatus || onchainTxId) && (
-        <Alert>
-          {txStatus?.toLowerCase() === TransactionStatus.ACCEPTED.toLowerCase() ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : txStatus?.toLowerCase() === TransactionStatus.REJECTED.toLowerCase() ||
-            txStatus?.toLowerCase() === TransactionStatus.FAILED.toLowerCase() ? (
-            <XCircle className="h-4 w-4" />
-          ) : (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          )}
-          <AlertDescription>
-            <div className="space-y-2">
-              <p className="body-m">
-                Transaction status:{' '}
-                <span className="body-m-bold capitalize">{txStatus || 'Pending'}</span>
-              </p>
-              {onchainTxId && (
-                <>
-                  <div className="flex items-center justify-between bg-muted p-2 rounded-lg label-xs break-all border">
-                    <span className="truncate normal-case">Transaction Id: {onchainTxId}</span>
-                    <Button variant="ghost" size="sm" onClick={() => copy(onchainTxId)}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      window.open(
-                        `https://${
-                          network === Network.TESTNET
-                            ? 'testnet.'
-                            : network === Network.CANARY
-                              ? 'canary.'
-                              : ''
-                        }explorer.provable.com/transaction/${onchainTxId}`,
-                        '_blank',
-                      )
-                    }
-                  >
-                    See on the explorer
-                  </Button>
-                </>
-              )}
-              {txError && <p className="body-s text-destructive">Error: {txError}</p>}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
+      <TransactionStatusAlert
+        txStatus={txStatus}
+        onchainTxId={onchainTxId}
+        txError={txError}
+        network={network}
+        copy={copy}
+      />
 
       <CodePanel
         code={codeExamples.privateInputs}
