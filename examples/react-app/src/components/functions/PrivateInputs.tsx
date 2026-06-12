@@ -3,7 +3,7 @@ import { useAtom } from 'jotai';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Database, Loader2, Lock, Plus, ShieldAlert, Trash2, Zap } from 'lucide-react';
@@ -393,17 +393,28 @@ export function PrivateInputs() {
   return (
     <section className="space-y-6">
       <Alert>
-        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle className="flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5" />
+          Privacy Extension Demo
+        </AlertTitle>
         <AlertDescription>
-          <p className="body-m">
-            Exercises the privacy extension end-to-end: per-program record-access grants;{' '}
-            <code className="mx-1">recordView</code>/<code>uid</code> on{' '}
-            <code className="mx-1">requestRecords</code>; <code className="mx-1">$</code>-prefixed
-            envelope-metadata grants in <code className="mx-1">FieldGrant.name</code>;{' '}
-            <code className="mx-1">type: "record"</code> by <code>uid</code>, by{' '}
-            <code>filters</code>, or as plaintext; and the privacy-preserving{' '}
-            <code className="mx-1">type: "address"</code> slots.
-          </p>
+          <ul className="body-s mt-1 space-y-0.5 list-disc pl-4">
+            <li>
+              Per-program <b>record-access grants</b> scoped to records and fields
+            </li>
+            <li>
+              <code>requestRecords</code> with <code>recordView</code> / <code>uid</code>
+            </li>
+            <li>
+              <code>$</code>-prefixed envelope-metadata tokens in <code>FieldGrant.name</code>
+            </li>
+            <li>
+              <code>type: &quot;record&quot;</code> inputs — by uid, by filters, or as plaintext
+            </li>
+            <li>
+              Privacy-preserving <code>type: &quot;address&quot;</code> slots
+            </li>
+          </ul>
           <p className="body-s mt-2 text-muted-foreground">
             Function inputs are auto-derived from the program source. Defaults satisfy{' '}
             <code>credits.aleo</code> / <code>transfer_private</code>.
