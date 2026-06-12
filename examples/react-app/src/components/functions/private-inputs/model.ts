@@ -2,6 +2,7 @@ import {
   ALGORITHM_SCHEMAS,
   AlgorithmArg,
   AlgorithmName,
+  KNOWN_ALGORITHMS,
   KnownAlgorithm,
   RecordFieldFilter,
   RecordFilters,
@@ -100,7 +101,7 @@ export function primitiveSlotModes(baseType: string): PrimitiveSlotMode[] {
 }
 
 export function eligibleAlgorithmsForBaseType(baseType: string): KnownAlgorithm[] {
-  return (Object.keys(ALGORITHM_SCHEMAS) as KnownAlgorithm[]).filter(name =>
+  return KNOWN_ALGORITHMS.filter(name =>
     (ALGORITHM_SCHEMAS[name].validSlotTypes as readonly string[]).includes(baseType),
   );
 }

@@ -108,17 +108,21 @@ export type InputRequest =
       label?: string;
     };
 
+/** Algorithms that conforming wallets are expected to implement. */
+export const KNOWN_ALGORITHMS = [
+  'program-scoped-blinding-factor',
+  'program-scoped-blinded-address',
+] as const;
+
 /**
- * Algorithms that conforming wallets are expected to implement. The
- * `(string & {})` extension permits unknown values for forward-compat:
- * a wallet shipping a new algorithm before this union is updated can still
- * be addressed. The wallet validates at runtime against its own
- * `algorithmsSupported()` list.
+ * New algorithms are added to `KNOWN_ALGORITHMS` as they're standardized. The
+ * `(string & {})` extension in `AlgorithmName` permits unknown values for
+ * forward-compat: a wallet shipping a new algorithm before this catalog is
+ * updated can still be addressed. The wallet validates at runtime against its
+ * own `algorithmsSupported()` list.
  */
-export type KnownAlgorithm =
-  | 'program-scoped-blinding-factor'
-  | 'program-scoped-blinded-address';
-export type AlgorithmName = KnownAlgorithm | (string & {});
+export type KnownAlgorithm = (typeof KNOWN_ALGORITHMS)[number];
+export type AlgorithmName = KnownAlgorithm | (string & Record<never, never>);
 
 /** Arg-level type: an Aleo literal type, or "string" for non-literal args (enums, identifiers). */
 export type ArgType = LiteralType | 'string';
@@ -252,8 +256,8 @@ export interface TransactionOptions {
   privateFee?: boolean;
 
   /**
-  * List of program names that should be imported when calling a dynamic dispatch function.
-  */ 
+   * List of program names that should be imported when calling a dynamic dispatch function.
+   */
   imports?: string[];
 }
 

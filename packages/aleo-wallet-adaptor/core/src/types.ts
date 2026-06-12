@@ -22,4 +22,9 @@ export type {
   RecordView,
   TransactionInput,
 } from '@provablehq/aleo-types';
-export { ALGORITHM_SCHEMAS, hasInputRequest, isLiteralInput } from '@provablehq/aleo-types';
+export {
+  ALGORITHM_SCHEMAS,
+  KNOWN_ALGORITHMS,
+  hasInputRequest,
+  isLiteralInput,
+} from '@provablehq/aleo-types';

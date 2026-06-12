@@ -11,8 +11,7 @@ import { toast } from 'sonner';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import {
-  ALGORITHM_SCHEMAS,
-  KnownAlgorithm,
+  KNOWN_ALGORITHMS,
   RecordEnvelope,
   TransactionInput,
   TransactionStatus,
@@ -497,7 +496,7 @@ export function PrivateInputs() {
                       )
                     }
                   >
-                    {(Object.keys(ALGORITHM_SCHEMAS) as KnownAlgorithm[]).map(name => (
+                    {KNOWN_ALGORITHMS.map(name => (
                       <option key={name} value={name}>
                         {name}
                       </option>
@@ -561,7 +560,7 @@ export function PrivateInputs() {
                     setAlgorithmsAllowed(prev => [
                       ...(prev ?? []),
                       {
-                        algorithm: (Object.keys(ALGORITHM_SCHEMAS) as KnownAlgorithm[])[0] ?? '',
+                        algorithm: KNOWN_ALGORITHMS[0] ?? '',
                         program: form.programName.trim(),
                         function: form.functionName.trim(),
                         inputPosition: 0,
