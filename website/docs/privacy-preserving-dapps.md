@@ -16,17 +16,32 @@ and the provider wiring in [`examples/react-app/src/App.tsx`](https://github.com
 
 ## Contents
 
-1. [Provider privacy props](#1-provider-privacy-props)
-2. [The `useWallet` hook](#2-the-usewallet-hook)
-3. [Wallet capabilities: Shield versus the others](#3-wallet-capabilities-shield-versus-the-others)
-4. [The permission model](#4-the-permission-model)
-5. [Legacy apps and the version boundary](#5-legacy-apps-and-the-version-boundary)
-6. [Reading records](#6-reading-records)
-7. [Composing transaction inputs](#7-composing-transaction-inputs)
-8. [Derived inputs](#8-derived-inputs)
-9. [Building privacy-preserving dapps](#9-building-privacy-preserving-dapps)
-10. [Handling failures](#10-handling-failures)
-11. [Migration cheatsheet](#11-migration-cheatsheet)
+- [Privacy-Preserving Dapps](#privacy-preserving-dapps)
+  - [Contents](#contents)
+  - [1. Provider privacy props](#1-provider-privacy-props)
+    - [Shield-wallet specific permissions](#shield-wallet-specific-permissions)
+      - [Address Visibility](#address-visibility)
+      - [Record Access](#record-access)
+      - [Record Requests](#record-requests)
+      - [Algorithm Access](#algorithm-access)
+  - [2. The `useWallet` hook](#2-the-usewallet-hook)
+  - [3. Wallet capabilities: Shield versus the others](#3-wallet-capabilities-shield-versus-the-others)
+  - [4. The permission model](#4-the-permission-model)
+    - [`recordAccess`](#recordaccess)
+    - [`readAddress: false`](#readaddress-false)
+    - [`algorithmsAllowed`](#algorithmsallowed)
+  - [5. Legacy apps and the version boundary](#5-legacy-apps-and-the-version-boundary)
+  - [6. Reading records](#6-reading-records)
+  - [7. Composing transaction inputs](#7-composing-transaction-inputs)
+    - [Choosing the right `type: "record"` shape](#choosing-the-right-type-record-shape)
+    - [Validating early](#validating-early)
+  - [8. Derived inputs (`type: "derived"`)](#8-derived-inputs-type-derived)
+    - [Claiming a past swap with `mode: "resolve"`](#claiming-a-past-swap-with-mode-resolve)
+  - [9. Building privacy-preserving dapps](#9-building-privacy-preserving-dapps)
+  - [10. Handling failures](#10-handling-failures)
+    - [Error classes](#error-classes)
+    - [Patterns](#patterns)
+  - [11. Migration cheatsheet](#11-migration-cheatsheet)
 
 ---
 
@@ -42,8 +57,7 @@ The basic `AleoWalletProvider` setup is covered in the [quick reference](https:/
 
 ### Shield-wallet specific permissions
 
-The following advanced privacy-preserving capabilities are provided by the Shield wallet,
-more info can be found at: [§3](#3-wallet-capabilities-shield-versus-the-others). If using the Shield wallet, it is
+All three props above are Shield-only — other wallets reject them at connect time (see [§3](#3-wallet-capabilities-shield-versus-the-others). If using the Shield wallet, it is
 recommended to use the most private settings possible in order for a dapp to function properly.
 
 Detailed information on using the capabilities below can be found at [§4](#4-the-permission-model).
@@ -72,8 +86,9 @@ to allow the target wallet to provide a record without your dapp ever being able
 
 #### Algorithm Access
 
-Each wallet supports a list of algorithms it can run to compute an input at a specific (program, function, input position)
-tuple. This grant allows a dapp to specify which (program, function, input position) tuples the algorithms can be run at.
+Each wallet supports a list of algorithms it can run to compute an input at a specific (program, function, inputPosition)` call sites, with values never reaching the dapp.
+
+Full mechanics and interaction rules are in [§4](#4-the-permission-model).
 
 ---
 
@@ -145,7 +160,7 @@ first.
 
 ---
 
-## 3. Advanced Wallet capabilities: Shield versus the others
+## 3. Wallet capabilities: Shield versus the others
 
 Every privacy feature described in this guide — permission grants, wallet-specified `InputRequest`
 slots, record envelopes that carry a `uid` and a `recordView`, and derived inputs — is currently
