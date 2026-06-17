@@ -1,6 +1,8 @@
-# Aleo Wallet Adapter — dapp developer guide
+# Privacy-Preserving Dapps
 
-This guide explains how to build privacy preserving Dapps with the Aleo Wallet Adapter.
+> **New to the wallet adapter?** Start with the [Wallet Adapter quick reference](../packages/aleo-wallet-adaptor/README.md) for installation, basic setup, and common operations before reading this guide.
+
+This guide covers the advanced privacy-preserving features of the Aleo Wallet Adapter: the permission model, `InputRequest` transaction inputs, derived inputs, and how to build dapps that minimize what they learn about the user.
 
 For a working reference, see the component in
 [`examples/react-app/src/components/functions/PrivateInputs.tsx`](../examples/react-app/src/components/functions/PrivateInputs.tsx)
@@ -10,188 +12,68 @@ and the provider wiring in [`examples/react-app/src/App.tsx`](../examples/react-
 
 ## Contents
 
-1. [Packages](#1-packages)
-2. [Basics: connecting and transacting](#2-basics-connecting-and-transacting)
-3. [The `useWallet` hook](#3-the-usewallet-hook)
-4. [Wallet capabilities: Shield versus the others](#4-wallet-capabilities-shield-versus-the-others)
-5. [The permission model](#5-the-permission-model)
-6. [Legacy apps and the version boundary](#6-legacy-apps-and-the-version-boundary)
-7. [Reading records](#7-reading-records)
-8. [Composing transaction inputs](#8-composing-transaction-inputs)
-9. [Derived inputs](#9-derived-inputs)
-10. [Building privacy-preserving dapps](#10-building-privacy-preserving-dapps)
-11. [Handling failures](#11-handling-failures)
-12. [Migration cheatsheet](#12-migration-cheatsheet)
+1. [Provider privacy props](#1-provider-privacy-props)
+2. [The `useWallet` hook](#2-the-usewallet-hook)
+3. [Wallet capabilities: Shield versus the others](#3-wallet-capabilities-shield-versus-the-others)
+4. [The permission model](#4-the-permission-model)
+5. [Legacy apps and the version boundary](#5-legacy-apps-and-the-version-boundary)
+6. [Reading records](#6-reading-records)
+7. [Composing transaction inputs](#7-composing-transaction-inputs)
+8. [Derived inputs](#8-derived-inputs)
+9. [Building privacy-preserving dapps](#9-building-privacy-preserving-dapps)
+10. [Handling failures](#10-handling-failures)
+11. [Migration cheatsheet](#11-migration-cheatsheet)
 
 ---
 
-## 1. Packages
+## 1. Provider privacy props
 
-The adapter is split across several packages. Most dapps only import from the React package and the
-adapter package for each wallet they support; the rest provide the types and errors those packages
-reference.
+The basic `AleoWalletProvider` setup is covered in the [quick reference](../packages/aleo-wallet-adaptor/README.md). This section documents the three additional props that enable privacy-preserving behaviour — all of which are opt-in and default to broad/permissive behaviour so that existing dapps are unaffected.
 
-| Package | What it provides                                                                                                 |
-|---|------------------------------------------------------------------------------------------------------------------|
-| `@provablehq/aleo-wallet-adaptor-react` | Core `AleoWalletProvider` component and `useWallet` hook that provide ability to use Aleo wallets in react apps. |
-| `@provablehq/aleo-wallet-adaptor-react-ui` | Optional pre-built wallet connection components for connecting to multiple ALeo Wallets.                         |
-| `@provablehq/aleo-wallet-adaptor-core` | Core wallet adapter and wallet permission definitions.                                                           |
-| `@provablehq/aleo-types` | Core Aleo types                                                                                                  |
-| `@provablehq/aleo-wallet-standard` | The grant types `RecordAccessGrant` and `AlgorithmGrant`, along with `WalletReadyState`.                         |
-| `@provablehq/aleo-wallet-adaptor-{shield,puzzle,leo,fox,soter}` | Concrete wallet adapters for each supported Aleo wallet.                                                         |
-
----
-
-## 2. Connecting Aleo Wallets.
-
-### Wiring up the provider
-
-To create a multi-wallet dapp, adapters that the dapp needs to support must first be instantiated in a JS array that 
-and then passed into the `wallets` parameter of the `AleoWalletProvider` component.  Any component rendered beneath
-the provider can call `useWallet()` in order to invoke wallet connection flows.
-
-```tsx
-import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
-import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
-import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import { Network } from '@provablehq/aleo-types';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
-
-// Instantiate the adapters once, at module scope, rather than inside a render.
-const wallets = [
-  new ShieldWalletAdapter(),
-  new PuzzleWalletAdapter(),
-  new LeoWalletAdapter(),
-];
-
-export function App({ children }) {
-  return (
-    <AleoWalletProvider
-      wallets={wallets}
-      network={Network.TESTNET}
-      decryptPermission={DecryptPermission.UponRequest}
-      programs={['credits.aleo']}
-      autoConnect
-      onError={(err) => console.error(err.message)}
-    >
-      {children}
-    </AleoWalletProvider>
-  );
-}
-```
-
-### Wallet Provider Parameters
-
-`AleoWalletProvider` accept the following components.
-
-| Prop | Type | Default | Purpose                                                                                                                                                                                                                               |
-|---|---|---|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `wallets` | `WalletAdapter[]` | required | Wallets the dapp desires to offer.                                                                                                                                                                                                    |
-| `network` | `Network` | `Network.TESTNET` | The network to connect against; one of `MAINNET` OR `TESTNET`.                                                                                                                                                                        |
-| `decryptPermission` | `DecryptPermission` | `NoDecrypt` | The level of record and function output decryption to permit to the dapp.                                                                                                                                                             |
-| `programs` | `string[]` | — | The program IDs the dapp intends to use.                                                                                                                                                                                              |
-| `autoConnect` | `boolean` | `false` | Whether to reconnect to the last-selected wallet when an app loads.                                                                                                                                                                   |
-| `onError` | `(error: WalletError) => void` | — | A central callback for wallet errors.                                                                                                                                                                                                 |
-| `readAddress` | `boolean` | `true` | Whether or not to allow your dapp access to a wallet's addressed, further described in [§5](#5-the-permission-model).                                                                                                                 |
-| `recordAccess` | `RecordAccessGrant` | `undefined` (broad) | Specification of fine-grained access to a a user's records. Privacy preserving dapps should specify explicit grants. Further documentation on how to specify privacy-preserving grants is described in [§5](#5-the-permission-model). |
-| `algorithmsAllowed` | `AlgorithmGrant[]` | `undefined` (none) | Request wallet-supported algorithms to compute inputs for Aleo function inputs. More detail in [§5](#5-the-permission-model).                                                                                                         |
-
-### Wallet Permissions
-
-#### Decryption Permissions
-
-The `DecryptPermission` enum, exported from `@provablehq/aleo-wallet-adaptor-core`, controls how much
-the dapp may decrypt.
-
-| Value | Meaning                                                                                                |
-|---|--------------------------------------------------------------------------------------------------------|
-| `NoDecrypt` | The dapp cannot decrypt any records.                                                                   |
-| `UponRequest` | The dapp may decrypt records and function outputs when it asks, subject to user approval.              |
-| `AutoDecrypt` | The dapp may decrypt any record or function output it requests.                                        |
-| `OnChainHistory` | The dapp may request transaction IDs, but cannot decrypt records itself. |
+| Prop | Type | Default | Purpose |
+|---|---|---|---|
+| `readAddress` | `boolean` | `true` | Whether or not to allow your dapp access to a wallet's address, further described in [§4](#4-the-permission-model). |
+| `recordAccess` | `RecordAccessGrant` | `undefined` (broad) | Specification of fine-grained access to a user's records. Privacy preserving dapps should specify explicit grants. Further documentation on how to specify privacy-preserving grants is described in [§4](#4-the-permission-model). |
+| `algorithmsAllowed` | `AlgorithmGrant[]` | `undefined` (none) | Request wallet-supported algorithms to compute inputs for Aleo function inputs. More detail in [§4](#4-the-permission-model). |
 
 ### Shield-wallet specific permissions
 
-The following advanced privacy-preserving capabilities are supported are provided by the Shield wallet, 
-more info can be found at: [§4](#4-wallet-capabilities-shield-versus-the-others). If using the Shield wallet, it is 
+The following advanced privacy-preserving capabilities are provided by the Shield wallet,
+more info can be found at: [§3](#3-wallet-capabilities-shield-versus-the-others). If using the Shield wallet, it is
 recommended to use the most private settings possible in order for a dapp to function properly.
 
-Detailed information on using the capabilities below can be found at [§5](#5-the-permission-model).
+Detailed information on using the capabilities below can be found at [§4](#4-the-permission-model).
 
 #### Address Visibility
 
-The `readAddress` permission decides whether a wallet can view a signer's address or not. 
+The `readAddress` permission decides whether a wallet can view a signer's address or not.
 
 #### Record Access
 
-The `recordAccess` permissions specifies fine-grained permissions to dapps. To preserve user privacy dapps can request
+The `recordAccess` permission specifies fine-grained permissions to dapps. To preserve user privacy dapps can request
 to read:
 - **Low Privacy**: Broadly request to read all data from records for specific programs
 - **Mid-Tier Privacy:** Request to read all data for specific records of specific programs
 - **High Privacy:** Request to read only the necessary fields from specified (program, record, field[]) tuples. This
 option provides the user with the MOST privacy.
 
-In any of these cases, an record uid (unlinkable to transactions online) is provided. Dapps can specify the record UID
-at any record input position to allow the wallet to use that record as input. Espescially in high privacy cases, this
-allows the user's records to stay provide.
+In any of these cases, a record uid (unlinkable to transactions online) is provided. Dapps can specify the record UID
+at any record input position to allow the wallet to use that record as input. Especially in high privacy cases, this
+allows the user's records to stay private.
 
 #### Record Requests
 
-At any input position that requires a record, the user can specify a record Request ([§5](#5-the-permission-model).) 
+At any input position that requires a record, the dapp can specify a record request ([§4](#4-the-permission-model))
 to allow the target wallet to provide a record without your dapp ever being able to perceive it.
 
 #### Algorithm Access
 
-Each wallet supports a list algorithms it can run to compute an input at a specific (program, function, input position)
-tuple. This grant allows a dapp to specify which (program, function, input position) tuples the algorithms can be run 
-at.
-
-### Connecting, reading state, and transacting
-
-```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { Network } from '@provablehq/aleo-types';
-
-function Demo() {
-  const { wallets, selectWallet, connect, disconnect, connected, connecting, address, executeTransaction } =
-    useWallet();
-
-  async function handleConnect() {
-    selectWallet(wallets[0].adapter.name); // choose a wallet by its name
-    await connect(Network.TESTNET);
-  }
-
-  async function send() {
-    const result = await executeTransaction({
-      program: 'credits.aleo',
-      function: 'transfer_public',
-      inputs: ['aleo1...recipient', '100u64'], // plain literal inputs
-      fee: 0.01,
-    });
-    console.log('submitted', result?.transactionId);
-  }
-
-  if (!connected) {
-    return <button onClick={handleConnect} disabled={connecting}>Connect</button>;
-  }
-
-  return (
-    <>
-      <span>{address}</span>
-      <button onClick={send}>Send</button>
-      <button onClick={() => disconnect()}>Disconnect</button>
-    </>
-  );
-}
-```
-
-If you would rather not build your own wallet picker, the `@provablehq/aleo-wallet-adaptor-react-ui`
-package provides drop-in UI components such as `WalletModalProvider` and `WalletMultiButton`.
+Each wallet supports a list of algorithms it can run to compute an input at a specific (program, function, input position)
+tuple. This grant allows a dapp to specify which (program, function, input position) tuples the algorithms can be run at.
 
 ---
 
-## 3. The `useWallet` hook
+## 2. The `useWallet` hook
 
 Calling `useWallet()` returns a `WalletContextState` object that exposes the adapter's full
 dapp-facing surface.
@@ -244,7 +126,7 @@ The shape passed to `executeTransaction` is `TransactionOptions`, from `@provabl
 interface TransactionOptions {
   program: string;
   function: string;
-  inputs: TransactionInput[];   // an array of (string | InputRequest); see §8
+  inputs: TransactionInput[];   // an array of (string | InputRequest); see §7
   fee?: number;
   privateFee?: boolean;
   recordIndices?: number[];
@@ -259,7 +141,7 @@ first.
 
 ---
 
-## 4. Advanced Wallet capabilities: Shield versus the others
+## 3. Advanced Wallet capabilities: Shield versus the others
 
 Every privacy feature described in this guide — permission grants, wallet-specified `InputRequest`
 slots, record envelopes that carry a `uid` and a `recordView`, and derived inputs — is currently
@@ -282,7 +164,7 @@ the privacy options.
 | `requestTransactionHistory` | Yes | No; not implemented |
 
 When a wallet does not support a privacy feature, it tells you so explicitly rather than failing
-silently, which lets you handle the case as described in [§11](#11-handling-failures). Specifically:
+silently, which lets you handle the case as described in [§10](#10-handling-failures). Specifically:
 
 - If you pass `readAddress: false`, a `recordAccess` grant, or a non-empty `algorithmsAllowed` to a
   wallet that does not support them, `connect()` throws `WalletConnectOptionsNotSupportedError`.
@@ -303,14 +185,14 @@ the narrowing is simply not available.
 
 ---
 
-## 5. The permission model
+## 4. The permission model
 
 A connection is parameterized by five values, all of which are set as provider props and bound when
 the wallet connects.
 
 | Field | Type | Default | Effect |
 |---|---|---|---|
-| `decryptPermission` | `DecryptPermission` | `NoDecrypt` | Determines how much decryption the dapp may do (see [§2](#2-basics-connecting-and-transacting)). |
+| `decryptPermission` | `DecryptPermission` | `NoDecrypt` | Determines how much decryption the dapp may do (see the [quick reference](../packages/aleo-wallet-adaptor/README.md)). |
 | `programs` | `string[]` | — | The programs the dapp may interact with, and the broad record-access allowlist when `recordAccess` is omitted. |
 | `readAddress` | `boolean` | `true` | When `false`, the dapp transacts without learning the active address. |
 | `recordAccess` | `RecordAccessGrant` | `undefined`, meaning broad | Narrows record reads by program, by record, and by field. |
@@ -404,7 +286,7 @@ few constraints on such a connection.
 ### `algorithmsAllowed`
 
 The `algorithmsAllowed` grant is a strict opt-in allowlist for derived inputs, and each entry
-authorizes exactly one call site. The details of derived inputs are covered in [§9](#9-derived-inputs).
+authorizes exactly one call site. The details of derived inputs are covered in [§8](#8-derived-inputs).
 
 ```ts
 interface AlgorithmGrant {
@@ -421,7 +303,7 @@ refuses every derived request.
 
 ---
 
-## 6. Legacy apps and the version boundary
+## 5. Legacy apps and the version boundary
 
 The privacy features in this guide are not yet part of a published release. The latest published
 version, carried by the npm `latest` dist-tag, is **`0.3.0-alpha.4`**, and it does not include
@@ -433,18 +315,18 @@ against that last released version. A legacy app connects with only `network`, `
 and `programs`; it passes literal-string inputs; and it reads records in their raw per-wallet shape.
 None of the grant props or `InputRequest` shapes exist for it. Nothing in this guide breaks such an
 app, because every privacy feature is additive and opt-in, as the migration notes in
-[§12](#12-migration-cheatsheet) describe.
+[§11](#11-migration-cheatsheet) describe.
 
 It is worth keeping a related distinction in mind. A "legacy wallet" is any wallet adapter, at any
 version, that does not implement the privacy extension, which today means every wallet except Shield.
 Code that targets the new features should therefore handle the "not supported" errors from
-[§4](#4-wallet-capabilities-shield-versus-the-others) so that legacy wallets degrade gracefully
+[§3](#3-wallet-capabilities-shield-versus-the-others) so that legacy wallets degrade gracefully
 instead of crashing. Wherever this guide says "legacy", it refers to one or both of these cases: the
 last released version (`0.3.0-alpha.4`) and any wallet that predates the privacy extension.
 
 ---
 
-## 7. Reading records
+## 6. Reading records
 
 When you read records from a privacy-aware wallet, `requestRecords` returns an array of
 `RecordEnvelope` objects.
@@ -479,7 +361,7 @@ them.
 
 ---
 
-## 8. Composing transaction inputs
+## 7. Composing transaction inputs
 
 The `inputs` array you pass to `executeTransaction` accepts a mix of literal strings and
 `InputRequest` objects.
@@ -556,7 +438,7 @@ for you, you would typically only call it yourself while building a form, so tha
 
 ---
 
-## 9. Derived inputs (`type: "derived"`)
+## 8. Derived inputs (`type: "derived"`)
 
 A `type: "derived"` slot tells the wallet to compute a value by running a named cryptographic
 algorithm over its own state — its view key, wallet-maintained counters, and so on — together with
@@ -702,7 +584,7 @@ ALGORITHM_SCHEMAS['program-scoped-blinding-factor'];
 
 ---
 
-## 10. Building privacy-preserving dapps
+## 9. Building privacy-preserving dapps
 
 The default connection — with `recordAccess` omitted, `readAddress` left at `true`, and a broad
 `programs` allowlist — gives the dapp the same visibility it has always had, namely decrypted records
@@ -743,7 +625,7 @@ you request, the less your dapp can ever lose control of.
 
 ---
 
-## 11. Handling failures
+## 10. Handling failures
 
 ### Error classes
 
@@ -831,11 +713,11 @@ try {
 
 Finally, validate `InputRequest`s while you build the form, so that structural mistakes surface as a
 `WalletInputRequestInvalidError` before the user clicks submit, as described in
-[§8](#8-composing-transaction-inputs).
+[§7](#7-composing-transaction-inputs).
 
 ---
 
-## 12. Migration cheatsheet
+## 11. Migration cheatsheet
 
 How much you need to change depends on what your existing dapp does.
 
@@ -855,4 +737,4 @@ How much you need to change depends on what your existing dapp does.
 - If you must support wallets other than Shield, feature-detect with `algorithmsSupported()` and
   `readyState`, and handle `WalletConnectOptionsNotSupportedError` and
   `WalletInputRequestNotSupportedError` so that legacy wallets fall back to literal inputs, as shown
-  in [§11](#11-handling-failures).
+  in [§10](#10-handling-failures).

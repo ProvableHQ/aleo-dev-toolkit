@@ -90,6 +90,11 @@ export const App: FC = () => {
 - **`programs`** (optional): Array of program IDs that will be called - Leave empty to allow any program to be called.
 - **`onError`** (optional): Error handler callback
 - **`localStorageKey`** (optional): Key for storing selected wallet in localStorage. Defaults to `'walletName'`
+- **`readAddress`** (optional, Shield only): When `false`, the dapp transacts without ever learning the user's address. Defaults to `true`.
+- **`recordAccess`** (optional, Shield only): Fine-grained grant controlling which record fields the dapp may read, narrowed by program, record, and field.
+- **`algorithmsAllowed`** (optional, Shield only): Opt-in allowlist of wallet-side algorithms that can compute private inputs (e.g. blinding factors) without exposing them to the dapp.
+
+For full details on the privacy props and how to use them, see the [Privacy-Preserving Dapps guide](../../docs/privacy-preserving-dapps.md).
 
 ## Using the `useWallet` Hook
 
@@ -596,6 +601,19 @@ export const CheckTransactionStatus: FC = () => {
   );
 };
 ```
+
+## 🔒 Privacy-Preserving Dapps
+
+The **Shield wallet** supports a set of advanced privacy features that let your dapp transact while learning strictly less about the user:
+
+- **`readAddress: false`** — transact without the dapp ever seeing the user's address.
+- **`recordAccess`** — expose only the specific record fields your dapp needs, nothing more.
+- **`InputRequest` slots** — let the wallet choose or compute inputs (records, addresses, derived values) without the dapp handling plaintext.
+- **`algorithmsAllowed`** — allow the wallet to compute private cryptographic inputs (e.g. blinding factors) that never leave the wallet.
+
+These features are opt-in and additive — existing dapps using literal string inputs continue to work unchanged.
+
+For a full guide including the permission model, `InputRequest` shapes, derived inputs, and error handling, see the [Privacy-Preserving Dapps guide](../../docs/privacy-preserving-dapps.md).
 
 ## 🎯 Complete Example
 
