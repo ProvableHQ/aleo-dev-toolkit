@@ -1,5 +1,6 @@
 import {
   Account,
+  hasInputRequest,
   Network,
   TransactionOptions,
   TransactionStatus,
@@ -7,6 +8,8 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  ConnectOptions,
+  hasUnsupportedConnectOptions,
   RecordStatusFilter,
   WalletDecryptPermission,
   WalletName,
@@ -17,10 +20,12 @@ import {
   filterRecordsByStatus,
   MethodNotImplementedError,
   WalletConnectionError,
+  WalletConnectOptionsNotSupportedError,
   WalletDecryptionNotAllowedError,
   WalletDecryptionError,
   WalletDisconnectionError,
   WalletError,
+  WalletInputRequestNotSupportedError,
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletTransactionError,
@@ -126,7 +131,11 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account> {
+    if (hasUnsupportedConnectOptions(options)) {
+      throw new WalletConnectOptionsNotSupportedError(this.name);
+    }
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Leo Wallet is not available');
@@ -257,6 +266,9 @@ export class LeoWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The executed temporary transaction ID
    */
   async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
+    if (hasInputRequest(options.inputs)) {
+      throw new WalletInputRequestNotSupportedError(this.name);
+    }
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }

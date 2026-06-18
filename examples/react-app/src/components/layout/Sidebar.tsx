@@ -8,6 +8,7 @@ import {
   Database,
   Key,
   History,
+  Lock,
   Menu,
   X,
   Book,
@@ -51,6 +52,7 @@ const navigationGroups: NavGroup[] = [
     title: 'Data',
     items: [
       { to: '/records', label: 'Records', icon: Database },
+      { to: '/private-inputs', label: 'Private Inputs', icon: Lock },
       { to: '/decrypt', label: 'Decrypt', icon: KeyRound },
       { to: '/view-keys', label: 'View Keys', icon: Key },
       { to: '/history', label: 'Tx History', icon: History },

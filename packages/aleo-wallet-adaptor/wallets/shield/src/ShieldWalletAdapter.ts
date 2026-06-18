@@ -1,5 +1,6 @@
 import {
   Account,
+  KNOWN_ALGORITHMS,
   Network,
   TransactionOptions,
   TransactionStatusResponse,
@@ -7,6 +8,7 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  ConnectOptions,
   RecordStatusFilter,
   WalletDecryptPermission,
   WalletName,
@@ -15,16 +17,17 @@ import {
 import {
   BaseAleoWalletAdapter,
   filterRecordsByStatus,
+  scopePollingDetectionStrategy,
+  validateInputRequests,
   WalletConnectionError,
+  WalletDecryptionError,
+  WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
-  WalletSwitchNetworkError,
   WalletSignMessageError,
+  WalletSwitchNetworkError,
   WalletTransactionError,
-  WalletDecryptionError,
-  WalletDecryptionNotAllowedError,
-  scopePollingDetectionStrategy,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import { ShieldWallet, ShieldWindow } from './types';
 
@@ -112,6 +115,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account> {
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
@@ -124,6 +128,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
           network,
           decryptPermission,
           programs,
+          options,
         );
         this._publicKey = connectResult?.address || '';
         this._onNetworkChange(network);
@@ -133,7 +138,9 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
         );
       }
 
-      if (!this._publicKey) {
+      // When the dapp opted into address withholding (readAddress: false),
+      // an empty address is the expected result, not an error.
+      if (!this._publicKey && options?.readAddress !== false) {
         throw new WalletConnectionError('No address returned from wallet');
       }
 
@@ -176,7 +183,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The signed message
    */
   async signMessage(message: Uint8Array): Promise<Uint8Array> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -196,7 +203,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   async decrypt(cipherText: string) {
-    if (!this._shieldWallet || !this._publicKey) {
+    if (!this._shieldWallet || !this.account) {
       throw new WalletNotConnectedError();
     }
     switch (this.decryptPermission) {
@@ -224,9 +231,10 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The executed temporary transaction ID
    */
   async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
+    validateInputRequests(options.inputs);
 
     try {
       const result = await this._shieldWallet?.executeTransaction({
@@ -258,7 +266,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The transaction status
    */
   async transactionStatus(transactionId: string): Promise<TransactionStatusResponse> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -283,7 +291,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async switchNetwork(_network: Network): Promise<void> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -309,7 +317,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     includePlaintext: boolean,
     statusFilter: RecordStatusFilter = 'all',
   ): Promise<unknown[]> {
-    if (!this._publicKey || !this.account) {
+    if (!this.account) {
       throw new WalletNotConnectedError();
     }
 
@@ -329,7 +337,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   async executeDeployment(deployment: AleoDeployment): Promise<{ transactionId: string }> {
     try {
-      if (!this._publicKey || !this.account) {
+      if (!this.account) {
         throw new WalletNotConnectedError();
       }
       try {
@@ -361,7 +369,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   async transitionViewKeys(transactionId: string): Promise<string[]> {
     try {
-      if (!this._publicKey || !this.account) {
+      if (!this.account) {
         throw new WalletNotConnectedError();
       }
       try {
@@ -388,7 +396,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   async requestTransactionHistory(program: string): Promise<TxHistoryResult> {
     try {
-      if (!this._publicKey || !this.account) {
+      if (!this.account) {
         throw new WalletNotConnectedError();
       }
       try {
@@ -406,6 +414,19 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       this.emit('error', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
+  }
+
+  /**
+   * Shield's currently-supported derived-input algorithms. Returns the SDK's
+   * known-algorithm catalog; the wallet itself is the source of truth at
+   * runtime and will reject any algorithm it doesn't implement.
+   *
+   * TODO(wallet): when the injector exposes an `algorithmsSupported` message,
+   * replace this static list with a real round-trip so dapps see what THIS
+   * Shield build supports, not just the SDK's static catalog.
+   */
+  async algorithmsSupported(): Promise<string[]> {
+    return [...KNOWN_ALGORITHMS];
   }
 
   /**

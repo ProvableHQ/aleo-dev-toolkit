@@ -10,7 +10,7 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { CheckIcon, CopyIcon, GenericWalletIcon } from './icons';
 
 export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
-  const { address, wallet, disconnect } = useWallet();
+  const { address, wallet, disconnect, connected } = useWallet();
   const { setVisible } = useWalletModal();
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState(false);
@@ -19,9 +19,11 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
   const base58 = useMemo(() => address?.toString(), [address]);
   const content = useMemo(() => {
     if (children) return children;
-    if (!wallet || !base58) return null;
-    return base58.slice(0, 4) + '..' + base58.slice(-4);
-  }, [children, wallet, base58]);
+    if (!wallet) return null;
+    if (base58) return base58.slice(0, 4) + '..' + base58.slice(-4);
+    if (connected) return 'Connected';
+    return null;
+  }, [children, wallet, base58, connected]);
 
   const copyAddress = useCallback(async () => {
     if (base58) {
@@ -69,7 +71,9 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
   }, [ref, closeDropdown]);
 
   if (!wallet) return <WalletModalButton {...props}>{children}</WalletModalButton>;
-  if (!base58) return <WalletConnectButton {...props}>{children}</WalletConnectButton>;
+  if (!connected && !base58) {
+    return <WalletConnectButton {...props}>{children}</WalletConnectButton>;
+  }
 
   return (
     <div className="wallet-adapter-dropdown">
@@ -89,18 +93,20 @@ export const WalletMultiButton: FC<ButtonProps> = ({ children, ...props }) => {
         ref={ref}
         role="menu"
       >
-        <li onClick={copyAddress} className="wallet-adapter-dropdown-list-item" role="menuitem">
-          {copied ? (
-            <>
-              Copied
-              <CheckIcon />
-            </>
-          ) : (
-            <>
-              Copy address <CopyIcon />
-            </>
-          )}
-        </li>
+        {base58 ? (
+          <li onClick={copyAddress} className="wallet-adapter-dropdown-list-item" role="menuitem">
+            {copied ? (
+              <>
+                Copied
+                <CheckIcon />
+              </>
+            ) : (
+              <>
+                Copy address <CopyIcon />
+              </>
+            )}
+          </li>
+        ) : null}
         <li onClick={openModal} className="wallet-adapter-dropdown-list-item" role="menuitem">
           Change wallet <GenericWalletIcon />
         </li>

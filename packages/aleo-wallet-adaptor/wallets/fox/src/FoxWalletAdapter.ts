@@ -1,11 +1,14 @@
 import {
   Account,
+  hasInputRequest,
   Network,
   TransactionOptions,
   TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
+  ConnectOptions,
+  hasUnsupportedConnectOptions,
   RecordStatusFilter,
   WalletDecryptPermission,
   WalletName,
@@ -17,10 +20,12 @@ import {
   MethodNotImplementedError,
   scopePollingDetectionStrategy,
   WalletConnectionError,
+  WalletConnectOptionsNotSupportedError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
+  WalletInputRequestNotSupportedError,
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletTransactionError,
@@ -121,7 +126,11 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account> {
+    if (hasUnsupportedConnectOptions(options)) {
+      throw new WalletConnectOptionsNotSupportedError(this.name);
+    }
     try {
       if (this.readyState !== WalletReadyState.INSTALLED) {
         throw new WalletConnectionError('Fox Wallet is not available');
@@ -256,6 +265,9 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
    * @returns The executed temporary transaction ID
    */
   async executeTransaction(options: TransactionOptions): Promise<{ transactionId: string }> {
+    if (hasInputRequest(options.inputs)) {
+      throw new WalletInputRequestNotSupportedError(this.name);
+    }
     if (!this._publicKey || !this.account) {
       throw new WalletNotConnectedError();
     }

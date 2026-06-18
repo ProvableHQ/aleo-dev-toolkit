@@ -6,3 +6,4 @@ export { DecryptPage } from './DecryptPage';
 export { RecordsPage } from './RecordsPage';
 export { ViewKeysPage } from './ViewKeysPage';
 export { TransactionHistoryPage } from './TransactionHistoryPage';
+export { PrivateInputsPage } from './PrivateInputsPage';

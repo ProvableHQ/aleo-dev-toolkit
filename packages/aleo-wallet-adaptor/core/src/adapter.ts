@@ -1,12 +1,15 @@
 import {
   Account,
+  AlgorithmArg,
   Network,
+  TransactionInput,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import {
   AleoChain,
+  ConnectOptions,
   StandardWallet,
   WalletAdapter,
   WalletFeatureName,
@@ -18,7 +21,12 @@ import {
   AleoDeployment,
   RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
-import { WalletFeatureNotAvailableError, WalletNotConnectedError } from './errors';
+import {
+  WalletAddressWithheldError,
+  WalletFeatureNotAvailableError,
+  WalletInputRequestInvalidError,
+  WalletNotConnectedError,
+} from './errors';
 import { WalletConnectionError } from './errors';
 
 /**
@@ -92,27 +100,64 @@ export abstract class BaseAleoWalletAdapter
   }
 
   /**
+   * Tracks `options.readAddress` for adapters that go through the wallet-standard
+   * feature surface. Concrete extension adapters may forward options directly to
+   * the provider and let the wallet enforce the permission boundary itself.
+   */
+  protected _readAddress: boolean = true;
+
+  protected assertReadAddressCompatibleWithDecryptPermission(
+    decryptPermission: WalletDecryptPermission,
+    options?: ConnectOptions,
+  ): void {
+    if (options?.readAddress === false && decryptPermission !== WalletDecryptPermission.NoDecrypt) {
+      throw new WalletConnectionError(
+        'readAddress: false is only valid with decryptPermission: NoDecrypt. ' +
+          'Plaintext-bearing operations would leak the owner address.',
+      );
+    }
+  }
+
+  protected setReadAddressFromConnectOptions(options?: ConnectOptions): void {
+    this._readAddress = options?.readAddress !== false;
+  }
+
+  protected resetReadAddress(): void {
+    this._readAddress = true;
+  }
+
+  protected assertReadAddressAllowed(method: string): void {
+    if (!this._readAddress) {
+      throw new WalletAddressWithheldError(method);
+    }
+  }
+
+  /**
    * Connect to the wallet
    * @param network The network to connect to
    * @param decryptPermission The decrypt permission
    * @param programs The programs to connect to
+   * @param options Optional additive connect-time options
    * @returns The connected account
    */
   async connect(
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account> {
     if (!this._wallet) {
       throw new WalletConnectionError('No wallet provider found');
     }
+    this.assertReadAddressCompatibleWithDecryptPermission(decryptPermission, options);
     const feature = this._wallet.features[WalletFeatureName.CONNECT];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.CONNECT);
     }
     try {
-      const account = await feature.connect(network, decryptPermission, programs);
+      const account = await feature.connect(network, decryptPermission, programs, options);
       this.account = account;
+      this.setReadAddressFromConnectOptions(options);
       this.emit('connect', account);
       return account;
     } catch (err) {
@@ -135,6 +180,7 @@ export abstract class BaseAleoWalletAdapter
       }
     }
     this.account = undefined;
+    this.resetReadAddress();
     this.emit('disconnect');
   }
 
@@ -163,6 +209,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    validateInputRequests(options.inputs);
     const feature = this._wallet.features[WalletFeatureName.EXECUTE];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.EXECUTE);
@@ -208,6 +255,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    this.assertReadAddressAllowed('decrypt');
     const feature = this._wallet.features[WalletFeatureName.DECRYPT];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.DECRYPT);
@@ -223,6 +271,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    this.assertReadAddressAllowed('requestRecords');
     const feature = this._wallet.features[WalletFeatureName.REQUEST_RECORDS];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_RECORDS);
@@ -246,6 +295,7 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    this.assertReadAddressAllowed('transitionViewKeys');
     const feature = this._wallet.features[WalletFeatureName.TRANSITION_VIEWKEYS];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.TRANSITION_VIEWKEYS);
@@ -257,11 +307,24 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    this.assertReadAddressAllowed('requestTransactionHistory');
     const feature = this._wallet.features[WalletFeatureName.REQUEST_TRANSACTION_HISTORY];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_TRANSACTION_HISTORY);
     }
     return feature.requestTransactionHistory(program);
+  }
+
+  /**
+   * Return the algorithm names this wallet implements for `type: "derived"`
+   * InputRequests. A dapp calls this before connect to learn which entries
+   * are valid in `ConnectOptions.algorithmsAllowed`. Wallets that do not
+   * support derived inputs at all should return `[]`.
+   *
+   * Override in adapters that support derived inputs.
+   */
+  async algorithmsSupported(): Promise<string[]> {
+    return [];
   }
 }
 
@@ -306,4 +369,57 @@ export function scopePollingDetectionStrategy(detect: () => boolean): void {
 
   // Strategy #4: Detect synchronously, now.
   detectAndDispose();
+}
+
+export function validateInputRequests(inputs: TransactionInput[]): void {
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    if (typeof input === 'string') continue;
+    if (input.type === 'record' && input.uid !== undefined && input.filters !== undefined) {
+      throw new WalletInputRequestInvalidError(
+        `inputs[${i}]: type "record" cannot specify both \`uid\` and \`filters\`. \`uid\` pins a specific record returned by requestRecords; filters are ignored when \`uid\` is set.`,
+      );
+    }
+    if (input.type === 'derived') {
+      if (typeof input.algorithm !== 'string' || input.algorithm.length === 0) {
+        throw new WalletInputRequestInvalidError(
+          `inputs[${i}]: type "derived" requires a non-empty \`algorithm\` string.`,
+        );
+      }
+      if (input.args === null || typeof input.args !== 'object' || Array.isArray(input.args)) {
+        throw new WalletInputRequestInvalidError(
+          `inputs[${i}]: type "derived" requires \`args\` to be an object (Record<string, AlgorithmArg>).`,
+        );
+      }
+      for (const [argName, arg] of Object.entries(input.args)) {
+        const invalidReason = invalidAlgorithmArgReason(arg);
+        if (invalidReason) {
+          throw new WalletInputRequestInvalidError(
+            `inputs[${i}]: args["${argName}"]${invalidReason}`,
+          );
+        }
+      }
+    }
+  }
+}
+
+function invalidAlgorithmArgReason(arg: unknown): string | null {
+  if (arg === null || typeof arg !== 'object') {
+    return ' must be { type, value }.';
+  }
+  if (!hasAlgorithmArgType(arg)) {
+    return '.type must be an ArgType string (a LiteralType or "string").';
+  }
+  if (!hasAlgorithmArgValue(arg)) {
+    return '.value must be a string Aleo literal.';
+  }
+  return null;
+}
+
+function hasAlgorithmArgType(arg: object): arg is { type: AlgorithmArg['type'] } {
+  return 'type' in arg && typeof arg.type === 'string';
+}
+
+function hasAlgorithmArgValue(arg: object): arg is AlgorithmArg {
+  return 'value' in arg && typeof arg.value === 'string';
 }

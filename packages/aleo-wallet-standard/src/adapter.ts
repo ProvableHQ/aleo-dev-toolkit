@@ -7,7 +7,7 @@ import {
 } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
 import type { RecordStatusFilter } from './features';
-import { WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
+import { ConnectOptions, WalletDecryptPermission, WalletName, WalletReadyState } from './wallet';
 import { EventEmitter, WalletEvents } from './events';
 
 export interface AleoDeployment {
@@ -71,12 +71,14 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @param network The network to connect to
    * @param decryptPermission The decrypt permission
    * @param programs The programs to connect to
+   * @param options Optional additive connect-time options (record access, address withholding)
    * @returns The connected account
    */
   connect(
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
+    options?: ConnectOptions,
   ): Promise<Account>;
 
   /**
@@ -157,6 +159,13 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+
+  /**
+   * Return the algorithm names this wallet implements for `type: "derived"`
+   * InputRequests. Wallets without derived-input support return `[]`.
+   * No connection required.
+   */
+  algorithmsSupported: () => Promise<string[]>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

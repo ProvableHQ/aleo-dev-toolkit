@@ -7,6 +7,7 @@ import {
   SignMessagePage,
   DecryptPage,
   RecordsPage,
+  PrivateInputsPage,
   ViewKeysPage,
   TransactionHistoryPage,
 } from '@/pages';
@@ -48,6 +49,10 @@ export const routes: RouteObject[] = [
       {
         path: 'records',
         element: <RecordsPage />,
+      },
+      {
+        path: 'private-inputs',
+        element: <PrivateInputsPage />,
       },
       {
         path: 'view-keys',
