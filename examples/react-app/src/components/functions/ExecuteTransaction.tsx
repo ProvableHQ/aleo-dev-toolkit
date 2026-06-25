@@ -312,7 +312,7 @@ export function ExecuteTransaction() {
       openWalletModal(true);
       return;
     }
-    if (!program.trim() || !functionName.trim() || !fee.trim()) {
+    if (!program.trim() || !functionName.trim()) {
       toast.error('Please enter program, function, and fee');
       return;
     }
@@ -342,7 +342,7 @@ export function ExecuteTransaction() {
         program: program.trim(),
         function: functionName.trim(),
         inputs: inputArray,
-        fee: Number(fee),
+        fee: fee ? Number(fee) : undefined,
         privateFee,
         ...(importsArray.length > 0 ? { imports: importsArray } : {}),
       });
@@ -670,11 +670,7 @@ export function ExecuteTransaction() {
       <Button
         onClick={handleExecuteTransaction}
         disabled={
-          isExecutingTransaction ||
-          isPollingStatus ||
-          !program.trim() ||
-          !functionName.trim() ||
-          !fee.trim()
+          isExecutingTransaction || isPollingStatus || !program.trim() || !functionName.trim()
         }
         className="w-full transition-all duration-200"
       >
