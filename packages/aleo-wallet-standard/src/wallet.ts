@@ -167,7 +167,7 @@ export enum WalletDecryptPermission {
   NoDecrypt = 'NO_DECRYPT', // The dapp cannot decrypt any records
   UponRequest = 'DECRYPT_UPON_REQUEST', // The dapp can decrypt records upon request
   AutoDecrypt = 'AUTO_DECRYPT', // The dapp can decrypt any requested records
-  OnChainHistory = 'ON_CHAIN_HISTORY', // The dapp can request on-chain record plain texts and transaction ids, but cannot decrypt them
+  OnChainHistory = 'ON_CHAIN_HISTORY', // The dapp can request on-chain record plain texts and transaction ids and decrypt any requested records
 }
 
 /**

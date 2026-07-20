@@ -89,7 +89,7 @@ export const App: FC = () => {
   - `DecryptPermission.NoDecrypt` - The dapp cannot decrypt any records (default)
   - `DecryptPermission.UponRequest` - The dapp can decrypt records upon request
   - `DecryptPermission.AutoDecrypt` - The dapp can decrypt any requested records
-  - `DecryptPermission.OnChainHistory` - The dapp can request on-chain record plain texts and transaction ids, but cannot decrypt them
+  - `DecryptPermission.OnChainHistory` - The dapp can request on-chain record plain texts and transaction ids and decrypt any requested records
 - **`autoConnect`** (optional): Whether to automatically connect on mount. Defaults to `false`
 - **`programs`** (optional): Array of program IDs that will be called - Leave empty to allow any program to be called.
 - **`onError`** (optional): Error handler callback
