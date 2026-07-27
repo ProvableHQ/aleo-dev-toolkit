@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-wallet-standard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TypeScript type definitions and interfaces for Aleo wallets (StandardWallet interface is experimental/work-in-progress)",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
