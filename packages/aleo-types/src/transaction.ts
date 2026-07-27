@@ -101,6 +101,9 @@ export type InputRequest =
        * in the connection's `algorithmsAllowed`. Each algorithm declares its
        * `args` schema and output Aleo type; the output type determines which
        * input positions are valid (same rules as `type: "address"`).
+       *
+       * The wallet derives against `grant.scopeProgram ?? grant.program`, so a
+       * wrapper call site can pin the inner program its derivation targets.
        */
       type: 'derived';
       algorithm: AlgorithmName;

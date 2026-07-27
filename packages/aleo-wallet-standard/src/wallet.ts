@@ -239,6 +239,14 @@ export interface AlgorithmGrant {
   /** 0-based index into the function's input slots. */
   inputPosition: number;
   /**
+   * Program whose address is hashed into the derivation and that keys the
+   * wallet's counter partition — for call sites where `program` is a wrapper
+   * that internally calls the scope program. Omitted ⇒ `program` (call-site
+   * scoping). Must be a well-formed program id that exists on the connection's
+   * network; the wallet rejects the connect otherwise.
+   */
+  scopeProgram?: string;
+  /**
    * Optional per-arg bounds on the derived InputRequest's `args`: for each arg
    * name, a fixed allowlist of acceptable values or "any" (omitted ⇒ "any").
    * Enforced by the wallet. Matched against each `AlgorithmArg.value`.
