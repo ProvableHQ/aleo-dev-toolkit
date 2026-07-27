@@ -1,5 +1,11 @@
 # @provablehq/aleo-types
 
+## 1.0.1
+
+### Patch Changes
+
+- eb90940: Add optional `scopeProgram` to `AlgorithmGrant` for wrapper call sites: the wallet derives against `scopeProgram ?? program`, so a grant whose call site is a wrapper program can pin the inner program its derivation targets. Additive and backward compatible — omitting the field preserves call-site scoping.
+
 ## 1.0.0
 
 ### Major Changes

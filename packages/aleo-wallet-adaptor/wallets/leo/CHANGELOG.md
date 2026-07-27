@@ -1,5 +1,14 @@
 # @provablehq/aleo-wallet-adaptor-leo
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [eb90940]
+  - @provablehq/aleo-wallet-standard@1.1.0
+  - @provablehq/aleo-types@1.0.1
+  - @provablehq/aleo-wallet-adaptor-core@1.0.1
+
 ## 1.0.0
 
 ### Major Changes
