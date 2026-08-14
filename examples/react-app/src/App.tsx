@@ -8,7 +8,7 @@ import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
-import { useAtomValue } from 'jotai';
+import { getDefaultStore, useAtomValue } from 'jotai';
 import {
   algorithmsAllowedAtom,
   autoConnectAtom,
@@ -17,13 +17,39 @@ import {
   programsAtom,
   readAddressAtom,
   recordAccessAtom,
+  remoteConnectUrlAtom,
 } from './lib/store/global';
 import { routes } from './routes';
+import { RemoteConnectBanner } from './components/RemoteConnectBanner';
+import { RemoteShieldTransport } from './lib/shieldRelay/transport';
+import { IS_MOBILE_UA, SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from './lib/shieldRemoteConfig';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
+// With VITE_SHIELD_RELAY_URL set, Shield gains the remote (relay) fallback:
+// on browsers without an injected window.shield it reports Loadable and
+// connect() pairs with the Shield app via deeplink + E2E-encrypted relay.
+// The injected provider still wins whenever it exists.
+const shieldWalletAdapter = SHIELD_RELAY_URL
+  ? new ShieldWalletAdapter({
+      remote: {
+        relayUrl: SHIELD_RELAY_URL,
+        deeplinkBase: SHIELD_DEEPLINK_BASE,
+        // The example bundles the (vendored) relay transport itself — see
+        // src/lib/shieldRelay/ — so the adapter never dynamic-imports a bare
+        // specifier through Vite.
+        transport: options => new RemoteShieldTransport(options),
+        onConnectUrl: url => {
+          getDefaultStore().set(remoteConnectUrlAtom, url);
+          // Same-device flow: hand the link to the OS so Shield opens.
+          if (IS_MOBILE_UA) window.location.href = url;
+        },
+      },
+    })
+  : new ShieldWalletAdapter();
+
 const wallets = [
-  new ShieldWalletAdapter(),
+  shieldWalletAdapter,
   new PuzzleWalletAdapter(),
   new LeoWalletAdapter(),
   new FoxWalletAdapter(),
@@ -59,6 +85,7 @@ export function App() {
       >
         <WalletModalProvider>
           <AppRoutes />
+          <RemoteConnectBanner />
           <Toaster />
         </WalletModalProvider>
       </AleoWalletProvider>

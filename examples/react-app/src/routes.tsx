@@ -8,6 +8,7 @@ import {
   DecryptPage,
   RecordsPage,
   PrivateInputsPage,
+  RemoteConnectPage,
   ViewKeysPage,
   TransactionHistoryPage,
 } from '@/pages';
@@ -29,6 +30,10 @@ export const routes: RouteObject[] = [
       {
         path: 'customizations',
         element: <CustomizationsPage />,
+      },
+      {
+        path: 'remote',
+        element: <RemoteConnectPage />,
       },
       {
         path: 'execute',

@@ -8,6 +8,7 @@ export const PLACEHOLDERS = {
   CIPHER_TEXT: '{{CIPHER_TEXT}}',
   MESSAGE: '{{MESSAGE}}',
   TX_ID: '{{TX_ID}}',
+  RELAY_URL: '{{RELAY_URL}}',
 } as const;
 
 export const codeExamples = {
@@ -128,6 +129,23 @@ const tx = await executeTransaction({
   fee: 200000,
 });
 console.log('Transaction Id:', tx?.transactionId);`,
+
+  remoteConnect: `import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
+import { RemoteShieldTransport } from '@shield/relay-dapp-client';
+
+// Opt-in remote fallback: on browsers without an injected window.shield,
+// Shield reports "Loadable" and connect() pairs with the Shield app over a
+// deeplink + end-to-end-encrypted relay. Injected providers always win.
+const shield = new ShieldWalletAdapter({
+  remote: {
+    relayUrl: '${PLACEHOLDERS.RELAY_URL}',
+    deeplinkBase: 'shield://connect',
+    // Bundled apps resolve the relay client through their own bundler:
+    transport: options => new RemoteShieldTransport(options),
+    // Optional: surface the connect URL yourself (QR / copy button).
+    onConnectUrl: url => showPairingUi(url),
+  },
+});`,
 } as const;
 
 export type CodeExampleKey = keyof typeof codeExamples;

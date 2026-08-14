@@ -14,6 +14,7 @@ import {
   Book,
   Github,
   Brush,
+  Smartphone,
 } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ const navigationGroups: NavGroup[] = [
     items: [
       { to: '/wallet', label: 'Get Started', icon: Wallet },
       { to: '/customizations', label: 'Customizations', icon: Brush },
+      { to: '/remote', label: 'Remote Connect', icon: Smartphone },
     ],
   },
   {
