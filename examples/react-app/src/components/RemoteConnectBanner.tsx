@@ -1,16 +1,19 @@
 import { useEffect } from 'react';
 import { useAtom } from 'jotai';
+import { QRCodeSVG } from 'qrcode.react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Copy, ExternalLink, Smartphone, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { remoteConnectUrlAtom } from '@/lib/store/global';
+import { IS_MOBILE_UA } from '@/lib/shieldRemoteConfig';
 
 /**
  * Shown while a Shield remote (relay) pairing is waiting for the wallet.
  * On a phone the deeplink fires automatically (see App.tsx); this banner is
- * the fallback surface: open the link manually, or copy it — e.g. to paste
- * into shield-relay's fake-wallet during Stage-1 POC testing.
+ * the fallback surface: on desktop it renders the connect URL as a QR code
+ * to scan with the Shield app, plus open/copy — e.g. copy to paste into
+ * shield-relay's fake-wallet during Stage-1 POC testing.
  */
 export function RemoteConnectBanner() {
   const [connectUrl, setConnectUrl] = useAtom(remoteConnectUrlAtom);
@@ -45,9 +48,15 @@ export function RemoteConnectBanner() {
         </Button>
       </div>
       <p className="label-xs text-muted-foreground">
-        Open this link on the phone running Shield (or paste it into the fake wallet). Waiting for
-        the wallet to pair…
+        {IS_MOBILE_UA
+          ? 'Open this link on the phone running Shield (or paste it into the fake wallet). Waiting for the wallet to pair…'
+          : 'Scan the QR code with the Shield app (or paste the link into the fake wallet). Waiting for the wallet to pair…'}
       </p>
+      {!IS_MOBILE_UA && (
+        <div className="flex justify-center rounded-lg border bg-white p-3">
+          <QRCodeSVG value={connectUrl} size={192} marginSize={1} />
+        </div>
+      )}
       <div className="bg-muted p-2 rounded-lg label-xs break-all border normal-case">
         {connectUrl}
       </div>
