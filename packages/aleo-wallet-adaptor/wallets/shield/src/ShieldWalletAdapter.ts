@@ -29,7 +29,12 @@ import {
   WalletSwitchNetworkError,
   WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
-import { ShieldWallet, ShieldWindow } from './types';
+import {
+  ShieldRemoteConfig,
+  ShieldWallet,
+  ShieldWalletAdapterConfig,
+  ShieldWindow,
+} from './types';
 
 /**
  * Shield wallet adapter
@@ -76,18 +81,38 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       : WalletReadyState.NOT_DETECTED;
 
   /**
-   * Shield wallet instance
+   * Shield wallet instance (injected provider, or the remote relay facade)
    */
   private _shieldWallet: ShieldWallet | undefined;
 
   /**
-   * Create a new Shield wallet adapter
-   * @param config Adapter configuration
+   * Remote (relay) fallback configuration, when opted in
    */
-  constructor() {
+  private readonly _remoteConfig?: ShieldRemoteConfig;
+
+  /**
+   * Lazily created remote facade — reused across reconnects so the relay
+   * session (and its persisted pairing) survives disconnect/connect cycles.
+   */
+  private _remoteWallet?: ShieldWallet;
+
+  /**
+   * Create a new Shield wallet adapter
+   * @param config Adapter configuration. Omit for injected-only behavior
+   * (unchanged); pass `{ remote }` to enable the relay fallback on browsers
+   * without `window.shield` (plain mobile Safari/Chrome).
+   */
+  constructor(config?: ShieldWalletAdapterConfig) {
     super();
     this.network = Network.TESTNET;
+    this._remoteConfig = config?.remote;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
+      // Remote-capable adapters are usable without any injection — that is
+      // the wallet-standard's LOADABLE state. Injection detection still runs
+      // and upgrades to INSTALLED: the injected provider always wins.
+      if (this._remoteConfig) {
+        this._readyState = WalletReadyState.LOADABLE;
+      }
       scopePollingDetectionStrategy(() => this._checkAvailability());
     }
   }
@@ -118,7 +143,17 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     options?: ConnectOptions,
   ): Promise<Account> {
     try {
-      if (this.readyState !== WalletReadyState.INSTALLED) {
+      if (this.readyState === WalletReadyState.INSTALLED) {
+        // Injected provider — _shieldWallet was set by _checkAvailability.
+      } else if (this._remoteConfig && this.readyState === WalletReadyState.LOADABLE) {
+        // No injection: fall back to the relay. The facade module is loaded
+        // lazily so injected-only dapps never pull in remote code.
+        if (!this._remoteWallet) {
+          const { RemoteShieldWallet } = await import('./remote');
+          this._remoteWallet = new RemoteShieldWallet(this._remoteConfig);
+        }
+        this._shieldWallet = this._remoteWallet;
+      } else {
         throw new WalletConnectionError('Shield Wallet is not available');
       }
 

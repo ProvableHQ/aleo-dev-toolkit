@@ -470,6 +470,15 @@ per-argument values with `argConstraints`, which is either a fixed allowlist of 
 the string `"any"` (and an omitted constraint means any value is allowed). Pinning the values means a
 later call cannot reuse the grant with different arguments.
 
+When the granted call site is a wrapper program that internally calls the program the derivation is
+for, set `scopeProgram` to that inner program: the wallet then derives against
+`scopeProgram ?? program` — the scope program's address is hashed into the derivation and its counter
+partition is used, so wrapped and direct calls to the same program share one counter space. The value
+must be a well-formed program id that exists on the connection's network (the wallet rejects the
+connect otherwise), and it is always pinned in the grant — there is no request-time way to change it.
+The wallet does not verify that the wrapper actually calls the scope program; the target program's
+own on-chain re-derivation check enforces correct usage.
+
 ```ts
 <AleoWalletProvider
   // ...
@@ -484,6 +493,10 @@ later call cannot reuse the grant with different arguments.
         mode: ['issue'],
         membershipMapping: ['used_blinded_addresses'],
       } },
+    // a router transition that wraps amm_v3.aleo — scope the derivation to the inner program:
+    { algorithm: 'program-scoped-blinded-address',
+      program: 'amm_router.aleo', function: 'swap_from_wrapped', inputPosition: 3,
+      scopeProgram: 'amm_v3.aleo' },
   ]}
 >
 ```
