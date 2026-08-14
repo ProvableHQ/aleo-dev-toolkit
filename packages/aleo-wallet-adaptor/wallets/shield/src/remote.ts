@@ -159,11 +159,15 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
       // bare specifiers resolve at runtime (Node/SSR, monorepos, import
       // maps). Bundled browser dapps should pass `remote.transport` with a
       // literal import instead, so THEIR bundler resolves the package.
+      //
+      // The specifier is deliberately a variable: bundlers (Rollup/webpack/
+      // esbuild) cannot statically resolve it, so builds of dapps that never
+      // installed this optional package do not fail — ignore-comments alone
+      // are not enough because tsup strips comments from the published dist.
+      const specifier = '@shield/relay-dapp-client';
       let mod: { RemoteShieldTransport: new (o: typeof options) => ShieldRemoteTransportLike };
       try {
-        mod = (await import(
-          /* webpackIgnore: true */ /* @vite-ignore */ '@shield/relay-dapp-client'
-        )) as unknown as typeof mod;
+        mod = (await import(/* @vite-ignore */ specifier)) as unknown as typeof mod;
       } catch {
         throw new WalletConnectionError(
           "Shield remote fallback could not load '@shield/relay-dapp-client'. Install it and, " +
