@@ -31,28 +31,30 @@ export const WalletModal: FC<WalletModalProps> = ({
   const [fadeIn, setFadeIn] = useState(false);
   const [portal, setPortal] = useState<Element | null>(null);
 
-  const [installedWallets, otherWallets] = useMemo(() => {
-    const installed: Wallet[] = [];
+  // LOADABLE wallets (e.g. Shield with the remote relay fallback configured) are
+  // connectable without an installed extension, so group them with INSTALLED ones.
+  const [connectableWallets, otherWallets] = useMemo(() => {
+    const connectable: Wallet[] = [];
     const notDetected: Wallet[] = [];
-    const loadable: Wallet[] = [];
 
     for (const wallet of wallets) {
       if (wallet.readyState === WalletReadyState.NOT_DETECTED) {
         notDetected.push(wallet);
-      } else if (wallet.readyState === WalletReadyState.LOADABLE) {
-        loadable.push(wallet);
-      } else if (wallet.readyState === WalletReadyState.INSTALLED) {
-        installed.push(wallet);
+      } else if (
+        wallet.readyState === WalletReadyState.INSTALLED ||
+        wallet.readyState === WalletReadyState.LOADABLE
+      ) {
+        connectable.push(wallet);
       }
     }
 
-    return [installed, [...loadable, ...notDetected]];
+    return [connectable, notDetected];
   }, [wallets]);
 
   const getStartedWallet = useMemo(() => {
-    return installedWallets.length
+    return connectableWallets.length
       ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        installedWallets[0]!
+        connectableWallets[0]!
       : wallets.find((wallet: { adapter: { name: WalletName } }) =>
           wallet.adapter.name.toLowerCase().includes('shield'),
         ) ||
@@ -62,7 +64,7 @@ export const WalletModal: FC<WalletModalProps> = ({
           ) ||
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           otherWallets[0]!;
-  }, [installedWallets, wallets, otherWallets]);
+  }, [connectableWallets, wallets, otherWallets]);
 
   // Refresh page when user returns from being redirected to a wallet install page
   useEffect(() => {
@@ -209,11 +211,11 @@ export const WalletModal: FC<WalletModalProps> = ({
                 <path d="M14 12.461 8.3 6.772l5.234-5.233L12.006 0 6.772 5.234 1.54 0 0 1.539l5.234 5.233L0 12.006l1.539 1.528L6.772 8.3l5.69 5.7L14 12.461z" />
               </svg>
             </button>
-            {installedWallets.length ? (
+            {connectableWallets.length ? (
               <>
                 <h1 className="wallet-adapter-modal-title">Connect an Aleo wallet</h1>
                 <ul className="wallet-adapter-modal-list">
-                  {installedWallets.map(wallet => (
+                  {connectableWallets.map(wallet => (
                     <WalletListItem
                       key={wallet.adapter.name}
                       handleClick={event =>
