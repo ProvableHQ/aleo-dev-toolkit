@@ -25,9 +25,6 @@ import {
 
 const DEFAULT_PAIRING_TIMEOUT_MS = 5 * 60 * 1000;
 
-/** Relay event name -> ShieldWalletEvents name (they match by design). */
-const RELAY_EVENTS = ['networkChanged', 'accountChanged', 'disconnect'] as const;
-
 /**
  * Remote implementation of the `ShieldWallet` surface over the Shield relay
  * (deeplink + end-to-end-encrypted Centrifugo channel — see
@@ -39,7 +36,6 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   publicKey?: string;
 
   private transport?: ShieldRemoteTransportLike;
-  private readonly forwarded = new Set<string>();
 
   constructor(private readonly config: ShieldRemoteConfig) {
     super();
@@ -87,6 +83,9 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // Best-effort notify: the session teardown below is what matters.
     await this.transport.request('disconnect', []).catch(() => undefined);
     this.transport.disconnect();
+    // The transport's disconnect() forgets its keys — a fresh pairing needs a
+    // fresh transport, so never keep a dead instance around.
+    this.transport = undefined;
     this.publicKey = undefined;
   }
 
@@ -145,48 +144,21 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   private async loadTransport(): Promise<ShieldRemoteTransportLike> {
     if (this.transport) return this.transport;
 
-    const options = {
+    // The dapp's factory resolves '@shield/relay-dapp-client' via a literal
+    // import in the dapp's own source — this package never names the module,
+    // so there is nothing for a bundler to fail on and no runtime-resolution
+    // magic to go wrong.
+    const transport = await this.config.transport({
       relayUrl: this.config.relayUrl,
       deeplinkBase: this.config.deeplinkBase,
       requestTimeoutMs: this.config.requestTimeoutMs,
-    };
+    });
 
-    let transport: ShieldRemoteTransportLike;
-    if (this.config.transport) {
-      transport = await this.config.transport(options);
-    } else {
-      // Default path: resolve the relay client at runtime. Works wherever
-      // bare specifiers resolve at runtime (Node/SSR, monorepos, import
-      // maps). Bundled browser dapps should pass `remote.transport` with a
-      // literal import instead, so THEIR bundler resolves the package.
-      //
-      // The specifier is deliberately a variable: bundlers (Rollup/webpack/
-      // esbuild) cannot statically resolve it, so builds of dapps that never
-      // installed this optional package do not fail — ignore-comments alone
-      // are not enough because tsup strips comments from the published dist.
-      const specifier = '@shield/relay-dapp-client';
-      let mod: { RemoteShieldTransport: new (o: typeof options) => ShieldRemoteTransportLike };
-      try {
-        mod = (await import(/* @vite-ignore */ specifier)) as unknown as typeof mod;
-      } catch {
-        throw new WalletConnectionError(
-          "Shield remote fallback could not load '@shield/relay-dapp-client'. Install it and, " +
-            'in bundled apps, pass remote.transport: async (o) => new (await ' +
-            "import('@shield/relay-dapp-client')).RemoteShieldTransport(o).",
-        );
-      }
-      transport = new mod.RemoteShieldTransport(options);
-    }
-
-    // Relay event names mirror the injected provider's, so forwarding is 1:1.
-    for (const event of RELAY_EVENTS) {
-      if (this.forwarded.has(event)) continue;
-      this.forwarded.add(event);
-      transport.on(event, (data?: unknown) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.emit(event as keyof ShieldWalletEvents, data as any);
-      });
-    }
+    // Relay event names mirror the injected provider's — forward each
+    // explicitly with its own signature. Attached once per fresh transport.
+    transport.on('networkChanged', data => this.emit('networkChanged', data as Network));
+    transport.on('accountChanged', () => this.emit('accountChanged'));
+    transport.on('disconnect', () => this.emit('disconnect'));
 
     this.transport = transport;
     return transport;
