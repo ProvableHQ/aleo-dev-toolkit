@@ -32,23 +32,24 @@ export const WalletModal: FC<WalletModalProps> = ({
   const [portal, setPortal] = useState<Element | null>(null);
 
   // LOADABLE wallets (e.g. Shield with the remote relay fallback configured) are
-  // connectable without an installed extension, so group them with INSTALLED ones.
+  // connectable without an installed extension, so group them with INSTALLED
+  // ones — installed extensions listed first.
   const [connectableWallets, otherWallets] = useMemo(() => {
-    const connectable: Wallet[] = [];
+    const installed: Wallet[] = [];
+    const loadable: Wallet[] = [];
     const notDetected: Wallet[] = [];
 
     for (const wallet of wallets) {
       if (wallet.readyState === WalletReadyState.NOT_DETECTED) {
         notDetected.push(wallet);
-      } else if (
-        wallet.readyState === WalletReadyState.INSTALLED ||
-        wallet.readyState === WalletReadyState.LOADABLE
-      ) {
-        connectable.push(wallet);
+      } else if (wallet.readyState === WalletReadyState.INSTALLED) {
+        installed.push(wallet);
+      } else if (wallet.readyState === WalletReadyState.LOADABLE) {
+        loadable.push(wallet);
       }
     }
 
-    return [connectable, notDetected];
+    return [[...installed, ...loadable], notDetected];
   }, [wallets]);
 
   const getStartedWallet = useMemo(() => {
