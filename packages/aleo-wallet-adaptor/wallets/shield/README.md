@@ -41,6 +41,10 @@ const wallets = [
     remote: {
       relayUrl: 'wss://relay.shield.app', // or http://<lan-ip>:8787 in dev
       deeplinkBase: 'shield://connect', // https://app.shield.app/connect once universal links ship
+      // Your bundler resolves the relay client from YOUR source — this
+      // package never imports it:
+      transport: async options =>
+        new (await import('@shield/relay-dapp-client')).RemoteShieldTransport(options),
     },
   }),
 ];
@@ -56,20 +60,12 @@ Behavior:
   the URL as a QR code.
 - Sessions persist in `localStorage`; a page reload resumes the pairing
   without another deeplink round-trip.
-- The relay client (`@shield/relay-dapp-client`) is **not a dependency of
-  this package** — it is loaded lazily on first remote connect, so dapps
-  that don't opt in carry none of it. Opted-in dapps install it themselves
-  (via file:/git until it is published) and, when bundling, should resolve
-  it through their own bundler via the `remote.transport` factory:
-
-```tsx
-remote: {
-  relayUrl,
-  deeplinkBase,
-  transport: async (options) =>
-    new (await import('@shield/relay-dapp-client')).RemoteShieldTransport(options),
-}
-```
+- The relay client (`@shield/relay-dapp-client`) is **never imported by this
+  package** — not at compile time, not at runtime. Opted-in dapps install it
+  themselves (via file:/git until it is published) and pass the required
+  `remote.transport` factory shown above, so their own bundler resolves the
+  literal import. Dapps that don't opt in carry none of this code: the
+  remote module itself is only loaded (lazily) when `remote` is configured.
 
 ## Related packages
 

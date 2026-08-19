@@ -23,9 +23,10 @@ export interface ShieldRemoteTransportOptions {
 
 /**
  * Structural view of '@shield/relay-dapp-client''s RemoteShieldTransport.
- * Kept structural so this package has no compile-time dependency on the
- * relay client — it is an optional peer dependency, loaded only when
- * `remote` is configured.
+ * This package never imports the relay client — not at compile time, not at
+ * runtime. This shape is the contract for the `remote.transport` factory:
+ * the dapp installs the relay client itself and returns an instance shaped
+ * like this (its RemoteShieldTransport already is).
  */
 export interface ShieldRemoteTransportLike {
   /** Opens (or resumes) the relay channel; returns the connect/deeplink URL. */
@@ -69,12 +70,13 @@ export interface ShieldRemoteConfig {
    */
   onConnectUrl?: (url: string, context: { resumed: boolean }) => void;
   /**
-   * Escape hatch for bundled apps: supply the transport yourself so YOUR
-   * bundler resolves the relay client, e.g.
+   * Factory for the relay transport. Required: this package deliberately
+   * never imports '@shield/relay-dapp-client', so YOUR bundler resolves it
+   * from a literal import in YOUR source — the only resolution that works
+   * everywhere (Vite/webpack/esbuild, SSR, mobile Safari):
    * `transport: async (o) => new (await import('@shield/relay-dapp-client')).RemoteShieldTransport(o)`.
-   * When omitted, the adapter attempts a runtime dynamic import.
    */
-  transport?: (
+  transport: (
     options: ShieldRemoteTransportOptions,
   ) => Promise<ShieldRemoteTransportLike> | ShieldRemoteTransportLike;
 }

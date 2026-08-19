@@ -81,7 +81,9 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       : WalletReadyState.NOT_DETECTED;
 
   /**
-   * Shield wallet instance (injected provider, or the remote relay facade)
+   * The live wallet (injected provider, or the remote relay facade).
+   * Written ONLY by connect() — detection must never touch it, so a wallet
+   * injected mid-session cannot hijack an active remote connection.
    */
   private _shieldWallet: ShieldWallet | undefined;
 
@@ -89,12 +91,6 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * Remote (relay) fallback configuration, when opted in
    */
   private readonly _remoteConfig?: ShieldRemoteConfig;
-
-  /**
-   * Lazily created remote facade — reused across reconnects so the relay
-   * session (and its persisted pairing) survives disconnect/connect cycles.
-   */
-  private _remoteWallet?: ShieldWallet;
 
   /**
    * Create a new Shield wallet adapter
@@ -118,18 +114,38 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Check if Shield wallet is available
+   * Check if Shield wallet is available. Detection only reports state —
+   * binding the live wallet is connect()'s job (see _resolveWallet).
    */
   private _checkAvailability(): boolean {
     this._window = window as ShieldWindow;
 
     if (this._window.shield) {
       this.readyState = WalletReadyState.INSTALLED;
-      this._shieldWallet = this._window?.shield;
       this.emit('readyStateChange', this.readyState);
       return true;
     }
     return false;
+  }
+
+  /**
+   * Resolve the wallet to connect through, based on the current readyState.
+   * Returns a definite instance: the injected provider when installed, or a
+   * fresh remote facade otherwise. The facade is deliberately NOT cached —
+   * pairing persistence lives in the transport's localStorage session, which
+   * a fresh instance resumes, and `import('./remote')` is module-cached.
+   */
+  private async _resolveWallet(): Promise<ShieldWallet> {
+    if (this.readyState === WalletReadyState.INSTALLED && this._window?.shield) {
+      return this._window.shield;
+    }
+    if (this._remoteConfig && this.readyState === WalletReadyState.LOADABLE) {
+      // No injection: fall back to the relay. The facade module is loaded
+      // lazily so injected-only dapps never pull in remote code.
+      const { RemoteShieldWallet } = await import('./remote');
+      return new RemoteShieldWallet(this._remoteConfig);
+    }
+    throw new WalletConnectionError('Shield Wallet is not available');
   }
 
   /**
@@ -143,28 +159,12 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     options?: ConnectOptions,
   ): Promise<Account> {
     try {
-      if (this.readyState === WalletReadyState.INSTALLED) {
-        // Injected provider — _shieldWallet was set by _checkAvailability.
-      } else if (this._remoteConfig && this.readyState === WalletReadyState.LOADABLE) {
-        // No injection: fall back to the relay. The facade module is loaded
-        // lazily so injected-only dapps never pull in remote code.
-        if (!this._remoteWallet) {
-          const { RemoteShieldWallet } = await import('./remote');
-          this._remoteWallet = new RemoteShieldWallet(this._remoteConfig);
-        }
-        this._shieldWallet = this._remoteWallet;
-      } else {
-        throw new WalletConnectionError('Shield Wallet is not available');
-      }
+      const wallet = await this._resolveWallet();
+      this._shieldWallet = wallet;
 
       // Call connect and extract address safely
       try {
-        const connectResult = await this._shieldWallet?.connect(
-          network,
-          decryptPermission,
-          programs,
-          options,
-        );
+        const connectResult = await wallet.connect(network, decryptPermission, programs, options);
         this._publicKey = connectResult?.address || '';
         this._onNetworkChange(network);
       } catch (error: unknown) {
