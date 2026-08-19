@@ -23,6 +23,13 @@ const wallets = [new ShieldWalletAdapter()];
 
 ## Remote (relay) fallback — mobile browsers without an extension
 
+> **Experimental.** The remote fallback requires a Shield app build with
+> relay support, which is **not yet generally available** — enabling it
+> today gives users a pairing link that nothing can answer. It exists for
+> internal development and preview builds; don't enable it in production
+> dapps until Shield announces relay support. Everything else in this
+> package is unaffected — the option is strictly opt-in.
+
 On plain mobile Safari/Chrome there is no injected `window.shield`, so by
 default Shield reports `NotDetected`. Opting into the remote fallback lets
 the dapp connect to the Shield **app** instead, via a deeplink and an

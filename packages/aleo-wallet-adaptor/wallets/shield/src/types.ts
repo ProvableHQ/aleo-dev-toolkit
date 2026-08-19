@@ -46,6 +46,11 @@ export interface ShieldRemoteTransportLike {
  * Remote (relay) fallback configuration — lets a dapp in a plain mobile
  * browser connect to the Shield app via deeplink + end-to-end-encrypted
  * relay when no injected `window.shield` provider exists.
+ *
+ * @experimental Requires a Shield app build with relay support, which is not
+ * yet generally available — without one, remote connect() cannot complete.
+ * The option is safe to leave configured (injected providers always take
+ * precedence), but do not ship it in production dapps yet.
  */
 export interface ShieldRemoteConfig {
   /** Relay websocket/http origin, e.g. wss://relay.shield.app or http://<lan-ip>:8787 */
@@ -80,6 +85,9 @@ export interface ShieldWalletAdapterConfig {
    * injected-only behavior; when set and no `window.shield` exists, the
    * adapter reports LOADABLE and connects via the relay instead. An
    * injected provider always takes precedence.
+   *
+   * @experimental Not yet generally available — needs a Shield app build
+   * with relay support. See the package README before enabling.
    */
   remote?: ShieldRemoteConfig;
 }
