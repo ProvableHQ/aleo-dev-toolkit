@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@noble/curves": "1.9.7",
+    "@noble/hashes": "1.7.2",
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-fox": "workspace:*",

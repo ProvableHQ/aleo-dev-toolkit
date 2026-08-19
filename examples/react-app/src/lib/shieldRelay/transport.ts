@@ -1,6 +1,7 @@
 /**
  * VENDORED from ProvableHQ/shield-relay (packages/dapp-client/src/transport.ts)
- * at 9a31463. Temporary until published (WS-92).
+ * at 34f1a97 (PR #11: authenticated peers + key-handshake MAC).
+ * Temporary until published (WS-92).
  */
 import { Centrifuge, type Subscription } from 'centrifuge';
 import {
@@ -8,11 +9,15 @@ import {
   decryptMessage,
   encryptMessage,
   generateKeyPair,
+  generatePairingSecret,
   nextSequence,
   normalizeRelayUrl,
+  PROTOCOL_VERSION,
   relayChannel,
   restoreKeyPair,
   RpcErrorCodes,
+  verifyHandshakeMac,
+  type ConnectRequest,
   type KeyPair,
   type RelayEnvelope,
   type RelayPayload,
@@ -56,6 +61,8 @@ export interface SessionStorageLike {
 interface PersistedSession {
   channelId: string;
   privateKeyHex: string;
+  /** Pairing secret; a resumed session must keep it to re-verify a handshake. */
+  secret: string;
   walletPublicKey?: string;
   /** Replay protection: last sequence we sent / highest we accepted. */
   sendSeq?: number;
@@ -72,6 +79,7 @@ export class RemoteShieldTransport {
   private subscription?: Subscription;
   private keyPair!: KeyPair;
   private channelId!: string;
+  private secret!: string;
   private walletPublicKey?: string;
   private readonly pending = new Map<
     string,
@@ -102,12 +110,14 @@ export class RemoteShieldTransport {
     if (persisted) {
       this.channelId = persisted.channelId;
       this.keyPair = restoreKeyPair(persisted.privateKeyHex);
+      this.secret = persisted.secret;
       this.walletPublicKey = persisted.walletPublicKey;
       this.sendSeq = persisted.sendSeq ?? 0;
       this.recvSeq = persisted.recvSeq ?? 0;
     } else {
       this.channelId = crypto.randomUUID();
       this.keyPair = generateKeyPair();
+      this.secret = generatePairingSecret();
     }
 
     this.walletReady = new Promise(resolve => {
@@ -123,6 +133,7 @@ export class RemoteShieldTransport {
       publicKey: this.keyPair.publicKeyHex,
       relay: this.options.relayUrl,
       origin: this.origin,
+      secret: this.secret,
     });
     return { url, resumed };
   }
@@ -148,7 +159,7 @@ export class RemoteShieldTransport {
     // replay).
     this.sendSeq = nextSequence(this.sendSeq);
     this.saveSession();
-    const encrypted = encryptMessage(this.walletPublicKey!, message, this.sendSeq);
+    const encrypted = encryptMessage(this.walletPublicKey!, this.keyPair, message, this.sendSeq);
 
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -190,6 +201,18 @@ export class RemoteShieldTransport {
   }
 
   // --- internals ---
+
+  /** This pairing, as the wallet sees it — the MAC transcript is built from it. */
+  private get connectRequest(): ConnectRequest {
+    return {
+      channelId: this.channelId,
+      publicKey: this.keyPair.publicKeyHex,
+      relay: this.options.relayUrl,
+      origin: this.origin,
+      secret: this.secret,
+      version: PROTOCOL_VERSION,
+    };
+  }
 
   private get origin(): string {
     return (
@@ -238,6 +261,15 @@ export class RemoteShieldTransport {
 
   private handlePayload(payload: RelayPayload): void {
     if (payload.type === 'key_handshake') {
+      // The key we are about to encrypt everything to. Anyone can publish on
+      // this channel, so an unauthenticated handshake is exactly the message a
+      // relay would forge to sit in the middle.
+      if (!verifyHandshakeMac(this.connectRequest, payload.publicKey, payload.mac)) {
+        // Dropped, not fatal: staying unpaired lets the real wallet still
+        // complete the handshake, so a forged one cannot deny the pairing.
+        this.emit('handshakeRejected');
+        return;
+      }
       this.walletPublicKey = payload.publicKey;
       this.saveSession();
       this.resolveWalletReady();
@@ -248,7 +280,7 @@ export class RemoteShieldTransport {
 
     let message: RpcMessage;
     try {
-      const sealed = decryptMessage(this.keyPair, payload.data);
+      const sealed = decryptMessage(this.keyPair, this.walletPublicKey, payload.data);
       // Replay protection: authentic-but-old is indistinguishable from new by
       // decryption alone. Anything not strictly newer than the highest
       // sequence we've accepted is a replay (or a history re-delivery of a
@@ -288,7 +320,11 @@ export class RemoteShieldTransport {
     const raw = this.storage?.getItem(STORAGE_KEY);
     if (!raw) return undefined;
     try {
-      return JSON.parse(raw) as PersistedSession;
+      const session = JSON.parse(raw) as PersistedSession;
+      // A session written before the pairing secret existed cannot be resumed:
+      // with no secret there is nothing to MAC, so the wallet could never pair.
+      // Discard it and mint a fresh channel rather than emitting a dead link.
+      return session.secret ? session : undefined;
     } catch {
       return undefined;
     }
@@ -300,6 +336,7 @@ export class RemoteShieldTransport {
       JSON.stringify({
         channelId: this.channelId,
         privateKeyHex: this.keyPair.privateKey.toHex(),
+        secret: this.secret,
         walletPublicKey: this.walletPublicKey,
         sendSeq: this.sendSeq,
         recvSeq: this.recvSeq,
