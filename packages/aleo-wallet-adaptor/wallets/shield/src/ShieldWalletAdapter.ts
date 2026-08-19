@@ -160,24 +160,35 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   ): Promise<Account> {
     try {
       const wallet = await this._resolveWallet();
-      this._shieldWallet = wallet;
 
-      // Call connect and extract address safely
+      // Bind the live pointer only after connect() succeeds, so a failed
+      // pairing (user cancelled, timeout, empty address) does not leave an
+      // orphaned facade holding a live relay session. Disconnect the unused
+      // instance so its transport is torn down and the next retry allocates a
+      // fresh one.
+      let publicKey: string;
       try {
-        const connectResult = await wallet.connect(network, decryptPermission, programs, options);
-        this._publicKey = connectResult?.address || '';
-        this._onNetworkChange(network);
+        const connectResult = await wallet.connect(
+          network,
+          decryptPermission,
+          programs,
+          options,
+        );
+        publicKey = connectResult?.address || '';
+        // When the dapp opted into address withholding (readAddress: false),
+        // an empty address is the expected result, not an error.
+        if (!publicKey && options?.readAddress !== false) {
+          throw new WalletConnectionError('No address returned from wallet');
+        }
       } catch (error: unknown) {
+        await wallet.disconnect().catch(() => undefined);
         throw new WalletConnectionError(
           error instanceof Error ? error.message : 'Connection failed',
         );
       }
-
-      // When the dapp opted into address withholding (readAddress: false),
-      // an empty address is the expected result, not an error.
-      if (!this._publicKey && options?.readAddress !== false) {
-        throw new WalletConnectionError('No address returned from wallet');
-      }
+      this._shieldWallet = wallet;
+      this._publicKey = publicKey;
+      this._onNetworkChange(network);
 
       this._setupListeners();
 
