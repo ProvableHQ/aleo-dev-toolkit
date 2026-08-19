@@ -1,6 +1,6 @@
 /**
  * VENDORED from ProvableHQ/shield-relay (packages/protocol/src: types.ts,
- * crypto.ts, connectUrl.ts) at 34f1a97 (PR #11: authenticated peers +
+ * crypto.ts, connectUrl.ts) at 27b4c2e (PR #11: authenticated peers +
  * key-handshake MAC).
  * Temporary until the relay clients are published (Linear WS-92) — do not
  * edit here; upstream is the source of truth.
@@ -267,6 +267,16 @@ export function generatePairingSecret(): string {
  *
  * Fields are JSON-encoded rather than concatenated: escaping makes the
  * boundaries unambiguous, so no two pairings can share a transcript.
+ *
+ * `relay` is deliberately NOT in the transcript, and must stay out of it —
+ * shield-core computes the same transcript, so adding a field here silently
+ * breaks every pairing rather than failing loudly. Three reasons it does not
+ * belong: the relay is untrusted by design (it is the party this MAC defends
+ * against, so binding it proves nothing an attacker could not also satisfy);
+ * which relay is acceptable is decided by the wallet-side allowlist, not by
+ * agreement with the dapp; and the URL has no single canonical form — clients
+ * normalize it differently (`normalizeRelayUrl` appends the Centrifugo path),
+ * so two honest peers would disagree on the transcript and fail to pair.
  */
 export function handshakeMac(connectRequest: ConnectRequest, walletPublicKeyHex: string): string {
   const transcript = JSON.stringify([
@@ -359,6 +369,17 @@ export function base64ToBytes(base64: string): Uint8Array {
  * link, so iOS hands it straight to the Shield app when installed and the
  * page can render an App Store fallback when not. `shield://connect?...`
  * works as a dev-build fallback before universal links are configured.
+ *
+ * PLANNED (ships with universal links, needs matching parsing in shield-core):
+ * on the https form the params move from the query string to the fragment —
+ * `https://app.shield.app/connect#channelId=…&secret=…`. When the app is not
+ * installed iOS falls back to loading the page, which sends the query string
+ * to the web server: the pairing secret would land in access logs, browser
+ * history, and analytics. Fragments are never sent to the server, and the
+ * fallback page can still read them in JS to render "dapp.example wants to
+ * connect". Moving every param (not just `secret`) keeps one rule per URL
+ * form instead of a split parser, and the custom-scheme form keeps the query
+ * string since it never reaches a server.
  */
 
 export interface ConnectRequest {

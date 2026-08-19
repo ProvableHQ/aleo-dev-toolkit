@@ -1,6 +1,6 @@
 /**
  * VENDORED from ProvableHQ/shield-relay (packages/dapp-client/src/transport.ts)
- * at 34f1a97 (PR #11: authenticated peers + key-handshake MAC).
+ * at 27b4c2e (PR #11: authenticated peers + key-handshake MAC).
  * Temporary until published (WS-92).
  */
 import { Centrifuge, type Subscription } from 'centrifuge';
