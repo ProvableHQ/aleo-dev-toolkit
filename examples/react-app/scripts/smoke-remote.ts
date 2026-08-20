@@ -11,13 +11,38 @@
  * -> signMessage -> executeTransaction/status -> reload-resume -> disconnect
  * -> fresh re-pair.
  *
- * Run: pnpm --filter fake-wallet exec tsx <this file>   (from shield-relay)
- * Prereq: `pnpm relay` (or relay:up) in shield-relay.
+ * Run from a shield-relay checkout (so tsx + workspace deps resolve):
+ *   SHIELD_RELAY_DIR=/path/to/shield-relay \
+ *     pnpm --filter fake-wallet exec tsx <this file>
+ * Prereq: `pnpm relay` (or relay:up) in shield-relay. RELAY_URL overrides the
+ * relay endpoint (defaults to the local docker relay).
  */
 import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
-const RELAY_DIR = '/Users/mm/projects/shield-relay';
-const RELAY_URL = 'http://localhost:8787';
+const RELAY_URL = process.env.RELAY_URL ?? 'http://localhost:8787';
+
+// Locate the shield-relay checkout: explicit env var, or walk up from cwd
+// (pnpm --filter runs this with cwd inside examples/fake-wallet).
+function findRelayDir(): string {
+  const isRelay = (dir: string) => existsSync(join(dir, 'examples', 'fake-wallet'));
+  const candidates = [
+    process.env.SHIELD_RELAY_DIR,
+    process.cwd(),
+    join(process.cwd(), '..', '..'),
+    join(process.cwd(), '..', 'shield-relay'),
+  ].filter((d): d is string => Boolean(d));
+  const found = candidates.find(isRelay);
+  if (!found) {
+    console.error(
+      `shield-relay checkout not found (tried: ${candidates.join(', ')}) — set SHIELD_RELAY_DIR to your clone of ProvableHQ/shield-relay`,
+    );
+    process.exit(1);
+  }
+  return found;
+}
+const RELAY_DIR = findRelayDir();
 
 // --- browser stubs (before importing the adapter) ---
 const storage = new Map<string, string>();
