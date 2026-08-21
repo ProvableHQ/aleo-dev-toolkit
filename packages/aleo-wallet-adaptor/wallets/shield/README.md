@@ -42,7 +42,8 @@ const wallets = [
       relayUrl: 'wss://relay.shield.app', // or http://<lan-ip>:8787 in dev
       deeplinkBase: 'shield://connect', // https://app.shield.app/connect once universal links ship
       // Your bundler resolves the relay client from YOUR source — this
-      // package never imports it:
+      // package never imports it. (Import shape once the client is
+      // published; until then import your vendored copy — see below.)
       transport: async options =>
         new (await import('@shield/relay-dapp-client')).RemoteShieldTransport(options),
     },
@@ -64,10 +65,17 @@ Behavior:
 - Sessions persist in `localStorage`; a page reload resumes the pairing
   without another deeplink round-trip.
 - The relay client (`@shield/relay-dapp-client`) is **never imported by this
-  package** — not at compile time, not at runtime. Opted-in dapps install it
-  themselves (via file:/git until it is published) and pass the required
-  `remote.transport` factory shown above, so their own bundler resolves the
-  literal import. Dapps that don't opt in carry none of this code: the
+  package** — not at compile time, not at runtime. Opted-in dapps provide it
+  themselves and pass the required `remote.transport` factory shown above, so
+  their own bundler resolves the import. **Until the relay clients are
+  published, the only working way to provide it is vendoring its source**:
+  the clients declare `workspace:*` dependencies, so `pnpm add` via file:/git
+  does not resolve. Copy the dapp-client + protocol sources into your app
+  from a pinned shield-relay commit — `examples/react-app/scripts/
+  sync-shield-relay.sh` in this repo is the reference implementation — and
+  point `remote.transport` at the vendored module. Publishing proper packages
+  (which replaces all of this with a normal install) is tracked as WS-92.
+  Dapps that don't opt in carry none of this code: the
   remote module itself is only loaded (lazily) when `remote` is configured.
 
 ## Related packages
