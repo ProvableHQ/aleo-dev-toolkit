@@ -15,8 +15,9 @@ const IS_MOBILE_UA =
 
 /**
  * Shown while a Shield remote (relay) pairing is waiting for the wallet.
- * On a phone the deeplink fires automatically (see App.tsx); this banner is
- * the fallback surface: on desktop it renders the connect URL as a QR code
+ * On a phone the ADAPTER fires the deeplink automatically (onConnectUrl is
+ * additive); this banner is the fallback surface: on desktop it renders the
+ * connect URL as a QR code
  * to scan with the Shield app, plus open/copy — e.g. copy to paste into
  * shield-relay's fake-wallet during Stage-1 POC testing.
  */
