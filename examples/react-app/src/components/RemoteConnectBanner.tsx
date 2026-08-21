@@ -6,7 +6,12 @@ import { Copy, ExternalLink, Smartphone, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { remoteConnectUrlAtom } from '@/lib/store/global';
-import { IS_MOBILE_UA } from '@/lib/shieldRemoteConfig';
+
+// Presentation only — whether a QR code makes sense on this device. The
+// deeplink itself is fired by the adapter (onConnectUrl is additive), so
+// this must never gate navigation.
+const IS_MOBILE_UA =
+  typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 /**
  * Shown while a Shield remote (relay) pairing is waiting for the wallet.

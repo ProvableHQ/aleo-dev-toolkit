@@ -22,7 +22,7 @@ import {
 import { routes } from './routes';
 import { RemoteConnectBanner } from './components/RemoteConnectBanner';
 import { RemoteShieldTransport } from './lib/shieldRelay/transport';
-import { IS_MOBILE_UA, SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from './lib/shieldRemoteConfig';
+import { SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from './lib/shieldRemoteConfig';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
@@ -39,11 +39,9 @@ const shieldWalletAdapter = SHIELD_RELAY_URL
         // src/lib/shieldRelay/ — so the adapter never dynamic-imports a bare
         // specifier through Vite.
         transport: options => new RemoteShieldTransport(options),
-        onConnectUrl: url => {
-          getDefaultStore().set(remoteConnectUrlAtom, url);
-          // Same-device flow: hand the link to the OS so Shield opens.
-          if (IS_MOBILE_UA) window.location.href = url;
-        },
+        // Additive: the adapter still fires the mobile deeplink itself; this
+        // callback only surfaces the URL for the QR/copy banner.
+        onConnectUrl: url => getDefaultStore().set(remoteConnectUrlAtom, url),
       },
     })
   : new ShieldWalletAdapter();

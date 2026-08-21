@@ -9,6 +9,3 @@ export const SHIELD_RELAY_URL = (import.meta.env.VITE_SHIELD_RELAY_URL as string
 
 export const SHIELD_DEEPLINK_BASE =
   (import.meta.env.VITE_SHIELD_DEEPLINK_BASE as string | undefined) ?? 'shield://connect';
-
-export const IS_MOBILE_UA =
-  typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);

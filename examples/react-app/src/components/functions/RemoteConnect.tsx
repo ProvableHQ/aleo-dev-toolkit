@@ -1,4 +1,3 @@
-import { useAtomValue } from 'jotai';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
 import { Radio, Smartphone } from 'lucide-react';
@@ -6,7 +5,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
-import { remoteConnectUrlAtom } from '@/lib/store/global';
 import { SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from '@/lib/shieldRemoteConfig';
 
 /**
@@ -18,7 +16,6 @@ import { SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from '@/lib/shieldRemoteConfig
 export function RemoteConnect() {
   const { wallets, connected, address, network } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
-  const pendingUrl = useAtomValue(remoteConnectUrlAtom);
 
   const shield = wallets.find(w => w.adapter.name === 'Shield Wallet');
   const remoteEnabled = Boolean(SHIELD_RELAY_URL);
@@ -79,15 +76,6 @@ export function RemoteConnect() {
           <Smartphone className="mr-2 h-4 w-4" />
           {connected ? 'Connected via Shield' : 'Connect Shield (remote if not injected)'}
         </Button>
-      )}
-
-      {pendingUrl && (
-        <Alert>
-          <AlertDescription>
-            <p className="body-m-bold">Pairing in progress</p>
-            <p className="label-xs mt-1 break-all normal-case">{pendingUrl}</p>
-          </AlertDescription>
-        </Alert>
       )}
 
       <CodePanel

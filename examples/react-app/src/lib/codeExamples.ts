@@ -131,7 +131,9 @@ const tx = await executeTransaction({
 console.log('Transaction Id:', tx?.transactionId);`,
 
   remoteConnect: `import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
-import { RemoteShieldTransport } from '@shield/relay-dapp-client';
+// This example VENDORS the relay client (src/lib/shieldRelay) until it is
+// published — in your dapp, import it from '@shield/relay-dapp-client'.
+import { RemoteShieldTransport } from '@/lib/shieldRelay/transport';
 
 // Opt-in remote fallback: on browsers without an injected window.shield,
 // Shield reports "Loadable" and connect() pairs with the Shield app over a
@@ -140,9 +142,11 @@ const shield = new ShieldWalletAdapter({
   remote: {
     relayUrl: '${PLACEHOLDERS.RELAY_URL}',
     deeplinkBase: 'shield://connect',
-    // Bundled apps resolve the relay client through their own bundler:
+    // Your bundler resolves the relay client from YOUR source:
     transport: options => new RemoteShieldTransport(options),
-    // Optional: surface the connect URL yourself (QR / copy button).
+    // Additive: always called when pairing is needed (QR / copy button /
+    // UI state). The mobile deeplink still fires automatically — pass
+    // fireDeeplink: false only if this callback handles navigation itself.
     onConnectUrl: url => showPairingUi(url),
   },
 });`,
