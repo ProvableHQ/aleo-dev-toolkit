@@ -161,6 +161,16 @@ export enum WalletReadyState {
   UNSUPPORTED = 'Unsupported',
 }
 
+/**
+ * A wallet the user can connect to right now: an installed (injected) wallet,
+ * or a loadable one that needs no installation. `NOT_DETECTED` wallets need an
+ * install first; `UNSUPPORTED` wallets cannot run on this platform. The single
+ * source of truth for "show a Connect action vs an Install link".
+ */
+export function isWalletConnectable(state: WalletReadyState): boolean {
+  return state === WalletReadyState.INSTALLED || state === WalletReadyState.LOADABLE;
+}
+
 export type WalletName<T extends string = string> = T & { __brand__: 'WalletName' };
 
 export enum WalletDecryptPermission {
