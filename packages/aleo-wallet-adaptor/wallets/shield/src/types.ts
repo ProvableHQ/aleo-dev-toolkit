@@ -22,6 +22,30 @@ export interface ShieldRemoteTransportOptions {
 }
 
 /**
+ * The complete event vocabulary a remote transport emits.
+ *
+ * Wallet-initiated RPC events, mirroring the injected provider surface
+ * one-for-one (these are what the adapter forwards):
+ * - `networkChanged`, `accountChanged`, `disconnect`
+ *
+ * Transport lifecycle (deliberately NOT forwarded as wallet events):
+ * - `walletConnected` — key handshake completed
+ * - `walletDisconnected` — the wallet peer LEFT THE RELAY CHANNEL. This is
+ *   routine, not a hang-up: the Shield app drops its socket every time it
+ *   backgrounds (the deeplink is its wake signal), and the session stays
+ *   valid — responses are recovered from channel history on resume. Only an
+ *   explicit `disconnect` RPC event ends the session.
+ * - `handshakeRejected` — a forged/unauthenticated handshake was dropped
+ */
+export type ShieldRemoteTransportEvent =
+  | 'networkChanged'
+  | 'accountChanged'
+  | 'disconnect'
+  | 'walletConnected'
+  | 'walletDisconnected'
+  | 'handshakeRejected';
+
+/**
  * Structural view of '@shield/relay-dapp-client''s RemoteShieldTransport.
  * This package never imports the relay client — not at compile time, not at
  * runtime. This shape is the contract for the `remote.transport` factory:
@@ -37,8 +61,8 @@ export interface ShieldRemoteTransportLike {
   connected: boolean;
   /** Mirrors window.shield method calls over the relay. */
   request<T = unknown>(method: string, params?: unknown): Promise<T>;
-  on(event: string, listener: (data?: unknown) => void): void;
-  off(event: string, listener: (data?: unknown) => void): void;
+  on(event: ShieldRemoteTransportEvent, listener: (data?: unknown) => void): void;
+  off(event: ShieldRemoteTransportEvent, listener: (data?: unknown) => void): void;
   /** Ends the session and forgets keys. */
   disconnect(): void;
 }
@@ -63,12 +87,18 @@ export interface ShieldRemoteConfig {
   /** How long connect() waits for the user to pair in the Shield app. Default 5 min. */
   pairingTimeoutMs?: number;
   /**
-   * Called with the connect URL when pairing is needed. Provide this to
-   * render a QR code (cross-device flows) or to control deeplink firing.
-   * When omitted: on mobile the deeplink is fired automatically; on desktop
-   * connect() rejects, since there is nothing sensible to do with the URL.
+   * Called with the connect URL whenever pairing is needed — additive to
+   * the automatic mobile deeplink, not a replacement for it. Use it to
+   * render a QR code or surface the URL in UI. On desktop it is required
+   * (there is nothing else sensible to do with the URL); on mobile the
+   * deeplink still fires automatically unless `fireDeeplink: false`.
    */
   onConnectUrl?: (url: string, context: { resumed: boolean }) => void;
+  /**
+   * Set to `false` to disable the automatic mobile deeplink — e.g. when
+   * your `onConnectUrl` handles navigation itself. Default `true`.
+   */
+  fireDeeplink?: boolean;
   /**
    * Factory for the relay transport. Required: this package deliberately
    * never imports '@shield/relay-dapp-client', so YOUR bundler resolves it
