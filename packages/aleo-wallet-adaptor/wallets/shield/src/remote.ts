@@ -47,46 +47,51 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     programs?: string[],
     options?: ConnectOptions,
   ): Promise<{ address: string }> {
-    const transport = await this.loadTransport();
-    const { url, resumed } = await transport.connect();
+    // A failed pairing/connect must not leave a live relay session behind —
+    // this wallet cleans up after itself so callers never have to.
+    try {
+      const transport = await this.loadTransport();
+      const { url, resumed } = await transport.connect();
 
-    if (!transport.connected) {
-      // Not paired yet — surface the connect URL. A dapp-provided callback
-      // wins (QR rendering, custom UI); otherwise fire the deeplink on
-      // mobile, where the OS hands it to the Shield app.
-      if (this.config.onConnectUrl) {
-        this.config.onConnectUrl(url, { resumed });
-      } else if (isMobileUserAgent()) {
-        window.location.href = url;
-      } else {
-        throw new WalletConnectionError(
-          'Shield remote connect on a non-mobile browser requires remote.onConnectUrl ' +
-            'to present the connect URL (e.g. render it as a QR code for the phone).',
-        );
+      if (!transport.connected) {
+        // Not paired yet — surface the connect URL. The callback is additive
+        // (QR rendering, UI state); the mobile deeplink still fires unless
+        // explicitly opted out, so setting onConnectUrl never changes
+        // same-device behavior.
+        this.config.onConnectUrl?.(url, { resumed });
+        if (isMobileUserAgent()) {
+          if (this.config.fireDeeplink !== false) {
+            window.location.href = url;
+          }
+        } else if (!this.config.onConnectUrl) {
+          throw new WalletConnectionError(
+            'Shield remote connect on a non-mobile browser requires remote.onConnectUrl ' +
+              'to present the connect URL (e.g. render it as a QR code for the phone).',
+          );
+        }
       }
+
+      await this.waitForPairing(transport);
+
+      const result = await transport.request<{ address?: string }>('connect', [
+        network,
+        decryptPermission,
+        programs ?? [],
+        options,
+      ]);
+      this.publicKey = result?.address ?? '';
+      return { address: this.publicKey };
+    } catch (error) {
+      this.teardown();
+      throw error;
     }
-
-    await this.waitForPairing(transport);
-
-    const result = await transport.request<{ address?: string }>('connect', [
-      network,
-      decryptPermission,
-      programs ?? [],
-      options,
-    ]);
-    this.publicKey = result?.address ?? '';
-    return { address: this.publicKey };
   }
 
   async disconnect(): Promise<void> {
     if (!this.transport) return;
     // Best-effort notify: the session teardown below is what matters.
     await this.transport.request('disconnect', []).catch(() => undefined);
-    this.transport.disconnect();
-    // The transport's disconnect() forgets its keys — a fresh pairing needs a
-    // fresh transport, so never keep a dead instance around.
-    this.transport = undefined;
-    this.publicKey = undefined;
+    this.teardown();
   }
 
   async signMessage(message: Uint8Array): Promise<Uint8Array> {
@@ -154,14 +159,35 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
       requestTimeoutMs: this.config.requestTimeoutMs,
     });
 
-    // Relay event names mirror the injected provider's — forward each
+    // Wallet-RPC event names mirror the injected provider's — forward each
     // explicitly with its own signature. Attached once per fresh transport.
+    // Deliberately NOT forwarded: `walletDisconnected` (the wallet leaving
+    // the relay channel) — the Shield app drops its socket whenever it
+    // backgrounds and the session stays valid, so only the wallet's explicit
+    // `disconnect` event ends it. See ShieldRemoteTransportEvent.
     transport.on('networkChanged', data => this.emit('networkChanged', data as Network));
     transport.on('accountChanged', () => this.emit('accountChanged'));
-    transport.on('disconnect', () => this.emit('disconnect'));
+    transport.on('disconnect', () => {
+      // The wallet ended the session; the transport already knows. Drop the
+      // dead instance (its keys are forgotten) before telling listeners, so
+      // nothing can observe the event and still reach the old session.
+      this.teardown();
+      this.emit('disconnect');
+    });
 
     this.transport = transport;
     return transport;
+  }
+
+  /**
+   * Local teardown: end the relay session (if any) and drop the pointers.
+   * The transport's disconnect() forgets its keys — a fresh pairing needs a
+   * fresh transport, so a dead instance is never kept around.
+   */
+  private teardown(): void {
+    this.transport?.disconnect();
+    this.transport = undefined;
+    this.publicKey = undefined;
   }
 
   private async waitForPairing(transport: ShieldRemoteTransportLike): Promise<void> {

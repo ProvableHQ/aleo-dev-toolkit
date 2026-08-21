@@ -2,6 +2,7 @@ import type { FC, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlgorithmGrant,
+  isWalletConnectable,
   WalletName,
   WalletReadyState,
   WalletAdapter,
@@ -306,7 +307,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       connected ||
       !autoConnect ||
       !adapter ||
-      !(readyState === WalletReadyState.INSTALLED || readyState === WalletReadyState.LOADABLE)
+      !isWalletConnectable(readyState)
     )
       return;
 
@@ -366,7 +367,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     if (isConnecting.current || isDisconnecting.current || connected) return;
     if (!adapter) throw handleError(new WalletNotSelectedError());
 
-    if (!(readyState === WalletReadyState.INSTALLED || readyState === WalletReadyState.LOADABLE)) {
+    if (!isWalletConnectable(readyState)) {
       // Clear the selected wallet
       setName(null);
 

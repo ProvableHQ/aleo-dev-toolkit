@@ -159,33 +159,24 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     options?: ConnectOptions,
   ): Promise<Account> {
     try {
+      // Resolve, connect, bind. A remote wallet cleans up its own relay
+      // session when connect() fails, so no teardown belongs here; an
+      // injected wallet that rejects is simply not connected.
       const wallet = await this._resolveWallet();
 
-      // Bind the live pointer only after connect() succeeds, so a failed
-      // pairing (user cancelled, timeout, empty address) does not leave an
-      // orphaned facade holding a live relay session. Disconnect the unused
-      // instance so its transport is torn down and the next retry allocates a
-      // fresh one.
-      let publicKey: string;
-      try {
-        const connectResult = await wallet.connect(
-          network,
-          decryptPermission,
-          programs,
-          options,
-        );
-        publicKey = connectResult?.address || '';
-        // When the dapp opted into address withholding (readAddress: false),
-        // an empty address is the expected result, not an error.
-        if (!publicKey && options?.readAddress !== false) {
-          throw new WalletConnectionError('No address returned from wallet');
-        }
-      } catch (error: unknown) {
+      const connectResult = await wallet.connect(network, decryptPermission, programs, options);
+      const publicKey = connectResult?.address || '';
+      // When the dapp opted into address withholding (readAddress: false),
+      // an empty address is the expected result, not an error.
+      if (!publicKey && options?.readAddress !== false) {
+        // The wallet considers itself connected but is unusable to us — the
+        // one failure connect() must clean up itself (best effort).
         await wallet.disconnect().catch(() => undefined);
-        throw new WalletConnectionError(
-          error instanceof Error ? error.message : 'Connection failed',
-        );
+        throw new WalletConnectionError('No address returned from wallet');
       }
+
+      // Bind the live pointer only after success, so a failed pairing never
+      // leaves the adapter holding an unusable wallet.
       this._shieldWallet = wallet;
       this._publicKey = publicKey;
       this._onNetworkChange(network);
@@ -202,6 +193,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
       return account;
     } catch (err: Error | unknown) {
+      if (err instanceof WalletConnectionError) throw err;
       throw new WalletConnectionError(err instanceof Error ? err.message : 'Connection failed');
     }
   }
@@ -494,10 +486,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this.emit('accountChange');
   };
 
-  // Disconnect listener
+  // Disconnect listener — runs for BOTH adapter-initiated and
+  // wallet-initiated disconnects, so the full teardown lives here: cleanup
+  // (which still needs _shieldWallet) before dropping the pointer, so a
+  // dead facade is never reused by the next connect().
   _onDisconnect = () => {
     console.debug('Shield Wallet disconnected');
     this._cleanupListeners();
+    this._shieldWallet = undefined;
     this._publicKey = '';
     this.account = undefined;
     this.emit('disconnect');

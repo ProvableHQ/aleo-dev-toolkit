@@ -6,7 +6,7 @@ import { Collapse } from './Collapse';
 import { useWalletModal } from './useWalletModal';
 import { WalletListItem } from './WalletListItem';
 import { useWallet, Wallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import { isWalletConnectable, WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
 import { Network } from '@provablehq/aleo-types';
 import { ProvableLogo } from './ProvableLogo';
 
@@ -33,25 +33,24 @@ export const WalletModal: FC<WalletModalProps> = ({
 
   // LOADABLE wallets (e.g. Shield with the remote relay fallback configured) are
   // connectable without an installed extension, so group them with INSTALLED
-  // ones — installed extensions listed first.
+  // ones — installed extensions listed first (stable sort keeps the dapp's
+  // wallet order within each group).
   const [connectableWallets, otherWallets] = useMemo(() => {
-    const installed: Wallet[] = [];
-    const loadable: Wallet[] = [];
-    const notDetected: Wallet[] = [];
-
-    for (const wallet of wallets) {
-      if (wallet.readyState === WalletReadyState.NOT_DETECTED) {
-        notDetected.push(wallet);
-      } else if (wallet.readyState === WalletReadyState.INSTALLED) {
-        installed.push(wallet);
-      } else if (wallet.readyState === WalletReadyState.LOADABLE) {
-        loadable.push(wallet);
-      }
-    }
-
-    return [[...installed, ...loadable], notDetected];
+    const connectable = wallets
+      .filter((wallet: Wallet) => isWalletConnectable(wallet.readyState))
+      .sort(
+        (a: Wallet, b: Wallet) =>
+          Number(b.readyState === WalletReadyState.INSTALLED) -
+          Number(a.readyState === WalletReadyState.INSTALLED),
+      );
+    const notDetected = wallets.filter(
+      (wallet: Wallet) => wallet.readyState === WalletReadyState.NOT_DETECTED,
+    );
+    return [connectable, notDetected];
   }, [wallets]);
 
+  // With zero connectable wallets, everything left is NOT_DETECTED — steer
+  // toward installing Shield, else whatever is first.
   const getStartedWallet = useMemo(() => {
     return connectableWallets.length
       ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -59,10 +58,6 @@ export const WalletModal: FC<WalletModalProps> = ({
       : wallets.find((wallet: { adapter: { name: WalletName } }) =>
           wallet.adapter.name.toLowerCase().includes('shield'),
         ) ||
-          wallets.find(
-            (wallet: { readyState: WalletReadyState }) =>
-              wallet.readyState === WalletReadyState.LOADABLE,
-          ) ||
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           otherWallets[0]!;
   }, [connectableWallets, wallets, otherWallets]);

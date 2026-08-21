@@ -55,9 +55,12 @@ Behavior:
 - Zero-config construction is unchanged — the fallback is strictly opt-in.
 - An injected `window.shield` (extension, in-app browser) always wins; the
   relay is only used when no provider is injected (`readyState: Loadable`).
-- `connect()` fires the deeplink automatically on mobile. For cross-device
-  flows (desktop dapp → phone wallet), pass `remote.onConnectUrl` and render
-  the URL as a QR code.
+- `connect()` fires the deeplink automatically on mobile. `remote.onConnectUrl`
+  is **additive**: when set it is always called with the connect URL (render a
+  QR code for cross-device flows, or surface it in UI) and the mobile deeplink
+  still fires — pass `fireDeeplink: false` only if your callback handles
+  navigation itself. On desktop `onConnectUrl` is required, since there is
+  nothing else sensible to do with the URL.
 - Sessions persist in `localStorage`; a page reload resumes the pairing
   without another deeplink round-trip.
 - The relay client (`@shield/relay-dapp-client`) is **never imported by this
