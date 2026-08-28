@@ -1,3 +1,4 @@
+import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { Network } from '@provablehq/aleo-types';
 import {
@@ -43,3 +44,7 @@ export const useDynamicInputsAtom = atomWithStorage<boolean>('useDynamicInputs',
 
 // Deploy Program state
 export const programCodeAtom = atomWithStorage<string>('programCode', '');
+
+// Shield remote (relay) fallback: connect URL awaiting wallet pairing.
+// Deliberately NOT persisted — a connect URL is single-pairing state.
+export const remoteConnectUrlAtom = atom<string | null>(null);

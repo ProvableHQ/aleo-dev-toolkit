@@ -7,3 +7,4 @@ export { RecordsPage } from './RecordsPage';
 export { ViewKeysPage } from './ViewKeysPage';
 export { TransactionHistoryPage } from './TransactionHistoryPage';
 export { PrivateInputsPage } from './PrivateInputsPage';
+export { RemoteConnectPage } from './RemoteConnectPage';
