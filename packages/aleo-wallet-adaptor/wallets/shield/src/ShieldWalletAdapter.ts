@@ -29,7 +29,12 @@ import {
   WalletSwitchNetworkError,
   WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
-import { ShieldWallet, ShieldWindow } from './types';
+import {
+  ShieldRemoteConfig,
+  ShieldWallet,
+  ShieldWalletAdapterConfig,
+  ShieldWindow,
+} from './types';
 
 /**
  * Shield wallet adapter
@@ -76,35 +81,71 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       : WalletReadyState.NOT_DETECTED;
 
   /**
-   * Shield wallet instance
+   * The live wallet (injected provider, or the remote relay facade).
+   * Written ONLY by connect() — detection must never touch it, so a wallet
+   * injected mid-session cannot hijack an active remote connection.
    */
   private _shieldWallet: ShieldWallet | undefined;
 
   /**
-   * Create a new Shield wallet adapter
-   * @param config Adapter configuration
+   * Remote (relay) fallback configuration, when opted in
    */
-  constructor() {
+  private readonly _remoteConfig?: ShieldRemoteConfig;
+
+  /**
+   * Create a new Shield wallet adapter
+   * @param config Adapter configuration. Omit for injected-only behavior
+   * (unchanged); pass `{ remote }` to enable the relay fallback on browsers
+   * without `window.shield` (plain mobile Safari/Chrome).
+   */
+  constructor(config?: ShieldWalletAdapterConfig) {
     super();
     this.network = Network.TESTNET;
+    this._remoteConfig = config?.remote;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
+      // Remote-capable adapters are usable without any injection — that is
+      // the wallet-standard's LOADABLE state. Injection detection still runs
+      // and upgrades to INSTALLED: the injected provider always wins.
+      if (this._remoteConfig) {
+        this._readyState = WalletReadyState.LOADABLE;
+      }
       scopePollingDetectionStrategy(() => this._checkAvailability());
     }
   }
 
   /**
-   * Check if Shield wallet is available
+   * Check if Shield wallet is available. Detection only reports state —
+   * binding the live wallet is connect()'s job (see _resolveWallet).
    */
   private _checkAvailability(): boolean {
     this._window = window as ShieldWindow;
 
     if (this._window.shield) {
       this.readyState = WalletReadyState.INSTALLED;
-      this._shieldWallet = this._window?.shield;
       this.emit('readyStateChange', this.readyState);
       return true;
     }
     return false;
+  }
+
+  /**
+   * Resolve the wallet to connect through, based on the current readyState.
+   * Returns a definite instance: the injected provider when installed, or a
+   * fresh remote facade otherwise. The facade is deliberately NOT cached —
+   * pairing persistence lives in the transport's localStorage session, which
+   * a fresh instance resumes, and `import('./remote')` is module-cached.
+   */
+  private async _resolveWallet(): Promise<ShieldWallet> {
+    if (this.readyState === WalletReadyState.INSTALLED && this._window?.shield) {
+      return this._window.shield;
+    }
+    if (this._remoteConfig && this.readyState === WalletReadyState.LOADABLE) {
+      // No injection: fall back to the relay. The facade module is loaded
+      // lazily so injected-only dapps never pull in remote code.
+      const { RemoteShieldWallet } = await import('./remote');
+      return new RemoteShieldWallet(this._remoteConfig);
+    }
+    throw new WalletConnectionError('Shield Wallet is not available');
   }
 
   /**
@@ -118,31 +159,27 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     options?: ConnectOptions,
   ): Promise<Account> {
     try {
-      if (this.readyState !== WalletReadyState.INSTALLED) {
-        throw new WalletConnectionError('Shield Wallet is not available');
-      }
+      // Resolve, connect, bind. A remote wallet cleans up its own relay
+      // session when connect() fails, so no teardown belongs here; an
+      // injected wallet that rejects is simply not connected.
+      const wallet = await this._resolveWallet();
 
-      // Call connect and extract address safely
-      try {
-        const connectResult = await this._shieldWallet?.connect(
-          network,
-          decryptPermission,
-          programs,
-          options,
-        );
-        this._publicKey = connectResult?.address || '';
-        this._onNetworkChange(network);
-      } catch (error: unknown) {
-        throw new WalletConnectionError(
-          error instanceof Error ? error.message : 'Connection failed',
-        );
-      }
-
+      const connectResult = await wallet.connect(network, decryptPermission, programs, options);
+      const publicKey = connectResult?.address || '';
       // When the dapp opted into address withholding (readAddress: false),
       // an empty address is the expected result, not an error.
-      if (!this._publicKey && options?.readAddress !== false) {
+      if (!publicKey && options?.readAddress !== false) {
+        // The wallet considers itself connected but is unusable to us — the
+        // one failure connect() must clean up itself (best effort).
+        await wallet.disconnect().catch(() => undefined);
         throw new WalletConnectionError('No address returned from wallet');
       }
+
+      // Bind the live pointer only after success, so a failed pairing never
+      // leaves the adapter holding an unusable wallet.
+      this._shieldWallet = wallet;
+      this._publicKey = publicKey;
+      this._onNetworkChange(network);
 
       this._setupListeners();
 
@@ -156,6 +193,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
       return account;
     } catch (err: Error | unknown) {
+      if (err instanceof WalletConnectionError) throw err;
       throw new WalletConnectionError(err instanceof Error ? err.message : 'Connection failed');
     }
   }
@@ -448,10 +486,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this.emit('accountChange');
   };
 
-  // Disconnect listener
+  // Disconnect listener — runs for BOTH adapter-initiated and
+  // wallet-initiated disconnects, so the full teardown lives here: cleanup
+  // (which still needs _shieldWallet) before dropping the pointer, so a
+  // dead facade is never reused by the next connect().
   _onDisconnect = () => {
     console.debug('Shield Wallet disconnected');
     this._cleanupListeners();
+    this._shieldWallet = undefined;
     this._publicKey = '';
     this.account = undefined;
     this.emit('disconnect');
