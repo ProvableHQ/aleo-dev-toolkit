@@ -44,10 +44,13 @@ import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import {
   algorithmsAllowedAtom,
   decryptPermissionAtom,
+  networkAtom,
+  programsAtom,
   readAddressAtom,
   recordAccessAtom,
 } from '@/lib/store/global';
 import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { Network } from '@provablehq/aleo-types';
 import { useProgram } from '@/lib/hooks/useProgram';
 import { PrimitiveSlotEditor } from './private-inputs/PrimitiveSlotEditor';
 import { RecordRow } from './private-inputs/RecordRow';
@@ -58,6 +61,7 @@ import {
   buildRecordAccessGrant,
   DEFAULT_PROGRAM_GRANTS,
   DEFAULTS,
+  defaultFreezelistProgram,
   defaultSlotState,
   eligibleAlgorithmsForBaseType,
   FilterRow,
@@ -82,6 +86,8 @@ export function PrivateInputs() {
   const [readAddress, setReadAddress] = useAtom(readAddressAtom);
   const [algorithmsAllowed, setAlgorithmsAllowed] = useAtom(algorithmsAllowedAtom);
   const [decryptPermission, setDecryptPermission] = useAtom(decryptPermissionAtom);
+  const [programs, setPrograms] = useAtom(programsAtom);
+  const [, setNetwork] = useAtom(networkAtom);
 
   const [form, setForm] = useState<FormState>(DEFAULTS);
   const [programGrants, setProgramGrants] = useState<ProgramGrant[]>(DEFAULT_PROGRAM_GRANTS);
@@ -115,10 +121,40 @@ export function PrivateInputs() {
     [programSource, form.functionName],
   );
 
+  const freezelistProgram = useMemo(
+    () => defaultFreezelistProgram(programSource, form.programName),
+    [programSource, form.programName],
+  );
+
   // Regenerate slot states whenever the parsed signature changes (program or function).
   useEffect(() => {
-    setSlotStates(parsedSlots.map(s => defaultSlotState(s, form.programName.trim())));
-  }, [parsedSlots, form.programName]);
+    setSlotStates(
+      parsedSlots.map(s => defaultSlotState(s, form.programName.trim(), freezelistProgram)),
+    );
+  }, [parsedSlots, form.programName, freezelistProgram]);
+
+  // Testnet program with a populated freezelist: the wallet must fetch the real tree and prove the
+  // signer absent, so an empty-tree shortcut cannot pass.
+  const loadFreezelistDemo = () => {
+    const program = 'testnet_freezelist.aleo';
+    const functionName = 'verify_non_inclusion_priv';
+    setNetwork(Network.TESTNET);
+    if (!programs.includes(program)) setPrograms([...programs, program]);
+    setForm({ programName: program, functionName });
+    setAlgorithmsAllowed(prev => [
+      ...(prev ?? []).filter(g => !(g.program === program && g.function === functionName)),
+      {
+        algorithm: 'program-freezelist-exclusion-proof',
+        program,
+        function: functionName,
+        inputPosition: 1,
+        argConstraints: { freezelistProgram: [program] },
+      },
+    ]);
+    toast.success(
+      `Loaded ${program}/${functionName}. Reconnect the wallet so the new grant applies, then execute.`,
+    );
+  };
 
   // Spec interlock: readAddress:false requires decryptPermission:NoDecrypt
   // (every plaintext decrypt would leak the owner address). See
@@ -828,6 +864,15 @@ export function PrivateInputs() {
 
       <div className="space-y-3 mb-14">
         <h2 className="h3">2. Function inputs</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={loadFreezelistDemo}>
+            Load freezelist exclusion demo (testnet, populated list)
+          </Button>
+          <p className="body-s text-muted-foreground">
+            Slot 0 is your address, slot 1 is a wallet-derived non-inclusion proof against{' '}
+            <code>testnet_freezelist.aleo</code>.
+          </p>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="programName">Program ID</Label>
           <Input
