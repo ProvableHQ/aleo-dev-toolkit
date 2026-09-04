@@ -470,6 +470,15 @@ per-argument values with `argConstraints`, which is either a fixed allowlist of 
 the string `"any"` (and an omitted constraint means any value is allowed). Pinning the values means a
 later call cannot reuse the grant with different arguments.
 
+When the granted call site is a wrapper program that internally calls the program the derivation is
+for, set `scopeProgram` to that inner program: the wallet then derives against
+`scopeProgram ?? program` — the scope program's address is hashed into the derivation and its counter
+partition is used, so wrapped and direct calls to the same program share one counter space. The value
+must be a well-formed program id that exists on the connection's network (the wallet rejects the
+connect otherwise), and it is always pinned in the grant — there is no request-time way to change it.
+The wallet does not verify that the wrapper actually calls the scope program; the target program's
+own on-chain re-derivation check enforces correct usage.
+
 ```ts
 <AleoWalletProvider
   // ...
@@ -484,13 +493,17 @@ later call cannot reuse the grant with different arguments.
         mode: ['issue'],
         membershipMapping: ['used_blinded_addresses'],
       } },
+    // a router transition that wraps amm_v3.aleo — scope the derivation to the inner program:
+    { algorithm: 'program-scoped-blinded-address',
+      program: 'amm_router.aleo', function: 'swap_from_wrapped', inputPosition: 3,
+      scopeProgram: 'amm_v3.aleo' },
   ]}
 >
 ```
 
 To discover what an adapter supports, call `useWallet().algorithmsSupported()`, which does not require
 a connection. A wallet without derived-input support returns an empty array, while Shield returns
-`['program-scoped-blinding-factor', 'program-scoped-blinded-address']`.
+`['program-scoped-blinding-factor', 'program-scoped-blinded-address', 'program-freezelist-exclusion-proof']`.
 
 At execute time, you pass `{ type: "derived", algorithm, args }` in the matching slots. The `args`
 value is a `Record<string, AlgorithmArg>`, where each `AlgorithmArg` is `{ type, value }` — both are
@@ -580,6 +593,78 @@ If you pinned operational arguments with `argConstraints` at connect time, remem
 refuse this call, so you should grant `mode: ['issue', 'resolve']` (or omit the `mode` constraint
 entirely). In any case, `claim_swap_output_private` is a different function than `swap_private`, so it
 needs grants of its own regardless.
+
+### Freezelist exclusion proofs
+
+Compliance-gated programs require a Merkle non-inclusion proof that an address is absent from a
+freezelist before they move funds. The `program-freezelist-exclusion-proof` algorithm produces that
+proof as a `[MerkleProof; 2]` Leo array, so it fills array slots rather than primitive ones. It takes
+two arguments:
+
+- `freezelistProgram` names the freezelist program whose tree the proof is built against — the
+  program whose `freeze_list_root` mapping the target contract asserts, not the token or AMM program
+  itself. Pin it with `argConstraints` so a grant cannot be pointed at a different list later.
+- `address` is the subject to prove absent, and is optional. Omitted, the slot proves the connected
+  account (the signer). Set it when a function also checks other parties, such as a position's
+  recipient or withdrawal address.
+
+Slots are independent: one transaction can carry several proofs for different subjects and even
+different freezelists, and each slot needs its own grant. The wallet reads the freezelist program's
+current on-chain root, fetches and verifies the list against it, and caches each proof until the
+root rotates. A freezelist the program has never published resolves to a proof against the empty
+tree. If the subject is on the list, the request fails before proving with an error naming the
+address, which you should surface to the user rather than retry.
+
+```ts
+<AleoWalletProvider
+  // ...
+  algorithmsAllowed={[
+    // mint checks the signer, the recipient, and the withdrawal address against one freezelist:
+    { algorithm: 'program-freezelist-exclusion-proof',
+      program: 'amm_v3.aleo', function: 'mint', inputPosition: 8,
+      argConstraints: { freezelistProgram: ['amm_freezelist.aleo'] } },
+    { algorithm: 'program-freezelist-exclusion-proof',
+      program: 'amm_v3.aleo', function: 'mint', inputPosition: 9,
+      argConstraints: { freezelistProgram: ['amm_freezelist.aleo'] } },
+    { algorithm: 'program-freezelist-exclusion-proof',
+      program: 'amm_v3.aleo', function: 'mint', inputPosition: 10,
+      argConstraints: { freezelistProgram: ['amm_freezelist.aleo'] } },
+  ]}
+>
+```
+
+```ts
+await executeTransaction({
+  program: 'amm_v3.aleo',
+  function: 'mint',
+  inputs: [
+    // ...nonce, the two token records, recipient, withdrawal, request, token ids...
+    { type: 'derived',
+      algorithm: 'program-freezelist-exclusion-proof',  // signer_merkle_proofs
+      args: { freezelistProgram: { type: 'string', value: 'amm_freezelist.aleo' } },
+    },
+    { type: 'derived',
+      algorithm: 'program-freezelist-exclusion-proof',  // recipient_merkle_proofs
+      args: {
+        freezelistProgram: { type: 'string', value: 'amm_freezelist.aleo' },
+        address: { type: 'address', value: recipient },
+      },
+    },
+    { type: 'derived',
+      algorithm: 'program-freezelist-exclusion-proof',  // withdrawal_merkle_proofs
+      args: {
+        freezelistProgram: { type: 'string', value: 'amm_freezelist.aleo' },
+        address: { type: 'address', value: withdrawal },
+      },
+    },
+  ],
+});
+```
+
+A wrapper transition that also unwraps a compliance-gated token typically carries two proofs for
+the same signer against two different freezelists — the AMM's and the token's own. Give each slot
+its own `freezelistProgram`; `scopeProgram` plays no part here, because the algorithm derives from
+public list data rather than from a program address or counter.
 
 To render correct forms or to validate shapes ahead of time, use `ALGORITHM_SCHEMAS` from
 `@provablehq/aleo-types`, which ships each algorithm's argument schema (including each argument's type
