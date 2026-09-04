@@ -168,10 +168,40 @@ export function parseFunctionInputs(source: string, functionName: string): Parse
   return slots;
 }
 
-export function defaultSlotState(slot: ParsedSlot, fallbackProgram: string): SlotState {
+/**
+ * The freezelist a program's `[MerkleProof; 2]` slots prove against: the program itself when it
+ * owns a `freeze_list_root` mapping, otherwise the first imported program named like a freezelist.
+ */
+export function defaultFreezelistProgram(programSource: string, programName: string): string {
+  if (!programSource) return '';
+  if (/^mapping freeze_list_root:/m.test(programSource)) return programName.trim();
+  const imported = programSource.match(/^import\s+([a-z0-9_]*freezelist[a-z0-9_]*\.aleo);/m);
+  return imported?.[1] ?? '';
+}
+
+export function defaultSlotState(
+  slot: ParsedSlot,
+  fallbackProgram: string,
+  freezelistProgram = '',
+): SlotState {
   if (slot.kind === 'primitive') {
-    const mode: PrimitiveSlotMode = slot.baseType === 'address' ? 'address' : 'literal';
-    return { kind: 'primitive', mode, value: '', derivedAlgorithm: '', derivedArgs: {} };
+    const derivedAlgorithm: KnownAlgorithm | '' =
+      freezelistProgram &&
+      eligibleAlgorithmsForBaseType(slot.baseType).includes('program-freezelist-exclusion-proof')
+        ? 'program-freezelist-exclusion-proof'
+        : '';
+    const mode: PrimitiveSlotMode = derivedAlgorithm
+      ? 'derived'
+      : slot.baseType === 'address'
+        ? 'address'
+        : 'literal';
+    return {
+      kind: 'primitive',
+      mode,
+      value: '',
+      derivedAlgorithm,
+      derivedArgs: derivedAlgorithm ? { freezelistProgram } : {},
+    };
   }
   const slotProgram = slot.program || fallbackProgram;
   const isCredits = slotProgram === 'credits.aleo' && slot.recordname === 'credits';
