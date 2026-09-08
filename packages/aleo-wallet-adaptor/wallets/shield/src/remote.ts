@@ -100,7 +100,15 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   async disconnect(): Promise<void> {
     if (!this.transport) return;
     // Best-effort notify: the session teardown below is what matters.
-    await this.transport.request('disconnect', []).catch(() => undefined);
+    //
+    // Only worth sending when a peer actually joined. Cancelling a pairing
+    // that never completed leaves nobody to answer, and the request would
+    // sit for the full request timeout (5 minutes by default) before
+    // anything was torn down — so the abandoned session would stay live
+    // exactly as long as it takes for someone else to scan the URL.
+    if (this.transport.connected) {
+      await this.transport.request('disconnect', []).catch(() => undefined);
+    }
     this.teardown();
   }
 

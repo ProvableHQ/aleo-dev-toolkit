@@ -115,6 +115,21 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   readonly supportsRemotePairing: boolean;
 
   /**
+   * The wallet a connect() is currently waiting on. Remote pairing blocks on
+   * a human for minutes, and during that window the session is live but
+   * `_shieldWallet` is still unset — so without this handle there is nothing
+   * to tear down when the user backs out.
+   */
+  private _pendingWallet: ShieldWallet | undefined;
+
+  /**
+   * Bumped by every connect() and every disconnect(). A connect that resolves
+   * against a stale generation was superseded or cancelled while it waited,
+   * and must drop its session instead of binding it.
+   */
+  private _connectGeneration = 0;
+
+  /**
    * Create a new Shield wallet adapter
    * @param config Adapter configuration. Omit for injected-only behavior
    * (unchanged); pass `{ remote }` to enable the relay fallback on browsers
@@ -202,13 +217,28 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     programs?: string[],
     options?: ConnectOptions,
   ): Promise<Account> {
+    // Supersede anything already in flight: a second connect() replaces the
+    // first, and the first must not bind when it eventually resolves.
+    const generation = ++this._connectGeneration;
+    let wallet: ShieldWallet | undefined;
     try {
       // Resolve, connect, bind. A remote wallet cleans up its own relay
       // session when connect() fails, so no teardown belongs here; an
       // injected wallet that rejects is simply not connected.
-      const wallet = await this._resolveWallet();
+      wallet = await this._resolveWallet();
+      this._pendingWallet = wallet;
 
       const connectResult = await wallet.connect(network, decryptPermission, programs, options);
+
+      // Cancelled while we waited on the user. The pairing completed, so the
+      // relay session is live and usable — which is exactly why it has to be
+      // dropped: nobody is waiting for it, and whoever answered the abandoned
+      // URL is not necessarily the person who opened it.
+      if (generation !== this._connectGeneration) {
+        await wallet.disconnect().catch(() => undefined);
+        throw new WalletConnectionError('Shield connect was cancelled');
+      }
+
       const publicKey = connectResult?.address || '';
       // When the dapp opted into address withholding (readAddress: false),
       // an empty address is the expected result, not an error.
@@ -239,16 +269,25 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     } catch (err: Error | unknown) {
       if (err instanceof WalletConnectionError) throw err;
       throw new WalletConnectionError(err instanceof Error ? err.message : 'Connection failed');
+    } finally {
+      if (this._pendingWallet === wallet) this._pendingWallet = undefined;
     }
   }
 
   /**
-   * Disconnect from Shield wallet
+   * Disconnect from Shield wallet, and cancel a pairing still in flight.
    */
   async disconnect(): Promise<void> {
+    // Invalidate the in-flight connect first, so a pairing that completes
+    // between here and the await below is rejected rather than bound.
+    this._connectGeneration += 1;
+    const pending = this._pendingWallet;
+    this._pendingWallet = undefined;
+
     try {
       this._cleanupListeners();
 
+      if (pending) await pending.disconnect().catch(() => undefined);
       await this._shieldWallet?.disconnect();
       this._onDisconnect();
     } catch (err: Error | unknown) {
