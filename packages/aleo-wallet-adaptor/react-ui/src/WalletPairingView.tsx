@@ -43,7 +43,7 @@ const QR_SIZE = 312;
  * is never squashed; `imageSettings` takes both and does not preserve the
  * ratio for you.
  */
-const QR_LOGO_HEIGHT = 76;
+const QR_LOGO_HEIGHT = 81;
 
 /**
  * The spec's minimum quiet zone. `qrcode.react` defaults to less, which some
