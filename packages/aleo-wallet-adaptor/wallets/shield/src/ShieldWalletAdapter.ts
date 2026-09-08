@@ -46,9 +46,11 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   readonly name = 'Shield Wallet' as WalletName<'Shield Wallet'>;
 
   /**
-   * The wallet URL
+   * The wallet URL. The extension listing rather than the marketing site:
+   * this is what UI opens for "install", and the user has to land somewhere
+   * that ends with an injected provider.
    */
-  url = 'https://www.shield.app/';
+  url = 'https://chromewebstore.google.com/detail/shield/hhddpjpacfjaakjioinajgmhlbhfchao';
 
   /**
    * The wallet icon (base64-encoded SVG)
@@ -93,6 +95,13 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   private readonly _remoteConfig?: ShieldRemoteConfig;
 
   /**
+   * Whether this adapter can pair with the Shield app out-of-band. True
+   * exactly when the remote fallback is configured — UI reads it to decide
+   * whether to show a pairing surface before connect() resolves.
+   */
+  readonly supportsRemotePairing: boolean;
+
+  /**
    * Create a new Shield wallet adapter
    * @param config Adapter configuration. Omit for injected-only behavior
    * (unchanged); pass `{ remote }` to enable the relay fallback on browsers
@@ -102,6 +111,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     super();
     this.network = Network.TESTNET;
     this._remoteConfig = config?.remote;
+    this.supportsRemotePairing = !!config?.remote;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       // Remote-capable adapters are usable without any injection — that is
       // the wallet-standard's LOADABLE state. Injection detection still runs
@@ -143,9 +153,30 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       // No injection: fall back to the relay. The facade module is loaded
       // lazily so injected-only dapps never pull in remote code.
       const { RemoteShieldWallet } = await import('./remote');
-      return new RemoteShieldWallet(this._remoteConfig);
+      return new RemoteShieldWallet(this._withConnectUrlRelay(this._remoteConfig));
     }
     throw new WalletConnectionError('Shield Wallet is not available');
+  }
+
+  /**
+   * Route the pairing URL to the `connectUrl` event as well as the dapp's
+   * own `onConnectUrl` callback, so UI layers (e.g. the react-ui wallet
+   * modal's QR screen) can present it without the dapp wiring anything up.
+   *
+   * When nothing is listening the config is passed through untouched — that
+   * leaves `onConnectUrl` genuinely undefined, which is what the remote
+   * wallet's desktop guard checks before it refuses a connect that would
+   * have no way to show the user the URL.
+   */
+  private _withConnectUrlRelay(config: ShieldRemoteConfig): ShieldRemoteConfig {
+    if (this.listenerCount('connectUrl') === 0) return config;
+    return {
+      ...config,
+      onConnectUrl: (url, context) => {
+        config.onConnectUrl?.(url, context);
+        this.emit('connectUrl', url, context);
+      },
+    };
   }
 
   /**

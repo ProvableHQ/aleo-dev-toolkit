@@ -65,8 +65,8 @@ export function RemoteConnect() {
               </li>
               <li>
                 Open this site from the phone (<code>http://&lt;mac-ip&gt;:5173</code>) in Safari
-                and connect the Shield wallet — the deeplink fires automatically. On desktop, copy
-                the connect URL from the banner into the fake wallet.
+                and connect the Shield wallet — the deeplink fires automatically. On desktop, the
+                wallet modal shows a QR code; copy its link into the fake wallet.
               </li>
             </ol>
           </AlertDescription>

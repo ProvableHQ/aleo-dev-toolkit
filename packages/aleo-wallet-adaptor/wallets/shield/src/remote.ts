@@ -26,6 +26,12 @@ import {
 const DEFAULT_PAIRING_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
+ * Opening the relay channel is a machine-to-machine step — generous for a
+ * slow network, but nothing like the human-scale pairing wait that follows.
+ */
+const DEFAULT_CHANNEL_TIMEOUT_MS = 20 * 1000;
+
+/**
  * Remote implementation of the `ShieldWallet` surface over the Shield relay
  * (deeplink + end-to-end-encrypted Centrifugo channel — see
  * ProvableHQ/shield-relay). Method names, params, and response shapes mirror
@@ -51,7 +57,11 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // this wallet cleans up after itself so callers never have to.
     try {
       const transport = await this.loadTransport();
-      const { url, resumed } = await transport.connect();
+      const { url, resumed } = await withTimeout(
+        transport.connect(),
+        this.config.channelTimeoutMs ?? DEFAULT_CHANNEL_TIMEOUT_MS,
+        'could not reach the Shield relay — check remote.relayUrl and your connection',
+      );
 
       if (!transport.connected) {
         // Not paired yet — surface the connect URL. The callback is additive
@@ -191,21 +201,33 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   }
 
   private async waitForPairing(transport: ShieldRemoteTransportLike): Promise<void> {
-    const timeoutMs = this.config.pairingTimeoutMs ?? DEFAULT_PAIRING_TIMEOUT_MS;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      await Promise.race([
-        transport.waitForWallet(),
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(
-            () => reject(new WalletConnectionError('timed out waiting for the Shield app to pair')),
-            timeoutMs,
-          );
-        }),
-      ]);
-    } finally {
-      clearTimeout(timer);
-    }
+    await withTimeout(
+      transport.waitForWallet(),
+      this.config.pairingTimeoutMs ?? DEFAULT_PAIRING_TIMEOUT_MS,
+      'timed out waiting for the Shield app to pair',
+    );
+  }
+}
+
+/**
+ * Reject if `promise` has not settled within `timeoutMs`.
+ *
+ * Every await in a remote connect needs one. An unreachable relay host makes
+ * the transport's channel-open hang indefinitely rather than throw, which
+ * surfaces as a connect() that never settles and UI stuck on a spinner — so
+ * the bound belongs on the channel open, not only on the human step after it.
+ */
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new WalletConnectionError(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
   }
 }
 

@@ -32,6 +32,17 @@ export interface WalletAdapterProps<Name extends string = string> {
   url?: string;
 
   /**
+   * Whether this adapter can pair with a wallet app out-of-band (deeplink or
+   * scanned QR code) instead of an injected provider.
+   *
+   * UI reads this *before* `connect()` resolves, to decide whether to present
+   * a pairing surface — `readyState: LOADABLE` alone cannot tell it apart
+   * from a wallet that merely loads on demand. Adapters that declare it emit
+   * `connectUrl` during connect.
+   */
+  supportsRemotePairing?: boolean;
+
+  /**
    * The wallet icon
    */
   icon?: string;

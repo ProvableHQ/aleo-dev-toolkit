@@ -2,6 +2,7 @@ export * from './useWalletModal';
 export * from './WalletConnectButton';
 export * from './WalletModal';
 export * from './WalletModalButton';
+export * from './WalletPairingView';
 export * from './WalletModalProvider';
 export * from './WalletDisconnectButton';
 export * from './WalletIcon';

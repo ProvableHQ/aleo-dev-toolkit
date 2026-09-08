@@ -72,26 +72,43 @@ export interface ShieldRemoteTransportLike {
  * browser connect to the Shield app via deeplink + end-to-end-encrypted
  * relay when no injected `window.shield` provider exists.
  *
- * @experimental Requires a Shield app build with relay support, which is not
- * yet generally available — without one, remote connect() cannot complete.
- * The option is safe to leave configured (injected providers always take
- * precedence), but do not ship it in production dapps yet.
+ * Requires Shield app v1.11.2 (build 147) or newer, where relay pairing
+ * shipped. Note that desktop QR scanning is not usable end-to-end yet: the
+ * connect URL is a `shield://` custom-scheme link and the app has no pairing
+ * scanner, so a phone camera cannot reliably act on it. Same-device mobile
+ * deeplinking — the case this exists for — works.
  */
 export interface ShieldRemoteConfig {
-  /** Relay websocket/http origin, e.g. wss://relay.shield.app or http://<lan-ip>:8787 */
+  /**
+   * Relay websocket/http origin. Release Shield builds dial `relay.shield.app`
+   * and nothing else, and refuse a plaintext relay — a LAN URL such as
+   * `http://<lan-ip>:8787` needs a dev/preview app build allowlisting it.
+   */
   relayUrl: string;
-  /** e.g. https://app.shield.app/connect (universal link) or shield://connect */
+  /**
+   * e.g. `shield://connect`. Universal links are not configured on the app
+   * yet, so `https://app.shield.app/connect` will not open it; the dev and
+   * preview channels use `shield-dev://` and `shield-preview://`.
+   */
   deeplinkBase: string;
   /** Per-request timeout. The transport's default is generous — proving is slow. */
   requestTimeoutMs?: number;
   /** How long connect() waits for the user to pair in the Shield app. Default 5 min. */
   pairingTimeoutMs?: number;
   /**
+   * How long connect() waits for the relay channel to open, before the human
+   * pairing step begins. Default 20s. An unreachable relay host hangs rather
+   * than refusing, so without this bound connect() would never settle.
+   */
+  channelTimeoutMs?: number;
+  /**
    * Called with the connect URL whenever pairing is needed — additive to
-   * the automatic mobile deeplink, not a replacement for it. Use it to
-   * render a QR code or surface the URL in UI. On desktop it is required
-   * (there is nothing else sensible to do with the URL); on mobile the
-   * deeplink still fires automatically unless `fireDeeplink: false`.
+   * the automatic mobile deeplink and to the adapter's `connectUrl` event,
+   * not a replacement for either. Most dapps need neither: react-ui's wallet
+   * modal renders the pairing screen off the event. Use this when you own
+   * the pairing UI. On desktop the URL must reach the user somehow, so a
+   * connect with neither this callback nor a `connectUrl` listener is
+   * refused; on mobile the deeplink still fires unless `fireDeeplink: false`.
    */
   onConnectUrl?: (url: string, context: { resumed: boolean }) => void;
   /**
@@ -118,8 +135,8 @@ export interface ShieldWalletAdapterConfig {
    * adapter reports LOADABLE and connects via the relay instead. An
    * injected provider always takes precedence.
    *
-   * @experimental Not yet generally available — needs a Shield app build
-   * with relay support. See the package README before enabling.
+   * Needs Shield app v1.11.2 (build 147) or newer. See the package README
+   * for the relay allowlist and the desktop-QR caveat.
    */
   remote?: ShieldRemoteConfig;
 }
