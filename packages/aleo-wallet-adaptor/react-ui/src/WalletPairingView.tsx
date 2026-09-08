@@ -38,11 +38,12 @@ const isMobileUserAgent = (): boolean =>
 const QR_SIZE = 312;
 
 /**
- * Logo height. ~19% of the code; the width follows the mark's own aspect so
- * it is never squashed — `imageSettings` takes both and does not preserve
- * the ratio for you.
+ * Logo height. ~24% of the code — the widest that stays comfortably inside
+ * level Q's recovery budget. The width follows the mark's own aspect so it
+ * is never squashed; `imageSettings` takes both and does not preserve the
+ * ratio for you.
  */
-const QR_LOGO_HEIGHT = 60;
+const QR_LOGO_HEIGHT = 76;
 
 /**
  * The spec's minimum quiet zone. `qrcode.react` defaults to less, which some
@@ -156,7 +157,11 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
                       src: qrLogo.src,
                       height: qrLogo.height,
                       width: qrLogo.width,
-                      excavate: true,
+                      // No excavation: it clears the image's bounding
+                      // RECTANGLE, and a mark that isn't rectangular leaves
+                      // white gaps around itself. The logo sits on the code
+                      // instead; level Q absorbs the modules it covers.
+                      excavate: false,
                     },
                   }
                 : {})}
