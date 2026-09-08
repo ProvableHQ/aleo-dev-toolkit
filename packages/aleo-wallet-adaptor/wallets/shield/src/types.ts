@@ -53,8 +53,18 @@ export type ShieldRemoteTransportEvent =
  * like this (its RemoteShieldTransport already is).
  */
 export interface ShieldRemoteTransportLike {
-  /** Opens (or resumes) the relay channel; returns the connect/deeplink URL. */
-  connect(): Promise<{ url: string; resumed: boolean }>;
+  /**
+   * Opens (or resumes) the relay channel; returns the connect/deeplink URL.
+   *
+   * `initialRequest` asks the transport to carry that request inside the link
+   * rather than send it over the channel, and `initialResponse` is how it is
+   * answered. Both are optional in every direction: a transport predating the
+   * bundle ignores the argument and returns no `initialResponse`, and the
+   * adapter then sends the request over the channel as it always did.
+   */
+  connect(options?: {
+    initialRequest?: { method: string; params?: unknown };
+  }): Promise<{ url: string; resumed: boolean; initialResponse?: Promise<unknown> }>;
   /** Resolves once the wallet has joined and completed the key handshake. */
   waitForWallet(): Promise<void>;
   /** True once paired with the wallet. */

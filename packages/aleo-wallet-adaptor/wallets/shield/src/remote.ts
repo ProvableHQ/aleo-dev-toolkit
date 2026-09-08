@@ -57,8 +57,23 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // this wallet cleans up after itself so callers never have to.
     try {
       const transport = await this.loadTransport();
-      const { url, resumed } = await withTimeout(
-        transport.connect(),
+      const connectParams = [network, decryptPermission, programs ?? [], options];
+
+      // Bundled only when this call is the one that fires the deeplink. Firing
+      // it navigates this page away and iOS suspends it at that moment, so a
+      // request sent after the handshake does not leave until the user comes
+      // back — leaving the wallet with nothing to show an approval for while
+      // they are looking at it. On the QR path the page stays alive and sends
+      // it over the channel a round trip later, and every byte in the link is
+      // another module for someone to scan.
+      const willFireDeeplink = isMobileUserAgent() && this.config.fireDeeplink !== false;
+
+      const { url, resumed, initialResponse } = await withTimeout(
+        transport.connect(
+          willFireDeeplink
+            ? { initialRequest: { method: 'connect', params: connectParams } }
+            : undefined,
+        ),
         this.config.channelTimeoutMs ?? DEFAULT_CHANNEL_TIMEOUT_MS,
         'could not reach the Shield relay — check remote.relayUrl and your connection',
       );
@@ -83,12 +98,15 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
 
       await this.waitForPairing(transport);
 
-      const result = await transport.request<{ address?: string }>('connect', [
-        network,
-        decryptPermission,
-        programs ?? [],
-        options,
-      ]);
+      // A bundled request is answered as the wallet joins, so there is nothing
+      // to send. `initialResponse` is absent whenever it was not bundled — the
+      // QR path, a resumed session, a transport that predates the bundle, or
+      // one that refused it — and the request then goes over the channel
+      // exactly as it always did.
+      const result = (await (initialResponse ??
+        transport.request<{ address?: string }>('connect', connectParams))) as
+        | { address?: string }
+        | undefined;
       this.publicKey = result?.address ?? '';
       return { address: this.publicKey };
     } catch (error) {
