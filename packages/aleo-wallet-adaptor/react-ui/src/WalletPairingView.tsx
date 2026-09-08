@@ -37,8 +37,12 @@ const isMobileUserAgent = (): boolean =>
  */
 const QR_SIZE = 312;
 
-/** ~19% of the width. Big enough to read as a mark, ~3.6% of the code area. */
-const QR_LOGO_SIZE = 60;
+/**
+ * Logo height. ~19% of the code; the width follows the mark's own aspect so
+ * it is never squashed — `imageSettings` takes both and does not preserve
+ * the ratio for you.
+ */
+const QR_LOGO_HEIGHT = 60;
 
 /**
  * The spec's minimum quiet zone. `qrcode.react` defaults to less, which some
@@ -61,7 +65,38 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [isMobile] = useState(isMobileUserAgent);
+  const [logoRatio, setLogoRatio] = useState<number | null>(null);
   const name = wallet.adapter.name;
+
+  // The QR sits on white whatever the modal theme is, so prefer the wallet's
+  // light-background mark; `icon` may be a light-on-dark logo that would
+  // disappear, or carry its own backplate.
+  const logoSrc = wallet.adapter.iconOnLight ?? wallet.adapter.icon;
+
+  // Measure the mark rather than assuming it is square — a wrong ratio here
+  // shows up as a visibly squashed logo.
+  useEffect(() => {
+    if (!logoSrc) return;
+    let cancelled = false;
+    const probe = new Image();
+    probe.onload = () => {
+      if (!cancelled && probe.width && probe.height) {
+        setLogoRatio(probe.width / probe.height);
+      }
+    };
+    probe.src = logoSrc;
+    return () => {
+      cancelled = true;
+    };
+  }, [logoSrc]);
+
+  const qrLogo = logoSrc
+    ? {
+        src: logoSrc,
+        height: QR_LOGO_HEIGHT,
+        width: Math.round(QR_LOGO_HEIGHT * (logoRatio ?? 1)),
+      }
+    : null;
 
   useEffect(() => {
     if (!copied) return;
@@ -115,12 +150,12 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
               // recovers 25%; the logo below costs a few percent, leaving the
               // rest for real-world glare, angle and print damage.
               level="Q"
-              {...(wallet.adapter.icon
+              {...(qrLogo
                 ? {
                     imageSettings: {
-                      src: wallet.adapter.icon,
-                      height: QR_LOGO_SIZE,
-                      width: QR_LOGO_SIZE,
+                      src: qrLogo.src,
+                      height: qrLogo.height,
+                      width: qrLogo.width,
                       excavate: true,
                     },
                   }

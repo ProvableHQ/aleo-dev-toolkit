@@ -48,6 +48,14 @@ export interface WalletAdapterProps<Name extends string = string> {
   icon?: string;
 
   /**
+   * Icon variant for light backgrounds, where `icon` would wash out or
+   * vanish — a QR code's quiet zone is white regardless of theme, so a
+   * light-on-dark brand mark is unreadable there. Optional; UI falls back
+   * to `icon`.
+   */
+  iconOnLight?: string;
+
+  /**
    * The wallet's ready state
    */
   readyState: WalletReadyState;
