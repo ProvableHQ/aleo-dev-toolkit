@@ -28,6 +28,22 @@ export class WalletConnectionError extends WalletError {
 }
 
 /**
+ * Error thrown when a pending connect is abandoned on purpose — the user
+ * backed out of a pairing screen, or a second connect superseded the first.
+ *
+ * A subclass rather than a flag so existing `catch (WalletConnectionError)`
+ * handlers keep working, while UI that wants to stay quiet about a
+ * deliberate cancel can tell it apart from a connect that actually failed.
+ */
+export class WalletConnectionCancelledError extends WalletConnectionError {
+  name = 'WalletConnectionCancelledError';
+
+  constructor(message = 'Connection cancelled') {
+    super(message);
+  }
+}
+
+/**
  * Error thrown when a required wallet feature is not available
  */
 export class WalletFeatureNotAvailableError extends WalletError {

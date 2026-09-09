@@ -77,8 +77,9 @@ export interface WalletContextState {
 
   /**
    * Select a wallet by name
-   * @param name The name of the wallet to select, or `null` to deselect —
-   * which disconnects the current adapter and abandons any pending pairing.
+   * @param name The name of the wallet to select, or `null` to deselect.
+   * Deselecting reaches the adapter, so it also abandons a pairing that is
+   * still waiting on the user and tears down its relay session.
    */
   selectWallet: (name: WalletName | null) => void;
 

@@ -19,6 +19,7 @@ import {
   filterRecordsByStatus,
   scopePollingDetectionStrategy,
   validateInputRequests,
+  WalletConnectionCancelledError,
   WalletConnectionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
@@ -35,6 +36,16 @@ import {
   ShieldWalletAdapterConfig,
   ShieldWindow,
 } from './types';
+
+/**
+ * Same test as the one in `./remote`, duplicated rather than imported: that
+ * module is loaded lazily on purpose, and importing it here for three lines
+ * would pull the whole remote path into every bundle.
+ */
+function isMobileUserAgent(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
 
 /**
  * Shield wallet adapter
@@ -191,18 +202,38 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * own `onConnectUrl` callback, so UI layers (e.g. the react-ui wallet
    * modal's QR screen) can present it without the dapp wiring anything up.
    *
-   * When nothing is listening the config is passed through untouched — that
-   * leaves `onConnectUrl` genuinely undefined, which is what the remote
-   * wallet's desktop guard checks before it refuses a connect that would
-   * have no way to show the user the URL.
+   * Always wrapped, never conditional on who is listening right now. The
+   * listener is attached from a React passive effect, while the connect that
+   * needs it is started from a layout effect one commit earlier — and a
+   * warm `import('./remote')` resolves as a microtask, before React has
+   * flushed those passive effects. Sampling `listenerCount` here would see
+   * zero on every pairing after the first and drop the event for good.
+   *
+   * Because this always sets `onConnectUrl`, the remote wallet's own desktop
+   * guard can no longer fire for adapter-driven connects. The equivalent
+   * check moves into the callback below, where it runs at the moment the URL
+   * exists — tens of seconds later, with every listener long since attached.
    */
   private _withConnectUrlRelay(config: ShieldRemoteConfig): ShieldRemoteConfig {
-    if (this.listenerCount('connectUrl') === 0) return config;
     return {
       ...config,
       onConnectUrl: (url, context) => {
         config.onConnectUrl?.(url, context);
         this.emit('connectUrl', url, context);
+        // Developer error: on desktop the URL has to reach the user somehow,
+        // and neither channel is carrying it anywhere. Thrown from inside
+        // connect(), so the remote wallet tears its own relay session down.
+        if (
+          !config.onConnectUrl &&
+          !isMobileUserAgent() &&
+          this.listenerCount('connectUrl') === 0
+        ) {
+          throw new WalletConnectionError(
+            'Shield remote connect on a non-mobile browser requires a `connectUrl` listener ' +
+              'or remote.onConnectUrl to present the connect URL (e.g. render it as a QR ' +
+              'code for the phone).',
+          );
+        }
       },
     };
   }
@@ -236,7 +267,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       // URL is not necessarily the person who opened it.
       if (generation !== this._connectGeneration) {
         await wallet.disconnect().catch(() => undefined);
-        throw new WalletConnectionError('Shield connect was cancelled');
+        throw new WalletConnectionCancelledError('Shield connect was cancelled');
       }
 
       const publicKey = connectResult?.address || '';

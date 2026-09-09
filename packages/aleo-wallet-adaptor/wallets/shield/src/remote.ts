@@ -10,7 +10,10 @@ import {
   EventEmitter,
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
-import { WalletConnectionError } from '@provablehq/aleo-wallet-adaptor-core';
+import {
+  WalletConnectionCancelledError,
+  WalletConnectionError,
+} from '@provablehq/aleo-wallet-adaptor-core';
 import {
   ShieldRemoteConfig,
   ShieldRemoteTransportLike,
@@ -42,6 +45,16 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   publicKey?: string;
 
   private transport?: ShieldRemoteTransportLike;
+
+  /**
+   * Rejects the connect that is currently waiting on the user, if any.
+   *
+   * `waitForWallet()` resolves when a peer joins and otherwise runs out the
+   * pairing timeout — minutes. Dropping the transport underneath it does not
+   * settle it, so without this a cancelled connect stays pending and its
+   * caller stays "connecting", refusing every connect after it.
+   */
+  private abandonPairing?: (reason: Error) => void;
 
   constructor(private readonly config: ShieldRemoteConfig) {
     super();
@@ -89,6 +102,9 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
             window.location.href = url;
           }
         } else if (!this.config.onConnectUrl) {
+          // Only reachable when this wallet is driven directly. Going through
+          // ShieldWalletAdapter always sets `onConnectUrl`, and that wrapper
+          // carries the equivalent guard for the event channel.
           throw new WalletConnectionError(
             'Shield remote connect on a non-mobile browser requires remote.onConnectUrl ' +
               'to present the connect URL (e.g. render it as a QR code for the phone).',
@@ -96,22 +112,30 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
         }
       }
 
-      await this.waitForPairing(transport);
+      // Raced against cancellation from here on: everything below waits on a
+      // human, and teardown() has to be able to end that wait.
+      const cancelled = new Promise<never>((_, reject) => {
+        this.abandonPairing = reject;
+      });
+
+      await Promise.race([this.waitForPairing(transport), cancelled]);
 
       // A bundled request is answered as the wallet joins, so there is nothing
       // to send. `initialResponse` is absent whenever it was not bundled — the
       // QR path, a resumed session, a transport that predates the bundle, or
       // one that refused it — and the request then goes over the channel
       // exactly as it always did.
-      const result = (await (initialResponse ??
-        transport.request<{ address?: string }>('connect', connectParams))) as
-        | { address?: string }
-        | undefined;
+      const result = (await Promise.race([
+        initialResponse ?? transport.request<{ address?: string }>('connect', connectParams),
+        cancelled,
+      ])) as { address?: string } | undefined;
       this.publicKey = result?.address ?? '';
       return { address: this.publicKey };
     } catch (error) {
       this.teardown();
       throw error;
+    } finally {
+      this.abandonPairing = undefined;
     }
   }
 
@@ -221,6 +245,11 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
    * fresh transport, so a dead instance is never kept around.
    */
   private teardown(): void {
+    // End a connect still waiting on the user before the transport goes: it
+    // is awaiting a pairing that can no longer happen, and nothing else will
+    // ever settle it.
+    this.abandonPairing?.(new WalletConnectionCancelledError('Shield pairing was cancelled'));
+    this.abandonPairing = undefined;
     this.transport?.disconnect();
     this.transport = undefined;
     this.publicKey = undefined;
