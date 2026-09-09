@@ -36,6 +36,17 @@ export interface WalletEvents {
    */
   error(error: Error): void;
 
+  /**
+   * Emitted while a connect() is waiting for the user to pair with a wallet
+   * app out-of-band — the URL is what the app must receive, whether by
+   * deeplink on the same device or by scanning it as a QR code from another.
+   *
+   * Only adapters that declare `supportsRemotePairing` emit this. `resumed`
+   * is true when the URL re-opens an existing session rather than starting a
+   * fresh pairing.
+   */
+  connectUrl(url: string, context: { resumed: boolean }): void;
+
   // /**
   //  * Index signature for additional events
   //  */

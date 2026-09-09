@@ -10,7 +10,10 @@ import {
   EventEmitter,
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
-import { WalletConnectionError } from '@provablehq/aleo-wallet-adaptor-core';
+import {
+  WalletConnectionCancelledError,
+  WalletConnectionError,
+} from '@provablehq/aleo-wallet-adaptor-core';
 import {
   ShieldRemoteConfig,
   ShieldRemoteTransportLike,
@@ -26,6 +29,12 @@ import {
 const DEFAULT_PAIRING_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
+ * Opening the relay channel is a machine-to-machine step — generous for a
+ * slow network, but nothing like the human-scale pairing wait that follows.
+ */
+const DEFAULT_CHANNEL_TIMEOUT_MS = 20 * 1000;
+
+/**
  * Remote implementation of the `ShieldWallet` surface over the Shield relay
  * (deeplink + end-to-end-encrypted Centrifugo channel — see
  * ProvableHQ/shield-relay). Method names, params, and response shapes mirror
@@ -36,6 +45,16 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   publicKey?: string;
 
   private transport?: ShieldRemoteTransportLike;
+
+  /**
+   * Rejects the connect that is currently waiting on the user, if any.
+   *
+   * `waitForWallet()` resolves when a peer joins and otherwise runs out the
+   * pairing timeout — minutes. Dropping the transport underneath it does not
+   * settle it, so without this a cancelled connect stays pending and its
+   * caller stays "connecting", refusing every connect after it.
+   */
+  private abandonPairing?: (reason: Error) => void;
 
   constructor(private readonly config: ShieldRemoteConfig) {
     super();
@@ -51,7 +70,26 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // this wallet cleans up after itself so callers never have to.
     try {
       const transport = await this.loadTransport();
-      const { url, resumed } = await transport.connect();
+      const connectParams = [network, decryptPermission, programs ?? [], options];
+
+      // Bundled only when this call is the one that fires the deeplink. Firing
+      // it navigates this page away and iOS suspends it at that moment, so a
+      // request sent after the handshake does not leave until the user comes
+      // back — leaving the wallet with nothing to show an approval for while
+      // they are looking at it. On the QR path the page stays alive and sends
+      // it over the channel a round trip later, and every byte in the link is
+      // another module for someone to scan.
+      const willFireDeeplink = isMobileUserAgent() && this.config.fireDeeplink !== false;
+
+      const { url, resumed, initialResponse } = await withTimeout(
+        transport.connect(
+          willFireDeeplink
+            ? { initialRequest: { method: 'connect', params: connectParams } }
+            : undefined,
+        ),
+        this.config.channelTimeoutMs ?? DEFAULT_CHANNEL_TIMEOUT_MS,
+        'could not reach the Shield relay — check remote.relayUrl and your connection',
+      );
 
       if (!transport.connected) {
         // Not paired yet — surface the connect URL. The callback is additive
@@ -64,6 +102,9 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
             window.location.href = url;
           }
         } else if (!this.config.onConnectUrl) {
+          // Only reachable when this wallet is driven directly. Going through
+          // ShieldWalletAdapter always sets `onConnectUrl`, and that wrapper
+          // carries the equivalent guard for the event channel.
           throw new WalletConnectionError(
             'Shield remote connect on a non-mobile browser requires remote.onConnectUrl ' +
               'to present the connect URL (e.g. render it as a QR code for the phone).',
@@ -71,26 +112,45 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
         }
       }
 
-      await this.waitForPairing(transport);
+      // Raced against cancellation from here on: everything below waits on a
+      // human, and teardown() has to be able to end that wait.
+      const cancelled = new Promise<never>((_, reject) => {
+        this.abandonPairing = reject;
+      });
 
-      const result = await transport.request<{ address?: string }>('connect', [
-        network,
-        decryptPermission,
-        programs ?? [],
-        options,
-      ]);
+      await Promise.race([this.waitForPairing(transport), cancelled]);
+
+      // A bundled request is answered as the wallet joins, so there is nothing
+      // to send. `initialResponse` is absent whenever it was not bundled — the
+      // QR path, a resumed session, a transport that predates the bundle, or
+      // one that refused it — and the request then goes over the channel
+      // exactly as it always did.
+      const result = (await Promise.race([
+        initialResponse ?? transport.request<{ address?: string }>('connect', connectParams),
+        cancelled,
+      ])) as { address?: string } | undefined;
       this.publicKey = result?.address ?? '';
       return { address: this.publicKey };
     } catch (error) {
       this.teardown();
       throw error;
+    } finally {
+      this.abandonPairing = undefined;
     }
   }
 
   async disconnect(): Promise<void> {
     if (!this.transport) return;
     // Best-effort notify: the session teardown below is what matters.
-    await this.transport.request('disconnect', []).catch(() => undefined);
+    //
+    // Only worth sending when a peer actually joined. Cancelling a pairing
+    // that never completed leaves nobody to answer, and the request would
+    // sit for the full request timeout (5 minutes by default) before
+    // anything was torn down — so the abandoned session would stay live
+    // exactly as long as it takes for someone else to scan the URL.
+    if (this.transport.connected) {
+      await this.transport.request('disconnect', []).catch(() => undefined);
+    }
     this.teardown();
   }
 
@@ -185,27 +245,44 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
    * fresh transport, so a dead instance is never kept around.
    */
   private teardown(): void {
+    // End a connect still waiting on the user before the transport goes: it
+    // is awaiting a pairing that can no longer happen, and nothing else will
+    // ever settle it.
+    this.abandonPairing?.(new WalletConnectionCancelledError('Shield pairing was cancelled'));
+    this.abandonPairing = undefined;
     this.transport?.disconnect();
     this.transport = undefined;
     this.publicKey = undefined;
   }
 
   private async waitForPairing(transport: ShieldRemoteTransportLike): Promise<void> {
-    const timeoutMs = this.config.pairingTimeoutMs ?? DEFAULT_PAIRING_TIMEOUT_MS;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      await Promise.race([
-        transport.waitForWallet(),
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(
-            () => reject(new WalletConnectionError('timed out waiting for the Shield app to pair')),
-            timeoutMs,
-          );
-        }),
-      ]);
-    } finally {
-      clearTimeout(timer);
-    }
+    await withTimeout(
+      transport.waitForWallet(),
+      this.config.pairingTimeoutMs ?? DEFAULT_PAIRING_TIMEOUT_MS,
+      'timed out waiting for the Shield app to pair',
+    );
+  }
+}
+
+/**
+ * Reject if `promise` has not settled within `timeoutMs`.
+ *
+ * Every await in a remote connect needs one. An unreachable relay host makes
+ * the transport's channel-open hang indefinitely rather than throw, which
+ * surfaces as a connect() that never settles and UI stuck on a spinner — so
+ * the bound belongs on the channel open, not only on the human step after it.
+ */
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new WalletConnectionError(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
   }
 }
 

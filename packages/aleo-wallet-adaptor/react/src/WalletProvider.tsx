@@ -16,6 +16,7 @@ import { Wallet, WalletContext } from './context';
 import { useLocalStorage } from './useLocalStorage';
 import {
   WalletError,
+  WalletConnectionCancelledError,
   WalletNotConnectedError,
   WalletNotReadyError,
   WalletNotSelectedError,
@@ -93,6 +94,11 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   const readyState = adapter?.readyState || WalletReadyState.UNSUPPORTED;
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  // Pairing URL for adapters that connect to a wallet app out-of-band. Kept
+  // out of `state` because it is cleared on its own schedule — the moment a
+  // connect resolves, fails, or the user picks a different wallet, a stale
+  // QR code is worse than none.
+  const [pairingUrl, setPairingUrl] = useState<string | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
   const isConnecting = useRef(false);
   const isDisconnecting = useRef(false);
@@ -182,9 +188,16 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     return () => window.removeEventListener('beforeunload', listener);
   }, [isUnloading]);
 
+  // Handle the adapter's pairing-URL event (out-of-band wallet apps)
+  const handleConnectUrl = useCallback((url: string) => {
+    setPairingUrl(url);
+  }, []);
+
   // Handle the adapter's connect event
   const handleConnect = useCallback(() => {
     if (!adapter) return;
+    // Pairing is done — the URL is no longer actionable.
+    setPairingUrl(null);
     setState(state => ({
       ...state,
       connected: adapter.connected,
@@ -196,6 +209,11 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
 
   // Handle the adapter's disconnect event
   const handleDisconnect = useCallback(() => {
+    // A disconnect is also how a pairing still waiting on the user is
+    // cancelled, so the URL dies with it. Cleared here rather than only in
+    // the adapter-change cleanup: that is a render away, and in the meantime
+    // a still-set URL re-opens the modal the user has just dismissed.
+    setPairingUrl(null);
     // Clear the selected wallet unless the window is unloading
     if (!isUnloading.current) setName(null);
     lastAuthorizedAccount.current = null;
@@ -224,6 +242,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   // Handle the adapter's error event, and local errors
   const handleError = useCallback(
     (error: WalletError) => {
+      // A failed connect leaves any pending pairing URL dead — the remote
+      // wallet has already torn its relay session down.
+      setPairingUrl(null);
+      // A cancel is the user getting what they asked for, not a failure —
+      // reporting it puts an error in front of someone who just pressed Back.
+      if (error instanceof WalletConnectionCancelledError) return error;
       // Call onError unless the window is unloading
       if (!isUnloading.current) (onError || console.error)(error);
       return error;
@@ -281,14 +305,25 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       adapter.on('disconnect', handleDisconnect);
       adapter.on('error', handleError);
       adapter.on('accountChange', handleAccountChange);
+      adapter.on('connectUrl', handleConnectUrl);
       return () => {
         adapter.off('connect', handleConnect);
         adapter.off('disconnect', handleDisconnect);
         adapter.off('error', handleError);
         adapter.off('accountChange', handleAccountChange);
+        adapter.off('connectUrl', handleConnectUrl);
+        // Switching wallets abandons any pairing the old one had pending.
+        setPairingUrl(null);
       };
     }
-  }, [adapter, handleConnect, handleDisconnect, handleError, handleAccountChange]);
+  }, [
+    adapter,
+    handleConnect,
+    handleDisconnect,
+    handleError,
+    handleAccountChange,
+    handleConnectUrl,
+  ]);
 
   // When the adapter changes, disconnect the old one
   useEffect(() => {
@@ -411,6 +446,27 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     programs,
     connectOptions,
   ]);
+
+  // Select a wallet, or deselect with `null`.
+  //
+  // Deselecting is a cancel, and has to reach the adapter to be one. The
+  // adapter-swap effect above only disconnects an adapter it believes is
+  // connected, and a pairing waiting on the user is not — so on its own,
+  // `selectWallet(null)` dropped the selection and left the relay session
+  // live, and whoever answered the abandoned URL was still adopted.
+  //
+  // Narrowed to adapters that pair out-of-band: for every other adapter
+  // "selected but not connected" is a connect still in flight, and calling
+  // disconnect() into that is a change nothing here asked for.
+  const selectWallet = useCallback(
+    (walletName: WalletName | null) => {
+      if (walletName === null && adapter?.supportsRemotePairing && !adapter.connected) {
+        adapter.disconnect().catch(() => undefined);
+      }
+      setName(walletName);
+    },
+    [adapter, setName],
+  );
 
   const executeTransaction = useCallback(
     async (transaction: TransactionOptions) => {
@@ -564,7 +620,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         reconnecting,
         disconnecting,
         network,
-        selectWallet: setName,
+        pairingUrl,
+        selectWallet,
         connect,
         disconnect,
         executeTransaction,

@@ -144,12 +144,15 @@ const shield = new ShieldWalletAdapter({
     deeplinkBase: 'shield://connect',
     // Your bundler resolves the relay client from YOUR source:
     transport: options => new RemoteShieldTransport(options),
-    // Additive: always called when pairing is needed (QR / copy button /
-    // UI state). The mobile deeplink still fires automatically — pass
-    // fireDeeplink: false only if this callback handles navigation itself.
-    onConnectUrl: url => showPairingUi(url),
   },
-});`,
+});
+
+// The adapter emits \`connectUrl\` while pairing, and the react-ui wallet
+// modal renders the QR / deeplink screen from it — nothing else to wire up.
+// With your own pairing UI, read it from the hook instead:
+//   const { pairingUrl } = useWallet();
+// or pass remote.onConnectUrl — both fire, and the mobile deeplink still
+// goes automatically unless you set fireDeeplink: false.`,
 } as const;
 
 export type CodeExampleKey = keyof typeof codeExamples;

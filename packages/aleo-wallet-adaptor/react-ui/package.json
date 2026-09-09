@@ -22,7 +22,8 @@
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-core": "workspace:*",
     "@provablehq/aleo-wallet-adaptor-react": "workspace:*",
-    "@provablehq/aleo-wallet-standard": "workspace:*"
+    "@provablehq/aleo-wallet-standard": "workspace:*",
+    "qrcode.react": "^4.2.0"
   },
   "repository": {
     "type": "git",

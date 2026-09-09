@@ -5,8 +5,14 @@ import { createPortal } from 'react-dom';
 import { Collapse } from './Collapse';
 import { useWalletModal } from './useWalletModal';
 import { WalletListItem } from './WalletListItem';
+import { WalletPairingView } from './WalletPairingView';
 import { useWallet, Wallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { isWalletConnectable, WalletName, WalletReadyState } from '@provablehq/aleo-wallet-standard';
+import {
+  isWalletConnectable,
+  WalletName,
+  WalletReadyState,
+} from '@provablehq/aleo-wallet-standard';
+import { WalletConnectionCancelledError } from '@provablehq/aleo-wallet-adaptor-core';
 import { Network } from '@provablehq/aleo-types';
 import { ProvableLogo } from './ProvableLogo';
 
@@ -25,11 +31,29 @@ export const WalletModal: FC<WalletModalProps> = ({
   network,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const { wallets, selectWallet, connect, wallet } = useWallet();
+  const { wallets, selectWallet, connect, wallet, connected, pairingUrl } = useWallet();
   const { setVisible } = useWalletModal();
   const [expanded, setExpanded] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
   const [portal, setPortal] = useState<Element | null>(null);
+
+  // The pairing screen is a view of provider state, not a mode the modal
+  // enters and has to remember its way out of: a selected wallet that pairs
+  // out-of-band and has not connected yet IS a pairing in progress. Every
+  // exit follows for free — a failed connect clears the selection, a
+  // successful one sets `connected`, and cancelling deselects.
+  const pairingWallet =
+    wallet &&
+    !connected &&
+    wallet.adapter.supportsRemotePairing &&
+    wallet.readyState !== WalletReadyState.INSTALLED
+      ? wallet
+      : null;
+
+  // Read by callbacks that must not re-subscribe on every pairing transition
+  // — the window keydown handler in particular.
+  const pairingWalletRef = useRef(pairingWallet);
+  pairingWalletRef.current = pairingWallet;
 
   // LOADABLE wallets (e.g. Shield with the remote relay fallback configured) are
   // connectable without an installed extension, so group them with INSTALLED
@@ -82,26 +106,67 @@ export const WalletModal: FC<WalletModalProps> = ({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
+  // Closing and cancelling are different operations. Success closes too, and
+  // a close that cancelled would disconnect the wallet the user has only now
+  // connected.
   const hideModal = useCallback(() => {
     setFadeIn(false);
     setTimeout(() => setVisible(false), 150);
   }, [setVisible]);
 
+  // Backing out of a pairing that is still waiting on the user. Deselecting
+  // is the cancel: it reaches the adapter, which drops the live relay session
+  // and makes the abandoned URL unusable — otherwise whoever answers it later
+  // gets adopted as the connected wallet.
+  const cancelPairing = useCallback(() => {
+    if (pairingWalletRef.current) selectWallet(null);
+  }, [selectWallet]);
+
+  const dismiss = useCallback(() => {
+    cancelPairing();
+    hideModal();
+  }, [cancelPairing, hideModal]);
+
   const handleClose = useCallback(
     (event: MouseEvent) => {
       event.preventDefault();
-      hideModal();
+      dismiss();
     },
-    [hideModal],
+    [dismiss],
   );
 
   const handleWalletClick = useCallback(
     (event: MouseEvent, walletName: WalletName) => {
+      const selected = wallets.find((w: Wallet) => w.adapter.name === walletName);
+      // A wallet that pairs out-of-band has something to show before it can
+      // connect — keep the modal open and hand over to the pairing screen.
+      // An installed extension prompts on its own, so the modal gets out of
+      // the way exactly as it always has.
+      if (
+        selected?.adapter.supportsRemotePairing &&
+        selected.readyState !== WalletReadyState.INSTALLED
+      ) {
+        selectWallet(walletName);
+        return;
+      }
       selectWallet(walletName);
       handleClose(event);
     },
-    [selectWallet, handleClose],
+    [wallets, selectWallet, handleClose],
   );
+
+  // Paired successfully — the modal has done its job. Guarded on having
+  // actually been pairing, so opening the modal against an already-connected
+  // wallet does not slam it shut again.
+  const wasPairing = useRef(false);
+  useEffect(() => {
+    if (pairingWallet) {
+      wasPairing.current = true;
+    } else if (wasPairing.current && connected) {
+      wasPairing.current = false;
+      hideModal();
+    }
+  }, [pairingWallet, connected, hideModal]);
 
   const handleNotInstalledWalletClick = useCallback(
     (event: MouseEvent, walletName: WalletName) => {
@@ -158,7 +223,7 @@ export const WalletModal: FC<WalletModalProps> = ({
   useLayoutEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        hideModal();
+        dismiss();
       } else if (event.key === 'Tab') {
         handleTabKey(event);
       }
@@ -178,13 +243,16 @@ export const WalletModal: FC<WalletModalProps> = ({
       document.body.style.overflow = overflow;
       window.removeEventListener('keydown', handleKeyDown, false);
     };
-  }, [hideModal, handleTabKey]);
+  }, [dismiss, handleTabKey]);
 
   useLayoutEffect(() => setPortal(document.querySelector(container)), [container]);
 
   useLayoutEffect(() => {
     if (wallet) {
       connect(network || Network.TESTNET).catch(e => {
+        // Backing out of a pairing rejects this connect. That is the feature,
+        // not a fault — everything else still gets logged.
+        if (e instanceof WalletConnectionCancelledError) return;
         console.error({ e });
       });
     }
@@ -207,7 +275,16 @@ export const WalletModal: FC<WalletModalProps> = ({
                 <path d="M14 12.461 8.3 6.772l5.234-5.233L12.006 0 6.772 5.234 1.54 0 0 1.539l5.234 5.233L0 12.006l1.539 1.528L6.772 8.3l5.69 5.7L14 12.461z" />
               </svg>
             </button>
-            {connectableWallets.length ? (
+            {pairingWallet ? (
+              <WalletPairingView
+                wallet={pairingWallet}
+                pairingUrl={pairingUrl}
+                onInstall={event =>
+                  handleNotInstalledWalletClick(event, pairingWallet.adapter.name as WalletName)
+                }
+                onBack={cancelPairing}
+              />
+            ) : connectableWallets.length ? (
               <>
                 <h1 className="wallet-adapter-modal-title">Connect an Aleo wallet</h1>
                 <ul className="wallet-adapter-modal-list">

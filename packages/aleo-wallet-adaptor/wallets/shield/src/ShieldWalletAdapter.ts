@@ -19,6 +19,7 @@ import {
   filterRecordsByStatus,
   scopePollingDetectionStrategy,
   validateInputRequests,
+  WalletConnectionCancelledError,
   WalletConnectionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
@@ -37,6 +38,16 @@ import {
 } from './types';
 
 /**
+ * Same test as the one in `./remote`, duplicated rather than imported: that
+ * module is loaded lazily on purpose, and importing it here for three lines
+ * would pull the whole remote path into every bundle.
+ */
+function isMobileUserAgent(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+/**
  * Shield wallet adapter
  */
 export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
@@ -46,15 +57,30 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   readonly name = 'Shield Wallet' as WalletName<'Shield Wallet'>;
 
   /**
-   * The wallet URL
+   * The wallet URL. The extension listing rather than the marketing site:
+   * this is what UI opens for "install", and the user has to land somewhere
+   * that ends with an injected provider.
    */
-  url = 'https://www.shield.app/';
+  url = 'https://chromewebstore.google.com/detail/shield/hhddpjpacfjaakjioinajgmhlbhfchao';
 
   /**
    * The wallet icon (base64-encoded SVG)
    */
   readonly icon =
     'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTI0LjU5NSAyNzguMzc2VjExMy40MDNIMjU2LjIwNlY0MjguNTYyQzI1NS4zMjQgNDI4LjI0OCAxMjQuNTk1IDM4MS41NzggMTI0LjU5NSAyNzguMzc2WiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzVfMTUpIi8+CjxwYXRoIGQ9Ik0zODcuODI1IDI3OC4zNzZWMTEzLjQwM0gyNTYuMjE0VjQyOC41NjJDMjU3LjA5NiA0MjguMjQ4IDM4Ny44MjUgMzgxLjU3OCAzODcuODI1IDI3OC4zNzZaIiBmaWxsPSJ1cmwoI3BhaW50MV9saW5lYXJfNV8xNSkiLz4KPHBhdGggb3BhY2l0eT0iMC4xIiBkPSJNMjU2LjIwNiA0NDAuNzcxQzI1NS4zMTkgNDQwLjQ1NiAxMTQuNDIgMzg1LjY0NiAxMTQuNDIgMjgyLjQ0NVYxMDMuMjI4SDI1Ni4yMDZWNDQwLjc3MVpNMzk4IDEwMy4yMjhWMjgyLjQ0NUMzOTggMzg1LjYzNSAyNTcuMTMgNDQwLjQ0NSAyNTYuMjE1IDQ0MC43NzFWMTAzLjIyOEgzOThaIiBmaWxsPSJibGFjayIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyXzVfMTUiIHgxPSIxOTAuNDAyIiB5MT0iMTEzLjQwMyIgeDI9IjE5MC40MDIiIHkyPSI0MjguNTY0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9IjAiLz4KPC9saW5lYXJHcmFkaWVudD4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDFfbGluZWFyXzVfMTUiIHgxPSIzMjIuMDE4IiB5MT0iMTEzLjQwMyIgeDI9IjMyMi4wMTgiIHkyPSI0MjguNTY0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3Atb3BhY2l0eT0iMCIvPgo8c3RvcCBvZmZzZXQ9IjEiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K';
+  /**
+   * The mark for light surfaces, backed by a white copy of its own
+   * silhouette.
+   *
+   * Dropped into a QR code the logo has to hide the modules underneath
+   * it, and the mark alone cannot — it fades to transparent, so the code
+   * reads straight through. The backing is shield-shaped rather than a
+   * plate because the host's alternative, rectangular excavation, leaves
+   * white corners around a mark that is not a rectangle. The mark itself is
+   * unmodified.
+   */
+  readonly iconOnLight = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iOTAiIHZpZXdCb3g9Ii04IC04IDgwIDkwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMzEuOTk5IDczLjU1MTlDMzEuNzk5IDczLjQ4MzIgMi4xMTYyZS0wNSA2MS41Mzk5IDAgMzkuMDUyMVYwSDMxLjk5OVY3My41NTE5Wk02NCAwVjM5LjA1MjFDNjQgNjEuNTM5NCAzMi4yMDIzIDczLjQ4MjcgMzIuMDAxIDczLjU1MTlWMEg2NFoiIGZpbGw9IndoaXRlIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjExLjExIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0yLjI5NTQxIDM4LjE2MjlWMi4yMTQ2SDMxLjk5ODJWNzAuODg5QzMxLjc5OTEgNzAuODIwNiAyLjI5NTQxIDYwLjY1MSAyLjI5NTQxIDM4LjE2MjlaIiBmaWxsPSJ1cmwoI3NoaWVsZF9iYWRnZV9hKSIvPgo8cGF0aCBkPSJNNjEuNzA4MSAzOC4xNjI5VjIuMjE0NkgzMi4wMDU0VjcwLjg4OUMzMi4yMDQzIDcwLjgyMDYgNjEuNzA4MSA2MC42NTEgNjEuNzA4MSAzOC4xNjI5WiIgZmlsbD0idXJsKCNzaGllbGRfYmFkZ2VfYikiLz4KPHBhdGggb3BhY2l0eT0iMC4xIiBkPSJNMzEuOTk5IDczLjU1MTlDMzEuNzk5IDczLjQ4MzIgMi4xMTYyZS0wNSA2MS41Mzk5IDAgMzkuMDUyMVYwSDMxLjk5OVY3My41NTE5Wk02NCAwVjM5LjA1MjFDNjQgNjEuNTM5NCAzMi4yMDIzIDczLjQ4MjcgMzIuMDAxIDczLjU1MTlWMEg2NFoiIGZpbGw9ImJsYWNrIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InNoaWVsZF9iYWRnZV9hIiB4MT0iMTcuMTQ3MyIgeTE9IjIuMjE0NiIgeDI9IjE3LjE0NzMiIHkyPSI3MC44ODkzIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9IjAiLz4KPC9saW5lYXJHcmFkaWVudD4KPGxpbmVhckdyYWRpZW50IGlkPSJzaGllbGRfYmFkZ2VfYiIgeDE9IjQ2Ljg1NjIiIHkxPSIyLjIxNDYiIHgyPSI0Ni44NTYyIiB5Mj0iNzAuODg5MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLW9wYWNpdHk9IjAiLz4KPHN0b3Agb2Zmc2V0PSIxIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==';
+
   /**
    * The window object
    */
@@ -93,6 +119,28 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   private readonly _remoteConfig?: ShieldRemoteConfig;
 
   /**
+   * Whether this adapter can pair with the Shield app out-of-band. True
+   * exactly when the remote fallback is configured — UI reads it to decide
+   * whether to show a pairing surface before connect() resolves.
+   */
+  readonly supportsRemotePairing: boolean;
+
+  /**
+   * The wallet a connect() is currently waiting on. Remote pairing blocks on
+   * a human for minutes, and during that window the session is live but
+   * `_shieldWallet` is still unset — so without this handle there is nothing
+   * to tear down when the user backs out.
+   */
+  private _pendingWallet: ShieldWallet | undefined;
+
+  /**
+   * Bumped by every connect() and every disconnect(). A connect that resolves
+   * against a stale generation was superseded or cancelled while it waited,
+   * and must drop its session instead of binding it.
+   */
+  private _connectGeneration = 0;
+
+  /**
    * Create a new Shield wallet adapter
    * @param config Adapter configuration. Omit for injected-only behavior
    * (unchanged); pass `{ remote }` to enable the relay fallback on browsers
@@ -102,6 +150,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     super();
     this.network = Network.TESTNET;
     this._remoteConfig = config?.remote;
+    this.supportsRemotePairing = !!config?.remote;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       // Remote-capable adapters are usable without any injection — that is
       // the wallet-standard's LOADABLE state. Injection detection still runs
@@ -143,9 +192,50 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       // No injection: fall back to the relay. The facade module is loaded
       // lazily so injected-only dapps never pull in remote code.
       const { RemoteShieldWallet } = await import('./remote');
-      return new RemoteShieldWallet(this._remoteConfig);
+      return new RemoteShieldWallet(this._withConnectUrlRelay(this._remoteConfig));
     }
     throw new WalletConnectionError('Shield Wallet is not available');
+  }
+
+  /**
+   * Route the pairing URL to the `connectUrl` event as well as the dapp's
+   * own `onConnectUrl` callback, so UI layers (e.g. the react-ui wallet
+   * modal's QR screen) can present it without the dapp wiring anything up.
+   *
+   * Always wrapped, never conditional on who is listening right now. The
+   * listener is attached from a React passive effect, while the connect that
+   * needs it is started from a layout effect one commit earlier — and a
+   * warm `import('./remote')` resolves as a microtask, before React has
+   * flushed those passive effects. Sampling `listenerCount` here would see
+   * zero on every pairing after the first and drop the event for good.
+   *
+   * Because this always sets `onConnectUrl`, the remote wallet's own desktop
+   * guard can no longer fire for adapter-driven connects. The equivalent
+   * check moves into the callback below, where it runs at the moment the URL
+   * exists — tens of seconds later, with every listener long since attached.
+   */
+  private _withConnectUrlRelay(config: ShieldRemoteConfig): ShieldRemoteConfig {
+    return {
+      ...config,
+      onConnectUrl: (url, context) => {
+        config.onConnectUrl?.(url, context);
+        this.emit('connectUrl', url, context);
+        // Developer error: on desktop the URL has to reach the user somehow,
+        // and neither channel is carrying it anywhere. Thrown from inside
+        // connect(), so the remote wallet tears its own relay session down.
+        if (
+          !config.onConnectUrl &&
+          !isMobileUserAgent() &&
+          this.listenerCount('connectUrl') === 0
+        ) {
+          throw new WalletConnectionError(
+            'Shield remote connect on a non-mobile browser requires a `connectUrl` listener ' +
+              'or remote.onConnectUrl to present the connect URL (e.g. render it as a QR ' +
+              'code for the phone).',
+          );
+        }
+      },
+    };
   }
 
   /**
@@ -158,13 +248,28 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     programs?: string[],
     options?: ConnectOptions,
   ): Promise<Account> {
+    // Supersede anything already in flight: a second connect() replaces the
+    // first, and the first must not bind when it eventually resolves.
+    const generation = ++this._connectGeneration;
+    let wallet: ShieldWallet | undefined;
     try {
       // Resolve, connect, bind. A remote wallet cleans up its own relay
       // session when connect() fails, so no teardown belongs here; an
       // injected wallet that rejects is simply not connected.
-      const wallet = await this._resolveWallet();
+      wallet = await this._resolveWallet();
+      this._pendingWallet = wallet;
 
       const connectResult = await wallet.connect(network, decryptPermission, programs, options);
+
+      // Cancelled while we waited on the user. The pairing completed, so the
+      // relay session is live and usable — which is exactly why it has to be
+      // dropped: nobody is waiting for it, and whoever answered the abandoned
+      // URL is not necessarily the person who opened it.
+      if (generation !== this._connectGeneration) {
+        await wallet.disconnect().catch(() => undefined);
+        throw new WalletConnectionCancelledError('Shield connect was cancelled');
+      }
+
       const publicKey = connectResult?.address || '';
       // When the dapp opted into address withholding (readAddress: false),
       // an empty address is the expected result, not an error.
@@ -195,16 +300,25 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     } catch (err: Error | unknown) {
       if (err instanceof WalletConnectionError) throw err;
       throw new WalletConnectionError(err instanceof Error ? err.message : 'Connection failed');
+    } finally {
+      if (this._pendingWallet === wallet) this._pendingWallet = undefined;
     }
   }
 
   /**
-   * Disconnect from Shield wallet
+   * Disconnect from Shield wallet, and cancel a pairing still in flight.
    */
   async disconnect(): Promise<void> {
+    // Invalidate the in-flight connect first, so a pairing that completes
+    // between here and the await below is rejected rather than bound.
+    this._connectGeneration += 1;
+    const pending = this._pendingWallet;
+    this._pendingWallet = undefined;
+
     try {
       this._cleanupListeners();
 
+      if (pending) await pending.disconnect().catch(() => undefined);
       await this._shieldWallet?.disconnect();
       this._onDisconnect();
     } catch (err: Error | unknown) {

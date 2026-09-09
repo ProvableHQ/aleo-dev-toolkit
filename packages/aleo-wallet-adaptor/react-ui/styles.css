@@ -205,7 +205,7 @@
   justify-content: center;
   position: absolute;
   top: 18px;
-  right: 18px;
+  right: 15px;
   padding: 12px;
   cursor: pointer;
   background: transparent;
@@ -422,3 +422,127 @@
 /* .wallet-adapter-button:hover {
   border: none;
 } */
+
+/* ---- Pairing view (QR + install) ---- */
+
+.wallet-adapter-modal-pairing {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px 24px 24px;
+  box-sizing: border-box;
+}
+
+.wallet-adapter-modal-pairing .wallet-adapter-modal-title {
+  padding: 12px 0 16px 0;
+}
+
+.wallet-adapter-modal-pairing-back {
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+  color: var(--wallet-adapter-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  /* Same vertical band as .wallet-adapter-modal-button-close (top 18px,
+     38px tall) so the back link and the close X share a centre line. */
+  margin-top: 18px;
+  height: 38px;
+  padding: 0;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wallet-adapter-modal-pairing-back svg {
+  fill: var(--wallet-adapter-text-secondary);
+  transform: rotate(90deg);
+}
+
+.wallet-adapter-modal-pairing-back:hover {
+  color: var(--wallet-adapter-text);
+}
+
+.wallet-adapter-modal-pairing-back:hover svg {
+  fill: var(--wallet-adapter-text);
+}
+
+.wallet-adapter-modal-pairing-lead {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--wallet-adapter-text-secondary);
+}
+
+/* The QR needs a light ground regardless of the modal's dark surface —
+   scanners cope badly with inverted codes. */
+.wallet-adapter-modal-pairing-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0;
+  padding: 16px;
+  min-height: 344px;
+  min-width: 344px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: var(--wallet-adapter-radius-lg);
+}
+
+.wallet-adapter-modal-pairing-waiting {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b6462;
+  text-align: center;
+  max-width: 180px;
+}
+
+.wallet-adapter-modal-pairing-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--wallet-adapter-radius-xl);
+  background-color: var(--wallet-adapter-primary);
+  color: var(--wallet-adapter-primary-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.wallet-adapter-modal-pairing-open img,
+.wallet-adapter-modal-pairing-open svg {
+  width: 24px;
+  height: 24px;
+}
+
+.wallet-adapter-modal-pairing-copy {
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+  color: var(--wallet-adapter-accent-blue);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 0 8px 0;
+}
+
+.wallet-adapter-modal-pairing-divider {
+  width: 100%;
+  height: 1px;
+  margin: 20px 0;
+  background: var(--wallet-adapter-border);
+}
+
+.wallet-adapter-modal-pairing-back:focus-visible,
+.wallet-adapter-modal-pairing-copy:focus-visible,
+.wallet-adapter-modal-pairing-open:focus-visible {
+  outline: 2px solid var(--wallet-adapter-primary);
+  outline-offset: 2px;
+}

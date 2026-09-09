@@ -8,7 +8,7 @@ import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
 import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
-import { getDefaultStore, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import {
   algorithmsAllowedAtom,
   autoConnectAtom,
@@ -17,19 +17,21 @@ import {
   programsAtom,
   readAddressAtom,
   recordAccessAtom,
-  remoteConnectUrlAtom,
 } from './lib/store/global';
 import { routes } from './routes';
-import { RemoteConnectBanner } from './components/RemoteConnectBanner';
 import { RemoteShieldTransport } from './lib/shieldRelay/transport';
 import { SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from './lib/shieldRemoteConfig';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
-// With VITE_SHIELD_RELAY_URL set, Shield gains the remote (relay) fallback:
-// on browsers without an injected window.shield it reports Loadable and
+// With a relay URL configured, Shield gains the remote (relay) fallback: on
+// browsers without an injected window.shield it reports Loadable and
 // connect() pairs with the Shield app via deeplink + E2E-encrypted relay.
 // The injected provider still wins whenever it exists.
+//
+// No onConnectUrl here: the adapter emits `connectUrl`, and the react-ui
+// wallet modal renders the QR / deeplink screen off that event. A dapp with
+// its own pairing UI can still pass the callback — both fire.
 const shieldWalletAdapter = SHIELD_RELAY_URL
   ? new ShieldWalletAdapter({
       remote: {
@@ -39,9 +41,6 @@ const shieldWalletAdapter = SHIELD_RELAY_URL
         // src/lib/shieldRelay/ — so the adapter never dynamic-imports a bare
         // specifier through Vite.
         transport: options => new RemoteShieldTransport(options),
-        // Additive: the adapter still fires the mobile deeplink itself; this
-        // callback only surfaces the URL for the QR/copy banner.
-        onConnectUrl: url => getDefaultStore().set(remoteConnectUrlAtom, url),
       },
     })
   : new ShieldWalletAdapter();
@@ -83,7 +82,6 @@ export function App() {
       >
         <WalletModalProvider>
           <AppRoutes />
-          <RemoteConnectBanner />
           <Toaster />
         </WalletModalProvider>
       </AleoWalletProvider>

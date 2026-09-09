@@ -68,10 +68,20 @@ export interface WalletContextState {
   network: Network | null;
 
   /**
-   * Select a wallet by name
-   * @param name The name of the wallet to select
+   * The pairing URL for a connect that is waiting on an out-of-band wallet
+   * app — render it as a QR code, or hand it to the user to open. Non-null
+   * only while such a connect is pending, and only for adapters that declare
+   * `supportsRemotePairing`.
    */
-  selectWallet: (name: WalletName) => void;
+  pairingUrl: string | null;
+
+  /**
+   * Select a wallet by name
+   * @param name The name of the wallet to select, or `null` to deselect.
+   * Deselecting reaches the adapter, so it also abandons a pairing that is
+   * still waiting on the user and tears down its relay session.
+   */
+  selectWallet: (name: WalletName | null) => void;
 
   /**
    * Connect to the selected wallet
