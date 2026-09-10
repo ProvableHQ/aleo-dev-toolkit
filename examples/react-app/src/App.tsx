@@ -32,8 +32,17 @@ import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 // No onConnectUrl here: the adapter emits `connectUrl`, and the react-ui
 // wallet modal renders the QR / deeplink screen off that event. A dapp with
 // its own pairing UI can still pass the callback — both fire.
+// What this dapp calls itself on the wallet's approval screen. Set here rather
+// than derived from the document: the adapter never scrapes the page, so a
+// dapp that configures nothing is labelled by whatever the wallet can observe
+// of it — which over the relay is the origin alone.
+const APP_NAME = 'Aleo Dev Toolkit Example';
+const APP_ICON_URL = 'https://aleo-dev-toolkit-react-app.vercel.app/favicon.ico';
+
 const shieldWalletAdapter = SHIELD_RELAY_URL
   ? new ShieldWalletAdapter({
+      appName: APP_NAME,
+      appIconUrl: APP_ICON_URL,
       remote: {
         relayUrl: SHIELD_RELAY_URL,
         deeplinkBase: SHIELD_DEEPLINK_BASE,
@@ -43,7 +52,7 @@ const shieldWalletAdapter = SHIELD_RELAY_URL
         transport: options => new RemoteShieldTransport(options),
       },
     })
-  : new ShieldWalletAdapter();
+  : new ShieldWalletAdapter({ appName: APP_NAME, appIconUrl: APP_ICON_URL });
 
 const wallets = [
   shieldWalletAdapter,

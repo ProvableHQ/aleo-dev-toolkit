@@ -21,6 +21,42 @@ import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
 const wallets = [new ShieldWalletAdapter()];
 ```
 
+### Telling the wallet who you are
+
+`appName` and `appIconUrl` are shown on the wallet's approval screen, beside
+the origin:
+
+```tsx
+const wallets = [
+  new ShieldWalletAdapter({
+    appName: 'Example Dapp',
+    appIconUrl: 'https://dapp.example/icon.png',
+  }),
+];
+```
+
+Both are optional, and nothing is derived from your document when they are
+omitted. The extension and the in-app browser read the page themselves — the
+site-name meta tags, the title, the icon link — so a dapp that configures
+nothing is labelled exactly as it is today. What changes is the relay flow: a
+connection made from plain mobile Safari has no page for the wallet to read,
+so without these the approval screen shows the origin alone.
+
+When you do set them, they win over what the wallet observed. That is the
+point of setting them: you chose the value, the wallet only guessed.
+
+Two rules worth knowing before you pick values:
+
+- **`appIconUrl` must be `https:`.** The wallets refuse every other scheme,
+  `data:` included, and both platforms block cleartext anyway. A refused icon
+  is dropped, not an error.
+- **Long values are truncated, never rejected.** The name caps at 64
+  characters and the URL at 512. A connect never fails over display metadata.
+
+Neither field grants anything. The wallet keeps the origin as the primary
+identity on the screen and will not let a declared name displace it, so this
+is labelling, not identification.
+
 ## Remote (relay) fallback — mobile browsers without an extension
 
 > **Requires Shield app v1.11.2 (build 147) or newer.** Relay pairing ships

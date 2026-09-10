@@ -55,7 +55,12 @@ import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
 const wallets = [
-  new ShieldWalletAdapter(),
+  // appName/appIconUrl are optional, and label your dapp on the wallet's
+  // approval screen. See the Shield adapter README.
+  new ShieldWalletAdapter({
+    appName: 'Example Dapp',
+    appIconUrl: 'https://dapp.example/icon.png',
+  }),
   new PuzzleWalletAdapter(),
   new LeoWalletAdapter(),
   new FoxWalletAdapter(),

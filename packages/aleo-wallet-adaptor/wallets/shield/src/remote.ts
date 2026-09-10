@@ -6,7 +6,6 @@ import {
 } from '@provablehq/aleo-types';
 import {
   AleoDeployment,
-  ConnectOptions,
   EventEmitter,
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
@@ -15,6 +14,7 @@ import {
   WalletConnectionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import {
+  ShieldConnectOptions,
   ShieldRemoteConfig,
   ShieldRemoteTransportLike,
   ShieldWallet,
@@ -64,7 +64,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
-    options?: ConnectOptions,
+    options?: ShieldConnectOptions,
   ): Promise<{ address: string }> {
     // A failed pairing/connect must not leave a live relay session behind —
     // this wallet cleans up after itself so callers never have to.
