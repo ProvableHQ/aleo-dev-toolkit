@@ -149,7 +149,53 @@ export interface ShieldWalletAdapterConfig {
    * for the relay allowlist and the desktop-QR caveat.
    */
   remote?: ShieldRemoteConfig;
+
+  /**
+   * Display name shown on the wallet's approval screen, beside the origin.
+   *
+   * Optional, and nothing is derived from the document when it is omitted:
+   * the wallet reads the page itself in the extension and the in-app browser,
+   * and shows the origin alone over the relay, where there is no page to read.
+   * Set this and it wins over what the wallet observed — that is the point of
+   * setting it. Truncated rather than rejected if over-long.
+   *
+   * Named to match `PuzzleWalletAdapter`, so the two read alike in one
+   * `wallets` array.
+   */
+  appName?: string;
+
+  /**
+   * Icon shown next to `appName`. Must be `https:` — the wallets refuse every
+   * other scheme, including `data:`, and both block cleartext at the platform
+   * level.
+   */
+  appIconUrl?: string;
 }
+
+/**
+ * What a dapp asserts about itself for display on an approval screen.
+ *
+ * Self-asserted, and grants nothing: it sits at the trust level of the origin,
+ * which the wallet keeps primary and never lets a declared name displace.
+ * Sanitized wallet-side before it is shown or stored.
+ */
+export interface DappMetadata {
+  name?: string;
+  iconUrl?: string;
+}
+
+/**
+ * `ConnectOptions` plus the one member Shield adds.
+ *
+ * Kept out of the shared `ConnectOptions` in `@provablehq/aleo-wallet-standard`
+ * deliberately: putting it there would advertise to every adapter a field only
+ * Shield reads. `hasUnsupportedConnectOptions` enumerates the grant fields
+ * explicitly, so a legacy wallet is unaffected either way.
+ */
+export type ShieldConnectOptions = ConnectOptions & {
+  /** Display metadata. Not a permission — see `DappMetadata`. */
+  dapp?: DappMetadata;
+};
 
 export interface ShieldTransaction extends TransactionOptions {
   network: Network;
@@ -171,7 +217,7 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
     network: Network,
     decryptPermission: WalletDecryptPermission,
     programs?: string[],
-    options?: ConnectOptions,
+    options?: ShieldConnectOptions,
   ): Promise<{ address: string }>;
   disconnect(): Promise<void>;
   signMessage(message: Uint8Array): Promise<Uint8Array>;

@@ -31,11 +31,14 @@ import {
   WalletTransactionError,
 } from '@provablehq/aleo-wallet-adaptor-core';
 import {
+  DappMetadata,
+  ShieldConnectOptions,
   ShieldRemoteConfig,
   ShieldWallet,
   ShieldWalletAdapterConfig,
   ShieldWindow,
 } from './types';
+import { buildDappMetadata } from './dappMetadata';
 
 /**
  * Same test as the one in `./remote`, duplicated rather than imported: that
@@ -117,6 +120,11 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * Remote (relay) fallback configuration, when opted in
    */
   private readonly _remoteConfig?: ShieldRemoteConfig;
+  /**
+   * What this dapp declares about itself, or undefined when it declared
+   * nothing. Built once: it is configuration, not per-call state.
+   */
+  private readonly _dappMetadata?: DappMetadata;
 
   /**
    * Whether this adapter can pair with the Shield app out-of-band. True
@@ -150,6 +158,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     super();
     this.network = Network.TESTNET;
     this._remoteConfig = config?.remote;
+    this._dappMetadata = buildDappMetadata(config);
     this.supportsRemotePairing = !!config?.remote;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       // Remote-capable adapters are usable without any injection — that is
@@ -160,6 +169,23 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       }
       scopePollingDetectionStrategy(() => this._checkAvailability());
     }
+  }
+
+  /**
+   * Attach the configured display metadata to the options being forwarded.
+   *
+   * One merge point for both providers: the injected `window.shield` and the
+   * relay-backed `RemoteShieldWallet` are handed the same options object, so
+   * neither path needs to know this feature exists.
+   *
+   * Returns the caller's options untouched when nothing is configured, so a
+   * dapp that sets neither field sends no `dapp` key at all rather than an
+   * empty one — and a legacy connect that passed no options keeps passing
+   * none.
+   */
+  private _withDappMetadata(options?: ConnectOptions): ShieldConnectOptions | undefined {
+    if (!this._dappMetadata) return options;
+    return { ...options, dapp: this._dappMetadata };
   }
 
   /**
@@ -259,7 +285,12 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       wallet = await this._resolveWallet();
       this._pendingWallet = wallet;
 
-      const connectResult = await wallet.connect(network, decryptPermission, programs, options);
+      const connectResult = await wallet.connect(
+        network,
+        decryptPermission,
+        programs,
+        this._withDappMetadata(options),
+      );
 
       // Cancelled while we waited on the user. The pairing completed, so the
       // relay session is live and usable — which is exactly why it has to be
