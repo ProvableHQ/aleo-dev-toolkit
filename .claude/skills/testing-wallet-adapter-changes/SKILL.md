@@ -11,7 +11,7 @@ Invoke this skill whenever a change lands that alters the dapp-facing surface of
 
 - A new field on `TransactionOptions` / `AleoDeployment` / any adapter method argument (defined in `packages/aleo-types/src/`).
 - A new method on `BaseAleoWalletAdapter` or any `wallets/<name>/src/<Name>WalletAdapter.ts`.
-- A change to the `useWallet()` context shape in `packages/aleo-wallet-adaptor/react/src/context.ts`.
+- A change to the `useWallet()` context shape in `packages/aleo-wallet-adapter/react/src/context.ts`.
 - Any wire-protocol change the adapter forwards to the extension (even if the adapter code itself just spreads options — the demo is still needed to prove the value flows).
 
 If the change is purely internal to an adapter (refactor, logging, no visible surface change), this skill does not apply — write a unit test in that package instead.
@@ -33,7 +33,7 @@ Add a **new sibling component** under `examples/react-app/src/components/functio
 
 Before writing a line of dapp code, answer:
 
-- **What is the new surface?** Which type gained a field, or which method gained an argument? Locate the type definition in `packages/aleo-types/` or the method in `packages/aleo-wallet-adaptor/wallets/<name>/src/`.
+- **What is the new surface?** Which type gained a field, or which method gained an argument? Locate the type definition in `packages/aleo-types/` or the method in `packages/aleo-wallet-adapter/wallets/<name>/src/`.
 - **Does the adapter forward the new surface?** Grep the target adapter for the new field/argument. If it's passed through via object spread (`{ ...options }`) or explicit forwarding, you're good. If the adapter drops it, the change is incomplete — file that first.
 - **Does the extension handle the new surface?** For Shield, that's `~/dev/shield-extension`. Look for the matching end-to-end path (typically: messaging validation → service → worker). If the extension doesn't handle it yet, the demo will succeed at the adapter boundary but you won't see the feature land on-chain.
 - **What success looks like** for this specific feature — return value from the extension? A specific shape on the testnet explorer? Different popup UI? Write it down before coding.
@@ -56,7 +56,7 @@ If you can't find one, note it explicitly and degrade to a *plumbing-only* test:
 
 Each of these five edit points mirrors how every existing demo in this example is registered. Follow the pattern exactly — do not improvise.
 
-1. `examples/react-app/src/components/functions/<Feature>.tsx` — the component. Use `useWallet()` for `connected`, `address`, `executeTransaction` (or whichever method is under test), `transactionStatus`, and `network`. Use `useWalletModal()` from `@provablehq/aleo-wallet-adaptor-react-ui` for the `openWalletModal` affordance.
+1. `examples/react-app/src/components/functions/<Feature>.tsx` — the component. Use `useWallet()` for `connected`, `address`, `executeTransaction` (or whichever method is under test), `transactionStatus`, and `network`. Use `useWalletModal()` from `@provablehq/aleo-wallet-adapter-react-ui` for the `openWalletModal` affordance.
 2. `examples/react-app/src/pages/<Feature>Page.tsx` — trivial wrapper: `<div className="max-w-4xl mx-auto"><Feature /></div>`.
 3. `examples/react-app/src/pages/index.ts` — add the export.
 4. `examples/react-app/src/routes.tsx` — add `{ path: '<slug>', element: <FeaturePage /> }`.

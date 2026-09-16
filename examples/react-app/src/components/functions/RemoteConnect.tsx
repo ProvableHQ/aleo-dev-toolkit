@@ -1,5 +1,5 @@
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { Radio, Smartphone } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';

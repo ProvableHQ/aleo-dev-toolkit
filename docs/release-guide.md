@@ -1,74 +1,119 @@
 # Releasing a New Version
 
-This repository uses [Changesets](https://github.com/changesets/changesets) and PNPM workspaces to version and publish the Aleo adaptor packages. The `pnpm publish-packages` script builds and tests the whole monorepo and then runs `changeset publish`, so a single command completes the release once a changeset is in place.
+This repository uses [Changesets](https://github.com/changesets/changesets) and
+pnpm workspaces. Versioning and publishing are separate steps:
+`changeset version` consumes pending changesets and updates versions and
+changelogs; `changeset publish` publishes versions not yet on npm.
 
 ## Prerequisites
 
-- Node.js `>=18` and PNPM `>=10` (see `package.json` engines)
-- Access to the `ProvableHQ` npm organization (run `npm whoami` to confirm)
-- 2FA or auth tokens configured for npm publishing
-- A clean `master` branch synced with GitHub (`.changeset/config.json` expects `master`)
+- Node.js `>=20` for the documentation site and pnpm `10.18.2` (the pinned package manager).
+- Publish access to the `@provablehq` npm scope, including permission to create new packages.
+- npm authentication and any required 2FA configured (`npm whoami`).
+- A reviewed release commit on `master`, synced with GitHub.
 
-## 1. Prepare the Workspace
+## 1. Collect every pending change
 
 ```bash
-git checkout master
-git pull origin master
-pnpm install
+pnpm install --frozen-lockfile
+pnpm changeset status
+```
+
+For changes without a changeset, run `pnpm changeset`, select the affected
+packages, choose the appropriate bump, and describe the change. Compare package
+source changes against the last release as well, so missing changesets do not
+leave features unreleased. Do not restrict the release to the renamed adapters.
+
+## 2. Apply versions and changelogs
+
+```bash
+pnpm version-packages
+pnpm install --lockfile-only
+```
+
+Review the updated manifests and changelogs and commit them along with the
+lockfile. Apply versioning once per release; already-consumed changesets do not
+need to be recreated.
+
+For the `adaptor` → `adapter` migration, the prepared release contains:
+
+| Packages                                               | Version |
+| ------------------------------------------------------ | ------- |
+| All eight `@provablehq/aleo-wallet-adapter-*` packages | `1.1.0` |
+| `@provablehq/aleo-wallet-standard`                     | `1.2.0` |
+| `@provablehq/aleo-hooks`                               | `1.0.2` |
+
+`@provablehq/aleo-types@1.0.1` is already published and has no pending source
+changes. The eleven pending feature/fix changesets are included in this release,
+including the Shield remote pairing and metadata features. Old changelog
+entries retain the historical `adaptor` package names.
+
+## 3. Validate and publish
+
+```bash
+pnpm install --frozen-lockfile
 pnpm build
 pnpm lint
-pnpm test
+pnpm test:release
+pnpm --filter react-app-example build
+pnpm --filter react-app-example-hooks build
+pnpm deprecate-adaptors --dry-run
 ```
 
-> Building/linting/testing before creating a changeset ensures you are releasing a healthy commit.
+The root build includes the documentation site. The repository does not
+currently have a working root test command; several package test scripts refer
+to Jest without declaring it. Run any feature-specific checks applicable to the
+release and resolve build/lint failures before publishing.
 
-## 2. Create a Changeset
-
-Changesets describe which packages are being released and the type of version bump (major, minor, patch).
-
-```bash
-pnpm changeset
-```
-
-1. Select every package that changed (e.g., `@provablehq/aleo-wallet-adaptor-core`, `@provablehq/aleo-wallet-adaptor-react`, each wallet implementation, etc.).
-2. Choose the bump type (for version 1.0.0 releases, pick **major**).
-3. Enter a short summary of the changes.
-
-Commit the generated `.changeset/*.md` file along with any code changes:
-
-```bash
-git add .
-git commit -m "Prepare release"
-```
-
-Optional: inspect what the next release will produce.
-
-```bash
-pnpm changeset status --verbose
-```
-
-## 3. Publish
-
-When you are ready to publish the release (usually after merging the PR containing the changeset into `master`), run:
+From the reviewed, versioned release commit:
 
 ```bash
 pnpm publish-packages
 ```
 
-This script performs:
+This runs the release-script tests, `turbo run build lint`, and then
+`changeset publish`. It does **not**
+apply pending changesets. Changesets publishes every unpublished local public
+package version, including new package names and dependency-only releases, and
+creates local git tags. If publication is interrupted, rerun after correcting
+the cause; already-published versions are skipped.
 
-1. `turbo run build lint test` — builds every package, runs ESLint, and executes tests.
-2. `changeset publish` — bumps versions, updates each package `CHANGELOG.md`, tags the release, and publishes to npm using the `publishConfig.access: "public"` settings in each package.
+## 4. Deprecate the old names after publication
 
-Stay logged into npm for the entire publish command; if 2FA is enabled you will be prompted at the end.
+Once the entire release is published:
 
-## 4. Wrap Up
+```bash
+pnpm deprecate-adaptors --execute
+```
+
+The script first checks the exact local versions of all eight replacement
+packages and their public workspace dependencies on the npm registry. If any
+are unavailable, it exits before deprecating anything. It then runs the
+following operation for each old name, with a package-specific message and
+migration-guide link:
+
+```bash
+npm deprecate '@provablehq/aleo-wallet-adaptor-core@*' 'Renamed to @provablehq/aleo-wallet-adapter-core. Install the replacement and update your imports.'
+```
+
+The wildcard includes historical prereleases. Deprecation adds an install
+warning; it does not unpublish existing versions or redirect imports. No new
+versions are published under the old names. See the
+[npm deprecate reference](https://docs.npmjs.com/cli/v11/commands/npm-deprecate/).
+
+The script defaults to a preview when run without arguments. If a deprecation
+fails partway through (for example, a 2FA challenge), fix the cause and rerun it;
+reapplying the same notice is safe. An incorrect notice can be removed with
+`npm deprecate '<old-package>@*' ''`.
+
+## 5. Wrap up
 
 ```bash
 git push origin master --follow-tags
+npm view @provablehq/aleo-wallet-adapter-core version
+npm view @provablehq/aleo-wallet-adaptor-core deprecated
 ```
 
-- Verify the packages on npm (e.g., `npm view @provablehq/aleo-wallet-adaptor-core version`).
-- Create a GitHub release if desired, linking the npm versions and summarizing the update.
-
-You now have a new release of the Aleo wallet adaptor packages on npm.
+Publish the updated documentation with the
+[migration guide](migrating-to-adapter.md), and link it from the release notes.
+Verify that the notes cover the pending features as well as the package rename.

@@ -25,8 +25,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
 import {
   KNOWN_ALGORITHMS,
   RecordEnvelope,
@@ -38,7 +38,7 @@ import {
   FieldGrant,
   ProgramGrant,
   RecordGrant,
-} from '@provablehq/aleo-wallet-adaptor-core';
+} from '@provablehq/aleo-wallet-adapter-core';
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import {
@@ -47,7 +47,7 @@ import {
   readAddressAtom,
   recordAccessAtom,
 } from '@/lib/store/global';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adapter-core';
 import { useProgram } from '@/lib/hooks/useProgram';
 import { PrimitiveSlotEditor } from './private-inputs/PrimitiveSlotEditor';
 import { RecordRow } from './private-inputs/RecordRow';

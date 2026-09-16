@@ -17,11 +17,11 @@ The `StandardWallet` interface is intended to enable:
 - Runtime feature detection and capability inspection
 - Easier integration for external wallet developers
 
-If you're building a wallet adapter, you should currently use the direct method override pattern (see `BaseAleoWalletAdapter` in `@provablehq/aleo-wallet-adaptor-core`).
+If you're building a wallet adapter, you should currently use the direct method override pattern (see `BaseAleoWalletAdapter` in `@provablehq/aleo-wallet-adapter-core`).
 
 ## Related packages
 
-- `@provablehq/aleo-wallet-adaptor-core` – base adapter that implements these interfaces.
-- `@provablehq/aleo-wallet-adaptor-react` – provider that exposes adapters implementing the standard.
+- `@provablehq/aleo-wallet-adapter-core` – base adapter that implements these interfaces.
+- `@provablehq/aleo-wallet-adapter-react` – provider that exposes adapters implementing the standard.
 
 Live demo: https://aleo-dev-toolkit-react-app.vercel.app/

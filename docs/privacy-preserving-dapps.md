@@ -1,6 +1,6 @@
 # Privacy-Preserving Dapps
 
-> **New to the wallet adapter?** Start with the [Wallet Adapter quick reference](../packages/aleo-wallet-adaptor/README.md) for installation, basic setup, and common operations before reading this guide.
+> **New to the wallet adapter?** Start with the [Wallet Adapter quick reference](../packages/aleo-wallet-adapter/README.md) for installation, basic setup, and common operations before reading this guide.
 
 This guide covers the advanced privacy-preserving features of the Aleo Wallet Adapter: the permission model, `InputRequest` transaction inputs, derived inputs, and how to build dapps that minimize what they learn about the user.
 
@@ -43,7 +43,7 @@ and the provider wiring in [`examples/react-app/src/App.tsx`](../examples/react-
 
 ## 1. Provider privacy props
 
-The basic `AleoWalletProvider` setup is covered in the [quick reference](../packages/aleo-wallet-adaptor/README.md). This section documents the three additional props that enable privacy-preserving behaviour — all of which are opt-in and default to broad/permissive behaviour so that existing dapps are unaffected.
+The basic `AleoWalletProvider` setup is covered in the [quick reference](../packages/aleo-wallet-adapter/README.md). This section documents the three additional props that enable privacy-preserving behaviour — all of which are opt-in and default to broad/permissive behaviour so that existing dapps are unaffected.
 
 | Prop | Type | Default | Purpose |
 |---|---|---|---|
@@ -160,7 +160,7 @@ first.
 
 Every privacy feature described in this guide — permission grants, wallet-specified `InputRequest`
 slots, record envelopes that carry a `uid` and a `recordView`, and derived inputs — is currently
-implemented only by the Shield wallet (`@provablehq/aleo-wallet-adaptor-shield`). The remaining
+implemented only by the Shield wallet (`@provablehq/aleo-wallet-adapter-shield`). The remaining
 adapters (Leo, Puzzle, Fox, and Soter) can connect and transact with literal inputs, but they reject
 the privacy options.
 
@@ -207,7 +207,7 @@ the wallet connects.
 
 | Field | Type | Default | Effect |
 |---|---|---|---|
-| `decryptPermission` | `DecryptPermission` | `NoDecrypt` | Determines how much decryption the dapp may do (see the [quick reference](../packages/aleo-wallet-adaptor/README.md)). |
+| `decryptPermission` | `DecryptPermission` | `NoDecrypt` | Determines how much decryption the dapp may do (see the [quick reference](../packages/aleo-wallet-adapter/README.md)). |
 | `programs` | `string[]` | — | The programs the dapp may interact with, and the broad record-access allowlist when `recordAccess` is omitted. |
 | `readAddress` | `boolean` | `true` | When `false`, the dapp transacts without learning the active address. |
 | `recordAccess` | `RecordAccessGrant` | `undefined`, meaning broad | Narrows record reads by program, by record, and by field. |
@@ -445,7 +445,7 @@ await executeTransaction({
 
 ### Validating early
 
-The `validateInputRequests(inputs)` helper from `@provablehq/aleo-wallet-adaptor-core` runs the same
+The `validateInputRequests(inputs)` helper from `@provablehq/aleo-wallet-adapter-core` runs the same
 client-side structural checks that `executeTransaction` runs, such as catching a request that carries
 both `uid` and `filters`, or malformed derived `args`. Because `executeTransaction` already calls it
 for you, you would typically only call it yourself while building a form, so that a
@@ -657,7 +657,7 @@ you request, the less your dapp can ever lose control of.
 
 ### Error classes
 
-Every error below is imported from `@provablehq/aleo-wallet-adaptor-core`. They all subclass
+Every error below is imported from `@provablehq/aleo-wallet-adapter-core`. They all subclass
 `WalletError`, and each sets a distinct `name` that you can switch on.
 
 | Error | When it is thrown |

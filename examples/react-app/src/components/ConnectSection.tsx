@@ -12,16 +12,16 @@ import {
   History,
   ArrowRight,
 } from 'lucide-react';
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletMultiButton } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { useAtomValue } from 'jotai';
 import { networkAtom } from '@/lib/store/global';
 import { CodePanel } from './CodePanel';
 import { Link } from 'react-router-dom';
 import { useProviderCode } from '../lib/hooks/useProviderCode';
 
-const useWalletCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+const useWalletCode = `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletMultiButton } from '@provablehq/aleo-wallet-adapter-react-ui';
 
 const { connected, address, network, switchNetwork } = useWallet();
 
@@ -33,7 +33,7 @@ console.log('Connected:', connected);
 console.log('Address:', address);
 console.log('Network:', network);`;
 
-const connectComponentCode = `import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+const connectComponentCode = `import { WalletMultiButton } from '@provablehq/aleo-wallet-adapter-react-ui';
 
 // Pre-built button component
 <WalletMultiButton />`;

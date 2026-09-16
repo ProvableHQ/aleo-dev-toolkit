@@ -65,7 +65,7 @@ const storage = new Map<string, string>();
   removeEventListener: () => undefined,
 };
 
-const { ShieldWalletAdapter } = await import('@provablehq/aleo-wallet-adaptor-shield');
+const { ShieldWalletAdapter } = await import('@provablehq/aleo-wallet-adapter-shield');
 const { RemoteShieldTransport } = await import('../src/lib/shieldRelay/transport');
 
 const children: ChildProcess[] = [];

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AlertCircle, CheckCircle, Copy, Key, Loader2 } from 'lucide-react';

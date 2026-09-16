@@ -5,8 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MessageSquare, Copy, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 

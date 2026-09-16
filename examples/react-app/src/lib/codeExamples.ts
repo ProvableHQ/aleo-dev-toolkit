@@ -12,7 +12,7 @@ export const PLACEHOLDERS = {
 } as const;
 
 export const codeExamples = {
-  executeTransaction: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  executeTransaction: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { executeTransaction, transactionStatus } = useWallet();
 
@@ -30,7 +30,7 @@ const status = await transactionStatus(result.transactionId);
 console.log('Status:', status.status);
 console.log('On-chain TX ID:', status.transactionId);`,
 
-  signMessage: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  signMessage: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { signMessage } = useWallet();
 
@@ -42,7 +42,7 @@ const decoder = new TextDecoder();
 const signatureStr = decoder.decode(signature);
 console.log('Signature:', signatureStr);`,
 
-  decrypt: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  decrypt: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { decrypt } = useWallet();
 
@@ -50,7 +50,7 @@ const { decrypt } = useWallet();
 const decrypted = await decrypt('${PLACEHOLDERS.CIPHER_TEXT}');
 console.log('Decrypted:', decrypted);`,
 
-  requestRecords: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  requestRecords: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { requestRecords } = useWallet();
 
@@ -58,7 +58,7 @@ const { requestRecords } = useWallet();
 const records = await requestRecords('${PLACEHOLDERS.PROGRAM}', false, '${PLACEHOLDERS.STATUS_FILTER}');
 console.log('Records:', records);`,
 
-  executeDeployment: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  executeDeployment: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { executeDeployment, address } = useWallet();
 
@@ -72,7 +72,7 @@ const result = await executeDeployment({
 
 console.log('Deployment TX ID:', result.transactionId);`,
 
-  transitionViewKeys: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  transitionViewKeys: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { transitionViewKeys } = useWallet();
 
@@ -80,7 +80,7 @@ const { transitionViewKeys } = useWallet();
 const tvks = await transitionViewKeys('${PLACEHOLDERS.TX_ID}');
 console.log('View Keys:', tvks);`,
 
-  requestTransactionHistory: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  requestTransactionHistory: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { requestTransactionHistory } = useWallet();
 
@@ -88,7 +88,7 @@ const { requestTransactionHistory } = useWallet();
 const history = await requestTransactionHistory('${PLACEHOLDERS.PROGRAM}');
 console.log('Transactions:', history.transactions);`,
 
-  privateInputs: `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+  privateInputs: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import type { RecordEnvelope } from '@provablehq/aleo-types';
 
 const { requestRecords, executeTransaction } = useWallet();
@@ -130,7 +130,7 @@ const tx = await executeTransaction({
 });
 console.log('Transaction Id:', tx?.transactionId);`,
 
-  remoteConnect: `import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
+  remoteConnect: `import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
 // This example VENDORS the relay client (src/lib/shieldRelay) until it is
 // published — in your dapp, import it from '@shield/relay-dapp-client'.
 import { RemoteShieldTransport } from '@/lib/shieldRelay/transport';
