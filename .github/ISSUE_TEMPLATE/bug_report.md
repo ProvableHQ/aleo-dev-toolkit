@@ -28,7 +28,7 @@ assignees: ''
 
 <!-- Please provide the following information: -->
 
-- **Package(s) affected**: <!-- e.g., @provablehq/aleo-wallet-adaptor-core, @provablehq/aleo-hooks -->
+- **Package(s) affected**: <!-- e.g., @provablehq/aleo-wallet-adapter-core, @provablehq/aleo-hooks -->
 - **Package version(s)**: <!-- e.g., 0.3.0-alpha.1 -->
 - **Node.js version**: <!-- e.g., 18.17.0 -->
 - **pnpm version**: <!-- e.g., 10.2.0 -->

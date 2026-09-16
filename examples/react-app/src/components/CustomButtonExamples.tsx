@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, LogOut, Network as NetworkIcon, Plug } from 'lucide-react';
-import { useWallet, type Wallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useWallet, type Wallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletMultiButton } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { useAtomValue, useAtom } from 'jotai';
 import { networkAtom, autoConnectAtom } from '@/lib/store/global';
 import { Network } from '@provablehq/aleo-types';
@@ -42,7 +42,7 @@ const themingCode = `/* Customize the wallet adapter with CSS variables */
   --wallet-adapter-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }`;
 
-const selectWalletCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+const selectWalletCode = `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { wallets, selectWallet, connected, wallet } = useWallet();
 
@@ -62,7 +62,7 @@ wallets.map((w) => {
   );
 });`;
 
-const otherActionsCode = `import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+const otherActionsCode = `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { Network } from '@provablehq/aleo-types';
 
 const { connect, disconnect, switchNetwork, connected, wallet, network } = useWallet();

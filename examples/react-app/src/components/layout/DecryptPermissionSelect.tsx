@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adapter-core';
 import { decryptPermissionAtom } from '@/lib/store/global';
 import {
   DropdownMenu,

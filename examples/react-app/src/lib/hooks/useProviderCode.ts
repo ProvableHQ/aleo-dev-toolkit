@@ -1,6 +1,6 @@
 import { useAtomValue } from 'jotai';
 import { decryptPermissionAtom, networkAtom, autoConnectAtom, programsAtom } from '../store/global';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adapter-core';
 import { Network } from '@provablehq/aleo-types';
 
 interface ProviderCodeProps {
@@ -28,16 +28,16 @@ export function generateProviderCode(
       ? `\n  programs={[${programs.map(p => `"${p}"`).join(', ')}]}`
       : '\n  programs={[]}';
 
-  return `import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
-import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
-import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
+  return `import { AleoWalletProvider } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletModalProvider } from '@provablehq/aleo-wallet-adapter-react-ui';
+import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adapter-puzzle';
+import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adapter-leo';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
+import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adapter-fox';
 import { Network } from '@provablehq/aleo-types';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adapter-core';
 // Import wallet adapter CSS
-import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
+import '@provablehq/aleo-wallet-adapter-react-ui/dist/styles.css';
 
 export function App() {
   return (

@@ -1,13 +1,13 @@
 packages:
   - 'packages/*'
-  - 'packages/aleo-wallet-adaptor/core'
-  - 'packages/aleo-wallet-adaptor/react'
-  - 'packages/aleo-wallet-adaptor/react-ui'
-  - 'packages/aleo-wallet-adaptor/wallets/leo'
-  - 'packages/aleo-wallet-adaptor/wallets/puzzle'
-  - 'packages/aleo-wallet-adaptor/wallets/shield'
-  - 'packages/aleo-wallet-adaptor/wallets/fox'
-  - 'packages/aleo-wallet-adaptor/wallets/soter'
+  - 'packages/aleo-wallet-adapter/core'
+  - 'packages/aleo-wallet-adapter/react'
+  - 'packages/aleo-wallet-adapter/react-ui'
+  - 'packages/aleo-wallet-adapter/wallets/leo'
+  - 'packages/aleo-wallet-adapter/wallets/puzzle'
+  - 'packages/aleo-wallet-adapter/wallets/shield'
+  - 'packages/aleo-wallet-adapter/wallets/fox'
+  - 'packages/aleo-wallet-adapter/wallets/soter'
   - 'examples/*'
   - 'website'
 
@@ -15,7 +15,7 @@ packages:
 # anything published within the last 7 days. Mirrors galileo-extension's
 # `npmMinimalAgeGate: 7d`. The first-party @provablehq registry deps are
 # exempt so we can pick up new SDK / wasm releases immediately; the
-# aleo-wallet-adaptor-* packages live in this workspace and aren't gated.
+# aleo-wallet-adapter-* packages live in this workspace and aren't gated.
 # NB: requires pnpm >= 10.16 to take effect (see packageManager pin).
 minimumReleaseAge: 10080 # 7 days in minutes
 minimumReleaseAgeExclude:

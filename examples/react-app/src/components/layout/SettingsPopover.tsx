@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { autoConnectAtom, networkAtom, decryptPermissionAtom } from '@/lib/store/global';
 import { Network } from '@provablehq/aleo-types';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adapter-core';
 
 export function SettingsPopover() {
   const [autoConnect, setAutoConnect] = useAtom(autoConnectAtom);

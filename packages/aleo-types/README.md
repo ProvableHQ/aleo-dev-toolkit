@@ -6,7 +6,7 @@ Reusable TypeScript definitions for Aleo accounts, transactions, networks, and A
 
 - Share consistent Aleo primitives across wallet adapters, hooks, and UI layers.
 - Type application code that interacts with Aleo transaction execution or status polling.
-- Avoid hand-rolled interfaces when consuming the Provable SDK or wallet adaptor APIs.
+- Avoid hand-rolled interfaces when consuming the Provable SDK or wallet adapter APIs.
 
 ## Installation
 

@@ -9,7 +9,7 @@ const branch = 'master';
 // READMEs synced from packages/<sourcePackage>/README.md
 const readmeConfigs = [
   {
-    sourcePackage: 'aleo-wallet-adaptor',
+    sourcePackage: 'aleo-wallet-adapter',
     targetDoc: 'wallet-adapter.md',
     title: 'Aleo Wallet Adapter',
     hasImages: true,
@@ -20,6 +20,11 @@ const readmeConfigs = [
 
 // Docs synced from the repo-root docs/ directory
 const rootDocConfigs = [
+  {
+    sourceFile: 'migrating-to-adapter.md',
+    targetDoc: 'migrating-to-adapter.md',
+    title: 'Migrating to Adapter',
+  },
   {
     sourceFile: 'privacy-preserving-dapps.md',
     targetDoc: 'privacy-preserving-dapps.md',

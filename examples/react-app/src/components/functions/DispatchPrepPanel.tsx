@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { useWalletModal } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { TransactionStatus } from '@provablehq/aleo-types';
 import type { DispatchProgramEntry, DispatchPrepStep } from '@/lib/dispatchPrograms';
 

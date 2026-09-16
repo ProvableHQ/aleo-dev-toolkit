@@ -1,4 +1,4 @@
-import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { WalletMultiButton } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NetworkSwitcher } from './NetworkSwitcher';
 import { DecryptPermissionSelect } from './DecryptPermissionSelect';

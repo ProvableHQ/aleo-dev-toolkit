@@ -1,11 +1,11 @@
 import { useRoutes } from 'react-router-dom';
-import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
-import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
-import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
-import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
+import { AleoWalletProvider } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletModalProvider } from '@provablehq/aleo-wallet-adapter-react-ui';
+import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adapter-puzzle';
+import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adapter-leo';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
+import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adapter-fox';
+import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adapter-soter';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { useAtomValue } from 'jotai';
@@ -22,7 +22,7 @@ import { routes } from './routes';
 import { RemoteShieldTransport } from './lib/shieldRelay/transport';
 import { SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from './lib/shieldRemoteConfig';
 // Import wallet adapter CSS after our own styles
-import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
+import '@provablehq/aleo-wallet-adapter-react-ui/dist/styles.css';
 
 // With a relay URL configured, Shield gains the remote (relay) fallback: on
 // browsers without an injected window.shield it reports Loadable and

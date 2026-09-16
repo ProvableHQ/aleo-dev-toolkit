@@ -4,7 +4,7 @@ import {
   AlgorithmGrant,
   DecryptPermission,
   RecordAccessGrant,
-} from '@provablehq/aleo-wallet-adaptor-core';
+} from '@provablehq/aleo-wallet-adapter-core';
 
 /**
  * Adapter default values

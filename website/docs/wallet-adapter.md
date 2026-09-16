@@ -8,15 +8,20 @@ The **Aleo Wallet Adapter** provides a simple and unified interface for integrat
 
 - [Demo App](https://aleo-dev-toolkit-react-app.vercel.app/)
 
+> **Migrating an existing app?** The `@provablehq/aleo-wallet-adaptor-*` names
+> are deprecated in favor of `@provablehq/aleo-wallet-adapter-*`. See the
+> [migration guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/migrating-to-adapter.md) for uninstall/install
+> commands and import changes, including CSS.
+
 ## 📲 Installation
 
 Install the required dependencies:
 
 ```bash
 npm install --save \
-    @provablehq/aleo-wallet-adaptor-react \
-    @provablehq/aleo-wallet-adaptor-react-ui \
-    @provablehq/aleo-wallet-adaptor-core \
+    @provablehq/aleo-wallet-adapter-react \
+    @provablehq/aleo-wallet-adapter-react-ui \
+    @provablehq/aleo-wallet-adapter-core \
     @provablehq/aleo-wallet-standard \
     @provablehq/aleo-types \
     react
@@ -26,19 +31,19 @@ Additionally, install one or more wallet adapters:
 
 ```bash
 # Shield Wallet
-npm install --save @provablehq/aleo-wallet-adaptor-shield
+npm install --save @provablehq/aleo-wallet-adapter-shield
 
 # Leo Wallet
-npm install --save @provablehq/aleo-wallet-adaptor-leo
+npm install --save @provablehq/aleo-wallet-adapter-leo
 
 # Puzzle Wallet
-npm install --save @provablehq/aleo-wallet-adaptor-puzzle
+npm install --save @provablehq/aleo-wallet-adapter-puzzle
 
 # Fox Wallet
-npm install --save @provablehq/aleo-wallet-adaptor-fox
+npm install --save @provablehq/aleo-wallet-adapter-fox
 
 # Soter Wallet
-npm install --save @provablehq/aleo-wallet-adaptor-soter
+npm install --save @provablehq/aleo-wallet-adapter-soter
 ```
 
 ## 🛠️ Setup
@@ -47,19 +52,24 @@ Wrap your application with the `AleoWalletProvider`:
 
 ```tsx
 import React, { FC } from 'react';
-import { AleoWalletProvider } from '@provablehq/aleo-wallet-adaptor-react';
-import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adaptor-leo';
-import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adaptor-puzzle';
-import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
-import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adaptor-fox';
-import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adaptor-soter';
+import { AleoWalletProvider } from '@provablehq/aleo-wallet-adapter-react';
+import { LeoWalletAdapter } from '@provablehq/aleo-wallet-adapter-leo';
+import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adapter-puzzle';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
+import { FoxWalletAdapter } from '@provablehq/aleo-wallet-adapter-fox';
+import { SoterWalletAdapter } from '@provablehq/aleo-wallet-adapter-soter';
 import { Network } from '@provablehq/aleo-types';
-import { DecryptPermission } from '@provablehq/aleo-wallet-adaptor-core';
+import { DecryptPermission } from '@provablehq/aleo-wallet-adapter-core';
 // Import wallet adapter CSS
-import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
+import '@provablehq/aleo-wallet-adapter-react-ui/dist/styles.css';
 
 const wallets = [
-  new ShieldWalletAdapter(),
+  // appName/appIconUrl are optional, and label your dapp on the wallet's
+  // approval screen. See the Shield adapter README.
+  new ShieldWalletAdapter({
+    appName: 'Example Dapp',
+    appIconUrl: 'https://dapp.example/icon.png',
+  }),
   new PuzzleWalletAdapter(),
   new LeoWalletAdapter(),
   new FoxWalletAdapter(),
@@ -105,7 +115,7 @@ For full details on the privacy props and how to use them, see the [Privacy-Pres
 The `useWallet` hook provides access to wallet state and methods:
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { Network } from '@provablehq/aleo-types';
 
 function MyComponent() {
@@ -146,8 +156,8 @@ function MyComponent() {
 The wallet adapter provides a ready-to-use modal and button component. Simply wrap your app with `WalletModalProvider` and use the `WalletMultiButton` component:
 
 ```tsx
-import { WalletModalProvider } from '@provablehq/aleo-wallet-adaptor-react-ui';
-import { WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
+import { WalletModalProvider } from '@provablehq/aleo-wallet-adapter-react-ui';
+import { WalletMultiButton } from '@provablehq/aleo-wallet-adapter-react-ui';
 
 export const App: FC = () => {
   return (
@@ -170,16 +180,16 @@ The `WalletMultiButton` component automatically:
 - Displays the connected wallet address when connected
 - Provides a dropdown menu to disconnect or switch wallets
 
-![Connect Wallet Modal](https://raw.githubusercontent.com/ProvableHQ/aleo-dev-toolkit/master/packages/aleo-wallet-adaptor/docs/images/connect-modal.png)
+![Connect Wallet Modal](https://raw.githubusercontent.com/ProvableHQ/aleo-dev-toolkit/master/packages/aleo-wallet-adapter/docs/images/connect-modal.png)
 
 ### Manual Approach (Custom UI)
 
 If you prefer to build your own wallet connection UI, you can use the `useWallet` hook directly:
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { Network } from '@provablehq/aleo-types';
-import { WalletNotSelectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { WalletNotSelectedError } from '@provablehq/aleo-wallet-adapter-core';
 
 export const ConnectWallet: FC = () => {
   const { selectWallet, connect, wallet, connected, connecting, wallets } = useWallet();
@@ -215,8 +225,8 @@ export const ConnectWallet: FC = () => {
 ## ✍🏻 Signing Messages
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import React, { FC, useCallback } from 'react';
 
 export const SignMessage: FC = () => {
@@ -243,8 +253,8 @@ export const SignMessage: FC = () => {
 ## 🔓 Decrypting Records
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import React, { FC, useCallback } from 'react';
 
 export const DecryptMessage: FC = () => {
@@ -271,8 +281,8 @@ export const DecryptMessage: FC = () => {
 ## 🗂️ Requesting Records
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import React, { FC, useCallback } from 'react';
 
 export const RequestRecords: FC = () => {
@@ -312,8 +322,8 @@ export const RequestRecords: FC = () => {
 ## 📡 Executing Transactions
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import { TransactionOptions } from '@provablehq/aleo-types';
 import React, { FC, useCallback, useRef, useEffect } from 'react';
 
@@ -424,8 +434,8 @@ export const ExecuteTransaction: FC = () => {
 ## 💻 Deploying Programs
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import { AleoDeployment } from '@provablehq/aleo-wallet-standard';
 import { Network } from '@provablehq/aleo-types';
 import React, { FC, useCallback } from 'react';
@@ -473,8 +483,8 @@ export const DeployProgram: FC = () => {
 ## 🔄 Switching Networks
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import { Network } from '@provablehq/aleo-types';
 import React, { FC, useCallback } from 'react';
 
@@ -517,8 +527,8 @@ export const SwitchNetwork: FC = () => {
 This requires the `OnChainHistory` decrypt permission:
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import React, { FC, useCallback } from 'react';
 
 export const RequestTransactionHistory: FC = () => {
@@ -547,8 +557,8 @@ export const RequestTransactionHistory: FC = () => {
 This requires the `OnChainHistory` decrypt permission:
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import React, { FC, useCallback } from 'react';
 
 export const GetTransitionViewKeys: FC = () => {
@@ -575,8 +585,8 @@ export const GetTransitionViewKeys: FC = () => {
 ## 📊 Checking Transaction Status
 
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import React, { FC, useCallback } from 'react';
 
 export const CheckTransactionStatus: FC = () => {
@@ -625,14 +635,14 @@ Here's a complete example combining multiple features using the out-of-the-box w
 
 ```tsx
 import React, { FC, useCallback, useState } from 'react';
-import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { WalletModalProvider, WalletMultiButton } from '@provablehq/aleo-wallet-adaptor-react-ui';
-import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adaptor-shield';
+import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { WalletModalProvider, WalletMultiButton } from '@provablehq/aleo-wallet-adapter-react-ui';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
 import { Network } from '@provablehq/aleo-types';
-import { DecryptPermission, WalletNotConnectedError } from '@provablehq/aleo-wallet-adaptor-core';
+import { DecryptPermission, WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
 import { TransactionOptions } from '@provablehq/aleo-types';
 // Import wallet adapter CSS
-import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
+import '@provablehq/aleo-wallet-adapter-react-ui/dist/styles.css';
 
 const wallets = [new ShieldWalletAdapter()];
 

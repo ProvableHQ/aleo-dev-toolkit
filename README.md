@@ -14,7 +14,11 @@ pnpm install
 
 Explore the `examples/` directory for sample projects or refer to the `docs/` directory for detailed documentation.
 
-For wallet adapter documentation, see the [Wallet Adapter README](/packages/aleo-wallet-adaptor/README.md).
+The `@provablehq/aleo-wallet-adaptor-*` package names are deprecated in favor of
+`@provablehq/aleo-wallet-adapter-*`. Follow the [migration guide](docs/migrating-to-adapter.md)
+to update dependencies and imports.
+
+For wallet adapter documentation, see the [Wallet Adapter README](/packages/aleo-wallet-adapter/README.md).
 
 ## Build
 
@@ -106,7 +110,7 @@ aleo-dev-toolkit/                          (Monorepo Root)
 │   │
 │   ├─ aleo-wallet-standard/              (Wallet Standard Interfaces & Types)
 │   │
-│   ├─ aleo-wallet-adaptor/               (Wallet adapter package)
+│   ├─ aleo-wallet-adapter/               (Wallet adapter package)
 │   │   ├─ core/                          (Core wallet adapter logic and utilities)
 │   │   ├─ react/                         (React integration for wallet adapter)
 │   │   ├─ react-ui/                      (UI components for wallet adapter integration)
@@ -135,16 +139,16 @@ aleo-dev-toolkit/                          (Monorepo Root)
 2. **`@provablehq/aleo-wallet-standard`**  
    Defines the standard interfaces and types for Aleo wallet integration, including chain constants, wallet interfaces, and feature definitions.
 
-3. **`@provablehq/aleo-wallet-adaptor-core`**  
+3. **`@provablehq/aleo-wallet-adapter-core`**
    Provides core wallet adapter logic, including base classes, error handling, and transaction utilities.
 
-4. **`@provablehq/aleo-wallet-adaptor-leo`**  
+4. **`@provablehq/aleo-wallet-adapter-leo`**
    Implements the wallet adapter for LeoWallet, handling wallet-specific logic such as connection and transaction requests.
 
-5. **`@provablehq/aleo-wallet-adaptor-react`**  
+5. **`@provablehq/aleo-wallet-adapter-react`**
    Offers React integration for the wallet adapter, including context providers and hooks for managing wallet state.
 
-6. **`@provablehq/aleo-wallet-adaptor-react-ui`**  
+6. **`@provablehq/aleo-wallet-adapter-react-ui`**
    Contains reusable UI components for wallet integration, such as connect buttons and modals.
 
 7. **`@provablehq/aleo-hooks`**  

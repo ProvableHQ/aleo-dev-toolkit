@@ -8,7 +8,7 @@ import {
   RecordFilters,
   TransactionInput,
 } from '@provablehq/aleo-types';
-import { ProgramGrant, RecordAccessGrant } from '@provablehq/aleo-wallet-adaptor-core';
+import { ProgramGrant, RecordAccessGrant } from '@provablehq/aleo-wallet-adapter-core';
 
 export type FilterOp = 'eq' | 'gte' | 'lte' | 'neq';
 export type FilterRow = { field: string; op: FilterOp; value: string };

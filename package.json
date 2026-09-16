@@ -4,8 +4,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "packages/aleo-wallet-adaptor/*",
-    "packages/aleo-wallet-adaptor/wallets/*"
+    "packages/aleo-wallet-adapter/*",
+    "packages/aleo-wallet-adapter/wallets/*"
   ],
   "scripts": {
     "build": "turbo run build --filter=!react-app-example --filter=!react-app-example-hooks",
@@ -20,10 +20,13 @@
     "dev:example": "pnpm --filter react-app-example dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "publish-packages": "turbo run build lint && changeset publish",
+    "publish-packages": "pnpm test:release && turbo run build lint && changeset publish",
     "docs:dev": "cd website && pnpm start",
     "docs:build": "cd website && pnpm build",
-    "docs:serve": "cd website && pnpm serve"
+    "docs:serve": "cd website && pnpm serve",
+    "version-packages": "changeset version",
+    "deprecate-adaptors": "node scripts/deprecate-adaptors.mjs",
+    "test:release": "node --test scripts/deprecate-adaptors.test.mjs"
   },
   "dependencies": {
     "@provablehq/wasm": "^0.8.8"

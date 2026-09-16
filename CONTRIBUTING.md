@@ -74,7 +74,7 @@ pnpm hooks-app:dev      # Hooks example
 To work on a specific package with watch mode:
 
 ```bash
-cd packages/aleo-wallet-adaptor/core
+cd packages/aleo-wallet-adapter/core
 pnpm dev
 ```
 
@@ -88,7 +88,7 @@ aleo-dev-toolkit/
 │   ├── aleo-types/             # Common Aleo types
 │   ├── aleo-hooks/             # React hooks for chain data
 │   ├── aleo-wallet-standard/   # Wallet standard interfaces & types
-│   └── aleo-wallet-adaptor/    # Wallet adapter package
+│   └── aleo-wallet-adapter/    # Wallet adapter package
 │       ├── core/               # Core adapter logic
 │       ├── react/              # React integration
 │       ├── react-ui/           # UI components

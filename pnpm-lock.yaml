@@ -57,30 +57,30 @@ importers:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../packages/aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/core
-      '@provablehq/aleo-wallet-adaptor-fox':
+        version: link:../../packages/aleo-wallet-adapter/core
+      '@provablehq/aleo-wallet-adapter-fox':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/wallets/fox
-      '@provablehq/aleo-wallet-adaptor-leo':
+        version: link:../../packages/aleo-wallet-adapter/wallets/fox
+      '@provablehq/aleo-wallet-adapter-leo':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/wallets/leo
-      '@provablehq/aleo-wallet-adaptor-puzzle':
+        version: link:../../packages/aleo-wallet-adapter/wallets/leo
+      '@provablehq/aleo-wallet-adapter-puzzle':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/wallets/puzzle
-      '@provablehq/aleo-wallet-adaptor-react':
+        version: link:../../packages/aleo-wallet-adapter/wallets/puzzle
+      '@provablehq/aleo-wallet-adapter-react':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/react
-      '@provablehq/aleo-wallet-adaptor-react-ui':
+        version: link:../../packages/aleo-wallet-adapter/react
+      '@provablehq/aleo-wallet-adapter-react-ui':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/react-ui
-      '@provablehq/aleo-wallet-adaptor-shield':
+        version: link:../../packages/aleo-wallet-adapter/react-ui
+      '@provablehq/aleo-wallet-adapter-shield':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/wallets/shield
-      '@provablehq/aleo-wallet-adaptor-soter':
+        version: link:../../packages/aleo-wallet-adapter/wallets/shield
+      '@provablehq/aleo-wallet-adapter-soter':
         specifier: workspace:*
-        version: link:../../packages/aleo-wallet-adaptor/wallets/soter
+        version: link:../../packages/aleo-wallet-adapter/wallets/soter
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -316,7 +316,7 @@ importers:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.9)(typescript@5.8.3)(yaml@2.7.1)
 
-  packages/aleo-wallet-adaptor/core:
+  packages/aleo-wallet-adapter/core:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
@@ -332,12 +332,12 @@ importers:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.9)(typescript@5.8.3)(yaml@2.7.1)
 
-  packages/aleo-wallet-adaptor/react:
+  packages/aleo-wallet-adapter/react:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
         version: link:../core
       '@provablehq/aleo-wallet-standard':
@@ -363,15 +363,15 @@ importers:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.9)(typescript@5.8.3)(yaml@2.7.1)
 
-  packages/aleo-wallet-adaptor/react-ui:
+  packages/aleo-wallet-adapter/react-ui:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
         version: link:../core
-      '@provablehq/aleo-wallet-adaptor-react':
+      '@provablehq/aleo-wallet-adapter-react':
         specifier: workspace:*
         version: link:../react
       '@provablehq/aleo-wallet-standard':
@@ -403,15 +403,15 @@ importers:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.9)(typescript@5.8.3)(yaml@2.7.1)
 
-  packages/aleo-wallet-adaptor/wallets/fox:
+  packages/aleo-wallet-adapter/wallets/fox:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
         version: link:../../core
-      '@provablehq/aleo-wallet-adaptor-leo':
+      '@provablehq/aleo-wallet-adapter-leo':
         specifier: workspace:*
         version: link:../leo
       '@provablehq/aleo-wallet-standard':
@@ -428,12 +428,12 @@ importers:
         specifier: ^5.0.0
         version: 5.8.3
 
-  packages/aleo-wallet-adaptor/wallets/leo:
+  packages/aleo-wallet-adapter/wallets/leo:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
         version: link:../../core
       '@provablehq/aleo-wallet-standard':
@@ -450,12 +450,12 @@ importers:
         specifier: ^5.0.0
         version: 5.8.3
 
-  packages/aleo-wallet-adaptor/wallets/puzzle:
+  packages/aleo-wallet-adapter/wallets/puzzle:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
         version: link:../../core
       '@provablehq/aleo-wallet-standard':
@@ -475,12 +475,12 @@ importers:
         specifier: ^5.0.0
         version: 5.8.3
 
-  packages/aleo-wallet-adaptor/wallets/shield:
+  packages/aleo-wallet-adapter/wallets/shield:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
         version: link:../../core
       '@provablehq/aleo-wallet-standard':
@@ -497,15 +497,15 @@ importers:
         specifier: ^5.0.0
         version: 5.8.3
 
-  packages/aleo-wallet-adaptor/wallets/soter:
+  packages/aleo-wallet-adapter/wallets/soter:
     dependencies:
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../../aleo-types
-      '@provablehq/aleo-wallet-adaptor-core':
+      '@provablehq/aleo-wallet-adapter-core':
         specifier: workspace:*
         version: link:../../core
-      '@provablehq/aleo-wallet-adaptor-leo':
+      '@provablehq/aleo-wallet-adapter-leo':
         specifier: workspace:*
         version: link:../leo
       '@provablehq/aleo-wallet-standard':
