@@ -33,12 +33,12 @@ import {
 import {
   DappMetadata,
   ShieldConnectOptions,
-  ShieldRemoteConfig,
   ShieldWallet,
   ShieldWalletAdapterConfig,
   ShieldWindow,
 } from './types';
 import { buildDappMetadata } from './dappMetadata';
+import { resolveRemoteConfig, type ResolvedShieldRemoteConfig } from './remoteDefaults';
 
 /**
  * Same test as the one in `./remote`, duplicated rather than imported: that
@@ -82,7 +82,8 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * white corners around a mark that is not a rectangle. The mark itself is
    * unmodified.
    */
-  readonly iconOnLight = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iOTAiIHZpZXdCb3g9Ii04IC04IDgwIDkwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMzEuOTk5IDczLjU1MTlDMzEuNzk5IDczLjQ4MzIgMi4xMTYyZS0wNSA2MS41Mzk5IDAgMzkuMDUyMVYwSDMxLjk5OVY3My41NTE5Wk02NCAwVjM5LjA1MjFDNjQgNjEuNTM5NCAzMi4yMDIzIDczLjQ4MjcgMzIuMDAxIDczLjU1MTlWMEg2NFoiIGZpbGw9IndoaXRlIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjExLjExIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0yLjI5NTQxIDM4LjE2MjlWMi4yMTQ2SDMxLjk5ODJWNzAuODg5QzMxLjc5OTEgNzAuODIwNiAyLjI5NTQxIDYwLjY1MSAyLjI5NTQxIDM4LjE2MjlaIiBmaWxsPSJ1cmwoI3NoaWVsZF9iYWRnZV9hKSIvPgo8cGF0aCBkPSJNNjEuNzA4MSAzOC4xNjI5VjIuMjE0NkgzMi4wMDU0VjcwLjg4OUMzMi4yMDQzIDcwLjgyMDYgNjEuNzA4MSA2MC42NTEgNjEuNzA4MSAzOC4xNjI5WiIgZmlsbD0idXJsKCNzaGllbGRfYmFkZ2VfYikiLz4KPHBhdGggb3BhY2l0eT0iMC4xIiBkPSJNMzEuOTk5IDczLjU1MTlDMzEuNzk5IDczLjQ4MzIgMi4xMTYyZS0wNSA2MS41Mzk5IDAgMzkuMDUyMVYwSDMxLjk5OVY3My41NTE5Wk02NCAwVjM5LjA1MjFDNjQgNjEuNTM5NCAzMi4yMDIzIDczLjQ4MjcgMzIuMDAxIDczLjU1MTlWMEg2NFoiIGZpbGw9ImJsYWNrIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InNoaWVsZF9iYWRnZV9hIiB4MT0iMTcuMTQ3MyIgeTE9IjIuMjE0NiIgeDI9IjE3LjE0NzMiIHkyPSI3MC44ODkzIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9IjAiLz4KPC9saW5lYXJHcmFkaWVudD4KPGxpbmVhckdyYWRpZW50IGlkPSJzaGllbGRfYmFkZ2VfYiIgeDE9IjQ2Ljg1NjIiIHkxPSIyLjIxNDYiIHgyPSI0Ni44NTYyIiB5Mj0iNzAuODg5MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLW9wYWNpdHk9IjAiLz4KPHN0b3Agb2Zmc2V0PSIxIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==';
+  readonly iconOnLight =
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iOTAiIHZpZXdCb3g9Ii04IC04IDgwIDkwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMzEuOTk5IDczLjU1MTlDMzEuNzk5IDczLjQ4MzIgMi4xMTYyZS0wNSA2MS41Mzk5IDAgMzkuMDUyMVYwSDMxLjk5OVY3My41NTE5Wk02NCAwVjM5LjA1MjFDNjQgNjEuNTM5NCAzMi4yMDIzIDczLjQ4MjcgMzIuMDAxIDczLjU1MTlWMEg2NFoiIGZpbGw9IndoaXRlIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjExLjExIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0yLjI5NTQxIDM4LjE2MjlWMi4yMTQ2SDMxLjk5ODJWNzAuODg5QzMxLjc5OTEgNzAuODIwNiAyLjI5NTQxIDYwLjY1MSAyLjI5NTQxIDM4LjE2MjlaIiBmaWxsPSJ1cmwoI3NoaWVsZF9iYWRnZV9hKSIvPgo8cGF0aCBkPSJNNjEuNzA4MSAzOC4xNjI5VjIuMjE0NkgzMi4wMDU0VjcwLjg4OUMzMi4yMDQzIDcwLjgyMDYgNjEuNzA4MSA2MC42NTEgNjEuNzA4MSAzOC4xNjI5WiIgZmlsbD0idXJsKCNzaGllbGRfYmFkZ2VfYikiLz4KPHBhdGggb3BhY2l0eT0iMC4xIiBkPSJNMzEuOTk5IDczLjU1MTlDMzEuNzk5IDczLjQ4MzIgMi4xMTYyZS0wNSA2MS41Mzk5IDAgMzkuMDUyMVYwSDMxLjk5OVY3My41NTE5Wk02NCAwVjM5LjA1MjFDNjQgNjEuNTM5NCAzMi4yMDIzIDczLjQ4MjcgMzIuMDAxIDczLjU1MTlWMEg2NFoiIGZpbGw9ImJsYWNrIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InNoaWVsZF9iYWRnZV9hIiB4MT0iMTcuMTQ3MyIgeTE9IjIuMjE0NiIgeDI9IjE3LjE0NzMiIHkyPSI3MC44ODkzIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9IjAiLz4KPC9saW5lYXJHcmFkaWVudD4KPGxpbmVhckdyYWRpZW50IGlkPSJzaGllbGRfYmFkZ2VfYiIgeDE9IjQ2Ljg1NjIiIHkxPSIyLjIxNDYiIHgyPSI0Ni44NTYyIiB5Mj0iNzAuODg5MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLW9wYWNpdHk9IjAiLz4KPHN0b3Agb2Zmc2V0PSIxIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==';
 
   /**
    * The window object
@@ -117,9 +118,10 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   private _shieldWallet: ShieldWallet | undefined;
 
   /**
-   * Remote (relay) fallback configuration, when opted in
+   * Remote (relay) fallback configuration, when opted in. Always fully
+   * filled from production defaults plus any dapp overrides.
    */
-  private readonly _remoteConfig?: ShieldRemoteConfig;
+  private readonly _remoteConfig?: ResolvedShieldRemoteConfig;
   /**
    * What this dapp declares about itself, or undefined when it declared
    * nothing. Built once: it is configuration, not per-call state.
@@ -132,6 +134,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * whether to show a pairing surface before connect() resolves.
    */
   readonly supportsRemotePairing: boolean;
+
+  /**
+   * Prefer an injected `window.shield` over remote pairing. Default `true`.
+   *
+   * Writable at runtime so one adapter instance can prefer the extension
+   * everywhere except a screen that wants the QR / deeplink instead.
+   */
+  preferExtension: boolean;
 
   /**
    * The wallet a connect() is currently waiting on. Remote pairing blocks on
@@ -150,20 +160,25 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
   /**
    * Create a new Shield wallet adapter
-   * @param config Adapter configuration. Omit for injected-only behavior
-   * (unchanged); pass `{ remote }` to enable the relay fallback on browsers
-   * without `window.shield` (plain mobile Safari/Chrome).
+   * @param config Adapter configuration. Remote pairing is on by default
+   * with production relay URL, deeplink, and transport. Pass `{ remote:
+   * false }` for injected-only behavior, or `{ remote: { ... } }` to
+   * override those defaults (LAN testing). `preferExtension` defaults to
+   * true (injected wins); set it false to pair remotely even when the
+   * extension is installed.
    */
   constructor(config?: ShieldWalletAdapterConfig) {
     super();
     this.network = Network.TESTNET;
-    this._remoteConfig = config?.remote;
+    this._remoteConfig = resolveRemoteConfig(config?.remote);
     this._dappMetadata = buildDappMetadata(config);
-    this.supportsRemotePairing = !!config?.remote;
+    this.supportsRemotePairing = !!this._remoteConfig;
+    this.preferExtension = config?.preferExtension ?? true;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       // Remote-capable adapters are usable without any injection — that is
       // the wallet-standard's LOADABLE state. Injection detection still runs
-      // and upgrades to INSTALLED: the injected provider always wins.
+      // and upgrades to INSTALLED. connect() prefers the injected provider
+      // unless preferExtension is false.
       if (this._remoteConfig) {
         this._readyState = WalletReadyState.LOADABLE;
       }
@@ -204,19 +219,32 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Resolve the wallet to connect through, based on the current readyState.
-   * Returns a definite instance: the injected provider when installed, or a
-   * fresh remote facade otherwise. The facade is deliberately NOT cached —
-   * pairing persistence lives in the transport's localStorage session, which
-   * a fresh instance resumes, and `import('./remote')` is module-cached.
+   * Whether this connect should go over the relay rather than `window.shield`.
+   *
+   * Default is injected-first. `preferExtension: false` forces remote even
+   * when the extension is installed, so a dapp can still show a QR.
+   */
+  private shouldUseRemote(): boolean {
+    if (!this._remoteConfig) return false;
+    if (this.preferExtension === false) return true;
+    return this.readyState !== WalletReadyState.INSTALLED;
+  }
+
+  /**
+   * Resolve the wallet to connect through, based on preferExtension and
+   * readyState. Returns a definite instance: the injected provider when it
+   * is preferred and present, or a fresh remote facade otherwise. The
+   * facade is deliberately NOT cached — pairing persistence lives in the
+   * transport's localStorage session, which a fresh instance resumes, and
+   * `import('./remote')` is module-cached.
    */
   private async _resolveWallet(): Promise<ShieldWallet> {
-    if (this.readyState === WalletReadyState.INSTALLED && this._window?.shield) {
+    if (!this.shouldUseRemote() && this._window?.shield) {
       return this._window.shield;
     }
-    if (this._remoteConfig && this.readyState === WalletReadyState.LOADABLE) {
-      // No injection: fall back to the relay. The facade module is loaded
-      // lazily so injected-only dapps never pull in remote code.
+    if (this._remoteConfig) {
+      // Remote path. The facade module is loaded lazily so `remote: false`
+      // dapps never pull in remote code.
       const { RemoteShieldWallet } = await import('./remote');
       return new RemoteShieldWallet(this._withConnectUrlRelay(this._remoteConfig));
     }
@@ -240,7 +268,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * check moves into the callback below, where it runs at the moment the URL
    * exists — tens of seconds later, with every listener long since attached.
    */
-  private _withConnectUrlRelay(config: ShieldRemoteConfig): ShieldRemoteConfig {
+  private _withConnectUrlRelay(config: ResolvedShieldRemoteConfig): ResolvedShieldRemoteConfig {
     return {
       ...config,
       onConnectUrl: (url, context) => {

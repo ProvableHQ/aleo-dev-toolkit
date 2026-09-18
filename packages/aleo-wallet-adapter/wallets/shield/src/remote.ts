@@ -15,15 +15,15 @@ import {
 } from '@provablehq/aleo-wallet-adapter-core';
 import {
   ShieldConnectOptions,
-  ShieldRemoteConfig,
   ShieldRemoteTransportLike,
   ShieldWallet,
   ShieldWalletEvents,
 } from './types';
+import type { ResolvedShieldRemoteConfig } from './remoteDefaults';
 
 /**
  * This module is imported lazily (dynamic `import('./remote')` in the
- * adapter) so dapps that never configure `remote` load none of it.
+ * adapter) so dapps that pass `remote: false` load none of it.
  */
 
 const DEFAULT_PAIRING_TIMEOUT_MS = 5 * 60 * 1000;
@@ -56,7 +56,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
    */
   private abandonPairing?: (reason: Error) => void;
 
-  constructor(private readonly config: ShieldRemoteConfig) {
+  constructor(private readonly config: ResolvedShieldRemoteConfig) {
     super();
   }
 
@@ -70,7 +70,12 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // this wallet cleans up after itself so callers never have to.
     try {
       const transport = await this.loadTransport();
-      const connectParams = [network, decryptPermission, programs ?? [], options];
+      // Stamp sameDevice here, not in the adapter's display-metadata merge:
+      // it is a relay-session fact (where this page is), and the injected
+      // provider must not grow a field it has no use for. Always a boolean
+      // so the wallet can tell "desktop" from an older adapter that omitted it.
+      const connectOptions = withSameDevice(options, isMobileUserAgent());
+      const connectParams = [network, decryptPermission, programs ?? [], connectOptions];
 
       // Bundled only when this call is the one that fires the deeplink. Firing
       // it navigates this page away and iOS suspends it at that moment, so a
@@ -209,10 +214,8 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   private async loadTransport(): Promise<ShieldRemoteTransportLike> {
     if (this.transport) return this.transport;
 
-    // The dapp's factory resolves '@shield/relay-dapp-client' via a literal
-    // import in the dapp's own source — this package never names the module,
-    // so there is nothing for a bundler to fail on and no runtime-resolution
-    // magic to go wrong.
+    // Default factory lazy-loads the bundled transport; a dapp override
+    // (tests, a published client) is used as-is when `remote.transport` is set.
     const transport = await this.config.transport({
       relayUrl: this.config.relayUrl,
       deeplinkBase: this.config.deeplinkBase,
@@ -289,4 +292,22 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: s
 function isMobileUserAgent(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+/**
+ * Relay `connect()` always carries `dapp.sameDevice`. The dapp does not set
+ * it — this page's user agent is the source, the same check that decides
+ * deeplink vs QR.
+ */
+function withSameDevice(
+  options: ShieldConnectOptions | undefined,
+  sameDevice: boolean,
+): ShieldConnectOptions {
+  return {
+    ...options,
+    dapp: {
+      ...options?.dapp,
+      sameDevice,
+    },
+  };
 }

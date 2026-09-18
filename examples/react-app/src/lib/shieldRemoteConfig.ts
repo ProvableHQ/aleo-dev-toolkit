@@ -1,11 +1,8 @@
 /// <reference types="vite/client" />
 /**
- * Shield remote (relay) pairing configuration for the example app.
- *
- * Defaults to the production relay — the only host a release Shield build
- * will dial. Override in `.env` to test against the sandbox relay that
- * development and preview builds allowlist (`wss://relay.dev.shield.app`),
- * or a LAN relay:
+ * Optional env overrides for Shield remote (relay) pairing in the example
+ * app. Production defaults live in the adapter — this file only exists so
+ * the demo can point at a LAN/sandbox relay or disable the fallback.
  *
  *   VITE_SHIELD_RELAY_URL=http://192.168.1.20:8787 pnpm dev --host
  *
@@ -15,15 +12,14 @@
  * covers relay.dev.shield.app — a LAN host has to be added to it.
  *
  * Set VITE_SHIELD_RELAY_URL to an empty string to disable the fallback and
- * exercise the injected-only path.
+ * exercise the injected-only path. Unset uses the adapter's production
+ * defaults.
  */
-export const SHIELD_RELAY_URL =
-  (import.meta.env.VITE_SHIELD_RELAY_URL as string | undefined) ?? 'wss://relay.shield.app';
+export const SHIELD_RELAY_URL = import.meta.env.VITE_SHIELD_RELAY_URL as string | undefined;
 
 /**
- * Custom scheme rather than a universal link: shield-mobile declares
- * `scheme: "shield"` but no associatedDomains / intentFilters, so
- * https://app.shield.app/connect does not open the app yet.
+ * Override the adapter default (`shield://connect`). Unset keeps that
+ * default. The app declares no universal links, so https://app.shield.app/connect
+ * will not open it; shield-dev:// / shield-preview:// are the other channels.
  */
-export const SHIELD_DEEPLINK_BASE =
-  (import.meta.env.VITE_SHIELD_DEEPLINK_BASE as string | undefined) ?? 'shield://connect';
+export const SHIELD_DEEPLINK_BASE = import.meta.env.VITE_SHIELD_DEEPLINK_BASE as string | undefined;

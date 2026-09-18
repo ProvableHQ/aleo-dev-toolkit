@@ -1,8 +1,8 @@
 import type { FC, MouseEventHandler } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { Wallet } from '@provablehq/aleo-wallet-adapter-react';
 import { WalletIcon } from './WalletIcon';
+import { WalletPairingQR } from './WalletPairingQR';
 
 export interface WalletPairingViewProps {
   /** The wallet being paired with. */
@@ -30,28 +30,6 @@ const isMobileUserAgent = (): boolean =>
   typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 /**
- * Connect URLs are long (a channel id, two keys, the relay, the origin), so
- * the code is dense before the logo costs anything. This is as wide as the
- * 400px modal allows once padding is taken out, which buys the most pixels
- * per module — the thing phone cameras actually care about at an angle.
- */
-const QR_SIZE = 312;
-
-/**
- * Logo height. ~24% of the code — the widest that stays comfortably inside
- * level Q's recovery budget. The width follows the mark's own aspect so it
- * is never squashed; `imageSettings` takes both and does not preserve the
- * ratio for you.
- */
-const QR_LOGO_HEIGHT = 81;
-
-/**
- * The spec's minimum quiet zone. `qrcode.react` defaults to less, which some
- * scanners tolerate and some don't — not worth saving 2 modules over.
- */
-const QR_MARGIN_MODULES = 4;
-
-/**
  * The pairing step of the wallet modal: scan to connect with the wallet's
  * mobile app, or install the browser extension instead. Both routes are
  * offered together — a user without the extension may not have the app
@@ -66,38 +44,7 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [isMobile] = useState(isMobileUserAgent);
-  const [logoRatio, setLogoRatio] = useState<number | null>(null);
   const name = wallet.adapter.name;
-
-  // The QR sits on white whatever the modal theme is, so prefer the wallet's
-  // light-background mark; `icon` may be a light-on-dark logo that would
-  // disappear, or carry its own backplate.
-  const logoSrc = wallet.adapter.iconOnLight ?? wallet.adapter.icon;
-
-  // Measure the mark rather than assuming it is square — a wrong ratio here
-  // shows up as a visibly squashed logo.
-  useEffect(() => {
-    if (!logoSrc) return;
-    let cancelled = false;
-    const probe = new Image();
-    probe.onload = () => {
-      if (!cancelled && probe.width && probe.height) {
-        setLogoRatio(probe.width / probe.height);
-      }
-    };
-    probe.src = logoSrc;
-    return () => {
-      cancelled = true;
-    };
-  }, [logoSrc]);
-
-  const qrLogo = logoSrc
-    ? {
-        src: logoSrc,
-        height: QR_LOGO_HEIGHT,
-        width: Math.round(QR_LOGO_HEIGHT * (logoRatio ?? 1)),
-      }
-    : null;
 
   useEffect(() => {
     if (!copied) return;
@@ -130,47 +77,27 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
           : `Scan to connect with the ${name} mobile app.`}
       </p>
 
-      <div className="wallet-adapter-modal-pairing-qr">
-        {pairingUrl ? (
-          isMobile ? (
-            <a
-              className="wallet-adapter-modal-pairing-open"
-              href={pairingUrl}
-              rel="noopener noreferrer"
-            >
-              <WalletIcon wallet={wallet} />
-              <span>Open {name}</span>
-            </a>
-          ) : (
-            <QRCodeSVG
-              value={pairingUrl}
-              size={QR_SIZE}
-              marginSize={QR_MARGIN_MODULES}
-              // A centred logo blanks modules out, so the code has to carry
-              // enough redundancy to lose them and still decode. Level Q
-              // recovers 25%; the logo below costs a few percent, leaving the
-              // rest for real-world glare, angle and print damage.
-              level="Q"
-              {...(qrLogo
-                ? {
-                    imageSettings: {
-                      src: qrLogo.src,
-                      height: qrLogo.height,
-                      width: qrLogo.width,
-                      // No excavation: it clears the image's bounding
-                      // RECTANGLE, and a mark that isn't rectangular leaves
-                      // white gaps around itself. The logo sits on the code
-                      // instead; level Q absorbs the modules it covers.
-                      excavate: false,
-                    },
-                  }
-                : {})}
-            />
-          )
-        ) : (
+      {pairingUrl && isMobile ? (
+        <div className="wallet-adapter-modal-pairing-qr">
+          <a
+            className="wallet-adapter-modal-pairing-open"
+            href={pairingUrl}
+            rel="noopener noreferrer"
+          >
+            <WalletIcon wallet={wallet} />
+            <span>Open {name}</span>
+          </a>
+        </div>
+      ) : pairingUrl ? (
+        <WalletPairingQR
+          value={pairingUrl}
+          logoSrc={wallet.adapter.iconOnLight ?? wallet.adapter.icon}
+        />
+      ) : (
+        <div className="wallet-adapter-modal-pairing-qr">
           <span className="wallet-adapter-modal-pairing-waiting">Preparing a secure channel…</span>
-        )}
-      </div>
+        </div>
+      )}
 
       {pairingUrl && !isMobile ? (
         <button

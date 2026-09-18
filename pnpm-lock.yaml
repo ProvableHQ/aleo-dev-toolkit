@@ -48,12 +48,6 @@ importers:
 
   examples/react-app:
     dependencies:
-      '@noble/curves':
-        specifier: 1.9.7
-        version: 1.9.7
-      '@noble/hashes':
-        specifier: 1.7.2
-        version: 1.7.2
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../packages/aleo-types
@@ -120,18 +114,12 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.75.0
         version: 5.80.7(react@18.3.1)
-      centrifuge:
-        specifier: ^5.3.5
-        version: 5.7.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      eciesjs:
-        specifier: ^0.4.15
-        version: 0.4.18
       jotai:
         specifier: ^2.12.5
         version: 2.12.5(@types/react@18.3.20)(react@18.3.1)
@@ -477,6 +465,12 @@ importers:
 
   packages/aleo-wallet-adapter/wallets/shield:
     dependencies:
+      '@noble/curves':
+        specifier: 1.9.7
+        version: 1.9.7
+      '@noble/hashes':
+        specifier: 1.7.2
+        version: 1.7.2
       '@provablehq/aleo-types':
         specifier: workspace:*
         version: link:../../../aleo-types
@@ -486,6 +480,12 @@ importers:
       '@provablehq/aleo-wallet-standard':
         specifier: workspace:*
         version: link:../../../aleo-wallet-standard
+      centrifuge:
+        specifier: ^5.7.0
+        version: 5.7.0
+      eciesjs:
+        specifier: ^0.4.18
+        version: 0.4.18
     devDependencies:
       rimraf:
         specifier: ^5.0.5

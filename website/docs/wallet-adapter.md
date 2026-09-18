@@ -91,6 +91,8 @@ export const App: FC = () => {
 };
 ```
 
+`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. An installed extension is preferred unless you set `preferExtension: false`. See the [Shield adapter README](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/packages/aleo-wallet-adapter/wallets/shield/README.md).
+
 ### Provider Props
 
 - **`wallets`** (required): Array of wallet adapter instances
@@ -108,7 +110,7 @@ export const App: FC = () => {
 - **`recordAccess`** (optional, Shield only): Fine-grained grant controlling which record fields the dapp may read, narrowed by program, record, and field.
 - **`algorithmsAllowed`** (optional, Shield only): Opt-in allowlist of wallet-side algorithms that can compute private inputs (e.g. blinding factors) without exposing them to the dapp.
 
-For full details on the privacy props and how to use them, see the [Privacy-Preserving Dapps guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/privacy-preserving-dapps.md).
+For full details on the privacy props and how to use them, see the [Privacy-Preserving Dapps guide](/docs/privacy-preserving-dapps).
 
 ## Using the `useWallet` Hook
 
@@ -627,7 +629,7 @@ The **Shield wallet** supports a set of advanced privacy features that let your 
 
 These features are opt-in and additive — existing dapps using literal string inputs continue to work unchanged.
 
-For a full guide including the permission model, `InputRequest` shapes, derived inputs, and error handling, see the [Privacy-Preserving Dapps guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/privacy-preserving-dapps.md).
+For a full guide including the permission model, `InputRequest` shapes, derived inputs, and error handling, see the [Privacy-Preserving Dapps guide](/docs/privacy-preserving-dapps).
 
 ## 🎯 Complete Example
 

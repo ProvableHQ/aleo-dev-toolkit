@@ -14,17 +14,10 @@ const readmeConfigs = [
     title: 'Aleo Wallet Adapter',
     hasImages: true,
   },
-  // Add more as needed:
-  // { sourcePackage: 'aleo-hooks', targetDoc: 'aleo-hooks.md', title: 'Aleo Hooks', hasImages: false },
 ];
 
 // Docs synced from the repo-root docs/ directory
 const rootDocConfigs = [
-  {
-    sourceFile: 'migrating-to-adapter.md',
-    targetDoc: 'migrating-to-adapter.md',
-    title: 'Migrating to Adapter',
-  },
   {
     sourceFile: 'privacy-preserving-dapps.md',
     targetDoc: 'privacy-preserving-dapps.md',
@@ -44,22 +37,48 @@ function transformImagePaths(content, packagePath) {
 }
 
 /**
- * Transforms relative repo paths (../../examples/...) to GitHub blob URLs
- * so they resolve correctly on the Docusaurus website.
+ * Transforms relative repo paths to GitHub blob URLs so they resolve on the
+ * Docusaurus website (those files are not Docusaurus docs).
+ *
+ * `../` links are treated as escaping toward the repo root (e.g. the
+ * quickstart's `../../examples/react-app/...`). `./` links are relative to
+ * `sourceDir` (the README's package, or `docs/` for root docs).
  */
-function transformRepoLinks(content) {
+const publishedRootDocs = new Set(['privacy-preserving-dapps']);
+
+function transformRepoLinks(content, sourceDir) {
   const base = `https://github.com/${repo}/blob/${branch}`;
-  // Match markdown links whose href starts with one or more "../" and doesn't start with http
-  content = content.replace(/\]\((\.\.[^)]+)\)/g, (match, href) => {
-    // Resolve the relative path against the repo root (packages/<pkg>/docs/)
-    // We can't know the exact source path at call time, so we normalise by
-    // stripping leading "../" segments that escape the repo root.
-    // The links in the quickstart resolve to repo-root-relative paths after
-    // normalization (e.g. "examples/react-app/...").
+  // Root docs that are actually published on this site.
+  content = content.replace(/\]\((?:\.\.\/)+docs\/([^)]+?)\.md\)/g, (_match, doc) => {
+    if (publishedRootDocs.has(doc)) {
+      return `](/docs/${doc})`;
+    }
+    return `](${base}/docs/${doc}.md)`;
+  });
+  content = content.replace(/\]\((\.\.[^)]+)\)/g, (_match, href) => {
     const normalized = href.replace(/^(\.\.\/)+/, '');
     return `](${base}/${normalized})`;
   });
+  if (sourceDir) {
+    content = content.replace(/\]\(\.\/([^)]+)\)/g, (_match, href) => {
+      return `](${base}/${sourceDir}/${href})`;
+    });
+  }
   return content;
+}
+
+function assertNoBrokenLocalDocLinks(targetPath, content) {
+  const leftover = [...content.matchAll(/\]\((\.[^)]+)\)/g)]
+    .map((match) => match[1])
+    .filter((href) => {
+      if (href.startsWith('http://') || href.startsWith('https://')) return false;
+      return href.endsWith('.md') || href.includes('/README');
+    });
+  if (leftover.length > 0) {
+    throw new Error(
+      `${path.relative(path.join(__dirname, '..'), targetPath)} still has local README links that Docusaurus cannot resolve: ${leftover.join(', ')}`,
+    );
+  }
 }
 
 function syncReadme(config) {
@@ -70,9 +89,11 @@ function syncReadme(config) {
   if (config.hasImages) {
     content = transformImagePaths(content, config.sourcePackage);
   }
-  content = transformRepoLinks(content);
+  content = transformRepoLinks(content, `packages/${config.sourcePackage}`);
 
   const docContent = `---\ntitle: ${config.title}\n---\n\n` + content;
+  assertNoBrokenLocalDocLinks(targetPath, docContent);
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, docContent, 'utf8');
   console.log(`✅ Synced ${config.sourcePackage}/README.md → docs/${config.targetDoc}`);
 }
@@ -82,9 +103,10 @@ function syncRootDoc(config) {
   const targetPath = path.join(__dirname, '../docs', config.targetDoc);
 
   let content = fs.readFileSync(sourcePath, 'utf8');
-  content = transformRepoLinks(content);
+  content = transformRepoLinks(content, 'docs');
 
   const docContent = `---\ntitle: ${config.title}\n---\n\n` + content;
+  assertNoBrokenLocalDocLinks(targetPath, docContent);
   fs.writeFileSync(targetPath, docContent, 'utf8');
   console.log(`✅ Synced docs/${config.sourceFile} → docs/${config.targetDoc}`);
 }

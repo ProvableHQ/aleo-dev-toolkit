@@ -19,6 +19,20 @@ import { ProvableLogo } from './ProvableLogo';
 const INSTALL_REDIRECT_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
 const WALLET_INSTALL_REDIRECT_KEY = 'aleo-wallet-adapter-install-redirect-timestamp';
 
+/**
+ * Whether selecting this wallet should keep the modal open on the pairing
+ * screen. Remote-capable wallets that are not installed always pair
+ * out-of-band. `preferExtension: false` does the same even when the
+ * extension is installed, so a QR / deeplink remains available.
+ */
+function usesRemotePairing(wallet: Wallet): boolean {
+  return Boolean(
+    wallet.adapter.supportsRemotePairing &&
+      (wallet.adapter.preferExtension === false ||
+        wallet.readyState !== WalletReadyState.INSTALLED),
+  );
+}
+
 export interface WalletModalProps {
   className?: string;
   container?: string;
@@ -42,13 +56,7 @@ export const WalletModal: FC<WalletModalProps> = ({
   // out-of-band and has not connected yet IS a pairing in progress. Every
   // exit follows for free — a failed connect clears the selection, a
   // successful one sets `connected`, and cancelling deselects.
-  const pairingWallet =
-    wallet &&
-    !connected &&
-    wallet.adapter.supportsRemotePairing &&
-    wallet.readyState !== WalletReadyState.INSTALLED
-      ? wallet
-      : null;
+  const pairingWallet = wallet && !connected && usesRemotePairing(wallet) ? wallet : null;
 
   // Read by callbacks that must not re-subscribe on every pairing transition
   // — the window keydown handler in particular.
@@ -140,12 +148,9 @@ export const WalletModal: FC<WalletModalProps> = ({
       const selected = wallets.find((w: Wallet) => w.adapter.name === walletName);
       // A wallet that pairs out-of-band has something to show before it can
       // connect — keep the modal open and hand over to the pairing screen.
-      // An installed extension prompts on its own, so the modal gets out of
-      // the way exactly as it always has.
-      if (
-        selected?.adapter.supportsRemotePairing &&
-        selected.readyState !== WalletReadyState.INSTALLED
-      ) {
+      // An installed extension prompts on its own unless preferExtension is
+      // false, so the modal gets out of the way exactly as it always has.
+      if (selected && usesRemotePairing(selected)) {
         selectWallet(walletName);
         return;
       }

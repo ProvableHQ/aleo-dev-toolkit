@@ -46,11 +46,10 @@ export type ShieldRemoteTransportEvent =
   | 'handshakeRejected';
 
 /**
- * Structural view of '@shield/relay-dapp-client''s RemoteShieldTransport.
- * This package never imports the relay client — not at compile time, not at
- * runtime. This shape is the contract for the `remote.transport` factory:
- * the dapp installs the relay client itself and returns an instance shaped
- * like this (its RemoteShieldTransport already is).
+ * Structural view of the bundled (and of '@shield/relay-dapp-client''s)
+ * RemoteShieldTransport. The adapter ships a default transport; this shape
+ * is the contract for an optional `remote.transport` override (tests, a
+ * published client later). A custom factory's instance must look like this.
  */
 export interface ShieldRemoteTransportLike {
   /**
@@ -90,17 +89,18 @@ export interface ShieldRemoteTransportLike {
  */
 export interface ShieldRemoteConfig {
   /**
-   * Relay websocket/http origin. Release Shield builds dial `relay.shield.app`
-   * and nothing else, and refuse a plaintext relay — a LAN URL such as
-   * `http://<lan-ip>:8787` needs a dev/preview app build allowlisting it.
+   * Relay websocket/http origin. Defaults to `wss://relay.shield.app` — the
+   * only host a release Shield build dials. A LAN URL such as
+   * `http://<lan-ip>:8787` needs a dev/preview app build allowlisting it;
+   * a release build also refuses a plaintext relay.
    */
-  relayUrl: string;
+  relayUrl?: string;
   /**
-   * e.g. `shield://connect`. Universal links are not configured on the app
-   * yet, so `https://app.shield.app/connect` will not open it; the dev and
-   * preview channels use `shield-dev://` and `shield-preview://`.
+   * Defaults to `shield://connect`. Universal links are not configured on
+   * the app yet, so `https://app.shield.app/connect` will not open it; the
+   * dev and preview channels use `shield-dev://` and `shield-preview://`.
    */
-  deeplinkBase: string;
+  deeplinkBase?: string;
   /** Per-request timeout. The transport's default is generous — proving is slow. */
   requestTimeoutMs?: number;
   /** How long connect() waits for the user to pair in the Shield app. Default 5 min. */
@@ -127,28 +127,40 @@ export interface ShieldRemoteConfig {
    */
   fireDeeplink?: boolean;
   /**
-   * Factory for the relay transport. Required: this package deliberately
-   * never imports '@shield/relay-dapp-client', so YOUR bundler resolves it
-   * from a literal import in YOUR source — the only resolution that works
-   * everywhere (Vite/webpack/esbuild, SSR, mobile Safari):
-   * `transport: async (o) => new (await import('@shield/relay-dapp-client')).RemoteShieldTransport(o)`.
+   * Factory for the relay transport. Optional: the adapter bundles a default
+   * that lazy-loads the vendored client. Override only for tests, or when
+   * swapping in a published '@shield/relay-dapp-client' later.
    */
-  transport: (
+  transport?: (
     options: ShieldRemoteTransportOptions,
   ) => Promise<ShieldRemoteTransportLike> | ShieldRemoteTransportLike;
 }
 
 export interface ShieldWalletAdapterConfig {
   /**
-   * Opt-in remote (relay) fallback. Zero-config construction keeps the
-   * injected-only behavior; when set and no `window.shield` exists, the
-   * adapter reports LOADABLE and connects via the relay instead. An
-   * injected provider always takes precedence.
+   * Remote (relay) fallback. On by default with production relay URL,
+   * deeplink, and bundled transport — dapps do not configure those.
+   * Pass a config object to override any default (LAN testing, a preview
+   * deeplink). Pass `false` for injected-only behavior.
+   *
+   * When no `window.shield` exists, the adapter reports LOADABLE and
+   * connects via the relay. An injected provider takes precedence unless
+   * `preferExtension` is `false`.
    *
    * Needs Shield app v1.11.2 (build 147) or newer. See the package README
    * for the relay allowlist and the desktop-QR caveat.
    */
-  remote?: ShieldRemoteConfig;
+  remote?: boolean | ShieldRemoteConfig;
+
+  /**
+   * Prefer an injected `window.shield` over remote pairing. Default `true`.
+   *
+   * Set to `false` to pair via the relay (and show a QR / deeplink) even
+   * when the browser extension is installed. Writable at runtime so a
+   * single adapter instance can prefer the extension everywhere except
+   * one screen.
+   */
+  preferExtension?: boolean;
 
   /**
    * Display name shown on the wallet's approval screen, beside the origin.
@@ -177,11 +189,20 @@ export interface ShieldWalletAdapterConfig {
  *
  * Self-asserted, and grants nothing: it sits at the trust level of the origin,
  * which the wallet keeps primary and never lets a declared name displace.
- * Sanitized wallet-side before it is shown or stored.
+ * Sanitized wallet-side before it is shown or stored. `sameDevice` is not
+ * display — the adapter stamps it on relay connects from the user agent.
  */
 export interface DappMetadata {
   name?: string;
   iconUrl?: string;
+  /**
+   * Set by the adapter on relay connects, not configured by the dapp. True
+   * when the dapp is in a mobile browser (same-device deeplink); false on
+   * desktop (cross-device QR). The wallet can skip "return to your browser"
+   * after an approval when this is false — the user never left a phone
+   * browser.
+   */
+  sameDevice?: boolean;
 }
 
 /**
@@ -193,7 +214,7 @@ export interface DappMetadata {
  * explicitly, so a legacy wallet is unaffected either way.
  */
 export type ShieldConnectOptions = ConnectOptions & {
-  /** Display metadata. Not a permission — see `DappMetadata`. */
+  /** Shield-only connect bag: display metadata plus relay `sameDevice`. */
   dapp?: DappMetadata;
 };
 
