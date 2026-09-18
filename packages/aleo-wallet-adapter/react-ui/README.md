@@ -38,6 +38,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 ```
 
+### Pairing QR only
+
+`WalletPairingQR` is the QR code from the pairing screen, without the rest of
+the modal. It reads `pairingUrl` and the selected wallet's icon from
+`useWallet()`, so a custom pairing UI is:
+
+```tsx
+import { WalletPairingQR } from '@provablehq/aleo-wallet-adapter-react-ui';
+
+export function Pairing() {
+  return <WalletPairingQR />;
+}
+```
+
+Pass `value` and `logoSrc` to override the context (tests, a URL you already
+hold). The code renders nothing until a URL is available. Include the UI
+package stylesheet so the white pad around the code is applied.
+
 ## Related packages
 
 - `@provablehq/aleo-wallet-adapter-react` – required provider context for these components.

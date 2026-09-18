@@ -19,15 +19,13 @@ import {
   recordAccessAtom,
 } from './lib/store/global';
 import { routes } from './routes';
-import { RemoteShieldTransport } from './lib/shieldRelay/transport';
 import { SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from './lib/shieldRemoteConfig';
 // Import wallet adapter CSS after our own styles
 import '@provablehq/aleo-wallet-adapter-react-ui/dist/styles.css';
 
-// With a relay URL configured, Shield gains the remote (relay) fallback: on
-// browsers without an injected window.shield it reports Loadable and
-// connect() pairs with the Shield app via deeplink + E2E-encrypted relay.
-// The injected provider still wins whenever it exists.
+// Remote pairing is on by default with the adapter's production relay URL,
+// deeplink, and bundled transport. Env vars override those for LAN testing;
+// an empty VITE_SHIELD_RELAY_URL disables the fallback.
 //
 // No onConnectUrl here: the adapter emits `connectUrl`, and the react-ui
 // wallet modal renders the QR / deeplink screen off that event. A dapp with
@@ -39,20 +37,21 @@ import '@provablehq/aleo-wallet-adapter-react-ui/dist/styles.css';
 const APP_NAME = 'Aleo Dev Toolkit Example';
 const APP_ICON_URL = 'https://aleo-dev-toolkit-react-app.vercel.app/favicon.ico';
 
-const shieldWalletAdapter = SHIELD_RELAY_URL
-  ? new ShieldWalletAdapter({
-      appName: APP_NAME,
-      appIconUrl: APP_ICON_URL,
-      remote: {
-        relayUrl: SHIELD_RELAY_URL,
-        deeplinkBase: SHIELD_DEEPLINK_BASE,
-        // The example bundles the (vendored) relay transport itself — see
-        // src/lib/shieldRelay/ — so the adapter never dynamic-imports a bare
-        // specifier through Vite.
-        transport: options => new RemoteShieldTransport(options),
-      },
-    })
-  : new ShieldWalletAdapter({ appName: APP_NAME, appIconUrl: APP_ICON_URL });
+const shieldRemote =
+  SHIELD_RELAY_URL === ''
+    ? false
+    : SHIELD_RELAY_URL || SHIELD_DEEPLINK_BASE
+      ? {
+          ...(SHIELD_RELAY_URL ? { relayUrl: SHIELD_RELAY_URL } : {}),
+          ...(SHIELD_DEEPLINK_BASE ? { deeplinkBase: SHIELD_DEEPLINK_BASE } : {}),
+        }
+      : undefined;
+
+const shieldWalletAdapter = new ShieldWalletAdapter({
+  appName: APP_NAME,
+  appIconUrl: APP_ICON_URL,
+  remote: shieldRemote,
+});
 
 const wallets = [
   shieldWalletAdapter,

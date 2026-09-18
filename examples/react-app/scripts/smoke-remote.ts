@@ -2,7 +2,7 @@
  * Headless smoke test of the Shield remote (relay) flow, exercising the REAL
  * production pieces end to end:
  *
- *   ShieldWalletAdapter (dist) -> RemoteShieldWallet facade -> vendored
+ *   ShieldWalletAdapter (dist) -> RemoteShieldWallet facade -> bundled
  *   RemoteShieldTransport -> local Centrifugo relay (docker) -> fake wallet
  *   (shield-relay's stand-in for the Shield app)
  *
@@ -66,7 +66,6 @@ const storage = new Map<string, string>();
 };
 
 const { ShieldWalletAdapter } = await import('@provablehq/aleo-wallet-adapter-shield');
-const { RemoteShieldTransport } = await import('../src/lib/shieldRelay/transport');
 
 const children: ChildProcess[] = [];
 const urls: string[] = [];
@@ -100,7 +99,6 @@ function makeAdapter() {
       requestTimeoutMs: 15000,
       pairingTimeoutMs: 30000,
       onConnectUrl,
-      transport: options => new RemoteShieldTransport(options),
     },
   });
 }

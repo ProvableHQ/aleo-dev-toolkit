@@ -8,7 +8,6 @@ export const PLACEHOLDERS = {
   CIPHER_TEXT: '{{CIPHER_TEXT}}',
   MESSAGE: '{{MESSAGE}}',
   TX_ID: '{{TX_ID}}',
-  RELAY_URL: '{{RELAY_URL}}',
 } as const;
 
 export const codeExamples = {
@@ -131,21 +130,18 @@ const tx = await executeTransaction({
 console.log('Transaction Id:', tx?.transactionId);`,
 
   remoteConnect: `import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
-// This example VENDORS the relay client (src/lib/shieldRelay) until it is
-// published — in your dapp, import it from '@shield/relay-dapp-client'.
-import { RemoteShieldTransport } from '@/lib/shieldRelay/transport';
 
-// Opt-in remote fallback: on browsers without an injected window.shield,
-// Shield reports "Loadable" and connect() pairs with the Shield app over a
-// deeplink + end-to-end-encrypted relay. Injected providers always win.
-const shield = new ShieldWalletAdapter({
-  remote: {
-    relayUrl: '${PLACEHOLDERS.RELAY_URL}',
-    deeplinkBase: 'shield://connect',
-    // Your bundler resolves the relay client from YOUR source:
-    transport: options => new RemoteShieldTransport(options),
-  },
-});
+// Remote fallback is on by default: on browsers without an injected
+// window.shield, Shield reports "Loadable" and connect() pairs with the
+// Shield app over a deeplink + end-to-end-encrypted relay. Injected
+// providers always win. Production relay URL, deeplink, and transport are
+// the adapter defaults — the dapp does not configure them.
+const shield = new ShieldWalletAdapter();
+
+// Override any default for testing (LAN relay, preview deeplink):
+//   new ShieldWalletAdapter({ remote: { relayUrl: 'http://192.168.1.20:8787' } });
+// Disable the fallback:
+//   new ShieldWalletAdapter({ remote: false });
 
 // The adapter emits \`connectUrl\` while pairing, and the react-ui wallet
 // modal renders the QR / deeplink screen from it — nothing else to wire up.

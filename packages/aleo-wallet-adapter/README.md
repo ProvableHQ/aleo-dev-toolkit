@@ -87,6 +87,8 @@ export const App: FC = () => {
 };
 ```
 
+`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. See the [Shield adapter README](./wallets/shield/README.md).
+
 ### Provider Props
 
 - **`wallets`** (required): Array of wallet adapter instances

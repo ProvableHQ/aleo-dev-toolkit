@@ -16,9 +16,13 @@
     "dev": "tsup --watch"
   },
   "dependencies": {
+    "@noble/curves": "1.9.7",
+    "@noble/hashes": "1.7.2",
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adapter-core": "workspace:*",
-    "@provablehq/aleo-wallet-standard": "workspace:*"
+    "@provablehq/aleo-wallet-standard": "workspace:*",
+    "centrifuge": "^5.7.0",
+    "eciesjs": "^0.4.18"
   },
   "repository": {
     "type": "git",

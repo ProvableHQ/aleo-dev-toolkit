@@ -1,10 +1,14 @@
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
+import {
+  DEFAULT_SHIELD_DEEPLINK_BASE,
+  DEFAULT_SHIELD_RELAY_URL,
+} from '@provablehq/aleo-wallet-adapter-shield';
 import { Radio, Smartphone } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { CodePanel } from '../CodePanel';
-import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
+import { codeExamples } from '@/lib/codeExamples';
 import { SHIELD_DEEPLINK_BASE, SHIELD_RELAY_URL } from '@/lib/shieldRemoteConfig';
 
 /**
@@ -18,7 +22,9 @@ export function RemoteConnect() {
   const { setVisible: openWalletModal } = useWalletModal();
 
   const shield = wallets.find(w => w.adapter.name === 'Shield Wallet');
-  const remoteEnabled = Boolean(SHIELD_RELAY_URL);
+  const remoteEnabled = SHIELD_RELAY_URL !== '';
+  const relayUrl = SHIELD_RELAY_URL || DEFAULT_SHIELD_RELAY_URL;
+  const deeplinkBase = SHIELD_DEEPLINK_BASE || DEFAULT_SHIELD_DEEPLINK_BASE;
 
   return (
     <section className="space-y-4">
@@ -38,8 +44,8 @@ export function RemoteConnect() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <StatusRow label="Remote fallback" value={remoteEnabled ? 'enabled' : 'disabled'} />
         <StatusRow label="Shield readyState" value={shield?.readyState ?? 'not registered'} />
-        <StatusRow label="Relay URL" value={SHIELD_RELAY_URL || '—'} />
-        <StatusRow label="Deeplink base" value={SHIELD_DEEPLINK_BASE} />
+        <StatusRow label="Relay URL" value={remoteEnabled ? relayUrl : '—'} />
+        <StatusRow label="Deeplink base" value={remoteEnabled ? deeplinkBase : '—'} />
         <StatusRow label="Connected" value={connected ? 'yes' : 'no'} />
         <StatusRow label="Network" value={network ?? '—'} />
       </div>
@@ -53,7 +59,11 @@ export function RemoteConnect() {
       {!remoteEnabled ? (
         <Alert>
           <AlertDescription>
-            <p className="body-m-bold">Enable it for a LAN test</p>
+            <p className="body-m-bold">Remote fallback is disabled</p>
+            <p className="mt-1">
+              <code>VITE_SHIELD_RELAY_URL</code> is set to empty, so this demo is injected-only.
+              Unset it to use the adapter&apos;s production defaults, or point at a LAN relay:
+            </p>
             <ol className="list-decimal ml-4 mt-2 space-y-1">
               <li>
                 In shield-relay: <code>pnpm relay</code> (Centrifugo on :8787) and{' '}
@@ -78,13 +88,7 @@ export function RemoteConnect() {
         </Button>
       )}
 
-      <CodePanel
-        code={codeExamples.remoteConnect}
-        language="tsx"
-        highlightValues={{
-          [PLACEHOLDERS.RELAY_URL]: SHIELD_RELAY_URL || 'wss://relay.shield.app',
-        }}
-      />
+      <CodePanel code={codeExamples.remoteConnect} language="tsx" />
     </section>
   );
 }

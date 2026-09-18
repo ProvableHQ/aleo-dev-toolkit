@@ -15,15 +15,15 @@ import {
 } from '@provablehq/aleo-wallet-adapter-core';
 import {
   ShieldConnectOptions,
-  ShieldRemoteConfig,
   ShieldRemoteTransportLike,
   ShieldWallet,
   ShieldWalletEvents,
 } from './types';
+import type { ResolvedShieldRemoteConfig } from './remoteDefaults';
 
 /**
  * This module is imported lazily (dynamic `import('./remote')` in the
- * adapter) so dapps that never configure `remote` load none of it.
+ * adapter) so dapps that pass `remote: false` load none of it.
  */
 
 const DEFAULT_PAIRING_TIMEOUT_MS = 5 * 60 * 1000;
@@ -56,7 +56,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
    */
   private abandonPairing?: (reason: Error) => void;
 
-  constructor(private readonly config: ShieldRemoteConfig) {
+  constructor(private readonly config: ResolvedShieldRemoteConfig) {
     super();
   }
 
@@ -209,10 +209,8 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   private async loadTransport(): Promise<ShieldRemoteTransportLike> {
     if (this.transport) return this.transport;
 
-    // The dapp's factory resolves '@shield/relay-dapp-client' via a literal
-    // import in the dapp's own source — this package never names the module,
-    // so there is nothing for a bundler to fail on and no runtime-resolution
-    // magic to go wrong.
+    // Default factory lazy-loads the bundled transport; a dapp override
+    // (tests, a published client) is used as-is when `remote.transport` is set.
     const transport = await this.config.transport({
       relayUrl: this.config.relayUrl,
       deeplinkBase: this.config.deeplinkBase,
