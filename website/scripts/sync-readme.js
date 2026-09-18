@@ -44,21 +44,24 @@ function transformImagePaths(content, packagePath) {
 }
 
 /**
- * Transforms relative repo paths (../../examples/...) to GitHub blob URLs
- * so they resolve correctly on the Docusaurus website.
+ * Transforms relative repo paths to GitHub blob URLs so they resolve on the
+ * Docusaurus website (those files are not Docusaurus docs).
+ *
+ * `../` links are treated as escaping toward the repo root (e.g. the
+ * quickstart's `../../examples/react-app/...`). `./` links are relative to
+ * `sourceDir` (the README's package, or `docs/` for root docs).
  */
-function transformRepoLinks(content) {
+function transformRepoLinks(content, sourceDir) {
   const base = `https://github.com/${repo}/blob/${branch}`;
-  // Match markdown links whose href starts with one or more "../" and doesn't start with http
-  content = content.replace(/\]\((\.\.[^)]+)\)/g, (match, href) => {
-    // Resolve the relative path against the repo root (packages/<pkg>/docs/)
-    // We can't know the exact source path at call time, so we normalise by
-    // stripping leading "../" segments that escape the repo root.
-    // The links in the quickstart resolve to repo-root-relative paths after
-    // normalization (e.g. "examples/react-app/...").
+  content = content.replace(/\]\((\.\.[^)]+)\)/g, (_match, href) => {
     const normalized = href.replace(/^(\.\.\/)+/, '');
     return `](${base}/${normalized})`;
   });
+  if (sourceDir) {
+    content = content.replace(/\]\(\.\/([^)]+)\)/g, (_match, href) => {
+      return `](${base}/${sourceDir}/${href})`;
+    });
+  }
   return content;
 }
 
@@ -70,7 +73,7 @@ function syncReadme(config) {
   if (config.hasImages) {
     content = transformImagePaths(content, config.sourcePackage);
   }
-  content = transformRepoLinks(content);
+  content = transformRepoLinks(content, `packages/${config.sourcePackage}`);
 
   const docContent = `---\ntitle: ${config.title}\n---\n\n` + content;
   fs.writeFileSync(targetPath, docContent, 'utf8');
@@ -82,7 +85,7 @@ function syncRootDoc(config) {
   const targetPath = path.join(__dirname, '../docs', config.targetDoc);
 
   let content = fs.readFileSync(sourcePath, 'utf8');
-  content = transformRepoLinks(content);
+  content = transformRepoLinks(content, 'docs');
 
   const docContent = `---\ntitle: ${config.title}\n---\n\n` + content;
   fs.writeFileSync(targetPath, docContent, 'utf8');
