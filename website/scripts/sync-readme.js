@@ -14,8 +14,12 @@ const readmeConfigs = [
     title: 'Aleo Wallet Adapter',
     hasImages: true,
   },
-  // Add more as needed:
-  // { sourcePackage: 'aleo-hooks', targetDoc: 'aleo-hooks.md', title: 'Aleo Hooks', hasImages: false },
+  {
+    sourcePackage: 'aleo-wallet-adapter/wallets/shield',
+    targetDoc: 'wallets/shield.md',
+    title: 'Shield Wallet Adapter',
+    hasImages: false,
+  },
 ];
 
 // Docs synced from the repo-root docs/ directory
@@ -53,16 +57,42 @@ function transformImagePaths(content, packagePath) {
  */
 function transformRepoLinks(content, sourceDir) {
   const base = `https://github.com/${repo}/blob/${branch}`;
+  // Package README → Docusaurus doc (must run before the generic ./ rewrite).
+  content = content.replace(
+    /\]\(\.\/wallets\/shield\/README\.md\)/g,
+    '](./wallets/shield)',
+  );
+  // Root / nested docs that already exist on this site.
+  content = content.replace(/\]\((?:\.\.\/)+docs\/([^)]+?)\.md\)/g, (_match, doc) => {
+    return `](/docs/${doc})`;
+  });
   content = content.replace(/\]\((\.\.[^)]+)\)/g, (_match, href) => {
     const normalized = href.replace(/^(\.\.\/)+/, '');
     return `](${base}/${normalized})`;
   });
   if (sourceDir) {
-    content = content.replace(/\]\(\.\/([^)]+)\)/g, (_match, href) => {
+    // Only rewrite file paths (README.md, images). Leave Docusaurus doc ids
+    // such as ./wallets/shield alone.
+    content = content.replace(/\]\(\.\/([^)]+\.[^)]+)\)/g, (_match, href) => {
       return `](${base}/${sourceDir}/${href})`;
     });
   }
   return content;
+}
+
+function assertNoBrokenLocalDocLinks(targetPath, content) {
+  const leftover = [...content.matchAll(/\]\((\.[^)]+)\)/g)]
+    .map((match) => match[1])
+    .filter((href) => {
+      if (href.startsWith('./wallets/shield')) return false;
+      if (href.startsWith('http://') || href.startsWith('https://')) return false;
+      return href.endsWith('.md') || href.includes('/README');
+    });
+  if (leftover.length > 0) {
+    throw new Error(
+      `${path.relative(path.join(__dirname, '..'), targetPath)} still has local README links that Docusaurus cannot resolve: ${leftover.join(', ')}`,
+    );
+  }
 }
 
 function syncReadme(config) {
@@ -76,6 +106,8 @@ function syncReadme(config) {
   content = transformRepoLinks(content, `packages/${config.sourcePackage}`);
 
   const docContent = `---\ntitle: ${config.title}\n---\n\n` + content;
+  assertNoBrokenLocalDocLinks(targetPath, docContent);
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, docContent, 'utf8');
   console.log(`✅ Synced ${config.sourcePackage}/README.md → docs/${config.targetDoc}`);
 }
@@ -88,6 +120,7 @@ function syncRootDoc(config) {
   content = transformRepoLinks(content, 'docs');
 
   const docContent = `---\ntitle: ${config.title}\n---\n\n` + content;
+  assertNoBrokenLocalDocLinks(targetPath, docContent);
   fs.writeFileSync(targetPath, docContent, 'utf8');
   console.log(`✅ Synced docs/${config.sourceFile} → docs/${config.targetDoc}`);
 }
