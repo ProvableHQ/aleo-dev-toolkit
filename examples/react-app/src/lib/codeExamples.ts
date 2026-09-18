@@ -130,23 +130,32 @@ const tx = await executeTransaction({
 console.log('Transaction Id:', tx?.transactionId);`,
 
   remoteConnect: `import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
+import { WalletPairingQR } from '@provablehq/aleo-wallet-adapter-react-ui';
 
 // Remote fallback is on by default: on browsers without an injected
 // window.shield, Shield reports "Loadable" and connect() pairs with the
-// Shield app over a deeplink + end-to-end-encrypted relay. Injected
-// providers always win. Production relay URL, deeplink, and transport are
-// the adapter defaults — the dapp does not configure them.
-const shield = new ShieldWalletAdapter();
+// Shield app over a deeplink + end-to-end-encrypted relay. Production
+// relay URL, deeplink, and transport are the adapter defaults.
+//
+// preferExtension defaults to true: an injected extension wins. Set it
+// false to still show a QR / deeplink when the extension is installed.
+const shield = new ShieldWalletAdapter({ preferExtension: true });
+
+// Always pair via the app, even with the extension installed:
+//   new ShieldWalletAdapter({ preferExtension: false });
+// Or flip it for one screen on a shared adapter:
+//   adapter.preferExtension = false;
 
 // Override any default for testing (LAN relay, preview deeplink):
 //   new ShieldWalletAdapter({ remote: { relayUrl: 'http://192.168.1.20:8787' } });
 // Disable the fallback:
 //   new ShieldWalletAdapter({ remote: false });
 
-// The adapter emits \`connectUrl\` while pairing, and the react-ui wallet
-// modal renders the QR / deeplink screen from it — nothing else to wire up.
-// With your own pairing UI, read it from the hook instead:
+// The adapter emits \`connectUrl\` while pairing. The react-ui wallet
+// modal renders the QR / deeplink screen from it — unless you present
+// the code yourself:
 //   const { pairingUrl } = useWallet();
+//   return <WalletPairingQR />;
 // or pass remote.onConnectUrl — both fire, and the mobile deeplink still
 // goes automatically unless you set fireDeeplink: false.`,
 } as const;

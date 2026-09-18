@@ -99,6 +99,20 @@ new ShieldWalletAdapter({
 `remote: false` keeps injected-only behavior (`NotDetected` when no extension
 is present). `remote: true` is equivalent to omitting `remote`.
 
+`preferExtension` defaults to `true` (an installed extension wins). Force
+the QR / deeplink path even when the extension is present:
+
+```tsx
+new ShieldWalletAdapter({ preferExtension: false });
+```
+
+Or flip it at runtime on a shared adapter (one screen wants the QR, the rest
+of the dapp still prefers the extension):
+
+```tsx
+adapter.preferExtension = false;
+```
+
 The production defaults are also exported as `DEFAULT_SHIELD_RELAY_URL` and
 `DEFAULT_SHIELD_DEEPLINK_BASE` if you need to read them.
 
@@ -106,8 +120,11 @@ Behavior:
 
 - Remote pairing is **on by default**. Pass `remote: false` for injected-only
   construction.
-- An injected `window.shield` (extension, in-app browser) always wins; the
-  relay is only used when no provider is injected (`readyState: Loadable`).
+- An injected `window.shield` (extension, in-app browser) wins by default
+  (`preferExtension: true`, the default). Pass `preferExtension: false` — or
+  set `adapter.preferExtension = false` at runtime — to pair via the relay
+  and show a QR / deeplink even when the extension is installed
+  (`readyState` stays `Installed`; `connect()` still uses the remote path).
 - `connect()` fires the deeplink automatically on mobile, and emits a
   `connectUrl` event with the pairing URL. `@provablehq/aleo-wallet-adapter-react-ui`
   renders that as a QR / deeplink screen in the wallet modal, so dapps using

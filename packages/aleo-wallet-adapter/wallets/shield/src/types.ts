@@ -144,12 +144,23 @@ export interface ShieldWalletAdapterConfig {
    * deeplink). Pass `false` for injected-only behavior.
    *
    * When no `window.shield` exists, the adapter reports LOADABLE and
-   * connects via the relay. An injected provider always takes precedence.
+   * connects via the relay. An injected provider takes precedence unless
+   * `preferExtension` is `false`.
    *
    * Needs Shield app v1.11.2 (build 147) or newer. See the package README
    * for the relay allowlist and the desktop-QR caveat.
    */
   remote?: boolean | ShieldRemoteConfig;
+
+  /**
+   * Prefer an injected `window.shield` over remote pairing. Default `true`.
+   *
+   * Set to `false` to pair via the relay (and show a QR / deeplink) even
+   * when the browser extension is installed. Writable at runtime so a
+   * single adapter instance can prefer the extension everywhere except
+   * one screen.
+   */
+  preferExtension?: boolean;
 
   /**
    * Display name shown on the wallet's approval screen, beside the origin.

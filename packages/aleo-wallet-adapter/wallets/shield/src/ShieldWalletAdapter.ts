@@ -136,6 +136,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   readonly supportsRemotePairing: boolean;
 
   /**
+   * Prefer an injected `window.shield` over remote pairing. Default `true`.
+   *
+   * Writable at runtime so one adapter instance can prefer the extension
+   * everywhere except a screen that wants the QR / deeplink instead.
+   */
+  preferExtension: boolean;
+
+  /**
    * The wallet a connect() is currently waiting on. Remote pairing blocks on
    * a human for minutes, and during that window the session is live but
    * `_shieldWallet` is still unset — so without this handle there is nothing
@@ -155,7 +163,9 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * @param config Adapter configuration. Remote pairing is on by default
    * with production relay URL, deeplink, and transport. Pass `{ remote:
    * false }` for injected-only behavior, or `{ remote: { ... } }` to
-   * override those defaults (LAN testing).
+   * override those defaults (LAN testing). `preferExtension` defaults to
+   * true (injected wins); set it false to pair remotely even when the
+   * extension is installed.
    */
   constructor(config?: ShieldWalletAdapterConfig) {
     super();
@@ -163,10 +173,12 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this._remoteConfig = resolveRemoteConfig(config?.remote);
     this._dappMetadata = buildDappMetadata(config);
     this.supportsRemotePairing = !!this._remoteConfig;
+    this.preferExtension = config?.preferExtension ?? true;
     if (this._readyState !== WalletReadyState.UNSUPPORTED) {
       // Remote-capable adapters are usable without any injection — that is
       // the wallet-standard's LOADABLE state. Injection detection still runs
-      // and upgrades to INSTALLED: the injected provider always wins.
+      // and upgrades to INSTALLED. connect() prefers the injected provider
+      // unless preferExtension is false.
       if (this._remoteConfig) {
         this._readyState = WalletReadyState.LOADABLE;
       }
@@ -207,19 +219,32 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
-   * Resolve the wallet to connect through, based on the current readyState.
-   * Returns a definite instance: the injected provider when installed, or a
-   * fresh remote facade otherwise. The facade is deliberately NOT cached —
-   * pairing persistence lives in the transport's localStorage session, which
-   * a fresh instance resumes, and `import('./remote')` is module-cached.
+   * Whether this connect should go over the relay rather than `window.shield`.
+   *
+   * Default is injected-first. `preferExtension: false` forces remote even
+   * when the extension is installed, so a dapp can still show a QR.
+   */
+  private shouldUseRemote(): boolean {
+    if (!this._remoteConfig) return false;
+    if (this.preferExtension === false) return true;
+    return this.readyState !== WalletReadyState.INSTALLED;
+  }
+
+  /**
+   * Resolve the wallet to connect through, based on preferExtension and
+   * readyState. Returns a definite instance: the injected provider when it
+   * is preferred and present, or a fresh remote facade otherwise. The
+   * facade is deliberately NOT cached — pairing persistence lives in the
+   * transport's localStorage session, which a fresh instance resumes, and
+   * `import('./remote')` is module-cached.
    */
   private async _resolveWallet(): Promise<ShieldWallet> {
-    if (this.readyState === WalletReadyState.INSTALLED && this._window?.shield) {
+    if (!this.shouldUseRemote() && this._window?.shield) {
       return this._window.shield;
     }
-    if (this._remoteConfig && this.readyState === WalletReadyState.LOADABLE) {
-      // No injection: fall back to the relay. The facade module is loaded
-      // lazily so `remote: false` dapps never pull in remote code.
+    if (this._remoteConfig) {
+      // Remote path. The facade module is loaded lazily so `remote: false`
+      // dapps never pull in remote code.
       const { RemoteShieldWallet } = await import('./remote');
       return new RemoteShieldWallet(this._withConnectUrlRelay(this._remoteConfig));
     }
