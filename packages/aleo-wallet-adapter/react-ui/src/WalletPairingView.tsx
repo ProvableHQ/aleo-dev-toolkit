@@ -13,21 +13,16 @@ export interface WalletPairingViewProps {
    * than popping in.
    */
   pairingUrl: string | null;
+  /**
+   * True when this pairing is same-device (mobile deeplink). Comes from the
+   * adapter's `connectUrl` context — do not sniff the user agent here.
+   */
+  sameDevice: boolean;
   /** Opens the wallet's install page. */
   onInstall: MouseEventHandler<HTMLButtonElement>;
   /** Returns to the wallet list. */
   onBack: MouseEventHandler<HTMLButtonElement>;
 }
-
-/**
- * Whether to lead with the QR code or with the deeplink.
- *
- * Presentation only: on a phone the adapter has already navigated to the
- * wallet app, so a QR code you would have to scan with the same phone is
- * useless. This must never gate the connect itself.
- */
-const isMobileUserAgent = (): boolean =>
-  typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 /**
  * The pairing step of the wallet modal: scan to connect with the wallet's
@@ -39,11 +34,11 @@ const isMobileUserAgent = (): boolean =>
 export const WalletPairingView: FC<WalletPairingViewProps> = ({
   wallet,
   pairingUrl,
+  sameDevice,
   onInstall,
   onBack,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [isMobile] = useState(isMobileUserAgent);
   const name = wallet.adapter.name;
 
   useEffect(() => {
@@ -60,6 +55,12 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
     );
   }, [pairingUrl]);
 
+  const lead = !pairingUrl
+    ? `Preparing to connect with ${name}.`
+    : sameDevice
+      ? `Opening the ${name} app. If nothing happened, use the link below.`
+      : `Scan to connect with the ${name} mobile app.`;
+
   return (
     <div className="wallet-adapter-modal-pairing">
       <button className="wallet-adapter-modal-pairing-back" onClick={onBack} tabIndex={0}>
@@ -71,13 +72,9 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
 
       <h1 className="wallet-adapter-modal-title">Connect with {name}</h1>
 
-      <p className="wallet-adapter-modal-pairing-lead">
-        {isMobile
-          ? `Opening the ${name} app. If nothing happened, use the link below.`
-          : `Scan to connect with the ${name} mobile app.`}
-      </p>
+      <p className="wallet-adapter-modal-pairing-lead">{lead}</p>
 
-      {pairingUrl && isMobile ? (
+      {pairingUrl && sameDevice ? (
         <div className="wallet-adapter-modal-pairing-qr">
           <a
             className="wallet-adapter-modal-pairing-open"
@@ -99,7 +96,7 @@ export const WalletPairingView: FC<WalletPairingViewProps> = ({
         </div>
       )}
 
-      {pairingUrl && !isMobile ? (
+      {pairingUrl && !sameDevice ? (
         <button
           className="wallet-adapter-modal-pairing-copy"
           onClick={handleCopy}

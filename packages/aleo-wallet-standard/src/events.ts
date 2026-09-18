@@ -4,6 +4,17 @@ import EventEmitter from 'eventemitter3';
 
 export { EventEmitter };
 
+/**
+ * Payload on `connectUrl`. `resumed` is true when the URL re-opens an
+ * existing session rather than starting a fresh pairing. `sameDevice` is
+ * true when the dapp is in a mobile browser (deeplink); false on desktop
+ * (cross-device QR). UI should present the URL from this, not sniff UA.
+ */
+export interface ConnectUrlContext {
+  resumed: boolean;
+  sameDevice: boolean;
+}
+
 export interface WalletEvents {
   /**
    * Emitted when the wallet is connected
@@ -41,11 +52,9 @@ export interface WalletEvents {
    * app out-of-band — the URL is what the app must receive, whether by
    * deeplink on the same device or by scanning it as a QR code from another.
    *
-   * Only adapters that declare `supportsRemotePairing` emit this. `resumed`
-   * is true when the URL re-opens an existing session rather than starting a
-   * fresh pairing.
+   * Only adapters that declare `supportsRemotePairing` emit this.
    */
-  connectUrl(url: string, context: { resumed: boolean }): void;
+  connectUrl(url: string, context: ConnectUrlContext): void;
 
   // /**
   //  * Index signature for additional events

@@ -43,13 +43,12 @@ export interface WalletAdapterProps<Name extends string = string> {
   supportsRemotePairing?: boolean;
 
   /**
-   * When true (the default), an injected provider is preferred over remote
-   * pairing. When false, connect() uses the remote path and UI should show a
-   * pairing surface even if the extension is installed.
-   *
-   * Only meaningful on adapters that also declare `supportsRemotePairing`.
+   * Whether *this* `connect()` will pair out-of-band, given current config
+   * and `readyState`. Adapters that can prefer an injected extension over
+   * remote pairing expose this so UI does not reconstruct that policy from
+   * other flags. Undefined on adapters that never pair remotely.
    */
-  preferExtension?: boolean;
+  willPairRemotely?: boolean;
 
   /**
    * The wallet icon

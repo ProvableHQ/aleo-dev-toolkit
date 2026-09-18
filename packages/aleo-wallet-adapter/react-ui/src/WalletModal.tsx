@@ -8,6 +8,7 @@ import { WalletListItem } from './WalletListItem';
 import { WalletPairingView } from './WalletPairingView';
 import { useWallet, Wallet } from '@provablehq/aleo-wallet-adapter-react';
 import {
+  ConnectPairing,
   isWalletConnectable,
   WalletName,
   WalletReadyState,
@@ -21,16 +22,14 @@ const WALLET_INSTALL_REDIRECT_KEY = 'aleo-wallet-adapter-install-redirect-timest
 
 /**
  * Whether selecting this wallet should keep the modal open on the pairing
- * screen. Remote-capable wallets that are not installed always pair
- * out-of-band. `preferExtension: false` does the same even when the
- * extension is installed, so a QR / deeplink remains available.
+ * screen. Reads the adapter's own decision (`willPairRemotely`), or a
+ * connect-time `pairing: 'remote'` intent — UI does not reconstruct that
+ * from `preferExtension` + `readyState`.
  */
-function usesRemotePairing(wallet: Wallet): boolean {
-  return Boolean(
-    wallet.adapter.supportsRemotePairing &&
-      (wallet.adapter.preferExtension === false ||
-        wallet.readyState !== WalletReadyState.INSTALLED),
-  );
+function usesRemotePairing(wallet: Wallet, pairing?: ConnectPairing): boolean {
+  if (!wallet.adapter.supportsRemotePairing) return false;
+  if (pairing === 'remote') return true;
+  return Boolean(wallet.adapter.willPairRemotely);
 }
 
 export interface WalletModalProps {
@@ -45,7 +44,16 @@ export const WalletModal: FC<WalletModalProps> = ({
   network,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const { wallets, selectWallet, connect, wallet, connected, pairingUrl } = useWallet();
+  const {
+    wallets,
+    selectWallet,
+    connect,
+    wallet,
+    connected,
+    pairingUrl,
+    pairingSameDevice,
+    pairing,
+  } = useWallet();
   const { setVisible } = useWalletModal();
   const [expanded, setExpanded] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
@@ -56,7 +64,7 @@ export const WalletModal: FC<WalletModalProps> = ({
   // out-of-band and has not connected yet IS a pairing in progress. Every
   // exit follows for free — a failed connect clears the selection, a
   // successful one sets `connected`, and cancelling deselects.
-  const pairingWallet = wallet && !connected && usesRemotePairing(wallet) ? wallet : null;
+  const pairingWallet = wallet && !connected && usesRemotePairing(wallet, pairing) ? wallet : null;
 
   // Read by callbacks that must not re-subscribe on every pairing transition
   // — the window keydown handler in particular.
@@ -146,16 +154,13 @@ export const WalletModal: FC<WalletModalProps> = ({
   const handleWalletClick = useCallback(
     (event: MouseEvent, walletName: WalletName) => {
       const selected = wallets.find((w: Wallet) => w.adapter.name === walletName);
-      // A wallet that pairs out-of-band has something to show before it can
-      // connect — keep the modal open and hand over to the pairing screen.
-      // An installed extension prompts on its own unless preferExtension is
-      // false, so the modal gets out of the way exactly as it always has.
-      if (selected && usesRemotePairing(selected)) {
-        selectWallet(walletName);
-        return;
-      }
       selectWallet(walletName);
-      handleClose(event);
+      // A wallet that pairs out-of-band has something to show before it can
+      // connect — keep the modal open. An installed extension prompts on
+      // its own, so the modal gets out of the way exactly as it always has.
+      if (!(selected && usesRemotePairing(selected))) {
+        handleClose(event);
+      }
     },
     [wallets, selectWallet, handleClose],
   );
@@ -284,6 +289,7 @@ export const WalletModal: FC<WalletModalProps> = ({
               <WalletPairingView
                 wallet={pairingWallet}
                 pairingUrl={pairingUrl}
+                sameDevice={pairingSameDevice}
                 onInstall={event =>
                   handleNotInstalledWalletClick(event, pairingWallet.adapter.name as WalletName)
                 }

@@ -1,4 +1,4 @@
-import { useLocation, useRoutes } from 'react-router-dom';
+import { useRoutes } from 'react-router-dom';
 import { AleoWalletProvider } from '@provablehq/aleo-wallet-adapter-react';
 import { WalletModalProvider } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { PuzzleWalletAdapter } from '@provablehq/aleo-wallet-adapter-puzzle';
@@ -51,9 +51,8 @@ const shieldWalletAdapter = new ShieldWalletAdapter({
   appName: APP_NAME,
   appIconUrl: APP_ICON_URL,
   remote: shieldRemote,
-  // App-wide: prefer the injected extension when it is present. The Remote
-  // page flips this to false on the same instance so that screen can still
-  // show a QR.
+  // App-wide: prefer the injected extension when it is present. A screen
+  // that still wants a QR passes `pairing: 'remote'` on selectWallet.
   preferExtension: true,
 });
 
@@ -71,7 +70,6 @@ function AppRoutes() {
 }
 
 export function App() {
-  const location = useLocation();
   const network = useAtomValue(networkAtom);
   const decryptPermission = useAtomValue(decryptPermissionAtom);
   const autoConnect = useAtomValue(autoConnectAtom);
@@ -93,7 +91,7 @@ export function App() {
         readAddress={readAddress}
         algorithmsAllowed={algorithmsAllowed}
       >
-        <WalletModalProvider autoShowPairing={location.pathname !== '/remote'}>
+        <WalletModalProvider>
           <AppRoutes />
           <Toaster />
         </WalletModalProvider>

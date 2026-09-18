@@ -19,7 +19,7 @@ import {
   ShieldWallet,
   ShieldWalletEvents,
 } from './types';
-import type { ResolvedShieldRemoteConfig } from './remoteDefaults';
+import { isMobileUserAgent } from './isMobileUserAgent';
 
 /**
  * This module is imported lazily (dynamic `import('./remote')` in the
@@ -101,7 +101,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
         // (QR rendering, UI state); the mobile deeplink still fires unless
         // explicitly opted out, so setting onConnectUrl never changes
         // same-device behavior.
-        this.config.onConnectUrl?.(url, { resumed });
+        this.config.onConnectUrl?.(url, { resumed, sameDevice: isMobileUserAgent() });
         if (isMobileUserAgent()) {
           if (this.config.fireDeeplink !== false) {
             window.location.href = url;
@@ -287,11 +287,6 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: s
   } finally {
     clearTimeout(timer);
   }
-}
-
-function isMobileUserAgent(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
 /**
