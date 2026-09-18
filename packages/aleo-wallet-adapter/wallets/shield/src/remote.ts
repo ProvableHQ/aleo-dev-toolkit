@@ -70,7 +70,12 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // this wallet cleans up after itself so callers never have to.
     try {
       const transport = await this.loadTransport();
-      const connectParams = [network, decryptPermission, programs ?? [], options];
+      // Stamp sameDevice here, not in the adapter's display-metadata merge:
+      // it is a relay-session fact (where this page is), and the injected
+      // provider must not grow a field it has no use for. Always a boolean
+      // so the wallet can tell "desktop" from an older adapter that omitted it.
+      const connectOptions = withSameDevice(options, isMobileUserAgent());
+      const connectParams = [network, decryptPermission, programs ?? [], connectOptions];
 
       // Bundled only when this call is the one that fires the deeplink. Firing
       // it navigates this page away and iOS suspends it at that moment, so a
@@ -287,4 +292,22 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: s
 function isMobileUserAgent(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+/**
+ * Relay `connect()` always carries `dapp.sameDevice`. The dapp does not set
+ * it — this page's user agent is the source, the same check that decides
+ * deeplink vs QR.
+ */
+function withSameDevice(
+  options: ShieldConnectOptions | undefined,
+  sameDevice: boolean,
+): ShieldConnectOptions {
+  return {
+    ...options,
+    dapp: {
+      ...options?.dapp,
+      sameDevice,
+    },
+  };
 }

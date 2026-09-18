@@ -189,11 +189,20 @@ export interface ShieldWalletAdapterConfig {
  *
  * Self-asserted, and grants nothing: it sits at the trust level of the origin,
  * which the wallet keeps primary and never lets a declared name displace.
- * Sanitized wallet-side before it is shown or stored.
+ * Sanitized wallet-side before it is shown or stored. `sameDevice` is not
+ * display — the adapter stamps it on relay connects from the user agent.
  */
 export interface DappMetadata {
   name?: string;
   iconUrl?: string;
+  /**
+   * Set by the adapter on relay connects, not configured by the dapp. True
+   * when the dapp is in a mobile browser (same-device deeplink); false on
+   * desktop (cross-device QR). The wallet can skip "return to your browser"
+   * after an approval when this is false — the user never left a phone
+   * browser.
+   */
+  sameDevice?: boolean;
 }
 
 /**
@@ -205,7 +214,7 @@ export interface DappMetadata {
  * explicitly, so a legacy wallet is unaffected either way.
  */
 export type ShieldConnectOptions = ConnectOptions & {
-  /** Display metadata. Not a permission — see `DappMetadata`. */
+  /** Shield-only connect bag: display metadata plus relay `sameDevice`. */
   dapp?: DappMetadata;
 };
 

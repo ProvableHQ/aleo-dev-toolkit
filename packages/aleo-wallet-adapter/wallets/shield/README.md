@@ -142,6 +142,10 @@ Behavior:
   `EXPO_PUBLIC_RELAY_ALLOWED_HOSTS` set.
 - Sessions persist in `localStorage`; a page reload resumes the pairing
   without another deeplink round-trip.
+- On a relay `connect()`, the adapter sets `dapp.sameDevice` from the page's
+  user agent (`true` on a mobile browser, `false` on desktop). Dapps do not
+  configure this. The wallet can use it to skip "return to your browser"
+  after a cross-device QR approval.
 - The relay transport is **bundled and lazy-loaded** by this package. Dapps
   that pass `remote: false` never load it. `remote.transport` remains as an
   advanced override for tests; until `@shield/relay-dapp-client` is published
