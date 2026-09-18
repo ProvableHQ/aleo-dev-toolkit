@@ -59,16 +59,21 @@ export function RemoteConnect() {
   connectingRef.current = connecting;
   const pairingUrlRef = useRef(pairingUrl);
   pairingUrlRef.current = pairingUrl;
+  const selectWalletRef = useRef(selectWallet);
+  selectWalletRef.current = selectWallet;
 
-  // An in-flight pair would otherwise follow the user off this page, where
-  // preferExtension is true again and the modal would not show a QR.
+  // Cancel only when leaving this page. `selectWallet` is a new function
+  // every time the selected adapter changes — depending on it here ran
+  // this cleanup the moment Shield was selected, which dropped the wallet
+  // (and its connectUrl listener) while connect() was still waiting, so
+  // the QR flashed once and every later connect hung on "Preparing…".
   useEffect(() => {
     return () => {
       if (!connectedRef.current && (connectingRef.current || pairingUrlRef.current)) {
-        selectWallet(null);
+        selectWalletRef.current(null);
       }
     };
-  }, [selectWallet]);
+  }, []);
 
   useEffect(() => {
     if (!copied) return;
@@ -76,7 +81,9 @@ export function RemoteConnect() {
     return () => window.clearTimeout(timer);
   }, [copied]);
 
-  useLayoutEffect(() => {
+  // Passive, not layout: WalletProvider attaches the `connectUrl` listener
+  // in an effect, and a layout connect can emit the URL before that lands.
+  useEffect(() => {
     if (!remoteConnectRequested) return;
     if (!wallet) return;
     if (connected) {
