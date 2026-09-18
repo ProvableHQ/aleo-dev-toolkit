@@ -14,21 +14,10 @@ const readmeConfigs = [
     title: 'Aleo Wallet Adapter',
     hasImages: true,
   },
-  {
-    sourcePackage: 'aleo-wallet-adapter/wallets/shield',
-    targetDoc: 'wallets/shield.md',
-    title: 'Shield Wallet Adapter',
-    hasImages: false,
-  },
 ];
 
 // Docs synced from the repo-root docs/ directory
 const rootDocConfigs = [
-  {
-    sourceFile: 'migrating-to-adapter.md',
-    targetDoc: 'migrating-to-adapter.md',
-    title: 'Migrating to Adapter',
-  },
   {
     sourceFile: 'privacy-preserving-dapps.md',
     targetDoc: 'privacy-preserving-dapps.md',
@@ -55,25 +44,23 @@ function transformImagePaths(content, packagePath) {
  * quickstart's `../../examples/react-app/...`). `./` links are relative to
  * `sourceDir` (the README's package, or `docs/` for root docs).
  */
+const publishedRootDocs = new Set(['privacy-preserving-dapps']);
+
 function transformRepoLinks(content, sourceDir) {
   const base = `https://github.com/${repo}/blob/${branch}`;
-  // Package README → Docusaurus doc (must run before the generic ./ rewrite).
-  content = content.replace(
-    /\]\(\.\/wallets\/shield\/README\.md\)/g,
-    '](./wallets/shield)',
-  );
-  // Root / nested docs that already exist on this site.
+  // Root docs that are actually published on this site.
   content = content.replace(/\]\((?:\.\.\/)+docs\/([^)]+?)\.md\)/g, (_match, doc) => {
-    return `](/docs/${doc})`;
+    if (publishedRootDocs.has(doc)) {
+      return `](/docs/${doc})`;
+    }
+    return `](${base}/docs/${doc}.md)`;
   });
   content = content.replace(/\]\((\.\.[^)]+)\)/g, (_match, href) => {
     const normalized = href.replace(/^(\.\.\/)+/, '');
     return `](${base}/${normalized})`;
   });
   if (sourceDir) {
-    // Only rewrite file paths (README.md, images). Leave Docusaurus doc ids
-    // such as ./wallets/shield alone.
-    content = content.replace(/\]\(\.\/([^)]+\.[^)]+)\)/g, (_match, href) => {
+    content = content.replace(/\]\(\.\/([^)]+)\)/g, (_match, href) => {
       return `](${base}/${sourceDir}/${href})`;
     });
   }
@@ -84,7 +71,6 @@ function assertNoBrokenLocalDocLinks(targetPath, content) {
   const leftover = [...content.matchAll(/\]\((\.[^)]+)\)/g)]
     .map((match) => match[1])
     .filter((href) => {
-      if (href.startsWith('./wallets/shield')) return false;
       if (href.startsWith('http://') || href.startsWith('https://')) return false;
       return href.endsWith('.md') || href.includes('/README');
     });

@@ -13,12 +13,7 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
  Create as many sidebars as you want.
  */
 const sidebars: SidebarsConfig = {
-  docsSidebar: [
-    'wallet-adapter',
-    'wallets/shield',
-    'migrating-to-adapter',
-    'privacy-preserving-dapps',
-  ],
+  docsSidebar: ['wallet-adapter', 'privacy-preserving-dapps'],
 };
 
 export default sidebars;
