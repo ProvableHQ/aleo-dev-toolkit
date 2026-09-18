@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import {
   AleoDeployment,
+  ConnectPairing,
   RecordStatusFilter,
   WalletAdapter,
   WalletName,
@@ -16,6 +17,15 @@ import {
 export interface Wallet {
   adapter: WalletAdapter;
   readyState: WalletReadyState;
+}
+
+/**
+ * Options for `selectWallet`. `pairing: 'remote'` forces out-of-band pairing
+ * for the following connect even when the adapter would otherwise prefer an
+ * injected extension.
+ */
+export interface SelectWalletOptions {
+  pairing?: ConnectPairing;
 }
 
 /**
@@ -76,12 +86,26 @@ export interface WalletContextState {
   pairingUrl: string | null;
 
   /**
+   * True when `pairingUrl` is a same-device (mobile deeplink) connect.
+   * False for cross-device QR. Only meaningful while `pairingUrl` is set —
+   * present the URL from this, do not sniff the user agent.
+   */
+  pairingSameDevice: boolean;
+
+  /**
+   * Connect-time pairing override from the last `selectWallet` / `connect`.
+   * `'remote'` means the following connect should pair out-of-band even if
+   * the adapter would prefer an injected extension.
+   */
+  pairing?: ConnectPairing;
+
+  /**
    * Select a wallet by name
    * @param name The name of the wallet to select, or `null` to deselect.
    * Deselecting reaches the adapter, so it also abandons a pairing that is
    * still waiting on the user and tears down its relay session.
    */
-  selectWallet: (name: WalletName | null) => void;
+  selectWallet: (name: WalletName | null, options?: SelectWalletOptions) => void;
 
   /**
    * Connect to the selected wallet

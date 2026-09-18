@@ -138,24 +138,26 @@ import { WalletPairingQR } from '@provablehq/aleo-wallet-adapter-react-ui';
 // relay URL, deeplink, and transport are the adapter defaults.
 //
 // preferExtension defaults to true: an injected extension wins. Set it
-// false to still show a QR / deeplink when the extension is installed.
+// false to pair via the relay on every connect.
 const shield = new ShieldWalletAdapter({ preferExtension: true });
 
 // Always pair via the app, even with the extension installed:
 //   new ShieldWalletAdapter({ preferExtension: false });
-// Or flip it for one screen on a shared adapter:
-//   adapter.preferExtension = false;
+// Or force the relay for one connect without mutating the adapter:
+//   selectWallet('Shield Wallet', { pairing: 'remote' });
 
 // Override any default for testing (LAN relay, preview deeplink):
 //   new ShieldWalletAdapter({ remote: { relayUrl: 'http://192.168.1.20:8787' } });
 // Disable the fallback:
 //   new ShieldWalletAdapter({ remote: false });
 
-// The adapter emits \`connectUrl\` while pairing. The react-ui wallet
-// modal renders the QR / deeplink screen from it — unless you present
-// the code yourself:
-//   const { pairingUrl } = useWallet();
-//   return <WalletPairingQR />;
+// The adapter emits \`connectUrl\` while pairing (url + { resumed, sameDevice }).
+// The react-ui wallet modal renders the QR / deeplink screen from it.
+// For a custom pairing surface, pass the URL into WalletPairingQR:
+//   const { pairingUrl, wallet } = useWallet();
+//   return pairingUrl ? (
+//     <WalletPairingQR value={pairingUrl} logoSrc={wallet?.adapter.iconOnLight ?? wallet?.adapter.icon} />
+//   ) : null;
 // or pass remote.onConnectUrl — both fire, and the mobile deeplink still
 // goes automatically unless you set fireDeeplink: false.`,
 } as const;

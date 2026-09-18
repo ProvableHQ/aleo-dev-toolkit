@@ -38,17 +38,8 @@ import {
   ShieldWindow,
 } from './types';
 import { buildDappMetadata } from './dappMetadata';
+import { isMobileUserAgent } from './isMobileUserAgent';
 import { resolveRemoteConfig, type ResolvedShieldRemoteConfig } from './remoteDefaults';
-
-/**
- * Same test as the one in `./remote`, duplicated rather than imported: that
- * module is loaded lazily on purpose, and importing it here for three lines
- * would pull the whole remote path into every bundle.
- */
-function isMobileUserAgent(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-}
 
 /**
  * Shield wallet adapter
@@ -138,10 +129,10 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Prefer an injected `window.shield` over remote pairing. Default `true`.
    *
-   * Writable at runtime so one adapter instance can prefer the extension
-   * everywhere except a screen that wants the QR / deeplink instead.
+   * Constructor-time. To force the relay for one connect without changing
+   * the rest of the dapp, pass `pairing: 'remote'` on that connect.
    */
-  preferExtension: boolean;
+  readonly preferExtension: boolean;
 
   /**
    * The wallet a connect() is currently waiting on. Remote pairing blocks on
@@ -165,7 +156,8 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * false }` for injected-only behavior, or `{ remote: { ... } }` to
    * override those defaults (LAN testing). `preferExtension` defaults to
    * true (injected wins); set it false to pair remotely even when the
-   * extension is installed.
+   * extension is installed. To force remote for one connect, pass
+   * `pairing: 'remote'` instead of mutating this adapter.
    */
   constructor(config?: ShieldWalletAdapterConfig) {
     super();
@@ -221,25 +213,38 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   /**
    * Whether this connect should go over the relay rather than `window.shield`.
    *
-   * Default is injected-first. `preferExtension: false` forces remote even
-   * when the extension is installed, so a dapp can still show a QR.
+   * Default is injected-first. Constructor `preferExtension: false` forces
+   * remote even when the extension is installed. `options.pairing ===
+   * 'remote'` does the same for a single connect.
    */
-  private shouldUseRemote(): boolean {
+  private shouldUseRemote(options?: ConnectOptions): boolean {
     if (!this._remoteConfig) return false;
-    if (this.preferExtension === false) return true;
+    if (options?.pairing === 'remote') return true;
+    if (!this.preferExtension) return true;
     return this.readyState !== WalletReadyState.INSTALLED;
   }
 
   /**
-   * Resolve the wallet to connect through, based on preferExtension and
-   * readyState. Returns a definite instance: the injected provider when it
-   * is preferred and present, or a fresh remote facade otherwise. The
-   * facade is deliberately NOT cached — pairing persistence lives in the
-   * transport's localStorage session, which a fresh instance resumes, and
-   * `import('./remote')` is module-cached.
+   * Constructor policy: will a connect with no `pairing` override go over
+   * the relay? UI reads this before connect() to decide whether to show a
+   * pairing surface. Per-connect `pairing: 'remote'` is a separate intent
+   * the caller already knows about.
    */
-  private async _resolveWallet(): Promise<ShieldWallet> {
-    if (!this.shouldUseRemote() && this._window?.shield) {
+  get willPairRemotely(): boolean {
+    return this.shouldUseRemote();
+  }
+
+  /**
+   * Resolve the wallet to connect through, based on preferExtension,
+   * readyState, and a per-connect pairing override. Returns a definite
+   * instance: the injected provider when it is preferred and present, or a
+   * fresh remote facade otherwise. The facade is deliberately NOT cached —
+   * pairing persistence lives in the transport's localStorage session,
+   * which a fresh instance resumes, and `import('./remote')` is
+   * module-cached.
+   */
+  private async _resolveWallet(options?: ConnectOptions): Promise<ShieldWallet> {
+    if (!this.shouldUseRemote(options) && this._window?.shield) {
       return this._window.shield;
     }
     if (this._remoteConfig) {
@@ -310,14 +315,17 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       // Resolve, connect, bind. A remote wallet cleans up its own relay
       // session when connect() fails, so no teardown belongs here; an
       // injected wallet that rejects is simply not connected.
-      wallet = await this._resolveWallet();
+      //
+      // `pairing` is adapter routing, not a wallet RPC field — strip it
+      // before forwarding so the injected provider never sees it.
+      wallet = await this._resolveWallet(options);
       this._pendingWallet = wallet;
 
       const connectResult = await wallet.connect(
         network,
         decryptPermission,
         programs,
-        this._withDappMetadata(options),
+        this._withDappMetadata(withoutPairing(options)),
       );
 
       // Cancelled while we waited on the user. The pairing completed, so the
@@ -694,4 +702,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this._shieldWallet.off('disconnect', this._onDisconnect);
     this._shieldWallet.off('accountChanged', this._onAccountChange);
   }
+}
+
+/**
+ * `pairing` is adapter routing. The wallet RPC bag must not carry it.
+ */
+function withoutPairing(options?: ConnectOptions): ConnectOptions | undefined {
+  if (!options) return undefined;
+  const rest = { ...options };
+  delete rest.pairing;
+  return Object.keys(rest).length === 0 ? undefined : rest;
 }

@@ -1,17 +1,12 @@
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 export interface WalletPairingQRProps {
+  /** Pairing URL to encode. Renders nothing while empty. */
+  value: string;
   /**
-   * Pairing URL to encode. Omit to read `pairingUrl` from `useWallet()`.
-   * Renders nothing while the URL is null.
-   */
-  value?: string | null;
-  /**
-   * Centre-mark image. Omit to use the selected wallet's `iconOnLight`,
-   * falling back to `icon`. Pass `null` to draw the code with no logo.
+   * Centre-mark image. Omit or pass `null` to draw the code with no logo.
    */
   logoSrc?: string | null;
   /** Edge length of the code in CSS pixels. Default 312. */
@@ -42,26 +37,17 @@ const QR_LOGO_HEIGHT_RATIO = 81 / QR_SIZE;
 const QR_MARGIN_MODULES = 4;
 
 /**
- * The pairing QR code: encodes the connect URL and centres the wallet's
- * light-background mark. Reads `pairingUrl` and the selected wallet from
- * `useWallet()` unless `value` / `logoSrc` are passed.
- *
- * Sits on a white pad regardless of theme — scanners cope badly with
- * inverted codes. Renders nothing until a URL is available.
+ * The pairing QR code: encodes the connect URL and optionally centres a
+ * light-background mark. Presentational — pass `value` (and `logoSrc`) from
+ * the caller. Sits on a white pad regardless of theme — scanners cope badly
+ * with inverted codes. Renders nothing until a URL is available.
  */
 export const WalletPairingQR: FC<WalletPairingQRProps> = ({
   value,
-  logoSrc: logoSrcProp,
+  logoSrc,
   size = QR_SIZE,
   className = '',
 }) => {
-  const { pairingUrl, wallet } = useWallet();
-  const url = value !== undefined ? value : pairingUrl;
-  const logoSrc =
-    logoSrcProp !== undefined
-      ? logoSrcProp
-      : (wallet?.adapter.iconOnLight ?? wallet?.adapter.icon ?? null);
-
   const [logoRatio, setLogoRatio] = useState<number | null>(null);
 
   // Measure the mark rather than assuming it is square — a wrong ratio here
@@ -84,7 +70,7 @@ export const WalletPairingQR: FC<WalletPairingQRProps> = ({
     };
   }, [logoSrc]);
 
-  if (!url) return null;
+  if (!value) return null;
 
   const logoHeight = Math.round(size * QR_LOGO_HEIGHT_RATIO);
   const qrLogo = logoSrc
@@ -98,7 +84,7 @@ export const WalletPairingQR: FC<WalletPairingQRProps> = ({
   return (
     <div className={`wallet-adapter-modal-pairing-qr ${className}`.trim()}>
       <QRCodeSVG
-        value={url}
+        value={value}
         size={size}
         marginSize={QR_MARGIN_MODULES}
         // A centred logo blanks modules out, so the code has to carry

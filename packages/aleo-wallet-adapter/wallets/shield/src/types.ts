@@ -7,6 +7,7 @@ import {
 import {
   AleoDeployment,
   ConnectOptions,
+  ConnectUrlContext,
   EventEmitter,
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
@@ -120,7 +121,7 @@ export interface ShieldRemoteConfig {
    * connect with neither this callback nor a `connectUrl` listener is
    * refused; on mobile the deeplink still fires unless `fireDeeplink: false`.
    */
-  onConnectUrl?: (url: string, context: { resumed: boolean }) => void;
+  onConnectUrl?: (url: string, context: ConnectUrlContext) => void;
   /**
    * Set to `false` to disable the automatic mobile deeplink — e.g. when
    * your `onConnectUrl` handles navigation itself. Default `true`.
@@ -156,9 +157,9 @@ export interface ShieldWalletAdapterConfig {
    * Prefer an injected `window.shield` over remote pairing. Default `true`.
    *
    * Set to `false` to pair via the relay (and show a QR / deeplink) even
-   * when the browser extension is installed. Writable at runtime so a
-   * single adapter instance can prefer the extension everywhere except
-   * one screen.
+   * when the browser extension is installed. Constructor-time only — to
+   * force the relay for one connect without changing the rest of the dapp,
+   * pass `pairing: 'remote'` to `connect()` / `selectWallet()`.
    */
   preferExtension?: boolean;
 
