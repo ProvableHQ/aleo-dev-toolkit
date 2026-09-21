@@ -380,7 +380,10 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
           initialNetwork,
           decryptPermission,
           programs,
-          connectOptions,
+          withPairing(
+            connectOptions,
+            adapter.supportsRemotePairing ? pairingIntentRef.current : undefined,
+          ),
         );
         lastAuthorizedAccount.current = account.address ?? null;
       } catch (error: unknown) {
@@ -484,13 +487,14 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       if (walletName === null) {
         // Deselecting is a cancel, and has to reach the adapter to be one.
         // The adapter-swap effect only disconnects an adapter it believes is
-        // connected, and a pairing waiting on the user is not. Tear down iff
-        // this connect was actually going remote — capability
-        // (`supportsRemotePairing`) is not the same as this connect's decision.
+        // connected, and a pairing waiting on the user is not. Tear down the
+        // in-flight remote route (`isRemotePairingPending`), not current
+        // policy (`willPairRemotely`) — an extension injected mid-pairing
+        // would otherwise skip disconnect and leave the QR live.
         if (
           adapter &&
           !adapter.connected &&
-          (adapter.willPairRemotely || pairingIntentRef.current === 'remote')
+          (adapter.isRemotePairingPending || pairingIntentRef.current === 'remote')
         ) {
           adapter.disconnect().catch(() => undefined);
         }

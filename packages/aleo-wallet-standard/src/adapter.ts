@@ -47,8 +47,20 @@ export interface WalletAdapterProps<Name extends string = string> {
    * and `readyState`. Adapters that can prefer an injected extension over
    * remote pairing expose this so UI does not reconstruct that policy from
    * other flags. Undefined on adapters that never pair remotely.
+   *
+   * This is current policy, not the route of a connect already in flight —
+   * `readyState` can change while a QR is live. Use
+   * `isRemotePairingPending` for cancellation.
    */
   willPairRemotely?: boolean;
+
+  /**
+   * True while `connect()` is waiting on an out-of-band pairing that has
+   * already chosen the remote route. Unlike `willPairRemotely`, this does
+   * not flip if an extension is injected mid-flight — deselect/cancel must
+   * still tear down that relay session.
+   */
+  isRemotePairingPending?: boolean;
 
   /**
    * The wallet icon

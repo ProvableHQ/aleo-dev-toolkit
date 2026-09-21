@@ -143,6 +143,13 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   private _pendingWallet: ShieldWallet | undefined;
 
   /**
+   * Whether `_pendingWallet` is the remote facade. Snapshotted when the
+   * connect chooses its route, so an extension injected mid-pairing cannot
+   * make cancellation skip the live relay session.
+   */
+  private _pendingRemote = false;
+
+  /**
    * Bumped by every connect() and every disconnect(). A connect that resolves
    * against a stale generation was superseded or cancelled while it waited,
    * and must drop its session instead of binding it.
@@ -228,23 +235,28 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    * Constructor policy: will a connect with no `pairing` override go over
    * the relay? UI reads this before connect() to decide whether to show a
    * pairing surface. Per-connect `pairing: 'remote'` is a separate intent
-   * the caller already knows about.
+   * the caller already knows about. Not the in-flight route — see
+   * `isRemotePairingPending`.
    */
   get willPairRemotely(): boolean {
     return this.shouldUseRemote();
   }
 
   /**
-   * Resolve the wallet to connect through, based on preferExtension,
-   * readyState, and a per-connect pairing override. Returns a definite
-   * instance: the injected provider when it is preferred and present, or a
-   * fresh remote facade otherwise. The facade is deliberately NOT cached —
-   * pairing persistence lives in the transport's localStorage session,
-   * which a fresh instance resumes, and `import('./remote')` is
-   * module-cached.
+   * True while this adapter has a remote pairing in flight. Independent of
+   * current `readyState` / `willPairRemotely`.
    */
-  private async _resolveWallet(options?: ConnectOptions): Promise<ShieldWallet> {
-    if (!this.shouldUseRemote(options) && this._window?.shield) {
+  get isRemotePairingPending(): boolean {
+    return this._pendingRemote;
+  }
+
+  /**
+   * Resolve the wallet to connect through. `useRemote` is the route chosen
+   * for *this* connect — do not re-read `readyState` here, or an extension
+   * injected during the lazy remote import could swap the in-flight path.
+   */
+  private async _resolveWallet(useRemote: boolean): Promise<ShieldWallet> {
+    if (!useRemote && this._window?.shield) {
       return this._window.shield;
     }
     if (this._remoteConfig) {
@@ -318,8 +330,18 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       //
       // `pairing` is adapter routing, not a wallet RPC field — strip it
       // before forwarding so the injected provider never sees it.
-      wallet = await this._resolveWallet(options);
+      // Snapshot the route before the async resolve: readyState can become
+      // INSTALLED while `import('./remote')` is in flight. Mark the in-flight
+      // remote route immediately so cancel during the import still disconnects.
+      const useRemote = this.shouldUseRemote(options);
+      this._pendingRemote = useRemote;
+      wallet = await this._resolveWallet(useRemote);
+      if (generation !== this._connectGeneration) {
+        await wallet.disconnect().catch(() => undefined);
+        throw new WalletConnectionCancelledError('Shield connect was cancelled');
+      }
       this._pendingWallet = wallet;
+      this._pendingRemote = wallet !== this._window?.shield;
 
       const connectResult = await wallet.connect(
         network,
@@ -368,7 +390,10 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       if (err instanceof WalletConnectionError) throw err;
       throw new WalletConnectionError(err instanceof Error ? err.message : 'Connection failed');
     } finally {
-      if (this._pendingWallet === wallet) this._pendingWallet = undefined;
+      if (generation === this._connectGeneration) {
+        if (this._pendingWallet === wallet) this._pendingWallet = undefined;
+        this._pendingRemote = false;
+      }
     }
   }
 
@@ -381,6 +406,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this._connectGeneration += 1;
     const pending = this._pendingWallet;
     this._pendingWallet = undefined;
+    this._pendingRemote = false;
 
     try {
       this._cleanupListeners();

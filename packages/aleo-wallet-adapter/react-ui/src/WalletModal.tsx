@@ -22,12 +22,13 @@ const WALLET_INSTALL_REDIRECT_KEY = 'aleo-wallet-adapter-install-redirect-timest
 
 /**
  * Whether selecting this wallet should keep the modal open on the pairing
- * screen. Reads the adapter's own decision (`willPairRemotely`), or a
- * connect-time `pairing: 'remote'` intent — UI does not reconstruct that
- * from `preferExtension` + `readyState`.
+ * screen. Prefers the in-flight remote route (`isRemotePairingPending`) over
+ * current policy (`willPairRemotely`), which can flip if an extension is
+ * injected while a QR is live.
  */
 function usesRemotePairing(wallet: Wallet, pairing?: ConnectPairing): boolean {
   if (!wallet.adapter.supportsRemotePairing) return false;
+  if (wallet.adapter.isRemotePairingPending) return true;
   if (pairing === 'remote') return true;
   return Boolean(wallet.adapter.willPairRemotely);
 }
@@ -64,7 +65,10 @@ export const WalletModal: FC<WalletModalProps> = ({
   // out-of-band and has not connected yet IS a pairing in progress. Every
   // exit follows for free — a failed connect clears the selection, a
   // successful one sets `connected`, and cancelling deselects.
-  const pairingWallet = wallet && !connected && usesRemotePairing(wallet, pairing) ? wallet : null;
+  const pairingWallet =
+    wallet && !connected && (Boolean(pairingUrl) || usesRemotePairing(wallet, pairing))
+      ? wallet
+      : null;
 
   // Read by callbacks that must not re-subscribe on every pairing transition
   // — the window keydown handler in particular.
