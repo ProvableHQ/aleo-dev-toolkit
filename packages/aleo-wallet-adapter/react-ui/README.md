@@ -41,25 +41,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
 ### Pairing QR only
 
 `WalletPairingQR` is the QR code from the pairing screen, without the rest of
-the modal. It reads `pairingUrl` and the selected wallet's icon from
-`useWallet()`, so a custom pairing UI is:
+the modal. It is presentational: pass the pairing URL (and optionally a
+logo). A custom pairing UI is:
 
 ```tsx
 import { WalletPairingQR } from '@provablehq/aleo-wallet-adapter-react-ui';
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 export function Pairing() {
-  return <WalletPairingQR />;
+  const { pairingUrl, wallet } = useWallet();
+  if (!pairingUrl) return null;
+  return (
+    <WalletPairingQR
+      value={pairingUrl}
+      logoSrc={wallet?.adapter.iconOnLight ?? wallet?.adapter.icon}
+    />
+  );
 }
 ```
 
-Pass `value` and `logoSrc` to override the context (tests, a URL you already
-hold). The code renders nothing until a URL is available. Include the UI
-package stylesheet so the white pad around the code is applied.
+The code renders nothing until `value` is non-empty. Include the UI package
+stylesheet so the white pad around the code is applied.
 
 When the Shield extension is installed, the modal still prefers it
-(`preferExtension` defaults to `true`). Set `preferExtension: false` on the
-adapter — including at runtime on a shared instance — to keep this QR
-available for that connect.
+(`preferExtension` defaults to `true`). Pass `pairing: 'remote'` on
+`selectWallet` to keep this QR available for that connect, or construct the
+adapter with `preferExtension: false`.
 
 ## Related packages
 

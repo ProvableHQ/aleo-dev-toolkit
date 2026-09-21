@@ -8,11 +8,13 @@ import {
   WalletAdapter,
   AleoDeployment,
   ConnectOptions,
+  ConnectPairing,
+  ConnectUrlContext,
   RecordAccessGrant,
   RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
 import { Network, TransactionOptions } from '@provablehq/aleo-types';
-import { Wallet, WalletContext } from './context';
+import { Wallet, WalletContext, SelectWalletOptions } from './context';
 import { useLocalStorage } from './useLocalStorage';
 import {
   WalletError,
@@ -50,6 +52,14 @@ export interface WalletProviderProps {
    * call site. Default undefined → every derived request is refused.
    */
   algorithmsAllowed?: AlgorithmGrant[];
+}
+
+function withPairing(
+  base: ConnectOptions | undefined,
+  pairing: ConnectPairing | undefined,
+): ConnectOptions | undefined {
+  if (!pairing) return base;
+  return { ...base, pairing };
 }
 
 const initialState: {
@@ -99,12 +109,19 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   // connect resolves, fails, or the user picks a different wallet, a stale
   // QR code is worse than none.
   const [pairingUrl, setPairingUrl] = useState<string | null>(null);
+  const [pairingSameDevice, setPairingSameDevice] = useState(false);
+  const [pairingIntent, setPairingIntent] = useState<ConnectPairing | undefined>();
   const [reconnecting, setReconnecting] = useState(false);
   const isConnecting = useRef(false);
   const isDisconnecting = useRef(false);
   const isReconnecting = useRef(false);
   const isUnloading = useRef(false);
   const lastAuthorizedAccount = useRef<string | null>(null);
+  const adapterRef = useRef<WalletAdapter | null>(null);
+  const connectingAdapterRef = useRef<WalletAdapter | null>(null);
+  const pairingIntentRef = useRef<ConnectPairing | undefined>(undefined);
+  adapterRef.current = adapter;
+  pairingIntentRef.current = pairingIntent;
 
   // Wrap adapters to conform to the `Wallet` interface
   const [wallets, setWallets] = useState(() =>
@@ -152,11 +169,26 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       }));
     }
 
+    function handleConnectUrl(this: WalletAdapter, url: string, context: ConnectUrlContext): void {
+      // Attached to every remote-capable adapter from mount so a connect
+      // started in a layout effect cannot emit the URL before a listener
+      // exists. Ignore wallets we are not connecting through.
+      if (this !== adapterRef.current && this !== connectingAdapterRef.current) return;
+      setPairingUrl(url);
+      setPairingSameDevice(context.sameDevice);
+    }
+
     adapters.forEach(adapter => adapter.on('readyStateChange', handleReadyStateChange, adapter));
     adapters.forEach(adapter => adapter.on('networkChange', handleNetworkChange, adapter));
+    adapters.forEach(adapter => {
+      if (adapter.supportsRemotePairing) adapter.on('connectUrl', handleConnectUrl, adapter);
+    });
     return () => {
       adapters.forEach(adapter => adapter.off('readyStateChange', handleReadyStateChange, adapter));
       adapters.forEach(adapter => adapter.off('networkChange', handleNetworkChange, adapter));
+      adapters.forEach(adapter => {
+        if (adapter.supportsRemotePairing) adapter.off('connectUrl', handleConnectUrl, adapter);
+      });
     };
   }, [adapters]);
 
@@ -188,16 +220,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     return () => window.removeEventListener('beforeunload', listener);
   }, [isUnloading]);
 
-  // Handle the adapter's pairing-URL event (out-of-band wallet apps)
-  const handleConnectUrl = useCallback((url: string) => {
-    setPairingUrl(url);
+  const clearPairingUrl = useCallback(() => {
+    setPairingUrl(null);
+    setPairingSameDevice(false);
   }, []);
 
   // Handle the adapter's connect event
   const handleConnect = useCallback(() => {
     if (!adapter) return;
     // Pairing is done — the URL is no longer actionable.
-    setPairingUrl(null);
+    clearPairingUrl();
+    setPairingIntent(undefined);
     setState(state => ({
       ...state,
       connected: adapter.connected,
@@ -205,7 +238,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       network: adapter.network ?? null,
     }));
     lastAuthorizedAccount.current = adapter.account?.address ?? null;
-  }, [adapter]);
+  }, [adapter, clearPairingUrl]);
 
   // Handle the adapter's disconnect event
   const handleDisconnect = useCallback(() => {
@@ -213,11 +246,12 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     // cancelled, so the URL dies with it. Cleared here rather than only in
     // the adapter-change cleanup: that is a render away, and in the meantime
     // a still-set URL re-opens the modal the user has just dismissed.
-    setPairingUrl(null);
+    clearPairingUrl();
+    setPairingIntent(undefined);
     // Clear the selected wallet unless the window is unloading
     if (!isUnloading.current) setName(null);
     lastAuthorizedAccount.current = null;
-  }, [isUnloading, setName]);
+  }, [isUnloading, setName, clearPairingUrl]);
 
   // Disconnect the adapter from the wallet
   const disconnect = useCallback(async () => {
@@ -244,7 +278,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     (error: WalletError) => {
       // A failed connect leaves any pending pairing URL dead — the remote
       // wallet has already torn its relay session down.
-      setPairingUrl(null);
+      clearPairingUrl();
+      setPairingIntent(undefined);
       // A cancel is the user getting what they asked for, not a failure —
       // reporting it puts an error in front of someone who just pressed Back.
       if (error instanceof WalletConnectionCancelledError) return error;
@@ -252,7 +287,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       if (!isUnloading.current) (onError || console.error)(error);
       return error;
     },
-    [isUnloading, onError],
+    [isUnloading, onError, clearPairingUrl],
   );
 
   // Handle the adapter's account change event
@@ -305,25 +340,16 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       adapter.on('disconnect', handleDisconnect);
       adapter.on('error', handleError);
       adapter.on('accountChange', handleAccountChange);
-      adapter.on('connectUrl', handleConnectUrl);
       return () => {
         adapter.off('connect', handleConnect);
         adapter.off('disconnect', handleDisconnect);
         adapter.off('error', handleError);
         adapter.off('accountChange', handleAccountChange);
-        adapter.off('connectUrl', handleConnectUrl);
         // Switching wallets abandons any pairing the old one had pending.
-        setPairingUrl(null);
+        clearPairingUrl();
       };
     }
-  }, [
-    adapter,
-    handleConnect,
-    handleDisconnect,
-    handleError,
-    handleAccountChange,
-    handleConnectUrl,
-  ]);
+  }, [adapter, handleConnect, handleDisconnect, handleError, handleAccountChange, clearPairingUrl]);
 
   // When the adapter changes, disconnect the old one
   useEffect(() => {
@@ -354,7 +380,10 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
           initialNetwork,
           decryptPermission,
           programs,
-          connectOptions,
+          withPairing(
+            connectOptions,
+            adapter.supportsRemotePairing ? pairingIntentRef.current : undefined,
+          ),
         );
         lastAuthorizedAccount.current = account.address ?? null;
       } catch (error: unknown) {
@@ -415,12 +444,16 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
 
     isConnecting.current = true;
     setConnecting(true);
+    connectingAdapterRef.current = adapter;
     try {
       const account = await adapter.connect(
         initialNetwork,
         decryptPermission,
         programs,
-        connectOptions,
+        withPairing(
+          connectOptions,
+          adapter.supportsRemotePairing ? pairingIntentRef.current : undefined,
+        ),
       );
       lastAuthorizedAccount.current = account.address ?? null;
     } catch (error: unknown) {
@@ -430,6 +463,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
       adapter.emit('error', error as WalletError);
       throw error;
     } finally {
+      connectingAdapterRef.current = null;
       setConnecting(false);
       isConnecting.current = false;
     }
@@ -448,21 +482,27 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   ]);
 
   // Select a wallet, or deselect with `null`.
-  //
-  // Deselecting is a cancel, and has to reach the adapter to be one. The
-  // adapter-swap effect above only disconnects an adapter it believes is
-  // connected, and a pairing waiting on the user is not — so on its own,
-  // `selectWallet(null)` dropped the selection and left the relay session
-  // live, and whoever answered the abandoned URL was still adopted.
-  //
-  // Narrowed to adapters that pair out-of-band: for every other adapter
-  // "selected but not connected" is a connect still in flight, and calling
-  // disconnect() into that is a change nothing here asked for.
   const selectWallet = useCallback(
-    (walletName: WalletName | null) => {
-      if (walletName === null && adapter?.supportsRemotePairing && !adapter.connected) {
-        adapter.disconnect().catch(() => undefined);
+    (walletName: WalletName | null, options?: SelectWalletOptions) => {
+      if (walletName === null) {
+        // Deselecting is a cancel, and has to reach the adapter to be one.
+        // The adapter-swap effect only disconnects an adapter it believes is
+        // connected, and a pairing waiting on the user is not. Tear down the
+        // in-flight remote route (`isRemotePairingPending`), not current
+        // policy (`willPairRemotely`) — an extension injected mid-pairing
+        // would otherwise skip disconnect and leave the QR live.
+        if (
+          adapter &&
+          !adapter.connected &&
+          (adapter.isRemotePairingPending || pairingIntentRef.current === 'remote')
+        ) {
+          adapter.disconnect().catch(() => undefined);
+        }
+        setPairingIntent(undefined);
+        setName(null);
+        return;
       }
+      setPairingIntent(options?.pairing);
       setName(walletName);
     },
     [adapter, setName],
@@ -621,6 +661,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         disconnecting,
         network,
         pairingUrl,
+        pairingSameDevice,
+        pairing: pairingIntent,
         selectWallet,
         connect,
         disconnect,

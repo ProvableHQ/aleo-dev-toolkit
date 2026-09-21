@@ -106,12 +106,14 @@ the QR / deeplink path even when the extension is present:
 new ShieldWalletAdapter({ preferExtension: false });
 ```
 
-Or flip it at runtime on a shared adapter (one screen wants the QR, the rest
-of the dapp still prefers the extension):
+To force the relay for one connect without changing the rest of the dapp:
 
 ```tsx
-adapter.preferExtension = false;
+selectWallet('Shield Wallet', { pairing: 'remote' });
 ```
+
+`willPairRemotely` on the adapter is the constructor policy (preferExtension
++ readyState). UI reads that instead of reconstructing it from other flags.
 
 The production defaults are also exported as `DEFAULT_SHIELD_RELAY_URL` and
 `DEFAULT_SHIELD_DEEPLINK_BASE` if you need to read them.
@@ -121,16 +123,18 @@ Behavior:
 - Remote pairing is **on by default**. Pass `remote: false` for injected-only
   construction.
 - An injected `window.shield` (extension, in-app browser) wins by default
-  (`preferExtension: true`, the default). Pass `preferExtension: false` — or
-  set `adapter.preferExtension = false` at runtime — to pair via the relay
-  and show a QR / deeplink even when the extension is installed
-  (`readyState` stays `Installed`; `connect()` still uses the remote path).
+  (`preferExtension: true`, the default). Pass `preferExtension: false` to
+  pair via the relay for every connect, or pass `pairing: 'remote'` on a
+  single `selectWallet` / `connect` to show a QR / deeplink even when the
+  extension is installed (`readyState` stays `Installed`; that connect uses
+  the remote path).
 - `connect()` fires the deeplink automatically on mobile, and emits a
-  `connectUrl` event with the pairing URL. `@provablehq/aleo-wallet-adapter-react-ui`
-  renders that as a QR / deeplink screen in the wallet modal, so dapps using
-  it need no pairing code at all; with `@provablehq/aleo-wallet-adapter-react`
-  alone, read `pairingUrl` from `useWallet()`, or drop in `WalletPairingQR`
-  from the UI package, which reads that URL and the wallet icon itself.
+  `connectUrl` event with the pairing URL and `{ resumed, sameDevice }`.
+  `@provablehq/aleo-wallet-adapter-react-ui` renders that as a QR / deeplink
+  screen in the wallet modal, so dapps using it need no pairing code at all;
+  with `@provablehq/aleo-wallet-adapter-react` alone, read `pairingUrl` and
+  `pairingSameDevice` from `useWallet()`, or drop in `WalletPairingQR` from
+  the UI package with those values.
 - `remote.onConnectUrl` remains supported and **additive**: when set it is
   always called, the event still fires, and the mobile deeplink still goes —
   pass `fireDeeplink: false` only if your callback handles navigation itself.

@@ -91,7 +91,7 @@ export const App: FC = () => {
 };
 ```
 
-`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. An installed extension is preferred unless you set `preferExtension: false`. See the [Shield adapter README](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/packages/aleo-wallet-adapter/wallets/shield/README.md).
+`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. An installed extension is preferred unless you set `preferExtension: false`, or pass `pairing: 'remote'` on a single `selectWallet` / `connect`. See the [Shield adapter README](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/packages/aleo-wallet-adapter/wallets/shield/README.md).
 
 ### Provider Props
 

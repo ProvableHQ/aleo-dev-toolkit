@@ -268,6 +268,15 @@ export interface AlgorithmGrant {
  * Optional, additive connect-time options. All fields are opt-in; omitting them
  * preserves today's behavior.
  */
+/**
+ * Connect-time override for adapters that can pair out-of-band. `'remote'`
+ * forces the relay / deeplink path even when an injected extension is
+ * present. The adapter's constructor policy still applies when this is
+ * omitted. Not a wallet grant — adapters that do not pair remotely ignore
+ * it, and `hasUnsupportedConnectOptions` does not treat it as unsupported.
+ */
+export type ConnectPairing = 'remote';
+
 export interface ConnectOptions {
   /** Opt-in record/field narrowing on top of `programs`. */
   recordAccess?: RecordAccessGrant;
@@ -278,6 +287,10 @@ export interface ConnectOptions {
    * undefined → every derived request is refused. There is no broad default.
    */
   algorithmsAllowed?: AlgorithmGrant[];
+  /**
+   * Force out-of-band pairing for this connect. See `ConnectPairing`.
+   */
+  pairing?: ConnectPairing;
 }
 
 /**
