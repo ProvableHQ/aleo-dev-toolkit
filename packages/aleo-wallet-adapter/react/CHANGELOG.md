@@ -1,5 +1,17 @@
 # @provablehq/aleo-wallet-adapter-react
 
+## 1.2.0
+
+### Minor Changes
+
+- 99527f0: Remote pairing is an adapter-owned decision (`willPairRemotely`) rather than UI reconstructing `preferExtension` + `readyState`. `preferExtension` stays constructor-time on Shield. Force the relay for one connect with `selectWallet(name, { pairing: 'remote' })`. Cancel uses the in-flight remote route (`isRemotePairingPending`), not current readiness. `connectUrl` carries `sameDevice`; `WalletPairingQR` is presentational (`value` required).
+
+### Patch Changes
+
+- Updated dependencies [99527f0]
+  - @provablehq/aleo-wallet-standard@1.3.0
+  - @provablehq/aleo-wallet-adapter-core@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes

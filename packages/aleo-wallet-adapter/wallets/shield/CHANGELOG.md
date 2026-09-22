@@ -1,5 +1,19 @@
 # @provablehq/aleo-wallet-adapter-shield
 
+## 1.2.0
+
+### Minor Changes
+
+- 99527f0: Remote pairing is an adapter-owned decision (`willPairRemotely`) rather than UI reconstructing `preferExtension` + `readyState`. `preferExtension` stays constructor-time on Shield. Force the relay for one connect with `selectWallet(name, { pairing: 'remote' })`. Cancel uses the in-flight remote route (`isRemotePairingPending`), not current readiness. `connectUrl` carries `sameDevice`; `WalletPairingQR` is presentational (`value` required).
+- 362c16a: Enable Shield remote pairing by default, with production relay URL, deeplink, and bundled transport. Dapps construct `new ShieldWalletAdapter()` with no remote config; pass `remote: false` to stay injected-only, or a config object to override defaults for testing.
+
+### Patch Changes
+
+- 80ff3cf: Stamp `dapp.sameDevice` on relay `connect()` from the page user agent so the wallet can tell same-device deeplink pairing from a desktop QR session. Dapps do not configure the flag.
+- Updated dependencies [99527f0]
+  - @provablehq/aleo-wallet-standard@1.3.0
+  - @provablehq/aleo-wallet-adapter-core@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes
