@@ -35,7 +35,7 @@ import '@provablehq/aleo-wallet-adapter-react-ui/dist/styles.css';
 // dapp that configures nothing is labelled by whatever the wallet can observe
 // of it — which over the relay is the origin alone.
 const APP_NAME = 'Aleo Dev Toolkit Example';
-const APP_ICON_URL = 'https://aleo-dev-toolkit-react-app.vercel.app/favicon.ico';
+const APP_ICON_URL = 'https://aleo-dev-toolkit-react-app.vercel.app/images/favicon.ico';
 
 const shieldRemote =
   SHIELD_RELAY_URL === ''
@@ -51,9 +51,6 @@ const shieldWalletAdapter = new ShieldWalletAdapter({
   appName: APP_NAME,
   appIconUrl: APP_ICON_URL,
   remote: shieldRemote,
-  // App-wide: prefer the injected extension when it is present. A screen
-  // that still wants a QR passes `pairing: 'remote'` on selectWallet.
-  preferExtension: true,
 });
 
 const wallets = [
