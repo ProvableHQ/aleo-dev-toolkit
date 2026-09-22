@@ -1,5 +1,14 @@
 # @provablehq/aleo-wallet-adapter-fox
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [99527f0]
+  - @provablehq/aleo-wallet-standard@1.3.0
+  - @provablehq/aleo-wallet-adapter-core@1.1.1
+  - @provablehq/aleo-wallet-adapter-leo@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes
