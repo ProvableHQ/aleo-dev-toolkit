@@ -1,5 +1,11 @@
 # @provablehq/aleo-wallet-adapter-shield
 
+## 1.2.1
+
+### Patch Changes
+
+- 6723e44: Remote (relay) sessions: a page reload restores the connection instead of waiting on the Shield app, and requests that need approval open the app on mobile browsers.
+
 ## 1.2.0
 
 ### Minor Changes
