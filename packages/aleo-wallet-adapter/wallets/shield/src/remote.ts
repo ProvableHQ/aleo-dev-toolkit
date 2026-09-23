@@ -20,6 +20,17 @@ import {
   ShieldWalletEvents,
 } from './types';
 import { isMobileUserAgent } from './isMobileUserAgent';
+import type { ResolvedShieldRemoteConfig } from './remoteDefaults';
+import {
+  channelIdOf,
+  clearRestorableConnection,
+  grantKey,
+  isExpired,
+  loadRestorableConnection,
+  needsApproval,
+  saveRestorableConnection,
+  wakeUrlFor,
+} from './remoteSession';
 
 /**
  * This module is imported lazily (dynamic `import('./remote')` in the
@@ -46,6 +57,12 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
 
   private transport?: ShieldRemoteTransportLike;
 
+  /** The paired relay channel, read off the connect URL. Addresses the wake link. */
+  private channelId?: string;
+
+  /** The permission this session was granted — decides which requests need the app in front. */
+  private decryptPermission?: WalletDecryptPermission;
+
   /**
    * Rejects the connect that is currently waiting on the user, if any.
    *
@@ -69,6 +86,14 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // A failed pairing/connect must not leave a live relay session behind —
     // this wallet cleans up after itself so callers never have to.
     try {
+      // The wallet has already forgotten an expired session, so resuming it
+      // would pair with nobody. Drop it and pair afresh.
+      const previous = loadRestorableConnection();
+      if (previous && isExpired(previous)) {
+        await this.loadTransport();
+        this.teardown();
+      }
+
       const transport = await this.loadTransport();
       // Stamp sameDevice here, not in the adapter's display-metadata merge:
       // it is a relay-session fact (where this page is), and the injected
@@ -95,6 +120,23 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
         this.config.channelTimeoutMs ?? DEFAULT_CHANNEL_TIMEOUT_MS,
         'could not reach the Shield relay — check remote.relayUrl and your connection',
       );
+      this.channelId = channelIdOf(url);
+      this.decryptPermission = decryptPermission;
+      const grant = grantKey(network, decryptPermission, programs ?? []);
+
+      // A reload of a page that already connected. The wallet answered this
+      // exact connect on this channel, and asking again would wait on an app
+      // that is in the background — so answer it from what it said last time.
+      const restorable = resumed && transport.connected ? loadRestorableConnection() : undefined;
+      if (
+        restorable &&
+        restorable.channelId === this.channelId &&
+        restorable.grant === grant &&
+        !isExpired(restorable)
+      ) {
+        this.publicKey = restorable.address;
+        return { address: this.publicKey };
+      }
 
       if (!transport.connected) {
         // Not paired yet — surface the connect URL. The callback is additive
@@ -135,6 +177,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
         cancelled,
       ])) as { address?: string } | undefined;
       this.publicKey = result?.address ?? '';
+      this.rememberConnection(resumed, grant);
       return { address: this.publicKey };
     } catch (error) {
       this.teardown();
@@ -208,7 +251,52 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     if (!this.transport) {
       throw new WalletConnectionError('Shield remote transport not connected — connect() first');
     }
-    return this.transport.request<T>(method, params);
+    const response = this.transport.request<T>(method, params);
+    if (needsApproval(method, params, this.decryptPermission)) this.wakeWallet();
+    return response;
+  }
+
+  /**
+   * Bring the Shield app to the front so it can show the approval this request
+   * is waiting on. Without it the request sits on the channel while the app is
+   * in the background, and nothing happens on screen.
+   *
+   * Same-device only: on the QR path the wallet is on another phone. Deferred
+   * one task so the request is on the wire first — iOS suspends this page once
+   * the app opens, and a request still queued here would not leave until the
+   * user came back. Still inside the tap's user activation, which the browser
+   * requires before it opens another app.
+   */
+  private wakeWallet(): void {
+    if (!isMobileUserAgent() || this.config.fireDeeplink === false || !this.channelId) return;
+    const url = wakeUrlFor(this.config.deeplinkBase, this.channelId);
+    if (!url) return;
+    setTimeout(() => {
+      window.location.href = url;
+    }, 0);
+  }
+
+  /**
+   * Record this connect so a reload can restore it. A fresh pairing starts the
+   * wallet's TTL now; a resumed one keeps the pairing time already recorded,
+   * and one with no record is not saved, since its age is unknown and a guess
+   * could outlive the wallet's copy.
+   */
+  private rememberConnection(resumed: boolean, grant: string): void {
+    if (!this.channelId || this.publicKey === undefined) return;
+    const previous = loadRestorableConnection();
+    const pairedAt = !resumed
+      ? Date.now()
+      : previous?.channelId === this.channelId
+        ? previous.pairedAt
+        : undefined;
+    if (pairedAt === undefined) return;
+    saveRestorableConnection({
+      channelId: this.channelId,
+      address: this.publicKey,
+      grant,
+      pairedAt,
+    });
   }
 
   private async loadTransport(): Promise<ShieldRemoteTransportLike> {
@@ -228,8 +316,16 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // the relay channel) — the Shield app drops its socket whenever it
     // backgrounds and the session stays valid, so only the wallet's explicit
     // `disconnect` event ends it. See ShieldRemoteTransportEvent.
-    transport.on('networkChanged', data => this.emit('networkChanged', data as Network));
-    transport.on('accountChanged', () => this.emit('accountChanged'));
+    // Either change makes the recorded connect answer stale, so the next
+    // connect has to ask the wallet again.
+    transport.on('networkChanged', data => {
+      clearRestorableConnection();
+      this.emit('networkChanged', data as Network);
+    });
+    transport.on('accountChanged', () => {
+      clearRestorableConnection();
+      this.emit('accountChanged');
+    });
     transport.on('disconnect', () => {
       // The wallet ended the session; the transport already knows. Drop the
       // dead instance (its keys are forgotten) before telling listeners, so
@@ -256,6 +352,9 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     this.transport?.disconnect();
     this.transport = undefined;
     this.publicKey = undefined;
+    this.channelId = undefined;
+    this.decryptPermission = undefined;
+    clearRestorableConnection();
   }
 
   private async waitForPairing(transport: ShieldRemoteTransportLike): Promise<void> {

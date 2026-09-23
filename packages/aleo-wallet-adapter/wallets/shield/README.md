@@ -144,8 +144,16 @@ Behavior:
   release builds). A release build also refuses a plaintext relay and an
   `http://` dapp origin, so LAN testing needs a dev/preview app build with
   `EXPO_PUBLIC_RELAY_ALLOWED_HOSTS` set.
-- Sessions persist in `localStorage`; a page reload resumes the pairing
-  without another deeplink round-trip.
+- Sessions persist in `localStorage`; a page reload restores the connection
+  without asking the wallet again, so `autoConnect` does not wait on an app
+  that is in the background. The Shield app drops a relay session 12 hours
+  after pairing, so after that a connect pairs afresh.
+- On a mobile browser, a request the wallet has to approve (`signMessage`,
+  `executeTransaction`, `executeDeployment`, `switchNetwork`, and `decrypt` /
+  plaintext `requestRecords` under `UponRequest`) opens the Shield app with a
+  `shield://wake?channelId=…` link. Call these from a user gesture: browsers
+  refuse to open another app otherwise. Reads the wallet answers silently stay
+  on the channel and are answered the next time the app is open.
 - On a relay `connect()`, the adapter sets `dapp.sameDevice` from the page's
   user agent (`true` on a mobile browser, `false` on desktop). Dapps do not
   configure this. The wallet can use it to skip "return to your browser"
