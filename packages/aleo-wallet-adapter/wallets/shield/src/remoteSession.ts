@@ -1,5 +1,6 @@
 import { Network } from '@provablehq/aleo-types';
 import { WalletDecryptPermission } from '@provablehq/aleo-wallet-standard';
+import type { ShieldConnectOptions } from './types';
 
 /**
  * What a completed relay `connect` resolved to, kept so a page reload can
@@ -30,12 +31,31 @@ const STORAGE_KEY = 'shield:remote-connection';
  */
 export const REMOTE_SESSION_TTL_MS = 12 * 60 * 60 * 1000 - 10 * 60 * 1000;
 
+/**
+ * Everything the wallet authorizes on a connect, serialized deterministically.
+ * `dapp` is left out: it is display metadata the wallet never enforces, and
+ * `sameDevice` in it is stamped per page. Any other difference — a narrower
+ * `readAddress`, a broader `recordAccess` — has to reach the wallet.
+ */
 export function grantKey(
   network: Network,
   decryptPermission: WalletDecryptPermission,
   programs: string[],
+  options?: ShieldConnectOptions,
 ): string {
-  return JSON.stringify([network, decryptPermission, [...programs].sort()]);
+  const grantOptions = { ...options };
+  delete grantOptions.dapp;
+  return stableStringify([network, decryptPermission, [...programs].sort(), grantOptions]);
+}
+
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, entry: unknown) =>
+    entry && typeof entry === 'object' && !Array.isArray(entry)
+      ? Object.fromEntries(
+          Object.entries(entry as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : entry,
+  );
 }
 
 export function loadRestorableConnection(): RestorableConnection | undefined {

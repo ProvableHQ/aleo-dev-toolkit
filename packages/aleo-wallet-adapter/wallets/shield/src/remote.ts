@@ -122,7 +122,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
       );
       this.channelId = channelIdOf(url);
       this.decryptPermission = decryptPermission;
-      const grant = grantKey(network, decryptPermission, programs ?? []);
+      const grant = grantKey(network, decryptPermission, programs ?? [], options);
 
       // A reload of a page that already connected. The wallet answered this
       // exact connect on this channel, and asking again would wait on an app
