@@ -45,6 +45,9 @@ const DEFAULT_PAIRING_TIMEOUT_MS = 5 * 60 * 1000;
  */
 const DEFAULT_CHANNEL_TIMEOUT_MS = 20 * 1000;
 
+/** How long disconnect() gives its notice to reach the relay before closing the socket. */
+const DISCONNECT_NOTICE_GRACE_MS = 1500;
+
 /**
  * Remote implementation of the `ShieldWallet` surface over the Shield relay
  * (deeplink + end-to-end-encrypted Centrifugo channel — see
@@ -196,8 +199,18 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // sit for the full request timeout (5 minutes by default) before
     // anything was torn down — so the abandoned session would stay live
     // exactly as long as it takes for someone else to scan the URL.
+    //
+    // Not waited on for its answer either. The Shield app is usually in the
+    // background when a page disconnects, so the reply would not come until
+    // the user next opened it, and the page sat "connected" until the request
+    // timed out. The relay keeps the notice in channel history, so the
+    // wallet still ends the session when it comes back; the short wait only
+    // lets the publish leave before the socket closes.
     if (this.transport.connected) {
-      await this.transport.request('disconnect', []).catch(() => undefined);
+      await Promise.race([
+        this.transport.request('disconnect', []).catch(() => undefined),
+        new Promise(resolve => setTimeout(resolve, DISCONNECT_NOTICE_GRACE_MS)),
+      ]);
     }
     this.teardown();
   }
