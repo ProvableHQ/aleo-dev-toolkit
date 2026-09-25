@@ -1,5 +1,16 @@
 # @provablehq/aleo-wallet-adapter-react-ui
 
+## 1.3.0
+
+### Minor Changes
+
+- 6eb4348: Accept React 19 as a peer dependency alongside React 18.
+
+### Patch Changes
+
+- Updated dependencies [6eb4348]
+  - @provablehq/aleo-wallet-adapter-react@1.3.0
+
 ## 1.2.0
 
 ### Minor Changes
