@@ -115,6 +115,7 @@ export type InputRequest =
 export const KNOWN_ALGORITHMS = [
   'program-scoped-blinding-factor',
   'program-scoped-blinded-address',
+  'program-freezelist-exclusion-proof',
 ] as const;
 
 /**
@@ -143,11 +144,29 @@ export interface AlgorithmArg {
 /** A per-arg grant constraint: a fixed allowlist of acceptable values, or "any". */
 export type ArgConstraint = string[] | 'any';
 
+/**
+ * The Aleo type of an algorithm's output and of the slots it may fill: a
+ * literal type, or `'array'` / `'struct'` for composite outputs whose exact
+ * Leo type is documented per algorithm.
+ */
+export type AlgorithmSlotType = LiteralType | 'array' | 'struct';
+
 const PROGRAM_SCOPED_ARGS = {
   mode: { type: 'string' as ArgType, possibleValues: ['issue', 'resolve'] as const },
   membershipProgram: { type: 'string' as ArgType },
   membershipMapping: { type: 'string' as ArgType },
   targetAddress: { type: 'address' as ArgType, optional: true },
+} as const;
+
+/**
+ * `freezelistProgram` is the freezelist program whose tree the proof is built
+ * against — the one whose `freeze_list_root` mapping the target contract
+ * asserts, not the token or AMM program. `address` is the subject to prove
+ * absent (recipient, withdrawal, …); omitted, the slot proves the signer.
+ */
+const FREEZELIST_EXCLUSION_ARGS = {
+  freezelistProgram: { type: 'string' as ArgType },
+  address: { type: 'address' as ArgType, optional: true },
 } as const;
 
 /**
@@ -167,12 +186,18 @@ export const ALGORITHM_SCHEMAS = {
     outputType: 'address' as LiteralType,
     validSlotTypes: ['address', 'group', 'scalar', 'field'] as LiteralType[],
   },
+  /** Output is a `[MerkleProof; 2]` Leo array: a Merkle non-inclusion witness for one address. */
+  'program-freezelist-exclusion-proof': {
+    args: FREEZELIST_EXCLUSION_ARGS,
+    outputType: 'array' as AlgorithmSlotType,
+    validSlotTypes: ['array'] as AlgorithmSlotType[],
+  },
 } as const satisfies Record<
   KnownAlgorithm,
   {
     args: Record<string, { type: ArgType; possibleValues?: readonly string[]; optional?: boolean }>;
-    outputType: LiteralType;
-    validSlotTypes: LiteralType[];
+    outputType: AlgorithmSlotType;
+    validSlotTypes: AlgorithmSlotType[];
   }
 >;
 
