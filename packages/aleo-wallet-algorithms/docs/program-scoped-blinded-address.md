@@ -20,6 +20,10 @@ The result is an Aleo `address` literal. Invalid address or factor literals thro
 
 Default imports use testnet. For mainnet, import from `@provablehq/aleo-wallet-algorithms/mainnet/program-scoped-blinded-address`.
 
+## Use with a derived factor
+
+Use the factor returned by `deriveBlindingFactor` for the same approved scope program and active account. Insert the address into its approved transaction input position inside the wallet. The [paired-call example](program-scoped-blinding-factor.md#fill-related-transaction-inputs) shows both calculations and the required permission checks.
+
 ## Exact calculation
 
 The implementation uses `@provablehq/sdk` for Aleo types and Poseidon8 hashing. Let `P` and `S` be the x-coordinates of the scope program and signer addresses, and `r` the private blinding factor.

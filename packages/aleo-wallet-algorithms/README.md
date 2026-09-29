@@ -35,46 +35,12 @@ pnpm add @provablehq/aleo-wallet-algorithms
 | [Argument validation](src/schemas.ts)                  | Checks for supported argument types and values.                      | Before computing a requested input. The wallet must also check permissions.          |
 | [Testing utilities](src/testing.ts)                    | Known input/output pairs and checks for storage implementations.     | Verifying algorithm results or connecting the helpers to the wallet's database.      |
 
-The [browser example and integration guide](../../examples/wallet-algorithms) demonstrate how these pieces fit into a wallet. Lifecycle and storage helpers are optional; wallets can use the algorithms with their existing transaction handling.
+Lifecycle and storage helpers are optional; wallets can use the algorithms with their existing transaction handling.
 
-## Fill a derived transaction input
+## Integration example
 
-1. Validate the dapp's request against its approved algorithm grant, including the program, function, input position, and argument constraints.
-2. Supply the account values required by the selected algorithm from inside the wallet. The included blinding algorithms use the approved program's address and a wallet-selected counter.
-3. Insert the returned literals into the wallet's transaction inputs, then continue through approval, proving, and submission.
+The [browser example](../../examples/wallet-algorithms) shows the algorithms called directly, then combines argument validation, lifecycle helpers, and IndexedDB to handle a transaction from preparation through cancellation or completion. Reloading demonstrates saved state; recovery demonstrates recreating inputs without a saved local index.
 
-**Keep private key material and resolved private inputs inside the wallet.** The [integration guide](../../examples/wallet-algorithms/INTEGRATION.md) explains how these calls fit into the provider and Wallet Adapter.
+The example uses the testing utilities for known inputs and outputs, an empty in-memory store for recovery, and checks of database behavior. Calculations and storage are real; account data is public test data and network outcomes are simulated.
 
-```ts
-import { deriveBlindingFactor } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinding-factor';
-import { deriveBlindedAddress } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinded-address';
-
-const blindingFactor = deriveBlindingFactor({ programAddress, viewKeyScalar, counter });
-const blindedAddress = deriveBlindedAddress({ programAddress, signerAddress, blindingFactor });
-```
-
-Each call computes and returns a value without reading storage, contacting a network, requesting a signature, or moving funds. Use the program address approved by the connection grant and the active account's view-key scalar and signer address. The scope is the program used in both hashing and counter storage. `counter` must be an integer from 0 through 4,294,967,295 (`u32`). Both outputs are Aleo literal strings that can fill transaction inputs.
-
-Default imports use testnet. For mainnet, insert `/mainnet` before the algorithm name. The root and `/program-scoped-blinding` export both functions. All entries support ESM and CommonJS. Importing one algorithm allows a bundler to omit the other algorithm, session helpers, and storage. The selected algorithm still requires the SDK's WASM runtime.
-
-## Sample lifecycle helpers
-
-The package includes optional helpers for the blinding algorithms. `createBlindingSession` keeps both inputs on one counter and reserves it while a transaction is pending. `findCounterForAddress` recovers the counter for an existing swap so the wallet can prepare a claim.
-
-These helpers provide a starting point for wallet integration. Wallets can use them or keep their own counter management and call the algorithms directly. The wallet controls permissions, approval, proving, submission, and transaction monitoring. See the [lifecycle reference](docs/lifecycle.md) for calls, recovery limits, and cancellation and settlement behavior.
-
-## Storage and a runnable example
-
-The included IndexedDB adapter preserves reservations across restarts. Wallets with an existing database can implement `ReservationStore` using their own database operations. Only sessions require a storage adapter; algorithm calls and standalone counter recovery do not.
-
-The [browser example](../../examples/wallet-algorithms) demonstrates direct algorithm calls and the sample lifecycle with IndexedDB. It uses public test data and simulated transaction outcomes. See the [storage reference](docs/lifecycle.md#storage-adapters) for the adapter contract and checks for a custom implementation.
-
-## Integration and verification
-
-See the [browser example](../../examples/wallet-algorithms), its [wallet integration guide](../../examples/wallet-algorithms/INTEGRATION.md), and the [adapter overview](../../docs/wallet-hosted-algorithms-integration.md). `/schemas` exports argument validation and shared schemas; validation does not authorize a request.
-
-```sh
-pnpm --filter @provablehq/aleo-wallet-algorithms build
-pnpm --filter @provablehq/aleo-wallet-algorithms test
-pnpm --filter @provablehq/aleo-wallet-algorithms test:bundle
-```
+Follow the [example README](../../examples/wallet-algorithms/README.md) to run it and the [integration guide](../../examples/wallet-algorithms/INTEGRATION.md) to connect these pieces to an existing wallet.

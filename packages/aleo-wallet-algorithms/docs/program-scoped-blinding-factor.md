@@ -20,6 +20,22 @@ The result is an Aleo `field` literal. Invalid literals or a counter outside the
 
 Default imports use testnet. For mainnet, import from `@provablehq/aleo-wallet-algorithms/mainnet/program-scoped-blinding-factor`.
 
+## Fill related transaction inputs
+
+Validate the dapp's request against its approved algorithm grant before calling either algorithm. Check the program, function, input position, and argument constraints. Use the approved program's address and the active account's view-key scalar and signer address.
+
+```ts
+import { deriveBlindingFactor } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinding-factor';
+import { deriveBlindedAddress } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinded-address';
+
+const blindingFactor = deriveBlindingFactor({ programAddress, viewKeyScalar, counter });
+const blindedAddress = deriveBlindedAddress({ programAddress, signerAddress, blindingFactor });
+```
+
+Insert the returned literals into their approved transaction input positions, then continue through the wallet's approval, proving, and submission flow. **Keep private key material and resolved private inputs inside the wallet.** See the [integration guide](../../../examples/wallet-algorithms/INTEGRATION.md) for provider and adapter handling.
+
+The root and `/program-scoped-blinding` entries export both functions. All entries support ESM and CommonJS. Importing an algorithm separately lets a bundler omit the other algorithm, lifecycle helpers, and storage; the selected algorithm still requires the SDK's WASM runtime.
+
 ## Exact calculation
 
 The implementation uses `@provablehq/sdk` for Aleo types and Poseidon8 hashing. Let `P` be the x-coordinate of the scope program's address, `V` the view-key scalar converted to a field, and `C` the counter converted from `u32` to a field.
