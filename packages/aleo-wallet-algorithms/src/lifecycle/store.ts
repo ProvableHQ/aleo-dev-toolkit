@@ -4,7 +4,9 @@ export interface ReservationScope {
   network: 'mainnet' | 'testnet';
   program: string;
 }
+
 export type ReservationStatus = 'pending' | 'confirmed' | 'reverted';
+
 export interface Reservation {
   scope: ReservationScope;
   counter: number;
@@ -12,11 +14,13 @@ export interface Reservation {
   status: ReservationStatus;
   txId: string | null;
 }
+
 export interface ReservationCandidate {
   scope: ReservationScope;
   counter: number;
   blindedAddress: string;
 }
+
 /** Wallet-supplied durable storage. All writes resolve only after committing. */
 export interface ReservationStore {
   /** Atomically reserve absent/reverted entries; pending/confirmed entries return false. */
@@ -30,6 +34,7 @@ export interface ReservationStore {
   /** Update only pending entries. Unknown outcomes must not call this method. */
   settle(scope: ReservationScope, txId: string, status: 'confirmed' | 'reverted'): Promise<void>;
 }
+
 export const scopeKey = (scope: ReservationScope): string =>
   JSON.stringify([scope.accountAddress, scope.network, scope.program]);
 export const reservationKey = (scope: ReservationScope, address: string): string =>

@@ -6,14 +6,18 @@ export const BLINDING_ALGORITHMS = [
   'program-scoped-blinding-factor',
   'program-scoped-blinded-address',
 ] as const;
+
 export type BlindingAlgorithm = (typeof BLINDING_ALGORITHMS)[number];
+
 export type BlindingArgs = Record<string, AlgorithmArg>;
+
 export interface ParsedBlindingArgs {
   mode: 'issue' | 'resolve';
   membershipProgram: string;
   membershipMapping: string;
   targetAddress?: string;
 }
+
 /**
  * Validates swap arguments before the wallet selects or recovers a counter.
  * Does not check connection permissions or read the network.

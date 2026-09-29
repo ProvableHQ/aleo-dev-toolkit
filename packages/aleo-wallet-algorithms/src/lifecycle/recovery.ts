@@ -16,6 +16,7 @@ export interface RecoveryOptions {
   maxGap?: number;
   maxCounter?: number;
 }
+
 /**
  * Finds the counter that reproduces a swap's blinded address.
  * Uses the supplied derivation and membership callbacks without storing a reservation.

@@ -13,6 +13,7 @@ interface Row {
   partition: string;
   reservation: Reservation;
 }
+
 export interface IndexedDBReservationStore extends ReservationStore {
   close(): void;
 }

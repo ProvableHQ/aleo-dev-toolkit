@@ -28,6 +28,7 @@ export interface BlindingSessionOptions {
   readMapping: (program: string, mapping: string, address: string) => Promise<string | null>;
   recovery?: { maxGap?: number; maxCounter?: number };
 }
+
 /** Resolves related inputs for one transaction and approved scope. */
 export interface BlindingSession {
   /** Reads membership and reserves or recovers a counter; both algorithms return values from the same pair. */
