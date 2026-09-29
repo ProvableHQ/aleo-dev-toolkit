@@ -25,13 +25,17 @@ Shared implementations let wallet providers support the same algorithms without 
 pnpm add @provablehq/aleo-wallet-algorithms
 ```
 
-- **When a dapp requests a private transaction input:** call the [algorithms](#included-algorithms) after checking the request's permissions.
-- **When preparing a swap or a later claim:** use the optional [lifecycle helpers](docs/lifecycle.md) to keep related inputs consistent, prevent pending swaps from reusing the same values, and recover the original inputs for a claim.
-- **When the wallet closes with swaps still pending:** use the [IndexedDB adapter](docs/lifecycle.md#storage-adapters), or connect an existing database, to remember which values are already assigned to those swaps after restart.
-- **When adding support to the wallet provider:** follow the [integration guide](../../examples/wallet-algorithms/INTEGRATION.md) for permission checks and adapter calls.
-- **When trying the integration before submitting real transactions:** run the [browser example](../../examples/wallet-algorithms/README.md) to walk through approval, cancellation, and transaction outcomes.
+## What's in the package
 
-Wallets that already handle pending swaps and claim recovery can use the algorithms alone.
+| Component                                              | What it provides                                                     | When to use it in a wallet                                                           |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [Algorithms](#included-algorithms)                     | Calculations that use wallet-held account data.                      | A dapp requests a supported computation that needs private inputs.                   |
+| [Sample lifecycle helpers](docs/lifecycle.md)          | Coordination of related inputs and their use during a transaction.   | Handling concurrent requests, cancellation, or recovery for the included algorithms. |
+| [Storage adapters](docs/lifecycle.md#storage-adapters) | An IndexedDB implementation and an interface for existing databases. | The wallet needs to remember pending operations after closing or restarting.         |
+| [Argument validation](src/schemas.ts)                  | Checks for supported argument types and values.                      | Before computing a requested input. The wallet must also check permissions.          |
+| [Testing utilities](src/testing.ts)                    | Known input/output pairs and checks for storage implementations.     | Verifying algorithm results or connecting the helpers to the wallet's database.      |
+
+The [browser example and integration guide](../../examples/wallet-algorithms) demonstrate how these pieces fit into a wallet. Lifecycle and storage helpers are optional; wallets can use the algorithms with their existing transaction handling.
 
 ## Fill a derived transaction input
 
