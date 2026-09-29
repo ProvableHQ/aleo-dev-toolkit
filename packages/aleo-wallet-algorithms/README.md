@@ -12,16 +12,6 @@ A derived transaction input expresses that request as an algorithm name and type
 
 Shared implementations let wallet providers support the same algorithms without independently reproducing their cryptographic rules. Matching the expected hashing and encoding matters both for contract verification and for recovering values later. The package supplies the calculations and compatibility tests; the wallet enforces permissions and keeps secret inputs within its execution context.
 
-## Choose the components
-
-| Component                                                                     | Use when                                                                                      |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [Algorithms](#included-algorithms)                                            | Compute private inputs with the wallet's own counter management.                              |
-| [Lifecycle helpers](docs/lifecycle.md)                                        | Add counter reservations, settlement, and claim recovery. Optional.                           |
-| [Storage adapters](docs/lifecycle.md#storage-adapters)                        | Persist session reservations with IndexedDB or an existing database.                          |
-| [Validation and integration](../../examples/wallet-algorithms/INTEGRATION.md) | Check arguments, enforce grants, and connect derived inputs to the wallet's transaction flow. |
-| [Example and checks](../../examples/wallet-algorithms/README.md)              | Try both integration paths and verify SDK and storage behavior.                               |
-
 ## Included algorithms
 
 | Algorithm                        | Where and why it is used                                                                                   | Reference                                                              |
@@ -34,6 +24,14 @@ Shared implementations let wallet providers support the same algorithms without 
 ```sh
 pnpm add @provablehq/aleo-wallet-algorithms
 ```
+
+- **When a dapp requests a private transaction input:** call the [algorithms](#included-algorithms) after checking the request's permissions.
+- **When preparing a swap or a later claim:** use the optional [lifecycle helpers](docs/lifecycle.md) to keep related inputs consistent, prevent pending swaps from reusing the same values, and recover the original inputs for a claim.
+- **When the wallet closes with swaps still pending:** use the [IndexedDB adapter](docs/lifecycle.md#storage-adapters), or connect an existing database, to remember which values are already assigned to those swaps after restart.
+- **When adding support to the wallet provider:** follow the [integration guide](../../examples/wallet-algorithms/INTEGRATION.md) for permission checks and adapter calls.
+- **When trying the integration before submitting real transactions:** run the [browser example](../../examples/wallet-algorithms/README.md) to walk through approval, cancellation, and transaction outcomes.
+
+Wallets that already handle pending swaps and claim recovery can use the algorithms alone.
 
 ## Fill a derived transaction input
 
