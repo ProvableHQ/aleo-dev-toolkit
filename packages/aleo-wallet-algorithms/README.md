@@ -1,14 +1,22 @@
 # Aleo wallet algorithms
 
-`@provablehq/aleo-wallet-algorithms` helps wallet providers support private swaps without exposing an account's view key to the dapp. It supplies the standard calculations for the private blinding factor and public blinded address used by Shield Swap. Wallets can import these calculations and keep their existing permissions, approval, and transaction flows.
+`@provablehq/aleo-wallet-algorithms` provides shared implementations of dapp algorithms that run inside the wallet. It supports integrations that need private key material or privacy-preserving computations while keeping secret inputs out of the dapp. Wallet providers can use these implementations within their existing permissions, approval, and transaction flows.
 
-## Why the wallet computes these inputs
+## Why the wallet runs these algorithms
 
-A dapp needs transaction inputs that depend on the account's view key, but the key must remain inside the wallet. A derived input lets the dapp request a calculation by name. The wallet checks the request's permissions, computes the value, and inserts it into the transaction before proving. The adapter returns a transaction ID to the dapp; it does not return the private factor or view key.
+Some dapp operations need values computed from private key material, such as an account's view key, or from other private account data. Sending that material to the dapp would expose it beyond the wallet. Computing the required values inside the wallet lets the dapp request the operation without receiving the secrets used to perform it.
 
-For a swap, the **blinding factor** is a private value derived from the account, the approved program, and a wallet-selected counter. The **blinded address** identifies the swap publicly and lets the contract check that it matches the signer and factor. A different counter produces a different pair for another swap. Reusing the original derivation inputs lets the wallet recover the pair when claiming the swap.
+A derived transaction input expresses that request as an algorithm name and typed arguments. The wallet checks permission, supplies the required account values internally, and inserts the result into the transaction before proving. The adapter returns a transaction ID rather than the resolved private inputs. The contract determines which transaction values become public.
 
-The wallet's calculations must match the contract's hashing and field encoding exactly. This package provides one implementation that wallet providers can share, with compatibility tests, so each provider does not have to reproduce those rules. Optional helpers reserve counters while transactions are pending and recover counters for claims. Wallets with their own counter management can import only the algorithms.
+Shared implementations let wallet providers support the same algorithms without independently reproducing their cryptographic rules. Matching the expected hashing and encoding matters both for contract verification and for recovering values later. The package supplies the calculations and compatibility tests; the wallet enforces permissions and keeps secret inputs within its execution context.
+
+## Included algorithms
+
+The package currently includes `program-scoped-blinding-factor` and `program-scoped-blinded-address`. These provide the private factor and public address used by Shield Swap, demonstrating how a dapp can request related values derived from wallet-held material.
+
+The **blinding factor** is derived from the account's view-key scalar, the approved program, and a wallet-selected counter. The **blinded address** identifies the swap publicly and lets the contract check that it matches the signer and factor. A different counter produces a different pair for another swap. Reusing the original derivation inputs lets the wallet recover the pair when claiming the swap.
+
+Optional helpers reserve counters while transactions are pending and recover counters for claims. Wallets with their own counter management can import only the algorithms.
 
 ## Add the package to the wallet
 
@@ -19,10 +27,10 @@ pnpm add @provablehq/aleo-wallet-algorithms
 ## Fill a derived transaction input
 
 1. Validate the dapp's request against its approved algorithm grant, including the program, function, input position, and argument constraints.
-2. Supply the approved program's address, the active account's values, and a counter to the algorithms below.
+2. Supply the account values required by the selected algorithm from inside the wallet. The included blinding algorithms use the approved program's address and a wallet-selected counter.
 3. Insert the returned literals into the wallet's transaction inputs, then continue through approval, proving, and submission.
 
-**Keep the view key and private factor inside the wallet.** The [integration guide](../../examples/wallet-algorithms/INTEGRATION.md) explains how these calls fit into the provider and Wallet Adapter.
+**Keep private key material and resolved private inputs inside the wallet.** The [integration guide](../../examples/wallet-algorithms/INTEGRATION.md) explains how these calls fit into the provider and Wallet Adapter.
 
 ```ts
 import { deriveBlindingFactor } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinding-factor';
@@ -79,7 +87,7 @@ A reservation must survive a wallet restart so a pending transaction's counter d
 
 `/testing` exports `createMemoryStore()` and `runStorageContract(first, second?)`. Run the contract against an empty disposable database, passing two connections when supported. The memory store is for tests and demonstrations; it cannot preserve reservations after restart.
 
-## How the algorithms are implemented
+## How the blinding algorithms are implemented
 
 The algorithms use `@provablehq/sdk` for Aleo types and Poseidon8 hashing. The same inputs produce the same outputs, which lets the wallet recover a swap's private factor instead of storing it.
 
