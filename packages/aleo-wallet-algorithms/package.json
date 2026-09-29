@@ -1,0 +1,180 @@
+{
+  "name": "@provablehq/aleo-wallet-algorithms",
+  "version": "0.1.0",
+  "description": "Standard Aleo wallet algorithms with optional lifecycle and IndexedDB helpers",
+  "license": "GPL-3.0-or-later",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProvableHQ/aleo-dev-toolkit.git",
+    "directory": "packages/aleo-wallet-algorithms"
+  },
+  "scripts": {
+    "build": "tsup && ALGORITHM_BUILD=mainnet tsup",
+    "test": "node --test test/*.test.mjs",
+    "lint": "eslint src --ext .ts && prettier --check test scripts tsup.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test:bundle": "node scripts/check-bundle.mjs"
+  },
+  "dependencies": {
+    "@provablehq/sdk": "0.11.11",
+    "@provablehq/aleo-types": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "esbuild": "^0.25.0",
+    "fake-indexeddb": "^6.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./program-scoped-blinding-factor": {
+      "import": {
+        "types": "./dist/program-scoped-blinding-factor.d.mts",
+        "default": "./dist/program-scoped-blinding-factor.mjs"
+      },
+      "require": {
+        "types": "./dist/program-scoped-blinding-factor.d.ts",
+        "default": "./dist/program-scoped-blinding-factor.js"
+      }
+    },
+    "./program-scoped-blinded-address": {
+      "import": {
+        "types": "./dist/program-scoped-blinded-address.d.mts",
+        "default": "./dist/program-scoped-blinded-address.mjs"
+      },
+      "require": {
+        "types": "./dist/program-scoped-blinded-address.d.ts",
+        "default": "./dist/program-scoped-blinded-address.js"
+      }
+    },
+    "./program-scoped-blinding": {
+      "import": {
+        "types": "./dist/program-scoped-blinding.d.mts",
+        "default": "./dist/program-scoped-blinding.mjs"
+      },
+      "require": {
+        "types": "./dist/program-scoped-blinding.d.ts",
+        "default": "./dist/program-scoped-blinding.js"
+      }
+    },
+    "./schemas": {
+      "import": {
+        "types": "./dist/schemas.d.mts",
+        "default": "./dist/schemas.mjs"
+      },
+      "require": {
+        "types": "./dist/schemas.d.ts",
+        "default": "./dist/schemas.js"
+      }
+    },
+    "./lifecycle": {
+      "import": {
+        "types": "./dist/lifecycle.d.mts",
+        "default": "./dist/lifecycle.mjs"
+      },
+      "require": {
+        "types": "./dist/lifecycle.d.ts",
+        "default": "./dist/lifecycle.js"
+      }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing.d.mts",
+        "default": "./dist/testing.mjs"
+      },
+      "require": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      }
+    },
+    "./mainnet": {
+      "import": {
+        "types": "./dist/mainnet/index.d.mts",
+        "default": "./dist/mainnet/index.mjs"
+      },
+      "require": {
+        "types": "./dist/mainnet/index.d.ts",
+        "default": "./dist/mainnet/index.js"
+      }
+    },
+    "./mainnet/program-scoped-blinding-factor": {
+      "import": {
+        "types": "./dist/mainnet/program-scoped-blinding-factor.d.mts",
+        "default": "./dist/mainnet/program-scoped-blinding-factor.mjs"
+      },
+      "require": {
+        "types": "./dist/mainnet/program-scoped-blinding-factor.d.ts",
+        "default": "./dist/mainnet/program-scoped-blinding-factor.js"
+      }
+    },
+    "./mainnet/program-scoped-blinded-address": {
+      "import": {
+        "types": "./dist/mainnet/program-scoped-blinded-address.d.mts",
+        "default": "./dist/mainnet/program-scoped-blinded-address.mjs"
+      },
+      "require": {
+        "types": "./dist/mainnet/program-scoped-blinded-address.d.ts",
+        "default": "./dist/mainnet/program-scoped-blinded-address.js"
+      }
+    },
+    "./mainnet/program-scoped-blinding": {
+      "import": {
+        "types": "./dist/mainnet/program-scoped-blinding.d.mts",
+        "default": "./dist/mainnet/program-scoped-blinding.mjs"
+      },
+      "require": {
+        "types": "./dist/mainnet/program-scoped-blinding.d.ts",
+        "default": "./dist/mainnet/program-scoped-blinding.js"
+      }
+    },
+    "./mainnet/schemas": {
+      "import": {
+        "types": "./dist/mainnet/schemas.d.mts",
+        "default": "./dist/mainnet/schemas.mjs"
+      },
+      "require": {
+        "types": "./dist/mainnet/schemas.d.ts",
+        "default": "./dist/mainnet/schemas.js"
+      }
+    },
+    "./mainnet/lifecycle": {
+      "import": {
+        "types": "./dist/mainnet/lifecycle.d.mts",
+        "default": "./dist/mainnet/lifecycle.mjs"
+      },
+      "require": {
+        "types": "./dist/mainnet/lifecycle.d.ts",
+        "default": "./dist/mainnet/lifecycle.js"
+      }
+    },
+    "./storage/indexeddb": {
+      "import": {
+        "types": "./dist/storage/indexeddb.d.mts",
+        "default": "./dist/storage/indexeddb.mjs"
+      },
+      "require": {
+        "types": "./dist/storage/indexeddb.d.ts",
+        "default": "./dist/storage/indexeddb.js"
+      }
+    }
+  }
+}
