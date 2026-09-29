@@ -44,6 +44,7 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
     };
     request.onsuccess = () => {
       const db = request.result;
+      // A blocked open can succeed after rejection; close the connection the caller never received.
       if (abandoned) {
         db.close();
         return;
@@ -68,6 +69,7 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
           }
           let value: T;
           let failure: Error | undefined;
+          // Request success is not a commit: a later request can still abort the transaction.
           tx.oncomplete = () => done(value);
           tx.onabort = () =>
             fail(failure ?? tx.error ?? new Error('IndexedDB transaction aborted'));
@@ -127,6 +129,7 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
         close: () => db.close(),
         reserve(candidate) {
           const snapshot = structuredClone(candidate);
+          // Keep the existence check and write in one transaction so competing connections cannot both win.
           return transaction<boolean>('readwrite', (store, set) => {
             const key = reservationKey(snapshot.scope, snapshot.blindedAddress);
             const request = store.get(key);
@@ -183,6 +186,7 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
           requireTxId(txId);
           requireStatus(status);
           await updateTransaction(scope, txId, row => {
+            // Repeated or stale status updates must not overwrite an already recorded outcome.
             if (row.reservation.status === 'pending') row.reservation.status = status;
           });
         },

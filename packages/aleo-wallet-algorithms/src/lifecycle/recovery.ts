@@ -36,6 +36,8 @@ export async function findCounterForAddress(options: RecoveryOptions): Promise<n
     maxCounter > 0xffff_ffff
   )
     throw new Error('Invalid recovery limits');
+  // Verify the saved counter by deriving its address; storage alone is not proof of a match.
+  // maxCounter bounds the scan, so a verified saved counter may exceed it.
   if (
     cachedCounter !== undefined &&
     Number.isInteger(cachedCounter) &&
@@ -48,6 +50,7 @@ export async function findCounterForAddress(options: RecoveryOptions): Promise<n
   for (let counter = 0; counter <= maxCounter; counter++) {
     const address = await deriveAddress(counter);
     if (address === targetAddress) return counter;
+    // Used addresses reset the gap; cancelled approvals can leave unused counters between swaps.
     gap = (await isUsed(address)) ? 0 : gap + 1;
     if (gap >= maxGap) break;
   }

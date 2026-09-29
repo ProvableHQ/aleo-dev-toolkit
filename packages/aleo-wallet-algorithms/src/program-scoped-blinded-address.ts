@@ -30,10 +30,12 @@ export function deriveBlindedAddress({
   try {
     const fields = [
       addressField(programAddress),
+      // Fixed claim-or-swap domain; changing it breaks the contract's address check.
       Field.fromString('11835072102227764468342786961086432175093421716844963782363567713633field'),
       addressField(signerAddress),
       Field.fromString(blindingFactor),
     ];
+    // Preserve all 253 bits per field before packing; truncating each field changes the address.
     const bits = fields.flatMap(field => {
       try {
         return field.toBitsLe();
@@ -41,12 +43,14 @@ export function deriveBlindedAddress({
         field.free();
       }
     });
+    // Match Aleo's raw [field; 4u32] encoding: 252, 252, 252, 252, then 4 bits.
     const packed: Field[] = [];
     for (let offset = 0; offset < bits.length; offset += 252) {
       packed.push(Field.fromBitsLe(bits.slice(offset, offset + 252)));
     }
     const hash = new Poseidon8();
     try {
+      // The SDK consumes the packed field handles; do not free them after hashing.
       const group = hash.hashToGroup(packed);
       // Address.fromGroup consumes the group handle.
       const address = Address.fromGroup(group);

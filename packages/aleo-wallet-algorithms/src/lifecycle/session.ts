@@ -58,8 +58,10 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
   let status: 'open' | 'committed' | 'closed' = 'open';
   let committedId: string | undefined;
   let queue: Promise<unknown> = Promise.resolve();
+  // Serialize derivation and cleanup so concurrent slots cannot reserve separate counters.
   const serial = <T>(operation: () => Promise<T>): Promise<T> => {
     const result = queue.then(operation);
+    // Preserve the caller's rejection, but allow a later retry or release to run.
     queue = result.catch(() => undefined);
     return result;
   };
@@ -86,6 +88,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
       );
       if (value !== null && typeof value !== 'string')
         throw new Error('Mapping reads must return a value or explicit null');
+      // Presence marks an address as used, even when the mapping value is 'false'.
       return value !== null;
     };
     if (args.mode === 'resolve') {
@@ -110,6 +113,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         .map(r => r.counter)
         .sort((a, b) => a - b);
       let candidate: { counter: number; factor: string; address: string } | undefined;
+      // A locally reverted counter may have been used by another device; check the chain again.
       for (const counter of reverted) {
         if (pending.has(counter)) continue;
         const values = pair(counter);
@@ -130,6 +134,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         }
       }
       if (!candidate) throw new Error('Counter space exhausted');
+      // Chain reads happen before the atomic write. If another session wins, reload and retry.
       if (
         await options.store.reserve({
           scope,
@@ -172,6 +177,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
     },
     release() {
       return serial(async () => {
+        // Committed counters stay reserved until settlement, even after cached values are cleared.
         if (status === 'open' && state?.issued) await options.store.release(scope, state.address);
         state = undefined;
         status = 'closed';

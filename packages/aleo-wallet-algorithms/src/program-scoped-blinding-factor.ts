@@ -35,8 +35,11 @@ export function deriveBlindingFactor({
     const integer = U32.fromString(`${counter}u32`);
     const hash = new Poseidon8();
     try {
+      // Hash four fields directly; only the blinded-address calculation uses raw-array packing.
+      // The SDK consumes these field handles, while scalar and integer remain owned here.
       const result = hash.hash([
         addressField(programAddress),
+        // Fixed blinding-factor domain; keep unchanged so existing swaps remain recoverable.
         Field.fromString('42815354924796718559205719970686750292466968495484257field'),
         scalar.toField(),
         integer.toField(),

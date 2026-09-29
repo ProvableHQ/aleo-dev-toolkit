@@ -56,6 +56,7 @@ async function refresh() {
     card.append(address);
     const action = document.createElement('button');
     if (row.status === 'pending' && row.txId === null) {
+      // This tab cannot establish whether another tab still owns the approval.
       action.textContent = 'Reserved by an approval; cancel in its owning tab';
       action.disabled = true;
     } else if (row.status === 'pending') {
@@ -117,10 +118,12 @@ button('cancel').onclick = () =>
 button('submit').onclick = () =>
   void run(async () => {
     const local = `local-${crypto.randomUUID()}`;
+    // Save the ID before submission so an unknown outcome cannot make the counter reusable.
     await prepared!.session.commit(local);
     const onChain = `simulated-${crypto.randomUUID()}`;
     await store.remap(scope, local, onChain);
     activeId = onChain;
+    // Drop cached inputs; commit keeps the reservation pending until a known outcome.
     await prepared!.session.release();
     prepared = undefined;
     text('status', 'Submission simulated. Reservation remains pending until a definitive outcome.');
