@@ -14,7 +14,14 @@ export interface ParsedBlindingArgs {
   membershipMapping: string;
   targetAddress?: string;
 }
-/** Validate algorithm arguments; this does not authorize a dapp request. */
+/**
+ * Validates swap arguments before the wallet selects or recovers a counter.
+ * Does not check connection permissions or read the network.
+ *
+ * @param args Typed argument values supplied in the derived input request.
+ * @returns Validated mode, membership program and mapping, and optional claim target.
+ * @throws If an argument is unknown, has the wrong type, or is invalid for the requested mode.
+ */
 export function validateBlindingArgs(args: BlindingArgs): ParsedBlindingArgs {
   if (!args || typeof args !== 'object' || Array.isArray(args))
     throw new Error('Invalid algorithm arguments');

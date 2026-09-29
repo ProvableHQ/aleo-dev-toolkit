@@ -1,3 +1,13 @@
+/**
+ * Search settings for recovering an existing swap's counter.
+ *
+ * @property targetAddress Blinded address whose original counter is needed.
+ * @property cachedCounter Optional saved counter. Checked before searching from zero.
+ * @property deriveAddress Computes the blinded address for a candidate counter.
+ * @property isUsed Checks whether a candidate address exists in the contract's mapping.
+ * @property maxGap Maximum consecutive absent addresses before stopping. Defaults to 1,000; minimum 1.
+ * @property maxCounter Highest counter to search, inclusive. Defaults to 100,000; must fit in u32.
+ */
 export interface RecoveryOptions {
   targetAddress: string;
   cachedCounter?: number;
@@ -6,7 +16,14 @@ export interface RecoveryOptions {
   maxGap?: number;
   maxCounter?: number;
 }
-/** Recover a counter without requiring local storage. Limits bound chain reads. */
+/**
+ * Finds the counter that reproduces a swap's blinded address.
+ * Uses the supplied derivation and membership callbacks without storing a reservation.
+ *
+ * @param options Target address, optional saved counter, and search limits.
+ * @returns The verified saved counter or the matching counter found by searching from zero.
+ * @throws If limits are invalid, a callback fails, or the search reaches a limit without a match.
+ */
 export async function findCounterForAddress(options: RecoveryOptions): Promise<number> {
   const { targetAddress, deriveAddress, isUsed, cachedCounter } = options;
   const maxGap = options.maxGap ?? 1000;

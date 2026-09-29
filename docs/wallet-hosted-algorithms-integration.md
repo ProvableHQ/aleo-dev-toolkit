@@ -1,18 +1,20 @@
 # Integrate wallet-hosted algorithms
 
-A wallet-hosted algorithm fills a transaction input using wallet-held state. The dapp sends an algorithm name and typed arguments; the wallet validates permission, computes the value, and inserts it before proving. This lets a dapp request swap inputs without receiving the account's view key.
+This guide explains how to add private swap inputs to an Aleo wallet and request them through the Wallet Adapter. The wallet computes these inputs from the account's view key, so the dapp can request a swap without receiving the key.
 
-Use `@provablehq/aleo-wallet-algorithms` to consume the standard implementations. The package uses SDK 0.11.11 directly and provides separate, tree-shakeable algorithm exports. Lifecycle helpers and IndexedDB storage are optional.
+A wallet-hosted algorithm is a function installed in the wallet. The dapp identifies the function by name and supplies typed arguments. The wallet checks permission, computes the value, and fills the transaction input before proving.
 
-Start with the [runnable browser example](../examples/wallet-algorithms). Its [integration notes](../examples/wallet-algorithms/INTEGRATION.md) explain provider wiring and persistence. The [package README](../packages/aleo-wallet-algorithms/README.md#exact-swap-calculation) documents the exact swap hashes and raw field encoding; source and compatibility tests are included.
+`@provablehq/aleo-wallet-algorithms` implements the swap calculations with SDK 0.11.11. Import each algorithm separately; bundles can omit unused algorithms, reservation helpers, and storage. The wallet can keep its existing counter and database logic.
+
+Start with the [runnable browser example](../examples/wallet-algorithms). Its [integration notes](../examples/wallet-algorithms/INTEGRATION.md) explain how to handle provider requests and store reservations. The [package README](../packages/aleo-wallet-algorithms/README.md#exact-swap-calculation) documents the exact swap hashes and raw field encoding; source and compatibility tests are included.
 
 ## Implement in the wallet
 
 1. **Expose support.** Return supported names from `algorithmsSupported()` before connection. Preserve structured transaction inputs through the provider and adapter.
-2. **Approve grants.** Accept `connect(..., { algorithmsAllowed })` and bind approved permissions to origin, account, and network. At execution, match algorithm, program, function, and input position; enforce argument constraints and deployed input types.
-3. **Resolve the approved scope.** Use `grant.scopeProgram ?? grant.program`. Load that program on the connection's network and use its address for hashing. Supply the active account's signer address and view-key scalar inside the wallet.
-4. **Compute the inputs.** Import the pure functions and use the wallet's existing counter logic, or create one optional session for both slots. Both algorithms must use the same counter and arguments.
-5. **Submit and reconcile.** Replace requests with literals inside the wallet's existing approval, proving, and submission flow. Return a transaction ID through the adapter. Keep the view key, counter, and private factor inside the wallet; the contract determines which transaction values become public.
+2. **Approve permissions.** A grant permits an algorithm at a specific transaction input. Accept `connect(..., { algorithmsAllowed })` and bind approved permissions to origin, account, and network. At execution, match algorithm, program, function, and input position; enforce argument constraints and deployed input types.
+3. **Select the scope program.** The scope program identifies the contract used in derivation. Use `grant.scopeProgram ?? grant.program`. Load that program on the connection's network and use its address for hashing. Supply the active account's signer address and view-key scalar inside the wallet.
+4. **Compute the inputs.** Call the algorithms with a wallet-selected counter, or use a session to select and reserve one counter for both inputs. Both algorithms must use the same counter and arguments.
+5. **Submit and track the outcome.** Replace requests with literals inside the wallet's existing approval, proving, and submission flow. Return a transaction ID through the adapter. Keep the view key, counter, and private factor inside the wallet; the contract determines which transaction values become public.
 
 | Algorithm                        | Output    | Purpose                                                                      |
 | -------------------------------- | --------- | ---------------------------------------------------------------------------- |
@@ -23,7 +25,7 @@ Import from `/mainnet/...` for mainnet; default exports use testnet. The package
 
 ## Optional reservation flow
 
-A lifecycle session coordinates the two slots. An IndexedDB adapter is included; existing databases can implement the small reservation interface instead.
+A session makes both inputs use the same counter. A reservation prevents another transaction from selecting that counter while approval or submission is pending. Store reservations with the included IndexedDB adapter or implement `ReservationStore` using the wallet's existing database.
 
 ```mermaid
 flowchart TD
@@ -39,7 +41,9 @@ flowchart TD
     H -->|Unknown| K[Keep pending and reconcile]
 ```
 
-Release the session's cached values after submission; committed reservations remain pending. Recheck reverted counters against chain membership before reuse. Claim requests recover the original pair with `mode: resolve` and create no reservation. The wallet owns restart recovery and transaction monitoring; the helpers do not run a background process.
+Release the session after submission to clear its cached values. Committed reservations remain pending until the wallet records a known outcome. **A timeout MUST NOT release a submitted transaction's reservation.** On restart, the wallet checks pending transaction IDs against the network.
+
+Before reusing a reverted counter, check that its address is absent from the contract's used-address mapping. A claim uses `mode: resolve` to recover the original inputs without reserving another counter.
 
 ## Call the wallet adapter
 

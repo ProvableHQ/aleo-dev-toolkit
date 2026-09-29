@@ -17,7 +17,14 @@ export interface IndexedDBReservationStore extends ReservationStore {
   close(): void;
 }
 
-/** Open a dedicated database. Importing this module does not open storage. */
+/**
+ * Opens an IndexedDB database for reservations that must survive a wallet restart.
+ * Writes resolve after the database transaction commits. Call close when the connection is no longer needed.
+ *
+ * @param options Dedicated database name; required to keep reservation storage separate.
+ * @returns A reservation store with a close method for releasing the connection.
+ * @throws If the name is empty, IndexedDB is unavailable, or opening the database fails or is blocked.
+ */
 export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedDBReservationStore> {
   if (!name?.trim()) return Promise.reject(new Error('A dedicated database name is required'));
   if (typeof indexedDB === 'undefined')

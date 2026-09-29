@@ -1,14 +1,27 @@
 import { Address, Field, Poseidon8 } from '@provablehq/sdk/testnet.js';
 import { addressField } from './internal/address';
 
-/** Inputs needed to reproduce the swap contract's public address check. */
+/**
+ * Inputs for the public address that identifies a swap.
+ *
+ * @property programAddress Address of the program used to derive the factor.
+ * @property signerAddress Address of the account signing the swap.
+ * @property blindingFactor Private factor as an Aleo field literal.
+ */
 export interface BlindedAddressInputs {
   programAddress: string;
   signerAddress: string;
   blindingFactor: string;
 }
 
-/** Derive the public address from a factor; no view key or counter is needed. */
+/**
+ * Computes the public swap address that the contract checks against the signer and factor.
+ * Does not read storage, contact a network, or request a signature.
+ *
+ * @param inputs Program address, signer address, and the swap's private factor.
+ * @returns Aleo address literal identifying the swap.
+ * @throws If an address or factor literal is invalid.
+ */
 export function deriveBlindedAddress({
   programAddress,
   signerAddress,

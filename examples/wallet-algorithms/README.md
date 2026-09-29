@@ -1,6 +1,6 @@
 # Wallet algorithm integration example
 
-A small Vite and TypeScript app shows how to consume the standard algorithms inside a wallet. No extension scaffolding is required.
+This example demonstrates how a wallet computes private swap inputs and keeps their counter reserved until the transaction completes. Run the Vite and TypeScript app to compare direct algorithm calls with the optional session and IndexedDB helpers.
 
 ## Run
 
@@ -13,16 +13,16 @@ pnpm --filter @provablehq/aleo-wallet-algorithms build
 pnpm --filter wallet-algorithms-example dev
 ```
 
-Open the local address printed by Vite. The app uses a public fixture scalar. Never enter a real wallet key. The SDK calculations and IndexedDB writes are real; connection approval, membership reads, submission, and settlement are simulated. The two-slot fixture is not a complete deployed swap transaction.
+Open the local address printed by Vite. The app uses a fixed public test scalar. **Never enter a real wallet key.** The SDK calculations and IndexedDB writes are real; connection approval, membership reads, submission, and settlement are simulated. The two-slot fixture is not a complete deployed swap transaction.
 
 ## Try the two paths
 
-1. **Direct algorithms:** choose a counter and derive the factor and address. Counter zero matches the published fixture. These calls have no storage dependency.
+1. **Direct algorithms:** choose a counter and derive the factor and address. Counter zero matches the included test vector. These calls compute values without reading or writing storage.
 2. **Optional lifecycle:** prepare a swap, then cancel it to release the reservation. Prepare again, simulate submission, and reload. Resume the pending transaction and report acceptance or rejection. For an accepted swap, prepare its claim using either the saved index or an empty index.
 
-The reservation list persists in IndexedDB. Simulated accepted addresses persist separately in localStorage so cold recovery can read a membership mapping. Both are scoped to the local origin. An interrupted approval stays reserved; production wallets need their own ownership and reconciliation policy before releasing abandoned approvals.
+The reservation list persists in IndexedDB. Simulated accepted addresses persist separately in localStorage so cold recovery can read a membership mapping. Both belong to the local browser origin. An interrupted approval stays reserved. Before releasing it, a production wallet must establish that no active request still owns it.
 
-Open **Browser checks** to run real SDK vectors, concurrent IndexedDB reservations, persistence, denied grants, preparation cleanup, and cold recovery. The checks create disposable databases and display pass/fail results.
+Open **Run browser compatibility checks** to verify SDK outputs, competing IndexedDB reservations, saved state, denied permissions, cleanup after preparation fails, and recovery without saved counters. The checks create disposable databases and display pass/fail results.
 
 ## Read the code
 
@@ -31,7 +31,7 @@ Open **Browser checks** to run real SDK vectors, concurrent IndexedDB reservatio
 | [main.ts](src/main.ts)                       | Direct calls and the lifecycle UI, including submission and settlement. |
 | [wallet.ts](src/wallet.ts)                   | Validate grants and resolve both transaction slots inside one session.  |
 | [fixtures.ts](src/fixtures.ts)               | Public inputs, approved fixture grants, and typed dapp requests.        |
-| [simulated-chain.ts](src/simulated-chain.ts) | Explicit substitute for network membership reads.                       |
+| [simulated-chain.ts](src/simulated-chain.ts) | Simulated mapping of addresses already used by swaps.                   |
 | [browser-tests.ts](src/browser-tests.ts)     | Browser compatibility checks.                                           |
 | [INTEGRATION.md](INTEGRATION.md)             | Where these calls fit into an existing wallet and adapter.              |
 

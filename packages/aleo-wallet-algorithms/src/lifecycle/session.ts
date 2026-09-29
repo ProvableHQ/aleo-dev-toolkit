@@ -10,23 +10,43 @@ import {
 import { findCounterForAddress } from './recovery';
 import { requireTxId, type ReservationScope, type ReservationStore } from './store';
 
+/**
+ * Wallet services used to select, reserve, and recover counters.
+ *
+ * @property scope Account, network, and program selected from approved grants.
+ * @property programAddress Address of the approved scope program on the selected network.
+ * @property getViewKeyScalar Reads the active account's scalar when derivation begins.
+ * @property store Stores reservations so pending transactions retain their counters after a restart.
+ * @property readMapping Returns a mapping value, or null for an absent entry. Rejects on read failure.
+ * @property recovery Optional search limits. Defaults to 1,000 consecutive absent addresses and counter 100,000.
+ */
 export interface BlindingSessionOptions {
-  /** Scope already resolved from wallet-approved grants. */
   scope: ReservationScope;
   programAddress: string;
   getViewKeyScalar: () => string;
   store: ReservationStore;
-  /** Return null only for an absent mapping entry; reject on network failure. */
   readMapping: (program: string, mapping: string, address: string) => Promise<string | null>;
   recovery?: { maxGap?: number; maxCounter?: number };
 }
+/** Resolves related inputs for one transaction and approved scope. */
 export interface BlindingSession {
+  /** Reads membership and reserves or recovers a counter; both algorithms return values from the same pair. */
   derive(algorithm: string, args: BlindingArgs): Promise<string>;
+  /** Saves a transaction ID before submission so release keeps the reservation pending. */
   commit(transactionId: string): Promise<void>;
+  /** Clears cached outputs and deletes only an uncommitted reservation. */
   release(): Promise<void>;
 }
 
-/** Coordinate a pair of derived inputs after the wallet has enforced grants. */
+/**
+ * Creates a session that keeps both swap inputs on the same counter.
+ * Creating the session performs no reads or writes; derive calls use the supplied mapping reader and store.
+ * The wallet must enforce connection grants before deriving inputs.
+ *
+ * @param options Approved scope and wallet services for derivation, storage, and membership reads.
+ * @returns A session for deriving inputs, recording submission, and releasing cached values.
+ * @throws If the scope program is invalid or its network differs from the imported build.
+ */
 export function createBlindingSession(options: BlindingSessionOptions): BlindingSession {
   const scope = { ...options.scope };
   if (scope.network !== algorithmNetwork)

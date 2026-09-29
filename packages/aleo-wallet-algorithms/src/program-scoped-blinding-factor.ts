@@ -1,14 +1,27 @@
 import { Field, Poseidon8, Scalar, U32 } from '@provablehq/sdk/testnet.js';
 import { addressField } from './internal/address';
 
-/** Explicit wallet-held inputs for deterministic factor derivation. */
+/**
+ * Inputs for recovering a swap's private factor.
+ *
+ * @property programAddress Address of the program approved as the derivation scope.
+ * @property viewKeyScalar Active account's view-key scalar as an Aleo literal. Keep inside the wallet.
+ * @property counter Wallet-selected integer from 0 through 4,294,967,295 (u32).
+ */
 export interface BlindingFactorInputs {
   programAddress: string;
   viewKeyScalar: string;
   counter: number;
 }
 
-/** Derive the private swap factor without reading storage or contacting a network. */
+/**
+ * Computes the private factor used to create or recover a swap.
+ * Does not read storage, contact a network, or request a signature.
+ *
+ * @param inputs Approved program address, account scalar, and wallet-selected counter.
+ * @returns Aleo field literal for the swap's private factor.
+ * @throws If the counter is outside u32 bounds or an input literal is invalid.
+ */
 export function deriveBlindingFactor({
   programAddress,
   viewKeyScalar,
