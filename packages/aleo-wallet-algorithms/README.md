@@ -1,14 +1,28 @@
 # Aleo wallet algorithms
 
-Compute a swap's private blinding factor and public blinded address inside the wallet with `@provablehq/sdk` 0.11.11. The factor lets the wallet recover the same swap inputs later; the address identifies the swap on chain.
+`@provablehq/aleo-wallet-algorithms` helps wallet providers support private swaps without exposing an account's view key to the dapp. It supplies the standard calculations for the private blinding factor and public blinded address used by Shield Swap. Wallets can import these calculations and keep their existing permissions, approval, and transaction flows.
 
-Each function computes and returns a value from the supplied inputs. Calls do not read storage, contact a network, request a signature, or move funds. The wallet supplies the counter.
+## Why the wallet computes these inputs
+
+A dapp needs transaction inputs that depend on the account's view key, but the key must remain inside the wallet. A derived input lets the dapp request a calculation by name. The wallet checks the request's permissions, computes the value, and inserts it into the transaction before proving. The adapter returns a transaction ID to the dapp; it does not return the private factor or view key.
+
+For a swap, the **blinding factor** is a private value derived from the account, the approved program, and a wallet-selected counter. The **blinded address** identifies the swap publicly and lets the contract check that it matches the signer and factor. A different counter produces a different pair for another swap. Reusing the original derivation inputs lets the wallet recover the pair when claiming the swap.
+
+The wallet's calculations must match the contract's hashing and field encoding exactly. This package provides one implementation that wallet providers can share, with compatibility tests, so each provider does not have to reproduce those rules. Optional helpers reserve counters while transactions are pending and recover counters for claims. Wallets with their own counter management can import only the algorithms.
+
+## Add the package to the wallet
 
 ```sh
 pnpm add @provablehq/aleo-wallet-algorithms
 ```
 
-## Call the algorithms
+## Fill a derived transaction input
+
+1. Validate the dapp's request against its approved algorithm grant, including the program, function, input position, and argument constraints.
+2. Supply the approved program's address, the active account's values, and a counter to the algorithms below.
+3. Insert the returned literals into the wallet's transaction inputs, then continue through approval, proving, and submission.
+
+**Keep the view key and private factor inside the wallet.** The [integration guide](../../examples/wallet-algorithms/INTEGRATION.md) explains how these calls fit into the provider and Wallet Adapter.
 
 ```ts
 import { deriveBlindingFactor } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinding-factor';
@@ -18,32 +32,15 @@ const blindingFactor = deriveBlindingFactor({ programAddress, viewKeyScalar, cou
 const blindedAddress = deriveBlindedAddress({ programAddress, signerAddress, blindingFactor });
 ```
 
-Run these calls inside the wallet. Use the program address approved by the connection grant and the active account's view-key scalar and signer address. The scope is the program used in both hashing and counter storage. `counter` must be an integer from 0 through 4,294,967,295 (`u32`). Both outputs are Aleo literal strings that can fill transaction inputs.
+Each call computes and returns a value without reading storage, contacting a network, requesting a signature, or moving funds. Use the program address approved by the connection grant and the active account's view-key scalar and signer address. The scope is the program used in both hashing and counter storage. `counter` must be an integer from 0 through 4,294,967,295 (`u32`). Both outputs are Aleo literal strings that can fill transaction inputs.
 
 Default imports use testnet. For mainnet, insert `/mainnet` before the algorithm name. The root and `/program-scoped-blinding` export both functions. All entries support ESM and CommonJS. Importing one algorithm allows a bundler to omit the other algorithm, session helpers, and storage. The selected algorithm still requires the SDK's WASM runtime.
 
-The SDK supplies `Program.fromString(source).address()` and `ViewKey.from_string(key).to_scalar()` for converting wallet-held values. Follow SDK ownership rules and dispose temporary handles. Browser builds must support the SDK's WASM assets and cross-origin isolation; the example includes Vite settings.
-
-## Exact swap calculation
-
-Let `P` and `S` be the x-coordinates of the scope program and signer addresses. Let `V` be the view-key scalar converted to a field and `C` the counter converted from `u32` to a field.
-
-```text
-BF_DOMAIN = 42815354924796718559205719970686750292466968495484257field
-CS_DOMAIN = 11835072102227764468342786961086432175093421716844963782363567713633field
-r = Poseidon8.hash([P, BF_DOMAIN, V, C])
-B = Address.fromGroup(Poseidon8.hashToGroup(pack252([P, CS_DOMAIN, S, r])))
-```
-
-`pack252` concatenates four complete 253-bit little-endian field representations and splits the result into chunks of 252, 252, 252, 252, and 4 bits. Each chunk becomes a field. This matches Aleo's raw field-array encoding. The factor hash does not use this packing.
-
-The implementation lives in [factor](src/program-scoped-blinding-factor.ts) and [address](src/program-scoped-blinded-address.ts). `/testing` exports `BLINDING_TEST_VECTOR`, a public compatibility fixture. Tests compare the address calculation against SDK `Plaintext.toFieldsRaw()` on both networks.
-
 ## Optional lifecycle helpers
 
-`/lifecycle` provides helpers for selecting counters, reserving them while a transaction is pending, and recovering them for claims. `createBlindingSession` keeps both swap inputs on the same counter. `findCounterForAddress` searches for the counter that produced an existing address.
+Both swap inputs must come from the same counter, and another pending transaction must not reuse it. `createBlindingSession` from `/lifecycle` selects one counter for both inputs and reserves it until cancellation or settlement. For a claim, `findCounterForAddress` searches for the counter that produced the existing swap address.
 
-These helpers are optional. Wallets with existing counter management can call the algorithms directly.
+Use these helpers to add reservation and recovery behavior to a wallet. They are optional; existing counter management can call the algorithms directly.
 
 ```ts
 import { createBlindingSession } from '@provablehq/aleo-wallet-algorithms/lifecycle';
@@ -74,7 +71,7 @@ The wallet handles permissions, approval, proving, submission, and recovery afte
 
 ## Storage adapters
 
-A session stores reservations through `ReservationStore`. Implement its six methods—`reserve`, `list`, `commit`, `release`, `remap`, and `settle`—using the wallet's database operations. The database itself does not need methods with these names. See the [interface](src/lifecycle/store.ts).
+A reservation must survive a wallet restart so a pending transaction's counter does not become available again. A session stores these reservations through `ReservationStore`. Implement its six methods—`reserve`, `list`, `commit`, `release`, `remap`, and `settle`—using the wallet's database operations. The database itself does not need methods with these names. See the [interface](src/lifecycle/store.ts).
 
 `reserve` must check and write an address in one database transaction. It accepts absent or reverted entries and refuses pending or confirmed entries for the same account, network, and program. Resolve writes only after the transaction commits. `release` deletes only pending entries with no transaction ID; `settle` changes only pending entries. Preserve confirmed and reverted rows for recovery and reuse checks.
 
@@ -82,7 +79,28 @@ A session stores reservations through `ReservationStore`. Implement its six meth
 
 `/testing` exports `createMemoryStore()` and `runStorageContract(first, second?)`. Run the contract against an empty disposable database, passing two connections when supported. The memory store is for tests and demonstrations; it cannot preserve reservations after restart.
 
-## Integration and verification
+## How the algorithms are implemented
+
+The algorithms use `@provablehq/sdk` for Aleo types and Poseidon8 hashing. The same inputs produce the same outputs, which lets the wallet recover a swap's private factor instead of storing it.
+
+The SDK supplies `Program.fromString(source).address()` and `ViewKey.from_string(key).to_scalar()` for converting wallet-held values. Follow SDK ownership rules and dispose temporary handles. Browser builds must support the SDK's WASM assets and cross-origin isolation; the example includes Vite settings.
+
+### Exact swap calculation
+
+Let `P` and `S` be the x-coordinates of the scope program and signer addresses. Let `V` be the view-key scalar converted to a field and `C` the counter converted from `u32` to a field.
+
+```text
+BF_DOMAIN = 42815354924796718559205719970686750292466968495484257field
+CS_DOMAIN = 11835072102227764468342786961086432175093421716844963782363567713633field
+r = Poseidon8.hash([P, BF_DOMAIN, V, C])
+B = Address.fromGroup(Poseidon8.hashToGroup(pack252([P, CS_DOMAIN, S, r])))
+```
+
+`pack252` concatenates four complete 253-bit little-endian field representations and splits the result into chunks of 252, 252, 252, 252, and 4 bits. Each chunk becomes a field. This matches Aleo's raw field-array encoding. The factor hash does not use this packing.
+
+The implementation lives in [factor](src/program-scoped-blinding-factor.ts) and [address](src/program-scoped-blinded-address.ts). `/testing` exports `BLINDING_TEST_VECTOR`, a public compatibility fixture. Tests compare the address calculation against SDK `Plaintext.toFieldsRaw()` on both networks.
+
+## Example and verification
 
 See the [browser example](../../examples/wallet-algorithms), its [wallet integration guide](../../examples/wallet-algorithms/INTEGRATION.md), and the [adapter overview](../../docs/wallet-hosted-algorithms-integration.md). `/schemas` exports argument validation and shared schemas; validation does not authorize a request.
 
