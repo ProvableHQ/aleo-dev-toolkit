@@ -9,7 +9,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "docs"
   ],
   "publishConfig": {
     "access": "public"
