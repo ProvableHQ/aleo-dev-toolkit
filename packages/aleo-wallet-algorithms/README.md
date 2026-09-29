@@ -1,16 +1,16 @@
 # Aleo wallet algorithms
 
-Wallet-hosted algorithms are named computations that a wallet performs on behalf of a dapp. They let private applications derive transaction inputs from key material or private account data without exposing those secrets to the application.
+Wallet-hosted algorithms are calculations that a wallet runs for a dapp using private key material or account data. They let an application request the transaction inputs it needs while the secrets used to calculate them stay in the wallet.
 
-The Aleo wallet-hosted algorithm standard gives dapps a common way to request these privacy-preserving computations from compatible wallets. The wallet checks permission and runs the requested algorithm using account data held inside the wallet. This allows applications in the Aleo ecosystem to use private computations through a shared interface.
+The Aleo wallet-hosted algorithm standard gives dapps a common way to request these privacy-preserving calculations. **Aleo wallet providers SHOULD implement this standard** so private apps can use the same requests across supported wallets.
 
-`@provablehq/aleo-wallet-algorithms` provides reusable implementations of these algorithms for wallet providers interacting with Aleo dapps. **Aleo wallet providers SHOULD implement this standard** so private applications can request the same computations across wallets while account secrets remain protected. The package supplies the calculations; providers integrate them into their permission, approval, and transaction handling.
+`@provablehq/aleo-wallet-algorithms` supplies the algorithm implementations and compatibility tests for wallet providers interacting with Aleo dapps. Providers can add them to their existing permission, approval, and transaction flows.
 
 ## How a request works
 
-A derived transaction input expresses that request as an algorithm name and typed arguments. The wallet checks permission, supplies the required account values internally, and inserts the result into the transaction before proving. The adapter returns a transaction ID rather than the resolved private inputs. The contract determines which transaction values become public.
+The dapp names an algorithm and supplies typed arguments in a derived transaction input. The wallet checks that the request is allowed, adds the required account values, and computes the input before proving the transaction. After submission, the adapter returns a transaction ID to the dapp. Keys and resolved private inputs stay inside the wallet; the contract determines which transaction values become public.
 
-Shared implementations let wallet providers support the same algorithms without independently reproducing their cryptographic rules. Matching the expected hashing and encoding matters both for contract verification and for recovering values later. The package supplies the calculations and compatibility tests; the wallet enforces permissions and keeps secret inputs within its execution context.
+The calculations must match the contract's hashing and encoding exactly, including when the wallet recovers a value later. Shared implementations and compatibility tests help providers produce consistent results without each having to implement the cryptography. The wallet remains responsible for permissions and protecting account secrets.
 
 ## Included algorithms
 
