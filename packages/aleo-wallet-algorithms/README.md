@@ -12,6 +12,16 @@ A derived transaction input expresses that request as an algorithm name and type
 
 Shared implementations let wallet providers support the same algorithms without independently reproducing their cryptographic rules. Matching the expected hashing and encoding matters both for contract verification and for recovering values later. The package supplies the calculations and compatibility tests; the wallet enforces permissions and keeps secret inputs within its execution context.
 
+## Choose the components
+
+| Component                                                                     | Use when                                                                                      |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [Algorithms](#included-algorithms)                                            | Compute private inputs with the wallet's own counter management.                              |
+| [Lifecycle helpers](docs/lifecycle.md)                                        | Add counter reservations, settlement, and claim recovery. Optional.                           |
+| [Storage adapters](docs/lifecycle.md#storage-adapters)                        | Persist session reservations with IndexedDB or an existing database.                          |
+| [Validation and integration](../../examples/wallet-algorithms/INTEGRATION.md) | Check arguments, enforce grants, and connect derived inputs to the wallet's transaction flow. |
+| [Example and checks](../../examples/wallet-algorithms/README.md)              | Try both integration paths and verify SDK and storage behavior.                               |
+
 ## Included algorithms
 
 | Algorithm                        | Where and why it is used                                                                                   | Reference                                                              |
