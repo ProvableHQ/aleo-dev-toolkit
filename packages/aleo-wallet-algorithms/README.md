@@ -1,10 +1,12 @@
 # Aleo wallet algorithms
 
-`@provablehq/aleo-wallet-algorithms` provides shared implementations of dapp algorithms that run inside the wallet. It supports integrations that need private key material or privacy-preserving computations while keeping secret inputs out of the dapp. Wallet providers can use these implementations within their existing permissions, approval, and transaction flows.
+Wallet-hosted algorithms are named computations that a wallet performs on behalf of a dapp. They let private applications derive transaction inputs from key material or private account data without exposing those secrets to the application.
 
-## Why the wallet runs these algorithms
+The Aleo wallet-hosted algorithm standard gives dapps a common way to request these privacy-preserving computations from compatible wallets. The wallet checks permission and runs the requested algorithm using account data held inside the wallet. This allows applications in the Aleo ecosystem to use private computations through a shared interface.
 
-Some dapp operations need values computed from private key material, such as an account's view key, or from other private account data. Sending that material to the dapp would expose it beyond the wallet. Computing the required values inside the wallet lets the dapp request the operation without receiving the secrets used to perform it.
+`@provablehq/aleo-wallet-algorithms` provides reusable implementations of these algorithms for wallet providers interacting with Aleo dapps. **Aleo wallet providers SHOULD implement this standard** so private applications can request the same computations across wallets while account secrets remain protected. The package supplies the calculations; providers integrate them into their permission, approval, and transaction handling.
+
+## How a request works
 
 A derived transaction input expresses that request as an algorithm name and typed arguments. The wallet checks permission, supplies the required account values internally, and inserts the result into the transaction before proving. The adapter returns a transaction ID rather than the resolved private inputs. The contract determines which transaction values become public.
 
