@@ -12,6 +12,25 @@ A derived transaction input expresses that request as an algorithm name and type
 
 Shared implementations let wallet providers support the same algorithms without independently reproducing their cryptographic rules. Matching the expected hashing and encoding matters both for contract verification and for recovering values later. The package supplies the calculations and compatibility tests; the wallet enforces permissions and keeps secret inputs within its execution context.
 
+### Request lifecycle
+
+```mermaid
+sequenceDiagram
+    participant D as Dapp (via Wallet Adapter)
+    participant W as Wallet
+    participant N as Aleo network
+    D->>W: Request transaction with algorithm names and arguments
+    W->>W: Validate permissions and arguments
+    Note over W: Key material and private inputs stay on the wallet side
+    W->>W: Compute inputs and obtain transaction approval
+    W->>N: Prove and submit transaction
+    W-->>D: Return transaction ID
+    N-->>W: Transaction outcome
+    W->>W: Update pending transaction state
+```
+
+The dapp requests computations; the wallet supplies the secrets and runs them. Key material and resolved private inputs are never returned through the adapter. Rejected requests return an error without submission. The contract determines which values become public on chain.
+
 ## Included algorithms
 
 | Algorithm                        | Where and why it is used                                                                                   | Reference                                                              |
