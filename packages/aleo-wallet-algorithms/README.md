@@ -33,10 +33,10 @@ The dapp requests computations; the wallet supplies the secrets and runs them. K
 
 ## Included algorithms
 
-| Algorithm                        | Where and why it is used                                                                                   | Reference                                                              |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `program-scoped-blinding-factor` | Creates the private factor for a Shield Swap transaction and lets the wallet recover it for a later claim. | [Inputs and exact calculation](docs/program-scoped-blinding-factor.md) |
-| `program-scoped-blinded-address` | Creates the public swap identifier that the contract checks against the signer and private factor.         | [Inputs and exact calculation](docs/program-scoped-blinded-address.md) |
+| Algorithm                        | Where and why it is used                                                                                   | Reference                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `program-scoped-blinding-factor` | Creates the private factor for a Shield Swap transaction and lets the wallet recover it for a later claim. | [Inputs and exact calculation](docs/program-scoped-blinding.md#blinding-factor) |
+| `program-scoped-blinded-address` | Creates the public swap identifier that the contract checks against the signer and private factor.         | [Inputs and exact calculation](docs/program-scoped-blinding.md#blinded-address) |
 
 ## Add the package to the wallet
 
@@ -46,13 +46,13 @@ pnpm add @provablehq/aleo-wallet-algorithms
 
 ## What's in the package
 
-| Component                                              | What it provides                                                     | When to use it in a wallet                                                           |
-| ------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [Algorithms](#included-algorithms)                     | Calculations that use wallet-held account data.                      | A dapp requests a supported computation that needs private inputs.                   |
-| [Sample lifecycle helpers](docs/lifecycle.md)          | Coordination of related inputs and their use during a transaction.   | Handling concurrent requests, cancellation, or recovery for the included algorithms. |
-| [Storage adapters](docs/lifecycle.md#storage-adapters) | An IndexedDB implementation and an interface for existing databases. | The wallet needs to remember pending operations after closing or restarting.         |
-| [Argument validation](src/schemas.ts)                  | Checks for supported argument types and values.                      | Before computing a requested input. The wallet must also check permissions.          |
-| [Testing utilities](src/testing.ts)                    | Known input/output pairs and checks for storage implementations.     | Verifying algorithm results or connecting the helpers to the wallet's database.      |
+| Component                                                                            | What it provides                                                     | When to use it in a wallet                                                           |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [Algorithms](#included-algorithms)                                                   | Calculations that use wallet-held account data.                      | A dapp requests a supported computation that needs private inputs.                   |
+| [Sample lifecycle helpers](docs/program-scoped-blinding.md#sample-lifecycle-helpers) | Coordination of related inputs and their use during a transaction.   | Handling concurrent requests, cancellation, or recovery for the included algorithms. |
+| [Storage adapters](docs/program-scoped-blinding.md#storage-adapters)                 | An IndexedDB implementation and an interface for existing databases. | The wallet needs to remember pending operations after closing or restarting.         |
+| [Argument validation](src/schemas.ts)                                                | Checks for supported argument types and values.                      | Before computing a requested input. The wallet must also check permissions.          |
+| [Testing utilities](src/testing.ts)                                                  | Known input/output pairs and checks for storage implementations.     | Verifying algorithm results or connecting the helpers to the wallet's database.      |
 
 Lifecycle and storage helpers are optional; wallets can use the algorithms with their existing transaction handling.
 
