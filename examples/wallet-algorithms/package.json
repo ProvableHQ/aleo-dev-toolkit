@@ -1,0 +1,21 @@
+{
+  "name": "wallet-algorithms-example",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@provablehq/aleo-wallet-algorithms": "workspace:*",
+    "@provablehq/aleo-types": "workspace:*",
+    "@provablehq/aleo-wallet-standard": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.4.2",
+    "typescript": "^5.3.3"
+  }
+}
