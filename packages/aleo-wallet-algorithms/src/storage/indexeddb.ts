@@ -1,4 +1,11 @@
 import {
+  decideCommit,
+  decideRelease,
+  decideRemap,
+  decideReserve,
+  decideSettle,
+} from '../lifecycle/reservation-transition';
+import {
   requireStatus,
   requireTxId,
   reservationKey,
@@ -136,14 +143,15 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
             const request = store.get(key);
             request.onsuccess = () => {
               const row = request.result as Row | undefined;
-              if (row && row.reservation.status !== 'reverted') {
+              const decision = decideReserve(row?.reservation, snapshot);
+              if (decision.action !== 'write') {
                 set(false);
                 return;
               }
               store.put({
                 key,
                 partition: scopeKey(snapshot.scope),
-                reservation: { ...snapshot, status: 'pending', txId: null },
+                reservation: decision.reservation,
               } satisfies Row);
               set(true);
             };
@@ -158,37 +166,31 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
         async commit(scope, address, txId) {
           requireTxId(txId);
           await updateOne(scope, address, row => {
-            if (
-              !row ||
-              row.reservation.status !== 'pending' ||
-              (row.reservation.txId !== null && row.reservation.txId !== txId)
-            )
-              throw new Error('Reservation cannot be committed');
-            row.reservation.txId = txId;
+            const decision = decideCommit(row?.reservation, txId);
+            if (decision.action !== 'write' || !row) return row;
+            row.reservation = decision.reservation;
             return row;
           });
         },
         async release(scope, address) {
           await updateOne(scope, address, row =>
-            row?.reservation.status === 'pending' && row.reservation.txId === null
-              ? undefined
-              : row,
+            decideRelease(row?.reservation).action === 'delete' ? undefined : row,
           );
         },
         async remap(scope, oldId, newId) {
           requireTxId(oldId);
           requireTxId(newId);
+          // Equal ids would make the IndexedDB cursor rewrite its own key.
           if (oldId !== newId)
             await updateTransaction(scope, oldId, row => {
-              row.reservation.txId = newId;
+              row.reservation = decideRemap(row.reservation, newId);
             });
         },
         async settle(scope, txId, status) {
           requireTxId(txId);
           requireStatus(status);
           await updateTransaction(scope, txId, row => {
-            // Repeated or stale status updates must not overwrite an already recorded outcome.
-            if (row.reservation.status === 'pending') row.reservation.status = status;
+            row.reservation = decideSettle(row.reservation, status);
           });
         },
       });

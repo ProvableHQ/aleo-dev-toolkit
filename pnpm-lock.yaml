@@ -79,6 +79,9 @@ importers:
       '@provablehq/aleo-wallet-adapter-soter':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-adapter/wallets/soter
+      '@provablehq/aleo-wallet-algorithms':
+        specifier: workspace:*
+        version: link:../../packages/aleo-wallet-algorithms
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -287,8 +290,8 @@ importers:
         specifier: ^5.3.3
         version: 5.6.3
       vite:
-        specifier: ^6.4.2
-        version: 6.4.2(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(yaml@2.7.1)
+        specifier: ^6.4.3
+        version: 6.4.3(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(yaml@2.7.1)
 
   packages/aleo-hooks:
     dependencies:
@@ -553,6 +556,9 @@ importers:
       '@provablehq/sdk':
         specifier: 0.11.11
         version: 0.11.11
+      '@scure/base':
+        specifier: 1.2.6
+        version: 1.2.6
     devDependencies:
       esbuild:
         specifier: ^0.25.0
@@ -3230,6 +3236,9 @@ packages:
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
+
+  '@scure/base@1.2.6':
+    resolution: {integrity: sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg==}
 
   '@scure/base@2.4.0':
     resolution: {integrity: sha512-thZ1TuJwFwBblOhgsjDKvvGirBxNp+wSvY/DR6tJBJOTDhdAAcHJ8Vbr2eFnqaxeca4+t0i9KBf+uHYGWwZORg==}
@@ -8523,6 +8532,46 @@ packages:
       yaml:
         optional: true
 
+  vite@6.4.3:
+    resolution: {integrity: sha512-NTKlcQjlAK7MlQoyb6LgaqHc8sso/pVyUJYWMws3jg21uTJw/LddqIFPcPqP6PzpgbIcZyKI85sFE4HBrQDA8A==}
+    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^18.0.0 || ^20.0.0 || >=22.0.0
+      jiti: '>=1.21.0'
+      less: '*'
+      lightningcss: ^1.21.0
+      sass: '*'
+      sass-embedded: '*'
+      stylus: '*'
+      sugarss: '*'
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      lightningcss:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      yaml:
+        optional: true
+
   watchpack@2.5.0:
     resolution: {integrity: sha512-e6vZvY6xboSwLz2GD36c16+O/2Z6fKvIf4pOXptw2rY9MVwE/TXc6RGqxD3I3x0a28lwBY7DE+76uTPSsBrrCA==}
     engines: {node: '>=10.13.0'}
@@ -12097,6 +12146,8 @@ snapshots:
     optional: true
 
   '@rtsao/scc@1.1.0': {}
+
+  '@scure/base@1.2.6': {}
 
   '@scure/base@2.4.0': {}
 
@@ -18130,6 +18181,22 @@ snapshots:
       vite: 6.4.2(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(yaml@2.7.1)
 
   vite@6.4.2(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(yaml@2.7.1):
+    dependencies:
+      esbuild: 0.25.12
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
+      postcss: 8.5.9
+      rollup: 4.60.1
+      tinyglobby: 0.2.16
+    optionalDependencies:
+      '@types/node': 22.15.32
+      fsevents: 2.3.3
+      jiti: 2.4.2
+      lightningcss: 1.30.1
+      terser: 5.44.1
+      yaml: 2.7.1
+
+  vite@6.4.3(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(yaml@2.7.1):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.4)

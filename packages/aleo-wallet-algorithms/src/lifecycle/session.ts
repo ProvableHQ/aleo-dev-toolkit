@@ -93,7 +93,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
       return value !== null;
     };
     if (args.mode === 'resolve') {
-      const target = args.targetAddress!;
+      const target = args.targetAddress;
       if (!(await isUsed(target)))
         throw new Error('Target address is absent from membership mapping');
       const known = (await options.store.list(scope)).find(row => row.blindedAddress === target);
@@ -113,27 +113,23 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         .filter(r => r.status === 'reverted')
         .map(r => r.counter)
         .sort((a, b) => a - b);
-      let candidate: { counter: number; factor: string; address: string } | undefined;
-      // A locally reverted counter may have been used by another device; check the chain again.
-      for (const counter of reverted) {
-        if (pending.has(counter)) continue;
-        const values = pair(counter);
-        if (!(await isUsed(values.address))) {
-          candidate = { counter, ...values };
-          break;
-        }
-      }
-      if (!candidate) {
-        let counter = rows.reduce((max, row) => Math.max(max, row.counter), -1) + 1;
-        for (; counter <= 0xffff_ffff; counter++) {
+      const firstFree = async (counters: Iterable<number>) => {
+        for (const counter of counters) {
           if (pending.has(counter)) continue;
           const values = pair(counter);
-          if (!(await isUsed(values.address))) {
-            candidate = { counter, ...values };
-            break;
-          }
+          if (!(await isUsed(values.address))) return { counter, ...values };
         }
-      }
+        return undefined;
+      };
+      const start = rows.reduce((max, row) => Math.max(max, row.counter), -1) + 1;
+      // Reverted counters are reused only after a fresh chain check. Otherwise search upward.
+      const candidate =
+        (await firstFree(reverted)) ??
+        (await firstFree(
+          (function* ascending() {
+            for (let counter = start; counter <= 0xffff_ffff; counter++) yield counter;
+          })(),
+        ));
       if (!candidate) throw new Error('Counter space exhausted');
       // Chain reads happen before the atomic write. If another session wins, reload and retry.
       if (

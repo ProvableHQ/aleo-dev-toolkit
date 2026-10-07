@@ -1,5 +1,7 @@
 # Integrate wallet-hosted algorithms
 
+Start with [Wallet private inputs](./wallet-private-inputs.md). That page is the implementation guide for ARC-22 records, ARC-22 proofs, and the Shield Swap blinded pair. The rest of this page is the dapp request shape those wallet values fill.
+
 This guide explains how to add private swap inputs to an Aleo wallet and request them through the Wallet Adapter. The wallet computes these inputs from the account's view key, so the dapp can request a swap without receiving the key.
 
 A wallet-hosted algorithm is a function installed in the wallet. The dapp identifies the function by name and supplies typed arguments. The wallet checks permission, computes the value, and fills the transaction input before proving.

@@ -1,6 +1,12 @@
-# Wallet algorithm integration example
+# Wallet private inputs lab
 
-This example demonstrates how a wallet computes private swap inputs and keeps their counter reserved until the transaction completes. Run the Vite and TypeScript app to compare direct algorithm calls with the optional session and IndexedDB helpers.
+Three checks for an embedded wallet, then an optional counter-store sample.
+
+1. ARC-22 record shape and input order.
+2. ARC-22 compliance proof at depth 16.
+3. Shield Swap blinding factor and blinded address, checked against the Shield oracle.
+
+The guide is [docs/wallet-private-inputs.md](../../docs/wallet-private-inputs.md). Agents scaffolding a wallet should follow [packages/aleo-wallet-algorithms/AGENTS.md](../../packages/aleo-wallet-algorithms/AGENTS.md).
 
 ## Run
 
@@ -8,31 +14,11 @@ From the repository root:
 
 ```sh
 pnpm install
-pnpm --filter @provablehq/aleo-types build
-pnpm --filter @provablehq/aleo-wallet-algorithms build
-pnpm --filter wallet-algorithms-example dev
+pnpm wallet-algorithms:dev
 ```
 
-Open the local address printed by Vite. The app uses a fixed public test scalar. **Never enter a real wallet key.** The SDK calculations and IndexedDB writes are real; connection approval, membership reads, submission, and settlement are simulated. The two-slot fixture is not a complete deployed swap transaction.
+Open the URL Vite prints. Use a public fixture only. Do not enter a real view key.
 
-## Try the two paths
+`matchesSyntheticVector`, `matchesShieldOracle`, and `stableWhenAddressesAreReordered` should be true.
 
-1. **Direct algorithms:** choose a counter and derive the factor and address. Counter zero matches the included test vector. These calls compute values without reading or writing storage.
-2. **Optional lifecycle:** prepare a swap, then cancel it to release the reservation. Prepare again, simulate submission, and reload. Resume the pending transaction and report acceptance or rejection. For an accepted swap, prepare its claim using either the saved index or an empty index.
-
-The reservation list persists in IndexedDB. Simulated accepted addresses persist separately in localStorage so cold recovery can read a membership mapping. Both belong to the local browser origin. An interrupted approval stays reserved. Before releasing it, a production wallet must establish that no active request still owns it.
-
-Open **Run browser compatibility checks** to verify SDK outputs, competing IndexedDB reservations, saved state, denied permissions, cleanup after preparation fails, and recovery without saved counters. The checks create disposable databases and display pass/fail results.
-
-## Read the code
-
-| File                                         | Purpose                                                                 |
-| -------------------------------------------- | ----------------------------------------------------------------------- |
-| [main.ts](src/main.ts)                       | Direct calls and the lifecycle UI, including submission and settlement. |
-| [wallet.ts](src/wallet.ts)                   | Validate grants and resolve both transaction slots inside one session.  |
-| [fixtures.ts](src/fixtures.ts)               | Public inputs, approved fixture grants, and typed dapp requests.        |
-| [simulated-chain.ts](src/simulated-chain.ts) | Simulated mapping of addresses already used by swaps.                   |
-| [browser-tests.ts](src/browser-tests.ts)     | Browser compatibility checks.                                           |
-| [INTEGRATION.md](INTEGRATION.md)             | Where these calls fit into an existing wallet and adapter.              |
-
-For actual wallet connection and transaction submission, use the [Wallet Adapter Private Inputs demo](https://aleo-dev-toolkit-react-app.vercel.app/private-inputs) with Shield and a deployed Shield Swap program. Configure the deployed function's grants and complete inputs as described in the [integration overview](../../docs/wallet-hosted-algorithms-integration.md).
+The last section reserves a counter in IndexedDB and simulates submission. That store is a sample. It is not Shield's database, and it is not required to pass the three checks.

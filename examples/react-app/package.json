@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@provablehq/aleo-types": "workspace:*",
+    "@provablehq/aleo-wallet-algorithms": "workspace:*",
     "@provablehq/aleo-wallet-adapter-core": "workspace:*",
     "@provablehq/aleo-wallet-adapter-fox": "workspace:*",
     "@provablehq/aleo-wallet-adapter-leo": "workspace:*",

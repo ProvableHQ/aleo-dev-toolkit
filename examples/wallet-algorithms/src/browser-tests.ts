@@ -4,6 +4,7 @@ import { openIndexedDBStore } from '@provablehq/aleo-wallet-algorithms/storage/i
 import {
   runStorageContract,
   BLINDING_TEST_VECTOR as v,
+  SHIELD_BLINDING_VECTOR as shield,
 } from '@provablehq/aleo-wallet-algorithms/testing';
 import { prepareInWallet } from './wallet';
 import { grants, request, scope } from './fixtures';
@@ -37,6 +38,13 @@ const tests: Array<[string, () => Promise<void>]> = [
         check(
           api.deriveBlindedAddress({ ...v, blindingFactor: factor }) === v.blindedAddress,
           'Address mismatch',
+        );
+        const shieldFactor = api.deriveBlindingFactor(shield);
+        check(shieldFactor === shield.blindingFactor, 'Shield factor mismatch');
+        check(
+          api.deriveBlindedAddress({ ...shield, blindingFactor: shieldFactor }) ===
+            shield.blindedAddress,
+          'Shield address mismatch',
         );
       }
     },

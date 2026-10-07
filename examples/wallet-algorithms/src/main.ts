@@ -1,11 +1,18 @@
 import { deriveBlindingFactor } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinding-factor';
 import { deriveBlindedAddress } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinded-address';
+import { complianceProofFromAddresses } from '@provablehq/aleo-wallet-algorithms/compliance-proof';
 import { openIndexedDBStore } from '@provablehq/aleo-wallet-algorithms/storage/indexeddb';
-import { createMemoryStore } from '@provablehq/aleo-wallet-algorithms/testing';
-import { fixture, grants, request, scope } from './fixtures';
+import {
+  createMemoryStore,
+  BLINDING_TEST_VECTOR,
+  SHIELD_BLINDING_VECTOR,
+} from '@provablehq/aleo-wallet-algorithms/testing';
 import { prepareInWallet } from './wallet';
+import { grants, request, scope } from './fixtures';
 import { chain } from './simulated-chain';
 import './style.css';
+
+const fixture = BLINDING_TEST_VECTOR;
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const button = (id: string) => element<HTMLButtonElement>(id);
 const text = (id: string, value: unknown) => {
@@ -79,6 +86,34 @@ async function refresh() {
     container.append(card);
   }
 }
+button('prove').onclick = () => {
+  const frozen = [
+    'aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px',
+    'aleo1s3ws5tra87fjycnjrwsjcrnw2qxr8jfqqdugnf0xzqqw29q9m5pqem2u4t',
+  ];
+  const signer = 'aleo1kypwp5m7qtk9mwazgcpg0tq8aal23mnrvwfvug65qgcg9xvsrqgspyjm6n';
+  const proof = complianceProofFromAddresses(signer, frozen);
+  const again = complianceProofFromAddresses(signer, [...frozen].reverse());
+  text('proof-output', {
+    signer,
+    depth: 16,
+    stableWhenAddressesAreReordered: proof === again,
+    proof,
+  });
+};
+button('shield-vector').onclick = () => {
+  const vector = SHIELD_BLINDING_VECTOR;
+  const blindingFactor = deriveBlindingFactor(vector);
+  const blindedAddress = deriveBlindedAddress({ ...vector, blindingFactor });
+  text('direct-output', {
+    source: 'Shield wallet oracle',
+    counter: vector.counter,
+    blindingFactor,
+    blindedAddress,
+    matchesShieldOracle:
+      blindingFactor === vector.blindingFactor && blindedAddress === vector.blindedAddress,
+  });
+};
 button('derive').onclick = () => {
   try {
     const value = element<HTMLInputElement>('counter').value;
@@ -92,7 +127,7 @@ button('derive').onclick = () => {
       blindedAddress,
       ...(counter === 0
         ? {
-            matchesTestVector:
+            matchesSyntheticVector:
               blindingFactor === fixture.blindingFactor &&
               blindedAddress === fixture.blindedAddress,
           }

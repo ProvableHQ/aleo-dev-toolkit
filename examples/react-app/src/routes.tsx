@@ -8,6 +8,7 @@ import {
   DecryptPage,
   RecordsPage,
   PrivateInputsPage,
+  WalletPrivateInputsPage,
   RemoteConnectPage,
   ViewKeysPage,
   TransactionHistoryPage,
@@ -58,6 +59,10 @@ export const routes: RouteObject[] = [
       {
         path: 'private-inputs',
         element: <PrivateInputsPage />,
+      },
+      {
+        path: 'wallet-inputs',
+        element: <WalletPrivateInputsPage />,
       },
       {
         path: 'view-keys',

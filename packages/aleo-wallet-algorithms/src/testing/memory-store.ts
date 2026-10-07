@@ -1,4 +1,11 @@
 import {
+  decideCommit,
+  decideRelease,
+  decideRemap,
+  decideReserve,
+  decideSettle,
+} from '../lifecycle/reservation-transition';
+import {
   requireStatus,
   requireTxId,
   reservationKey,
@@ -6,15 +13,16 @@ import {
   type Reservation,
   type ReservationStore,
 } from '../lifecycle/store';
+
 /** Non-durable store for tests. Use durable storage for pending transactions. */
 export function createMemoryStore(): ReservationStore {
   const entries = new Map<string, Reservation>();
   return {
     async reserve(candidate) {
       const key = reservationKey(candidate.scope, candidate.blindedAddress);
-      const existing = entries.get(key);
-      if (existing && existing.status !== 'reverted') return false;
-      entries.set(key, structuredClone({ ...candidate, status: 'pending' as const, txId: null }));
+      const decision = decideReserve(entries.get(key), candidate);
+      if (decision.action === 'unavailable') return false;
+      if (decision.action === 'write') entries.set(key, structuredClone(decision.reservation));
       return true;
     },
     async list(scope) {
@@ -24,28 +32,27 @@ export function createMemoryStore(): ReservationStore {
     },
     async commit(scope, address, txId) {
       requireTxId(txId);
-      const entry = entries.get(reservationKey(scope, address));
-      if (!entry || entry.status !== 'pending' || (entry.txId !== null && entry.txId !== txId))
-        throw new Error('Reservation cannot be committed');
-      entry.txId = txId;
+      const key = reservationKey(scope, address);
+      const decision = decideCommit(entries.get(key), txId);
+      if (decision.action === 'write') entries.set(key, decision.reservation);
     },
     async release(scope, address) {
       const key = reservationKey(scope, address);
-      const e = entries.get(key);
-      if (e?.status === 'pending' && e.txId === null) entries.delete(key);
+      if (decideRelease(entries.get(key)).action === 'delete') entries.delete(key);
     },
     async remap(scope, oldId, newId) {
       requireTxId(oldId);
       requireTxId(newId);
       for (const e of entries.values())
-        if (scopeKey(e.scope) === scopeKey(scope) && e.txId === oldId) e.txId = newId;
+        if (scopeKey(e.scope) === scopeKey(scope) && e.txId === oldId)
+          Object.assign(e, decideRemap(e, newId));
     },
     async settle(scope, txId, status) {
       requireTxId(txId);
       requireStatus(status);
       for (const e of entries.values())
-        if (scopeKey(e.scope) === scopeKey(scope) && e.txId === txId && e.status === 'pending')
-          e.status = status;
+        if (scopeKey(e.scope) === scopeKey(scope) && e.txId === txId)
+          Object.assign(e, decideSettle(e, status));
     },
   };
 }

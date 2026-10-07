@@ -11,12 +11,14 @@ export type BlindingAlgorithm = (typeof BLINDING_ALGORITHMS)[number];
 
 export type BlindingArgs = Record<string, AlgorithmArg>;
 
-export interface ParsedBlindingArgs {
-  mode: 'issue' | 'resolve';
-  membershipProgram: string;
-  membershipMapping: string;
-  targetAddress?: string;
-}
+export type ParsedBlindingArgs =
+  | { mode: 'issue'; membershipProgram: string; membershipMapping: string }
+  | {
+      mode: 'resolve';
+      membershipProgram: string;
+      membershipMapping: string;
+      targetAddress: string;
+    };
 
 /**
  * Validates swap arguments before the wallet selects or recovers a counter.
@@ -29,12 +31,10 @@ export interface ParsedBlindingArgs {
 export function validateBlindingArgs(args: BlindingArgs): ParsedBlindingArgs {
   if (!args || typeof args !== 'object' || Array.isArray(args))
     throw new Error('Invalid algorithm arguments');
-  const types: Record<string, string> = {
-    mode: 'string',
-    membershipProgram: 'string',
-    membershipMapping: 'string',
-    targetAddress: 'address',
-  };
+  const schema = ALGORITHM_SCHEMAS['program-scoped-blinding-factor'].args;
+  const types: Record<string, string> = Object.fromEntries(
+    Object.entries(schema).map(([key, spec]) => [key, spec.type]),
+  );
   for (const [key, arg] of Object.entries(args)) {
     if (
       !Object.prototype.hasOwnProperty.call(types, key) ||
@@ -53,20 +53,15 @@ export function validateBlindingArgs(args: BlindingArgs): ParsedBlindingArgs {
   if (!membershipMapping || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(membershipMapping))
     throw new Error('Invalid membership mapping');
   const targetAddress = args.targetAddress?.value;
-  if (mode === 'issue' && targetAddress !== undefined)
-    throw new Error('Issue forbids targetAddress');
-  if (mode === 'resolve') {
-    if (!targetAddress) throw new Error('Resolve requires targetAddress');
-    try {
-      Address.from_string(targetAddress).free();
-    } catch {
-      throw new Error('Invalid target address');
-    }
+  if (mode === 'issue') {
+    if (targetAddress !== undefined) throw new Error('Issue forbids targetAddress');
+    return { mode, membershipProgram, membershipMapping };
   }
-  return {
-    mode,
-    membershipProgram,
-    membershipMapping,
-    ...(targetAddress === undefined ? {} : { targetAddress }),
-  };
+  if (!targetAddress) throw new Error('Resolve requires targetAddress');
+  try {
+    Address.from_string(targetAddress).free();
+  } catch {
+    throw new Error('Invalid target address');
+  }
+  return { mode, membershipProgram, membershipMapping, targetAddress };
 }

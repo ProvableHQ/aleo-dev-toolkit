@@ -1,5 +1,7 @@
 # Wallet Algorithm: Blinded Addresses for Private Swaps
 
+The implementation guide for wallet teams is [Wallet private inputs](../../../docs/wallet-private-inputs.md). This page is the calculation reference for the two Shield Swap values.
+
 Blinded addresses let DEXs such as Shield Swap identify a private swap and its later claim without using the account's address as the public swap identifier. The wallet derives a private factor and a public blinded address. The contract checks that the address matches the signer and factor, while the dapp can request the swap without receiving the account's view key or private factor.
 
 The wallet can recreate the same pair when the user claims the swap. This avoids storing the private factor: the wallet derives it again from the account, program, and original counter.
