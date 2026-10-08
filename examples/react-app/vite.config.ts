@@ -6,6 +6,10 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Wallet private inputs pull in Aleo SDK wasm, which uses top-level await.
+  build: {
+    target: 'esnext',
+  },
   server: {
     // Wallet private inputs load the Aleo SDK wasm, which needs a cross-origin isolated page.
     headers: {
