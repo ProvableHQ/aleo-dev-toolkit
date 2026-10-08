@@ -35,4 +35,4 @@ Open **Run browser compatibility checks** to verify SDK outputs, competing Index
 | [browser-tests.ts](src/browser-tests.ts)     | Browser compatibility checks.                                           |
 | [INTEGRATION.md](INTEGRATION.md)             | Where these calls fit into an existing wallet and adapter.              |
 
-For actual wallet connection and transaction submission, use the [Wallet Adapter Private Inputs demo](https://aleo-dev-toolkit-react-app.vercel.app/private-inputs) with Shield and a deployed private swap program that uses blinded addresses. Configure the deployed function's grants and complete inputs as described in the [integration overview](../../docs/wallet-hosted-algorithms-integration.md).
+For actual wallet connection and transaction submission, use the [Wallet Adapter Private Inputs demo](https://aleo-dev-toolkit-react-app.vercel.app/private-inputs) with Shield and a deployed Shield Swap program. Configure the deployed function's grants and complete inputs as described in the [integration overview](../../docs/wallet-hosted-algorithms-integration.md).

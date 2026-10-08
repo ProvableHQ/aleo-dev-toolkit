@@ -25,7 +25,7 @@ export const grants: AlgorithmGrant[] = ['swap_private', 'claim_swap_output_priv
     },
   })),
 );
-/** Two-slot fixture request, not the complete ABI of a deployed private swap program. */
+/** Two-slot fixture request, not the complete deployed Shield Swap ABI. */
 export function request(target?: string): TransactionOptions {
   return {
     program: scope.program,
