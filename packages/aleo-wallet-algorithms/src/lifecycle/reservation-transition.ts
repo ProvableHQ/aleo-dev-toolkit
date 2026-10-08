@@ -40,6 +40,6 @@ export function decideRemap(existing: Reservation, newId: string): Reservation {
 
 /** Record a known outcome once. A later call cannot replace it. */
 export function decideSettle(existing: Reservation, status: 'confirmed' | 'reverted'): Reservation {
-  if (existing.status !== 'pending') return existing;
+  if (existing.status !== 'pending' || existing.txId === null) return existing;
   return { ...existing, status };
 }

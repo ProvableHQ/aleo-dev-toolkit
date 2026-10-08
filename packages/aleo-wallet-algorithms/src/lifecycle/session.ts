@@ -53,11 +53,14 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
   if (scope.network !== algorithmNetwork)
     throw new Error('Session network does not match the imported algorithm build');
   if (!/^[a-z][a-z0-9_]*\.aleo$/.test(scope.program)) throw new Error('Invalid scope program');
-  let state:
-    | { args: ParsedBlindingArgs; factor: string; address: string; issued: boolean }
-    | undefined;
-  let status: 'open' | 'committed' | 'closed' = 'open';
-  let committedId: string | undefined;
+  type CachedPair = { args: ParsedBlindingArgs; factor: string; address: string };
+  type SessionPhase =
+    | { phase: 'open' }
+    | (CachedPair & { phase: 'issued' })
+    | (CachedPair & { phase: 'recovered' })
+    | (CachedPair & { phase: 'committed'; txId: string; ownsRow: boolean })
+    | { phase: 'closed' };
+  let phase: SessionPhase = { phase: 'open' };
   let queue: Promise<unknown> = Promise.resolve();
   // Serialize derivation and cleanup so concurrent slots cannot reserve separate counters.
   const serial = <T>(operation: () => Promise<T>): Promise<T> => {
@@ -66,7 +69,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
     queue = result.catch(() => undefined);
     return result;
   };
-  const resolve = async (args: ParsedBlindingArgs): Promise<NonNullable<typeof state>> => {
+  const resolve = async (args: ParsedBlindingArgs): Promise<CachedPair & { issued: boolean }> => {
     const viewKeyScalar = options.getViewKeyScalar();
     const pair = (counter: number) => {
       const factor = deriveBlindingFactor({
@@ -155,29 +158,52 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         return Promise.reject(error);
       }
       return serial(async () => {
-        if (status !== 'open') throw new Error('Derivation session is closed');
-        if (state && JSON.stringify(state.args) !== JSON.stringify(parsed))
+        if (phase.phase === 'closed' || phase.phase === 'committed')
+          throw new Error('Derivation session is closed');
+        if (phase.phase === 'open') {
+          const resolved = await resolve(parsed);
+          phase = resolved.issued
+            ? {
+                phase: 'issued',
+                args: resolved.args,
+                factor: resolved.factor,
+                address: resolved.address,
+              }
+            : {
+                phase: 'recovered',
+                args: resolved.args,
+                factor: resolved.factor,
+                address: resolved.address,
+              };
+        } else if (JSON.stringify(phase.args) !== JSON.stringify(parsed)) {
           throw new Error('Paired algorithm arguments must match');
-        state ??= await resolve(parsed);
-        return algorithm === 'program-scoped-blinding-factor' ? state.factor : state.address;
+        }
+        return algorithm === 'program-scoped-blinding-factor' ? phase.factor : phase.address;
       });
     },
     commit(transactionId) {
       return serial(async () => {
         requireTxId(transactionId);
-        if (status === 'committed' && committedId === transactionId) return;
-        if (status !== 'open' || !state) throw new Error('Session cannot be committed');
-        if (state.issued) await options.store.commit(scope, state.address, transactionId);
-        committedId = transactionId;
-        status = 'committed';
+        if (phase.phase === 'committed' && phase.txId === transactionId) return;
+        if (phase.phase !== 'issued' && phase.phase !== 'recovered')
+          throw new Error('Session cannot be committed');
+        const ownsRow = phase.phase === 'issued';
+        if (ownsRow) await options.store.commit(scope, phase.address, transactionId);
+        phase = {
+          phase: 'committed',
+          args: phase.args,
+          factor: phase.factor,
+          address: phase.address,
+          txId: transactionId,
+          ownsRow,
+        };
       });
     },
     release() {
       return serial(async () => {
         // Committed counters stay reserved until settlement, even after cached values are cleared.
-        if (status === 'open' && state?.issued) await options.store.release(scope, state.address);
-        state = undefined;
-        status = 'closed';
+        if (phase.phase === 'issued') await options.store.release(scope, phase.address);
+        phase = { phase: 'closed' };
       });
     },
   };

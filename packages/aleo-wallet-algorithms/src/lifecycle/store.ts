@@ -5,15 +5,20 @@ export interface ReservationScope {
   program: string;
 }
 
-export type ReservationStatus = 'pending' | 'confirmed' | 'reverted';
-
-export interface Reservation {
+type ReservationBase = {
   scope: ReservationScope;
   counter: number;
   blindedAddress: string;
-  status: ReservationStatus;
-  txId: string | null;
-}
+};
+
+/** A stored counter. Submitted rows always carry a transaction id. */
+export type Reservation =
+  | (ReservationBase & { status: 'pending'; txId: null })
+  | (ReservationBase & { status: 'pending'; txId: string })
+  | (ReservationBase & { status: 'confirmed'; txId: string })
+  | (ReservationBase & { status: 'reverted'; txId: string });
+
+export type ReservationStatus = Reservation['status'];
 
 export interface ReservationCandidate {
   scope: ReservationScope;

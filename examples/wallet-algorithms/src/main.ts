@@ -69,7 +69,7 @@ async function refresh() {
     } else if (row.status === 'pending') {
       action.textContent = 'Resume transaction';
       action.onclick = () => {
-        activeId = row.txId!;
+        activeId = row.txId;
         text('status', 'Pending transaction selected. Report its simulated outcome.');
         updateButtons();
       };

@@ -333,7 +333,7 @@ export function WalletPrivateInputs() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setActiveId(row.txId ?? undefined);
+                          setActiveId(row.txId);
                           setStatus('Pending transaction selected. Report its simulated outcome.');
                         }}
                       >
