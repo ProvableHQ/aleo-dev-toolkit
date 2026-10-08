@@ -4,7 +4,7 @@ title: Wallet private inputs
 
 # Wallet private inputs
 
-An embedded wallet matches Shield on ARC-22 tokens and Shield Swap by implementing three areas. The reference code is `@provablehq/aleo-wallet-algorithms`. The pass/fail lab is `examples/wallet-algorithms`.
+An embedded wallet matches Shield on ARC-22 tokens and private swaps by implementing three areas. The reference code is `@provablehq/aleo-wallet-algorithms`. The pass/fail lab is `examples/wallet-algorithms`.
 
 Agents should start at `packages/aleo-wallet-algorithms/AGENTS.md` in the toolkit repository. That file lists the files to open and the order to scaffold the three areas.
 
@@ -45,13 +45,13 @@ const proof = complianceProofForSigner(signerAddress, freezeListTree);
 
 `freezeListTree` is the decimal node list from `GET /{network}/programs/{freezeListProgramId}/compliance/freeze-list`. An empty array builds the empty-list proof.
 
-`EMPTY_COMPLIANCE_PROOF` is a different value. Use it only when the program does not require compliance, which is what Shield Swap does for credits and registry tokens. Each of its two proofs is 16 `0field` siblings and `leaf_index: 1u32`.
+`EMPTY_COMPLIANCE_PROOF` is a different value. Use it only when the program does not require compliance, which is what the private swap program does for credits and registry tokens. Each of its two proofs is 16 `0field` siblings and `leaf_index: 1u32`.
 
 The lab button `complianceProofFromAddresses` rebuilds a tree from addresses so the steps are visible. Production must pass the published tree, or the root can disagree with the chain.
 
-Shield Swap uses this proof for `signer_merkle_proofs`, `wrapper_merkle_proofs`, `output_wrapper_merkle_proofs`, and `refund_wrapper_merkle_proofs`. The signer slot uses the swap program. Wrapper slots use the wrapped token program.
+The private swap program uses this proof for `signer_merkle_proofs`, `wrapper_merkle_proofs`, `output_wrapper_merkle_proofs`, and `refund_wrapper_merkle_proofs`. The signer slot uses the swap program. Wrapper slots use the wrapped token program.
 
-## 3. Shield Swap blinded pair
+## 3. Blinded addresses for private swaps
 
 One wallet-chosen counter produces both values:
 

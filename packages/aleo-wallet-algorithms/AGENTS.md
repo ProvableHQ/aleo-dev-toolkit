@@ -1,6 +1,6 @@
 # Agent guide: wallet private inputs
 
-Use this file when scaffolding ARC-22 and Shield Swap support in a wallet. Implement the changes in the target wallet. Do not rewrite this package unless a vector fails.
+Use this file when scaffolding ARC-22 and blinded address (private swap) support in a wallet. Implement the changes in the target wallet. Do not rewrite this package unless a vector fails.
 
 Read [docs/wallet-private-inputs.md](../../docs/wallet-private-inputs.md) once, then follow the steps below. Finish one area and its check before starting the next.
 
@@ -51,15 +51,15 @@ Scaffold:
 2. Fetch `GET /{network}/programs/{freezeListProgramId}/compliance/freeze-list`. The body is an array of decimal tree nodes.
 3. Call `complianceProofForSigner(signerAddress, freezeListTree)`.
 4. Use an empty array only when the token requires compliance and the published list is empty. That returns a real proof of the empty tree.
-5. Use `EMPTY_COMPLIANCE_PROOF` only when the program does not require compliance. Shield Swap does this for credits and registry tokens. It is 16 `0field` siblings and `leaf_index: 1u32` in each of two proofs.
+5. Use `EMPTY_COMPLIANCE_PROOF` only when the program does not require compliance. The private swap program does this for credits and registry tokens. It is 16 `0field` siblings and `leaf_index: 1u32` in each of two proofs.
 6. Place the proof immediately after the record on a private send or unshield.
-7. For Shield Swap, place the same proof in whichever of these slots the transaction contains: `signer_merkle_proofs`, `wrapper_merkle_proofs`, `output_wrapper_merkle_proofs`, `refund_wrapper_merkle_proofs`. The signer slot uses the swap program. Wrapper slots use the wrapped token's program.
+7. For private swaps, place the same proof in whichever of these slots the transaction contains: `signer_merkle_proofs`, `wrapper_merkle_proofs`, `output_wrapper_merkle_proofs`, `refund_wrapper_merkle_proofs`. The signer slot uses the swap program. Wrapper slots use the wrapped token's program.
 
 `complianceProofFromAddresses` is for the lab only. A production path that rebuilds the tree from addresses can disagree with the on-chain root.
 
 Check: run `pnpm --filter @provablehq/aleo-wallet-algorithms test` in this repo, or call `complianceProofForSigner` from the wallet on an empty list and on one saved published tree. The two results must differ, and neither may equal `EMPTY_COMPLIANCE_PROOF` unless the program is not a compliance program.
 
-## Area 3 — Shield Swap blinded pair
+## Area 3 — Blinded addresses for private swaps
 
 Look here, in this order:
 
@@ -112,5 +112,5 @@ Report these four lines:
 
 1. Where the wallet selects an ARC-22 record and the input order it now builds.
 2. Where it fetches the freeze list, and which call produces the proof.
-3. Where it derives the blinded pair, and the result of both vectors.
+3. Where it derives the blinded address and factor, and the result of both vectors.
 4. Which wallet pieces this package does not provide: record scanning, catalog refresh, approval UI, proving, and submission.

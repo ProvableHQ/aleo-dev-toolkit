@@ -97,8 +97,9 @@ export function WalletPrivateInputs() {
       <div className="space-y-2">
         <h1 className="h2 text-foreground">Wallet private inputs</h1>
         <p className="body-l text-muted-foreground max-w-2xl">
-          Three checks for an embedded wallet: an ARC-22 record, an ARC-22 compliance proof, and the
-          Shield Swap blinded pair. Each check compares a public fixture with the reference output.
+          Three checks for an embedded wallet: an ARC-22 record, an ARC-22 compliance proof, and a
+          blinded address for private swaps. Each check compares a public fixture with the reference
+          output.
         </p>
       </div>
 
@@ -148,9 +149,9 @@ export function WalletPrivateInputs() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-        <p className="label-xs text-muted-foreground">03 / Shield Swap</p>
+        <p className="label-xs text-muted-foreground">03 / Blinded addresses</p>
         <div className="space-y-2">
-          <h2 className="h3">Derive a matching pair</h2>
+          <h2 className="h3">Derive a blinded address for a private swap</h2>
           <p className="body-s text-muted-foreground">
             Supply explicit inputs and choose a counter. These functions do not read storage or
             contact a network.
@@ -176,7 +177,7 @@ export function WalletPrivateInputs() {
                   if (counter.trim() === '') throw new Error('Enter a counter');
                   const value = Number(counter);
                   setDirectOutput(pretty(await deriveAtCounter(value)));
-                  setStatus('Blinded pair derived from the public fixture.');
+                  setStatus('Blinded address derived from the public fixture.');
                 })
               }
               disabled={busy}

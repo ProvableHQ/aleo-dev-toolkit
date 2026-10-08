@@ -4,7 +4,7 @@ Three checks for an embedded wallet, then an optional counter-store sample.
 
 1. ARC-22 record shape and input order.
 2. ARC-22 compliance proof at depth 16.
-3. Shield Swap blinding factor and blinded address, checked against the Shield oracle.
+3. Blinded address and blinding factor for private swaps, checked against the Shield oracle.
 
 The guide is [docs/wallet-private-inputs.md](../../docs/wallet-private-inputs.md). Agents scaffolding a wallet should follow [packages/aleo-wallet-algorithms/AGENTS.md](../../packages/aleo-wallet-algorithms/AGENTS.md).
 

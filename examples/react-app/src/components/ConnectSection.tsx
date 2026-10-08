@@ -67,7 +67,7 @@ const features = [
   {
     icon: Shield,
     title: 'Wallet private inputs',
-    description: 'ARC-22 records, freeze-list proofs, and Shield Swap blinded addresses',
+    description: 'ARC-22 records, freeze-list proofs, and blinded addresses for private swaps',
     href: '/wallet-inputs',
   },
   {

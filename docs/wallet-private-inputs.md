@@ -1,6 +1,6 @@
 # Wallet private inputs
 
-This is the implementation guide for an embedded wallet that needs to match Shield on ARC-22 tokens and Shield Swap. There are three areas. Each one has a reference implementation in `@provablehq/aleo-wallet-algorithms` and a pass/fail check in the [browser lab](../examples/wallet-algorithms).
+This is the implementation guide for an embedded wallet that needs to match Shield on ARC-22 tokens and private swaps. There are three areas. Each one has a reference implementation in `@provablehq/aleo-wallet-algorithms` and a pass/fail check in the [browser lab](../examples/wallet-algorithms).
 
 Agents scaffolding a wallet should follow [packages/aleo-wallet-algorithms/AGENTS.md](../packages/aleo-wallet-algorithms/AGENTS.md). That file is the step-by-step map of where to look and what to wire up.
 
@@ -52,21 +52,21 @@ const proof = complianceProofForSigner(signerAddress, freezeListTree);
 
 Two empty cases are different:
 
-- The token does not require compliance. Use `EMPTY_COMPLIANCE_PROOF`. Shield Swap does this for credits and registry tokens. The literal is 16 `0field` siblings and `leaf_index: 1u32` in each of the two proofs.
+- The token does not require compliance. Use `EMPTY_COMPLIANCE_PROOF`. The private swap program does this for credits and registry tokens. The literal is 16 `0field` siblings and `leaf_index: 1u32` in each of the two proofs.
 - The token requires compliance and the published list is empty. Call `complianceProofForSigner(address, [])`. That builds the empty tree and returns a real exclusion proof. Do not substitute `EMPTY_COMPLIANCE_PROOF`.
 
 The lab's "Build compliance proof" button uses `complianceProofFromAddresses`. That rebuilds a tree from addresses so the algorithm is visible. A production wallet must pass the published tree. Rebuilding from addresses can produce a different root from the one the chain checks.
 
-Shield Swap places this same proof in `signer_merkle_proofs`, `wrapper_merkle_proofs`, `output_wrapper_merkle_proofs`, and `refund_wrapper_merkle_proofs`. Each slot names a program. The signer slot uses the swap program. Wrapper slots use the wrapped token's program. A slot whose program is not a compliance program gets `EMPTY_COMPLIANCE_PROOF`.
+The private swap program places this same proof in `signer_merkle_proofs`, `wrapper_merkle_proofs`, `output_wrapper_merkle_proofs`, and `refund_wrapper_merkle_proofs`. Each slot names a program. The signer slot uses the swap program. Wrapper slots use the wrapped token's program. A slot whose program is not a compliance program gets `EMPTY_COMPLIANCE_PROOF`.
 
 Wallet work:
 
 - Read `complianceFreezeList` from the token catalog.
 - Fetch that program's freeze-list tree and refresh it. Shield refreshes on the order of minutes.
 - Build the proof for the transaction signer at depth 16.
-- Put the proof after the record on a private send or unshield, and in the matching Shield Swap slot.
+- Put the proof after the record on a private send or unshield, and in the matching private swap slot.
 
-## 3. Shield Swap blinded pair
+## 3. Blinded addresses for private swaps
 
 A private swap needs two values from the same counter:
 
@@ -114,7 +114,7 @@ Open the URL Vite prints. Use the three buttons at the top. `matchesSyntheticVec
 | Import | Use it for |
 | --- | --- |
 | `/compliance-proof` | ARC-22 proof and the empty literal |
-| `/program-scoped-blinding-factor` | Shield Swap private factor |
-| `/program-scoped-blinded-address` | Shield Swap public address |
+| `/program-scoped-blinding-factor` | Private factor for a blinded address |
+| `/program-scoped-blinded-address` | Blinded address for a private swap |
 | `/lifecycle` and `/storage/indexeddb` | Optional counter sample |
 | `/testing` | The two blinding vectors and storage checks |

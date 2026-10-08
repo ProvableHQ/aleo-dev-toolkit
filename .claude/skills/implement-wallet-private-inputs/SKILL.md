@@ -1,6 +1,6 @@
 ---
 name: implement-wallet-private-inputs
-description: Implements ARC-22 compliance records, ARC-22 compliance proofs, and Shield Swap blinded identity in an Aleo wallet. Use when adding embedded-wallet support for compliant tokens, freeze-list proofs, blinding factors, or blinded addresses.
+description: Implements ARC-22 compliance records, ARC-22 compliance proofs, and blinded addresses for private swaps in an Aleo wallet. Use when adding embedded-wallet support for compliant tokens, freeze-list proofs, blinding factors, or blinded addresses.
 ---
 
 # Implement wallet private inputs
@@ -26,12 +26,12 @@ There is no derivation function for the record. Stop if the wallet cannot decryp
 
 Check: `pnpm --filter @provablehq/aleo-wallet-algorithms test` includes `compliance.test.mjs`. A rebuilt address tree is not a substitute for the published tree.
 
-## 3. Shield Swap blinded pair
+## 3. Blinded addresses for private swaps
 
 - Import the two derive functions. Use `/mainnet/...` on mainnet.
 - Fill `blinding_factor` and `blinded_address` from the same `u32` counter.
 - Keep the view key, counter, and factor inside the wallet.
-- Recover the same pair for a claim. Do not allocate a new counter when the outcome of a swap is still unknown.
+- Recover the same blinded address and factor for a claim. Do not allocate a new counter when the outcome of a swap is still unknown.
 
 Check both `BLINDING_TEST_VECTOR` and `SHIELD_BLINDING_VECTOR` from `/testing`. The Shield vector is the oracle.
 

@@ -4,7 +4,7 @@ import { SealanceMerkleTree } from './sealance-merkle-tree';
 export const COMPLIANCE_PROOF_DEPTH = 16;
 
 /**
- * Literal Shield Swap uses when a program does not require compliance.
+ * Literal private swaps use when a program does not require compliance.
  * This is not the proof of an empty freeze list. An empty freeze list still
  * builds a tree and produces a real exclusion proof.
  */
