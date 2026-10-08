@@ -289,11 +289,19 @@ class SealanceMerkleTree {
     siblingPath.push(tree[index]);
     let level = 1;
     while (parentIndex < tree.length) {
+      // A malformed tree (for example two nodes) makes this step zero and never finishes.
+      if (level >= depth) {
+        throw new Error('Freeze list tree is deeper than the compliance proof');
+      }
+      const step = Math.floor(num_leaves / 2 ** level);
+      if (step === 0) {
+        throw new Error('Freeze list tree is not a complete binary tree');
+      }
       let siblingIndex = index % 2 === 0 ? index + 1 : index - 1; // Get the sibling index
       siblingPath.push(tree[siblingIndex]);
 
       index = parentIndex + Math.floor(leafIndex / 2 ** level); // Move up to the parent node
-      parentIndex += Math.floor(num_leaves / 2 ** level); // Halve the number of nodes for the next level
+      parentIndex += step; // Halve the number of nodes for the next level
       level++;
     }
 

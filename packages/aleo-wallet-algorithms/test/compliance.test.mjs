@@ -27,6 +27,10 @@ test('compliance proofs use Shield depth and a stable shape', () => {
   assert.notEqual(complianceProofForSigner(signer, []), EMPTY_COMPLIANCE_PROOF);
 });
 
+test('a malformed freeze list does not hang', { timeout: 2000 }, () => {
+  assert.throws(() => complianceProofForSigner(signer, ['0', '0']), /complete binary tree/);
+});
+
 test('a program that does not require compliance uses the Shield empty literal', () => {
   assert.match(EMPTY_COMPLIANCE_PROOF, /leaf_index: 1u32/);
   assert.equal(EMPTY_COMPLIANCE_PROOF.split('0field').length - 1, 32);

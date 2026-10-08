@@ -11,7 +11,26 @@ export const COMPLIANCE_PROOF_DEPTH = 16;
 export const EMPTY_COMPLIANCE_PROOF =
   '[{ siblings: [0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field], leaf_index: 1u32 }, { siblings: [0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field, 0field], leaf_index: 1u32 }]';
 
+/** A published tree is 2N−1 nodes, with N a power of two and at most 2^(depth−1) leaves. */
+function assertFreezeListTree(nodes: readonly bigint[]): void {
+  const width = nodes.length + 1;
+  const leaves = width / 2;
+  const maxLeaves = 2 ** (COMPLIANCE_PROOF_DEPTH - 1);
+  if (
+    nodes.length === 0 ||
+    width % 2 !== 0 ||
+    leaves < 2 ||
+    (leaves & (leaves - 1)) !== 0 ||
+    leaves > maxLeaves
+  ) {
+    throw new Error(
+      'Freeze list tree is not a complete binary tree within the compliance proof depth',
+    );
+  }
+}
+
 function proofForTree(signerAddress: string, nodes: bigint[]): string {
+  assertFreezeListTree(nodes);
   const tree = new SealanceMerkleTree();
   const [left, right] = tree.getLeafIndices(nodes, signerAddress);
   return tree.formatMerkleProof([
