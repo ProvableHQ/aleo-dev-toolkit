@@ -52,7 +52,7 @@ pnpm hooks-app:dev
 
 - **`examples/react-app/`** - A React application demonstrating wallet adapter integration with UI components
 - **`examples/react-app-hooks/`** - A React application showcasing the use of Aleo hooks for chain data
-- **[`examples/wallet-algorithms/`](examples/wallet-algorithms)** - Pass/fail lab for ARC-22 records, ARC-22 proofs, and blinded addresses for private swaps. See [Wallet private inputs](docs/wallet-private-inputs.md).
+- **`examples/react-app/` Wallet Inputs** - Pass/fail lab for ARC-22 records, ARC-22 proofs, and blinded addresses for private swaps. See [Wallet private inputs](docs/wallet-private-inputs.md).
 
 ## Clean
 

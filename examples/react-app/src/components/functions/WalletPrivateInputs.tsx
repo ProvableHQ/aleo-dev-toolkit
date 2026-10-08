@@ -33,6 +33,11 @@ function Output({ children }: { children: string }) {
   );
 }
 
+const GUIDE_URL =
+  'https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/wallet-private-inputs.md';
+const AGENT_URL =
+  'https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/packages/aleo-wallet-algorithms/AGENTS.md';
+
 export function WalletPrivateInputs() {
   const storeRef = useRef<ReservationStore | null>(null);
   const preparedRef = useRef<PreparedSwap | undefined>(undefined);
@@ -100,6 +105,35 @@ export function WalletPrivateInputs() {
           Three checks for an embedded wallet: an ARC-22 record, an ARC-22 compliance proof, and a
           blinded address for private swaps. Each check compares a public fixture with the reference
           output.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-6 space-y-3">
+        <p className="label-xs text-muted-foreground">Start here</p>
+        <h2 className="h3">Integrate a wallet</h2>
+        <ol className="body-s text-muted-foreground list-decimal space-y-2 pl-5 max-w-2xl">
+          <li>
+            Read the guide,{' '}
+            <a className="underline text-foreground" href={GUIDE_URL}>
+              docs/wallet-private-inputs.md
+            </a>
+            . It is also on the docs site as “Wallet private inputs.” Work through the record, the
+            proof, then the blinded address.
+          </li>
+          <li>
+            Agents follow{' '}
+            <a className="underline text-foreground" href={AGENT_URL}>
+              packages/aleo-wallet-algorithms/AGENTS.md
+            </a>
+            . Finish one area and its check before the next. Implement that in the target wallet.
+          </li>
+          <li>
+            Use sections 01–03 on this page as those checks. Section 04 is an optional counter
+            store. A wallet can keep its own.
+          </li>
+        </ol>
+        <p className="body-s text-muted-foreground">
+          From the repo root, run <code>pnpm adapter-app:dev</code> and open Wallet Inputs.
         </p>
       </div>
 

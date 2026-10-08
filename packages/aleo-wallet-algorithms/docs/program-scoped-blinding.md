@@ -24,7 +24,7 @@ Expose both algorithm names through the wallet's `algorithmsSupported()` method.
 
 Before processing a derived input, match its algorithm, program, function, and input position to an approved grant. Check argument constraints and the deployed function's input type. `/schemas` provides argument validation; the wallet must enforce permissions separately.
 
-See the [provider integration guide](../../../examples/wallet-algorithms/INTEGRATION.md) for wallet responsibilities and the [adapter guide](../../../docs/wallet-hosted-algorithms-integration.md#call-the-wallet-adapter) for dapp calls.
+See the [wallet integration guide](../../../docs/wallet-hosted-algorithms-integration.md) for wallet responsibilities and the [adapter section](../../../docs/wallet-hosted-algorithms-integration.md#call-the-wallet-adapter) for dapp calls.
 
 ## 2. Select the network, program, and account
 
@@ -38,7 +38,7 @@ Default algorithm imports use testnet. For mainnet, insert `/mainnet` before the
 
 Resolve `grant.scopeProgram ?? grant.program` from the approved grant. This scope identifies the program used in hashing and counter storage. Load its deployed source on the selected network and obtain its address with `Program.fromString(source).address()` from `@provablehq/sdk`.
 
-Use the active account's signer address and view-key scalar. The SDK supplies `ViewKey.from_string(key).to_scalar()` for the scalar conversion. Keep these operations inside the wallet and dispose temporary SDK handles. Browser builds must support WASM assets and cross-origin isolation; the [example](../../../examples/wallet-algorithms) includes Vite settings.
+Use the active account's signer address and view-key scalar. The SDK supplies `ViewKey.from_string(key).to_scalar()` for the scalar conversion. Keep these operations inside the wallet and dispose temporary SDK handles. Browser builds must support WASM assets and cross-origin isolation; the [React example](../../../examples/react-app/vite.config.ts) includes those Vite settings.
 
 ## 3. Compute the factor and address
 
@@ -185,4 +185,4 @@ Check both calculations against this public test vector, also exported as `BLIND
 
 The [compatibility tests](../test/algorithms.test.mjs) compare address packing with SDK `Plaintext.toFieldsRaw()` on both networks. For a custom database adapter, run `runStorageContract` from `/testing` against an empty disposable database. Pass two connections to check competing requests. `createMemoryStore()` is available for tests; it does not preserve state after a restart.
 
-Run the [browser example](../../../examples/wallet-algorithms) to exercise preparation, cancellation, submission, settlement, and recovery without a saved local index. Its [integration notes](../../../examples/wallet-algorithms/INTEGRATION.md) show where these calls belong in a wallet. Calculations and IndexedDB writes are real; transaction outcomes are simulated.
+Open Wallet Inputs in the [React example](../../../examples/react-app) to exercise preparation, cancellation, submission, settlement, and recovery without a saved local index. [Wallet-hosted algorithms](../../../docs/wallet-hosted-algorithms-integration.md) shows where these calls belong in a wallet. Calculations and IndexedDB writes are real; transaction outcomes are simulated.

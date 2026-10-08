@@ -1,6 +1,6 @@
 # Wallet private inputs
 
-This is the implementation guide for an embedded wallet that needs to match Shield on ARC-22 tokens and private swaps. There are three areas. Each one has a reference implementation in `@provablehq/aleo-wallet-algorithms` and a pass/fail check in the [browser lab](../examples/wallet-algorithms).
+This is the implementation guide for an embedded wallet that needs to match Shield on ARC-22 tokens and private swaps. There are three areas. Each one has a reference implementation in `@provablehq/aleo-wallet-algorithms` and a pass/fail check on the Wallet Inputs page in the [React example](../examples/react-app).
 
 Agents scaffolding a wallet should follow [packages/aleo-wallet-algorithms/AGENTS.md](../packages/aleo-wallet-algorithms/AGENTS.md). That file is the step-by-step map of where to look and what to wire up.
 
@@ -104,10 +104,10 @@ Wallet work:
 
 ```sh
 pnpm install
-pnpm wallet-algorithms:dev
+pnpm adapter-app:dev
 ```
 
-Open the URL Vite prints. Use the three buttons at the top. `matchesSyntheticVector`, `matchesShieldOracle`, and `stableWhenAddressesAreReordered` should be true. The fourth section is the optional counter store. It uses a public test scalar and a simulated chain. Do not enter a real view key.
+Open Wallet Inputs. Sections 01–03 are the checks. “Check Shield oracle” should report a match. Section 04 is the optional counter store. It uses a public test scalar and a simulated chain. Do not enter a real view key.
 
 ## Package layout
 

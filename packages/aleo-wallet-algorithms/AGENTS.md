@@ -14,7 +14,7 @@ Leave these alone unless the wallet has no counter store at all:
 
 - `src/lifecycle/`
 - `src/storage/indexeddb.ts`
-- `examples/wallet-algorithms` section 04
+- Wallet Inputs section 04 in `examples/react-app`
 
 That code is one sample of counter reservation. It is not Shield's database.
 
@@ -101,10 +101,10 @@ From this repository:
 
 ```sh
 pnpm install
-pnpm wallet-algorithms:dev
+pnpm adapter-app:dev
 ```
 
-The first three controls are the checks. `matchesSyntheticVector`, `matchesShieldOracle`, and `stableWhenAddressesAreReordered` must be true.
+Open Wallet Inputs. Sections 01–03 are the checks. “Check Shield oracle” must report a match.
 
 ## Done when
 

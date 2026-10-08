@@ -18,7 +18,6 @@
     "clean": "turbo run clean",
     "dev": "turbo run dev",
     "dev:example": "pnpm --filter react-app-example dev",
-    "wallet-algorithms:dev": "pnpm --filter @provablehq/aleo-types build && pnpm --filter @provablehq/aleo-wallet-algorithms build && pnpm --filter wallet-algorithms-example dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "publish-packages": "pnpm test:release && turbo run build lint && changeset publish",

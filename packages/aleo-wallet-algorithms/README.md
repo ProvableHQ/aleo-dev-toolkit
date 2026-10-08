@@ -16,4 +16,4 @@ Default imports use testnet. Insert `/mainnet` before the export name on mainnet
 
 `/lifecycle` and `/storage/indexeddb` are an optional counter sample. A wallet can keep its own store. The proof, blinded address, and blinding factor are the values that must match.
 
-Run the lab from the repository root with `pnpm wallet-algorithms:dev`.
+Run the lab from the repository root with `pnpm adapter-app:dev`, then open Wallet Inputs.

@@ -4,7 +4,7 @@ title: Wallet private inputs
 
 # Wallet private inputs
 
-An embedded wallet matches Shield on ARC-22 tokens and private swaps by implementing three areas. The reference code is `@provablehq/aleo-wallet-algorithms`. The pass/fail lab is `examples/wallet-algorithms`.
+An embedded wallet matches Shield on ARC-22 tokens and private swaps by implementing three areas. The reference code is `@provablehq/aleo-wallet-algorithms`. The pass/fail lab is the Wallet Inputs page in `examples/react-app`.
 
 Agents should start at `packages/aleo-wallet-algorithms/AGENTS.md` in the toolkit repository. That file lists the files to open and the order to scaffold the three areas.
 
@@ -75,7 +75,7 @@ From the repository root:
 
 ```sh
 pnpm install
-pnpm wallet-algorithms:dev
+pnpm adapter-app:dev
 ```
 
-The first three controls should report a match. The fourth section is the optional counter store. It uses a public test scalar. Do not enter a real view key.
+Open Wallet Inputs. The first three sections are the checks. The fourth section is the optional counter store. It uses a public test scalar. Do not enter a real view key.

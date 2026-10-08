@@ -8,7 +8,7 @@ A wallet-hosted algorithm is a function installed in the wallet. The dapp identi
 
 `@provablehq/aleo-wallet-algorithms` implements the swap calculations with SDK 0.11.11. Import each algorithm separately; bundles can omit unused algorithms, reservation helpers, and storage. The wallet can keep its existing counter and database logic.
 
-Start with the [runnable browser example](../examples/wallet-algorithms). Its [integration notes](../examples/wallet-algorithms/INTEGRATION.md) explain how to handle provider requests and store reservations. The [blinding reference](../packages/aleo-wallet-algorithms/docs/program-scoped-blinding.md) covers both algorithms, their exact calculations and compatibility vector, and the optional lifecycle helpers.
+The runnable lab is the Wallet Inputs page in [examples/react-app](../examples/react-app) (`pnpm adapter-app:dev`, then Wallet Inputs). The [blinding reference](../packages/aleo-wallet-algorithms/docs/program-scoped-blinding.md) covers both algorithms, their exact calculations and compatibility vector, and the optional lifecycle helpers.
 
 ## Implement in the wallet
 
