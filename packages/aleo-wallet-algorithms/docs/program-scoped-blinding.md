@@ -1,8 +1,8 @@
 # Wallet Algorithm: Blinded Addresses for Private Swaps
 
-Blinded addresses let DEXs such as Shield Swap identify a private swap and its later claim without using the account's address as the public swap identifier. The wallet derives a private factor and a public blinded address. The contract checks that the address matches the signer and factor, while the dapp can request the swap without receiving the account's view key or private factor.
+Blinded addresses let DEXs identify a private swap and its later claim without using the account's address as the public swap identifier. The wallet derives a private factor and a public blinded address. The contract checks that the address matches the signer and factor, while the dapp can request the swap without receiving the account's view key or private factor.
 
-The wallet can recreate the same pair when the user claims the swap. This avoids storing the private factor: the wallet derives it again from the account, program, and original counter.
+The wallet can recreate the same blinded address and factor when the user claims the swap. This avoids storing the private factor: the wallet derives it again from the account, program, and original counter.
 
 ## The two algorithms
 
@@ -55,10 +55,10 @@ const blindedAddress = deriveBlindedAddress({ programAddress, signerAddress, bli
 | `programAddress` | Address of the approved scope program, used in both calls.                                                     |
 | `viewKeyScalar`  | Active account's view-key scalar as an Aleo scalar literal.                                                    |
 | `signerAddress`  | Address of the account signing the transaction.                                                                |
-| `counter`        | Wallet-selected integer from 0 through 4,294,967,295 (`u32`). Use the original counter when recovering a pair. |
+| `counter`        | Wallet-selected integer from 0 through 4,294,967,295 (`u32`). Use the original counter when recovering a blinded address. |
 | `blindingFactor` | Private field literal returned by the first call, passed unchanged to the second.                              |
 
-Invalid literals or an out-of-range counter throw. Keep a new pair unavailable to other pending transactions until its outcome is known. Step 4 supplies optional helpers for this behavior.
+Invalid literals or an out-of-range counter throw. Keep a new blinded address unavailable to other pending transactions until its outcome is known. Step 4 supplies optional helpers for this behavior.
 
 ### Exact calculations
 
@@ -113,9 +113,9 @@ const factor = await session.derive('program-scoped-blinding-factor', issueArgs)
 const address = await session.derive('program-scoped-blinded-address', issueArgs);
 ```
 
-Create one session per transaction and approved scope. Both requests must have identical arguments; concurrent calls share one pair. Mainnet sessions require `/mainnet/lifecycle` and a mainnet scope. A network mismatch throws.
+Create one session per transaction and approved scope. Both requests must have identical arguments; concurrent calls share one blinded address. Mainnet sessions require `/mainnet/lifecycle` and a mainnet scope. A network mismatch throws.
 
-For a new pair, the helper rechecks reverted counters, then searches above the highest stored counter. It skips addresses already present in the contract's mapping. **Any mapping value, including `false`, means used; only `null` means absent.**
+For a new blinded address, the helper rechecks reverted counters, then searches above the highest stored counter. It skips addresses already present in the contract's mapping. **Any mapping value, including `false`, means used; only `null` means absent.**
 
 ### Storage adapters
 

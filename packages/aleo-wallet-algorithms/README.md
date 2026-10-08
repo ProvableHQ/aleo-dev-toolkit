@@ -33,10 +33,10 @@ The dapp requests computations; the wallet supplies the secrets and runs them. K
 
 ## Included algorithms
 
-| Algorithm                        | Where and why it is used                                                                                   | Reference                                                                       |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `program-scoped-blinding-factor` | Creates the private factor for a Shield Swap transaction and lets the wallet recover it for a later claim. | [Inputs and exact calculation](docs/program-scoped-blinding.md#blinding-factor) |
-| `program-scoped-blinded-address` | Creates the public swap identifier that the contract checks against the signer and private factor.         | [Inputs and exact calculation](docs/program-scoped-blinding.md#blinded-address) |
+| Algorithm                        | Where and why it is used                                                                                                   | Reference                                                                       |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `program-scoped-blinding-factor` | Creates the private factor behind a blinded address for a private swap and lets the wallet recover it for a later claim.   | [Inputs and exact calculation](docs/program-scoped-blinding.md#blinding-factor) |
+| `program-scoped-blinded-address` | Creates the blinded address that publicly identifies a private swap; the contract checks it against the signer and factor. | [Inputs and exact calculation](docs/program-scoped-blinding.md#blinded-address) |
 
 ## Add the package to the wallet
 

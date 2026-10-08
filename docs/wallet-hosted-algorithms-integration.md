@@ -140,11 +140,11 @@ const claim = await adapter.executeTransaction({
 });
 ```
 
-`targetAddress` identifies the existing swap; `remainingClaimInputs` supplies its other claim inputs. The wallet recovers the original pair at positions 0 and 1 without exposing the counter.
+`targetAddress` identifies the existing swap; `remainingClaimInputs` supplies its other claim inputs. The wallet recovers the original blinded address and factor at positions 0 and 1 without exposing the counter.
 
 ## Run the live demo
 
-The [Private Inputs demo](https://aleo-dev-toolkit-react-app.vercel.app/private-inputs) shows the grant and transaction flow with Shield. It defaults to a credits transfer; configure it for a deployed Shield Swap program. A swap needs an existing pool, an eligible token record, and fee funds.
+The [Private Inputs demo](https://aleo-dev-toolkit-react-app.vercel.app/private-inputs) shows the grant and transaction flow with Shield. It defaults to a credits transfer; configure it for a deployed private swap program that uses blinded addresses. A swap needs an existing pool, an eligible token record, and fee funds.
 
 1. Select the deployment's network and add the swap and token programs to **Programs**. Under **Function inputs**, enter the deployed program ID and `swap_private`.
 2. Add algorithm grants for the factor at position 1 and address at position 2, plus access to the input token record. Confirm indices against the deployed function: form labels #2 and #3 correspond to zero-based grant positions 1 and 2.
