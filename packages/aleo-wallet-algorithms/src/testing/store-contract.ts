@@ -57,7 +57,7 @@ export async function runStorageContract(
     'other-network updates must not change this scope',
   );
   const snapshot = await first.list(scope);
-  snapshot[0].status = 'reverted';
+  Reflect.set(snapshot[0] ?? {}, 'status', 'reverted');
   check(
     (await second.list(scope))[0]?.status === 'confirmed',
     'returned records must not mutate storage',

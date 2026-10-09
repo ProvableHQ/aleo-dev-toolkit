@@ -2,6 +2,7 @@ import { deriveBlindingFactor } from '@provablehq/aleo-wallet-algorithms/program
 import { deriveBlindedAddress } from '@provablehq/aleo-wallet-algorithms/program-scoped-blinded-address';
 import { openIndexedDBStore } from '@provablehq/aleo-wallet-algorithms/storage/indexeddb';
 import { createMemoryStore } from '@provablehq/aleo-wallet-algorithms/testing';
+import type { Reservation } from '@provablehq/aleo-wallet-algorithms/lifecycle';
 import { fixture, grants, request, scope } from './fixtures';
 import { prepareInWallet } from './wallet';
 import { chain } from './simulated-chain';
@@ -49,32 +50,47 @@ async function refresh() {
   for (const row of rows.sort((a, b) => a.counter - b.counter)) {
     const card = document.createElement('article');
     const summary = document.createElement('p');
-    summary.textContent = `Counter ${row.counter} · ${row.status} · ${row.txId ?? 'uncommitted approval'}`;
     card.append(summary);
     const address = document.createElement('code');
     address.textContent = row.blindedAddress;
     card.append(address);
     const action = document.createElement('button');
-    if (row.status === 'pending' && row.txId === null) {
-      // This tab cannot establish whether another tab still owns the approval.
-      action.textContent = 'Reserved by an approval; cancel in its owning tab';
-      action.disabled = true;
-    } else if (row.status === 'pending') {
-      action.textContent = 'Resume transaction';
-      action.onclick = () => {
-        activeId = row.txId!;
-        text('status', 'Pending transaction selected. Report its simulated outcome.');
-        updateButtons();
-      };
-    } else if (row.status === 'confirmed') {
-      action.textContent = 'Use for claim';
-      action.onclick = () => {
-        element<HTMLInputElement>('target').value = row.blindedAddress;
-      };
-    } else {
-      action.textContent = 'Available after chain recheck';
-      action.disabled = true;
+    let detail: string;
+    switch (row.status) {
+      case 'pending': {
+        if (row.txId === null) {
+          // This tab cannot establish whether another tab still owns the approval.
+          detail = 'uncommitted approval';
+          action.textContent = 'Reserved by an approval; cancel in its owning tab';
+          action.disabled = true;
+          break;
+        }
+        const txId = row.txId;
+        detail = txId;
+        action.textContent = 'Resume transaction';
+        action.onclick = () => {
+          activeId = txId;
+          text('status', 'Pending transaction selected. Report its simulated outcome.');
+          updateButtons();
+        };
+        break;
+      }
+      case 'confirmed':
+        detail = row.txId;
+        action.textContent = 'Use for claim';
+        action.onclick = () => {
+          element<HTMLInputElement>('target').value = row.blindedAddress;
+        };
+        break;
+      case 'reverted':
+        detail = row.txId;
+        action.textContent = 'Available after chain recheck';
+        action.disabled = true;
+        break;
+      default:
+        unexpectedReservation(row);
     }
+    summary.textContent = `Counter ${row.counter} · ${row.status} · ${detail}`;
     card.append(action);
     container.append(card);
   }
@@ -129,10 +145,15 @@ button('submit').onclick = () =>
     text('status', 'Submission simulated. Reservation remains pending until a definitive outcome.');
   });
 const settle = async (accepted: boolean) => {
-  const row = (await store.list(scope)).find(r => r.txId === activeId && r.status === 'pending');
+  if (!activeId) throw new Error('No pending transaction selected');
+  const txId = activeId;
+  const row = (await store.list(scope)).find(
+    (entry): entry is Extract<Reservation, { status: 'pending'; txId: string }> =>
+      entry.status === 'pending' && entry.txId === txId,
+  );
   if (!row) throw new Error('No pending transaction selected');
   if (accepted) chain.accept(row.blindedAddress);
-  await store.settle(scope, activeId!, accepted ? 'confirmed' : 'reverted');
+  await store.settle(scope, row.txId, accepted ? 'confirmed' : 'reverted');
   if (accepted) element<HTMLInputElement>('target').value = row.blindedAddress;
   activeId = undefined;
   text(
@@ -163,6 +184,9 @@ const claim = async (cold: boolean) => {
 };
 button('claim').onclick = () => void run(() => claim(false));
 button('cold-claim').onclick = () => void run(() => claim(true));
+function unexpectedReservation(row: never): never {
+  throw new Error(`Unexpected reservation: ${JSON.stringify(row)}`);
+}
 button('reload').onclick = () => location.reload();
 text('request', request());
 text('status', 'Ready. The fixture connection permits the two algorithms for swap and claim.');

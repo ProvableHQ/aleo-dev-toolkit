@@ -1,6 +1,10 @@
 import {
-  requireStatus,
-  requireTxId,
+  applyReservationCommand,
+  parseStoredReservation,
+  unexpectedTransition,
+  type ReservationEffect,
+} from '../lifecycle/reservation-transition';
+import {
   reservationKey,
   scopeKey,
   type Reservation,
@@ -90,6 +94,11 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
             abort(error instanceof Error ? error : new Error('IndexedDB operation failed'));
           }
         });
+      const rowFor = (scope: ReservationScope, address: string, reservation: Reservation): Row => ({
+        key: reservationKey(scope, address),
+        partition: scopeKey(scope),
+        reservation,
+      });
       const updateOne = (
         scope: ReservationScope,
         address: string,
@@ -100,7 +109,7 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
           const request = store.get(key);
           request.onsuccess = () => {
             try {
-              const next = change(request.result as Row | undefined);
+              const next = change(parseStoredRow(request.result));
               if (next) store.put(next);
               else store.delete(key);
               set(undefined);
@@ -109,89 +118,156 @@ export function openIndexedDBStore({ name }: { name: string }): Promise<IndexedD
             }
           };
         });
-      const updateTransaction = (scope: ReservationScope, id: string, change: (row: Row) => void) =>
-        transaction<void>('readwrite', (store, set) => {
+      const updateTransaction = (
+        scope: ReservationScope,
+        id: string,
+        change: (reservation: Reservation) => Reservation,
+      ) =>
+        transaction<void>('readwrite', (store, set, fail) => {
           const request = store
             .index('transaction')
             .openCursor(IDBKeyRange.only([scopeKey(scope), id]));
           request.onsuccess = () => {
-            const cursor = request.result;
-            if (!cursor) {
-              set(undefined);
-              return;
+            try {
+              const cursor = request.result;
+              if (!cursor) {
+                set(undefined);
+                return;
+              }
+              const row = readStoredRow(cursor.value);
+              const next = change(row.reservation);
+              if (next !== row.reservation) cursor.update({ ...row, reservation: next });
+              cursor.continue();
+            } catch (error) {
+              fail(error instanceof Error ? error : new Error('Reservation update failed'));
             }
-            const row = cursor.value as Row;
-            change(row);
-            cursor.update(row);
-            cursor.continue();
           };
         });
+      const applyReservation = (
+        reservation: Reservation,
+        effect: ReservationEffect,
+      ): Reservation => {
+        switch (effect.type) {
+          case 'write':
+            return effect.reservation;
+          case 'keep':
+            return reservation;
+          case 'delete':
+          case 'unavailable':
+            throw new Error('Reservation cannot be updated');
+          default:
+            return unexpectedTransition(effect);
+        }
+      };
       resolve({
         close: () => db.close(),
         reserve(candidate) {
           const snapshot = structuredClone(candidate);
           // Keep the existence check and write in one transaction so competing connections cannot both win.
-          return transaction<boolean>('readwrite', (store, set) => {
+          return transaction<boolean>('readwrite', (store, set, fail) => {
             const key = reservationKey(snapshot.scope, snapshot.blindedAddress);
             const request = store.get(key);
             request.onsuccess = () => {
-              const row = request.result as Row | undefined;
-              if (row && row.reservation.status !== 'reverted') {
-                set(false);
-                return;
+              try {
+                const effect = applyReservationCommand(
+                  parseStoredRow(request.result)?.reservation,
+                  {
+                    type: 'reserve',
+                    candidate: snapshot,
+                  },
+                );
+                switch (effect.type) {
+                  case 'write':
+                    store.put(rowFor(snapshot.scope, snapshot.blindedAddress, effect.reservation));
+                    set(true);
+                    return;
+                  case 'unavailable':
+                    set(false);
+                    return;
+                  default:
+                    return unexpectedTransition(effect);
+                }
+              } catch (error) {
+                fail(error instanceof Error ? error : new Error('Reservation update failed'));
               }
-              store.put({
-                key,
-                partition: scopeKey(snapshot.scope),
-                reservation: { ...snapshot, status: 'pending', txId: null },
-              } satisfies Row);
-              set(true);
             };
           });
         },
         list(scope) {
-          return transaction<Reservation[]>('readonly', (store, set) => {
+          return transaction<Reservation[]>('readonly', (store, set, fail) => {
             const request = store.index('partition').getAll(scopeKey(scope));
-            request.onsuccess = () => set((request.result as Row[]).map(row => row.reservation));
+            request.onsuccess = () => {
+              try {
+                if (!Array.isArray(request.result))
+                  throw new Error('Stored reservation is invalid');
+                set(request.result.map(value => readStoredRow(value).reservation));
+              } catch (error) {
+                fail(error instanceof Error ? error : new Error('Reservation update failed'));
+              }
+            };
           });
         },
         async commit(scope, address, txId) {
-          requireTxId(txId);
           await updateOne(scope, address, row => {
-            if (
-              !row ||
-              row.reservation.status !== 'pending' ||
-              (row.reservation.txId !== null && row.reservation.txId !== txId)
-            )
-              throw new Error('Reservation cannot be committed');
-            row.reservation.txId = txId;
-            return row;
+            const { reservation } = applyReservationCommand(row?.reservation, {
+              type: 'commit',
+              txId,
+            });
+            return rowFor(scope, address, reservation);
           });
         },
         async release(scope, address) {
-          await updateOne(scope, address, row =>
-            row?.reservation.status === 'pending' && row.reservation.txId === null
-              ? undefined
-              : row,
-          );
+          await updateOne(scope, address, row => {
+            const effect = applyReservationCommand(row?.reservation, { type: 'release' });
+            switch (effect.type) {
+              case 'delete':
+                return undefined;
+              case 'keep':
+                return row;
+              default:
+                return unexpectedTransition(effect);
+            }
+          });
         },
         async remap(scope, oldId, newId) {
-          requireTxId(oldId);
-          requireTxId(newId);
-          if (oldId !== newId)
-            await updateTransaction(scope, oldId, row => {
-              row.reservation.txId = newId;
-            });
+          applyReservationCommand(undefined, { type: 'remap', oldId, newId });
+          // A cursor on the transaction index cannot rewrite its own key.
+          if (oldId === newId) return;
+          await updateTransaction(scope, oldId, reservation =>
+            applyReservation(
+              reservation,
+              applyReservationCommand(reservation, { type: 'remap', oldId, newId }),
+            ),
+          );
         },
         async settle(scope, txId, status) {
-          requireTxId(txId);
-          requireStatus(status);
-          await updateTransaction(scope, txId, row => {
-            // Repeated or stale status updates must not overwrite an already recorded outcome.
-            if (row.reservation.status === 'pending') row.reservation.status = status;
-          });
+          applyReservationCommand(undefined, { type: 'settle', txId, status });
+          await updateTransaction(scope, txId, reservation =>
+            applyReservation(
+              reservation,
+              applyReservationCommand(reservation, { type: 'settle', txId, status }),
+            ),
+          );
         },
       });
     };
   });
+}
+
+function parseStoredRow(value: unknown): Row | undefined {
+  if (value == null) return undefined;
+  return readStoredRow(value);
+}
+
+function readStoredRow(value: unknown): Row {
+  if (typeof value !== 'object' || value === null) throw new Error('Stored reservation is invalid');
+  const key = Reflect.get(value, 'key');
+  const partition = Reflect.get(value, 'partition');
+  if (typeof key !== 'string' || typeof partition !== 'string')
+    throw new Error('Stored reservation is invalid');
+  return {
+    key,
+    partition,
+    reservation: parseStoredReservation(Reflect.get(value, 'reservation')),
+  };
 }

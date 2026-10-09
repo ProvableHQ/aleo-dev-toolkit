@@ -1,51 +1,75 @@
 import {
-  requireStatus,
-  requireTxId,
+  applyReservationCommand,
+  unexpectedTransition,
+  type ReservationEffect,
+} from '../lifecycle/reservation-transition';
+import {
   reservationKey,
   scopeKey,
   type Reservation,
   type ReservationStore,
 } from '../lifecycle/store';
+
 /** Non-durable store for tests. Use durable storage for pending transactions. */
 export function createMemoryStore(): ReservationStore {
   const entries = new Map<string, Reservation>();
+  const apply = (key: string, effect: ReservationEffect): void => {
+    switch (effect.type) {
+      case 'write':
+        entries.set(key, structuredClone(effect.reservation));
+        return;
+      case 'delete':
+        entries.delete(key);
+        return;
+      case 'keep':
+      case 'unavailable':
+        return;
+      default:
+        unexpectedTransition(effect);
+    }
+  };
   return {
     async reserve(candidate) {
       const key = reservationKey(candidate.scope, candidate.blindedAddress);
-      const existing = entries.get(key);
-      if (existing && existing.status !== 'reverted') return false;
-      entries.set(key, structuredClone({ ...candidate, status: 'pending' as const, txId: null }));
-      return true;
+      const effect = applyReservationCommand(entries.get(key), { type: 'reserve', candidate });
+      switch (effect.type) {
+        case 'write':
+          apply(key, effect);
+          return true;
+        case 'unavailable':
+          return false;
+        default:
+          return unexpectedTransition(effect);
+      }
     },
     async list(scope) {
       return [...entries.values()]
-        .filter(e => scopeKey(e.scope) === scopeKey(scope))
-        .map(e => structuredClone(e));
+        .filter(entry => scopeKey(entry.scope) === scopeKey(scope))
+        .map(entry => structuredClone(entry));
     },
     async commit(scope, address, txId) {
-      requireTxId(txId);
-      const entry = entries.get(reservationKey(scope, address));
-      if (!entry || entry.status !== 'pending' || (entry.txId !== null && entry.txId !== txId))
-        throw new Error('Reservation cannot be committed');
-      entry.txId = txId;
+      const key = reservationKey(scope, address);
+      const { reservation } = applyReservationCommand(entries.get(key), {
+        type: 'commit',
+        txId,
+      });
+      entries.set(key, structuredClone(reservation));
     },
     async release(scope, address) {
       const key = reservationKey(scope, address);
-      const e = entries.get(key);
-      if (e?.status === 'pending' && e.txId === null) entries.delete(key);
+      apply(key, applyReservationCommand(entries.get(key), { type: 'release' }));
     },
     async remap(scope, oldId, newId) {
-      requireTxId(oldId);
-      requireTxId(newId);
-      for (const e of entries.values())
-        if (scopeKey(e.scope) === scopeKey(scope) && e.txId === oldId) e.txId = newId;
+      applyReservationCommand(undefined, { type: 'remap', oldId, newId });
+      for (const [key, entry] of entries)
+        if (scopeKey(entry.scope) === scopeKey(scope))
+          apply(key, applyReservationCommand(entry, { type: 'remap', oldId, newId }));
     },
     async settle(scope, txId, status) {
-      requireTxId(txId);
-      requireStatus(status);
-      for (const e of entries.values())
-        if (scopeKey(e.scope) === scopeKey(scope) && e.txId === txId && e.status === 'pending')
-          e.status = status;
+      applyReservationCommand(undefined, { type: 'settle', txId, status });
+      for (const [key, entry] of entries)
+        if (scopeKey(entry.scope) === scopeKey(scope))
+          apply(key, applyReservationCommand(entry, { type: 'settle', txId, status }));
     },
   };
 }

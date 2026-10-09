@@ -39,6 +39,15 @@ export interface BlindingSession {
   release(): Promise<void>;
 }
 
+type Cached = { args: ParsedBlindingArgs; factor: string; address: string };
+
+type Phase =
+  | { kind: 'open' }
+  | ({ kind: 'issued' } & Cached)
+  | ({ kind: 'recovered' } & Cached)
+  | ({ kind: 'committed'; txId: string; ownsRow: boolean } & Cached)
+  | { kind: 'closed' };
+
 /**
  * Creates a session that keeps both swap inputs on the same counter.
  * Creating the session performs no reads or writes; derive calls use the supplied mapping reader and store.
@@ -53,11 +62,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
   if (scope.network !== algorithmNetwork)
     throw new Error('Session network does not match the imported algorithm build');
   if (!/^[a-z][a-z0-9_]*\.aleo$/.test(scope.program)) throw new Error('Invalid scope program');
-  let state:
-    | { args: ParsedBlindingArgs; factor: string; address: string; issued: boolean }
-    | undefined;
-  let status: 'open' | 'committed' | 'closed' = 'open';
-  let committedId: string | undefined;
+  let phase: Phase = { kind: 'open' };
   let queue: Promise<unknown> = Promise.resolve();
   // Serialize derivation and cleanup so concurrent slots cannot reserve separate counters.
   const serial = <T>(operation: () => Promise<T>): Promise<T> => {
@@ -66,7 +71,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
     queue = result.catch(() => undefined);
     return result;
   };
-  const resolve = async (args: ParsedBlindingArgs): Promise<NonNullable<typeof state>> => {
+  const resolve = async (args: ParsedBlindingArgs): Promise<Phase & Cached> => {
     const viewKeyScalar = options.getViewKeyScalar();
     const pair = (counter: number) => {
       const factor = deriveBlindingFactor({
@@ -93,7 +98,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
       return value !== null;
     };
     if (args.mode === 'resolve') {
-      const target = args.targetAddress!;
+      const target = args.targetAddress;
       if (!(await isUsed(target)))
         throw new Error('Target address is absent from membership mapping');
       const known = (await options.store.list(scope)).find(row => row.blindedAddress === target);
@@ -104,36 +109,26 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         isUsed,
         ...options.recovery,
       });
-      return { args, ...pair(counter), issued: false };
+      return { kind: 'recovered', args, ...pair(counter) };
     }
     for (;;) {
       const rows = await options.store.list(scope);
-      const pending = new Set(rows.filter(r => r.status === 'pending').map(r => r.counter));
-      const reverted = rows
-        .filter(r => r.status === 'reverted')
-        .map(r => r.counter)
-        .sort((a, b) => a - b);
-      let candidate: { counter: number; factor: string; address: string } | undefined;
-      // A locally reverted counter may have been used by another device; check the chain again.
-      for (const counter of reverted) {
-        if (pending.has(counter)) continue;
-        const values = pair(counter);
-        if (!(await isUsed(values.address))) {
-          candidate = { counter, ...values };
-          break;
-        }
-      }
-      if (!candidate) {
-        let counter = rows.reduce((max, row) => Math.max(max, row.counter), -1) + 1;
-        for (; counter <= 0xffff_ffff; counter++) {
+      const pending = new Set(rows.filter(row => row.status === 'pending').map(row => row.counter));
+      const firstFree = async (counters: Iterable<number>) => {
+        for (const counter of counters) {
           if (pending.has(counter)) continue;
           const values = pair(counter);
-          if (!(await isUsed(values.address))) {
-            candidate = { counter, ...values };
-            break;
-          }
+          if (!(await isUsed(values.address))) return { counter, ...values };
         }
-      }
+        return undefined;
+      };
+      // A locally reverted counter may have been used by another device; check the chain again.
+      const reverted = rows
+        .filter(row => row.status === 'reverted')
+        .map(row => row.counter)
+        .sort((a, b) => a - b);
+      const start = rows.reduce((max, row) => Math.max(max, row.counter), -1) + 1;
+      const candidate = (await firstFree(reverted)) ?? (await firstFree(countFrom(start)));
       if (!candidate) throw new Error('Counter space exhausted');
       // Chain reads happen before the atomic write. If another session wins, reload and retry.
       if (
@@ -143,10 +138,12 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
           blindedAddress: candidate.address,
         })
       ) {
-        return { args, factor: candidate.factor, address: candidate.address, issued: true };
+        return { kind: 'issued', args, factor: candidate.factor, address: candidate.address };
       }
     }
   };
+  const cachedOutput = (cached: Cached, algorithm: string) =>
+    algorithm === 'program-scoped-blinding-factor' ? cached.factor : cached.address;
   return {
     derive(algorithm, args) {
       // Capture a request snapshot before entering the asynchronous queue.
@@ -159,30 +156,94 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         return Promise.reject(error);
       }
       return serial(async () => {
-        if (status !== 'open') throw new Error('Derivation session is closed');
-        if (state && JSON.stringify(state.args) !== JSON.stringify(parsed))
-          throw new Error('Paired algorithm arguments must match');
-        state ??= await resolve(parsed);
-        return algorithm === 'program-scoped-blinding-factor' ? state.factor : state.address;
+        switch (phase.kind) {
+          case 'issued':
+          case 'recovered':
+            if (!sameBlindingArgs(phase.args, parsed))
+              throw new Error('Paired algorithm arguments must match');
+            return cachedOutput(phase, algorithm);
+          case 'open': {
+            const resolved = await resolve(parsed);
+            phase = resolved;
+            return cachedOutput(resolved, algorithm);
+          }
+          case 'committed':
+          case 'closed':
+            throw new Error('Derivation session is closed');
+          default:
+            return unexpectedPhase(phase);
+        }
       });
     },
     commit(transactionId) {
       return serial(async () => {
         requireTxId(transactionId);
-        if (status === 'committed' && committedId === transactionId) return;
-        if (status !== 'open' || !state) throw new Error('Session cannot be committed');
-        if (state.issued) await options.store.commit(scope, state.address, transactionId);
-        committedId = transactionId;
-        status = 'committed';
+        switch (phase.kind) {
+          case 'committed':
+            if (phase.txId === transactionId) return;
+            throw new Error('Session cannot be committed');
+          case 'issued':
+            await options.store.commit(scope, phase.address, transactionId);
+            phase = { ...phase, kind: 'committed', txId: transactionId, ownsRow: true };
+            return;
+          case 'recovered':
+            phase = { ...phase, kind: 'committed', txId: transactionId, ownsRow: false };
+            return;
+          case 'open':
+          case 'closed':
+            throw new Error('Session cannot be committed');
+          default:
+            unexpectedPhase(phase);
+        }
       });
     },
     release() {
       return serial(async () => {
-        // Committed counters stay reserved until settlement, even after cached values are cleared.
-        if (status === 'open' && state?.issued) await options.store.release(scope, state.address);
-        state = undefined;
-        status = 'closed';
+        switch (phase.kind) {
+          case 'issued':
+            await options.store.release(scope, phase.address);
+            phase = { kind: 'closed' };
+            return;
+          case 'open':
+          case 'recovered':
+          case 'committed':
+            // Committed counters stay reserved until settlement, even after cached values are cleared.
+            phase = { kind: 'closed' };
+            return;
+          case 'closed':
+            return;
+          default:
+            unexpectedPhase(phase);
+        }
       });
     },
   };
+}
+
+function* countFrom(start: number): Generator<number> {
+  for (let counter = start; counter <= 0xffff_ffff; counter++) yield counter;
+}
+
+function sameBlindingArgs(left: ParsedBlindingArgs, right: ParsedBlindingArgs): boolean {
+  if (
+    left.membershipProgram !== right.membershipProgram ||
+    left.membershipMapping !== right.membershipMapping
+  )
+    return false;
+  switch (left.mode) {
+    case 'issue':
+      return right.mode === 'issue';
+    case 'resolve':
+      return right.mode === 'resolve' && left.targetAddress === right.targetAddress;
+    default:
+      return unexpectedArgs(left);
+  }
+}
+
+function unexpectedPhase(phase: never): never {
+  throw new Error(`Unexpected session phase: ${JSON.stringify(phase)}`);
+}
+
+function unexpectedArgs(args: never): never {
+  throw new Error(`Unexpected blinding arguments: ${JSON.stringify(args)}`);
 }
