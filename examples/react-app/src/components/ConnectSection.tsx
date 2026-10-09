@@ -8,6 +8,7 @@ import {
   PenTool,
   Database,
   Lock,
+  Shield,
   Key,
   History,
   ArrowRight,
@@ -62,6 +63,12 @@ const features = [
     title: 'Fetch Records',
     description: 'Retrieve records from any program',
     href: '/records',
+  },
+  {
+    icon: Shield,
+    title: 'Wallet private inputs',
+    description: 'ARC-22 records, freeze-list proofs, and blinded addresses for private swaps',
+    href: '/wallet-inputs',
   },
   {
     icon: Lock,
