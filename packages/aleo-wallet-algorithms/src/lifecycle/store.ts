@@ -7,18 +7,13 @@ export interface ReservationScope {
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'reverted';
 
-interface ReservationFields {
+export interface Reservation {
   scope: ReservationScope;
   counter: number;
   blindedAddress: string;
+  status: ReservationStatus;
+  txId: string | null;
 }
-
-/** Pending approval, submitted transaction, or a terminal outcome. `txId` is null only before commit. */
-export type Reservation =
-  | (ReservationFields & { status: 'pending'; txId: null })
-  | (ReservationFields & { status: 'pending'; txId: string })
-  | (ReservationFields & { status: 'confirmed'; txId: string })
-  | (ReservationFields & { status: 'reverted'; txId: string });
 
 export interface ReservationCandidate {
   scope: ReservationScope;
