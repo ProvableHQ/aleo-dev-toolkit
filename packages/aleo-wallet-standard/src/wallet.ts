@@ -14,6 +14,7 @@ import {
   TransactionStatusFeature,
   TransitionViewKeysFeature,
   WalletFeature,
+  PrepareShieldedUsdcxMintFeature,
 } from './features';
 
 /**
@@ -50,6 +51,7 @@ export interface StandardWallet {
  * Wallet features
  */
 export interface WalletFeatures {
+  [WalletFeatureName.PREPARE_SHIELDED_USDCX_MINT]?: PrepareShieldedUsdcxMintFeature;
   /**
    * The connect feature
    */
@@ -118,6 +120,7 @@ export interface WalletFeatures {
  * Wallet feature names
  */
 export enum WalletFeatureName {
+  PREPARE_SHIELDED_USDCX_MINT = 'shield:prepare-shielded-usdcx-mint',
   CONNECT = 'standard:connect',
   ACCOUNTS = 'standard:accounts',
   SIGN = 'aleo:sign',

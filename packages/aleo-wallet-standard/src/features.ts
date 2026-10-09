@@ -1,6 +1,8 @@
 import {
   Account,
   Network,
+  PrepareShieldedUsdcxMintRequest,
+  PreparedShieldedUsdcxMint,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
@@ -205,4 +207,12 @@ export interface RequestTransactionHistoryFeature extends WalletFeature {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+}
+
+/** Optional Shield bridge feature; preparation does not submit a deposit. */
+export interface PrepareShieldedUsdcxMintFeature extends WalletFeature {
+  name: 'shield:prepare-shielded-usdcx-mint';
+  prepareShieldedUsdcxMint(
+    request: PrepareShieldedUsdcxMintRequest,
+  ): Promise<PreparedShieldedUsdcxMint>;
 }
