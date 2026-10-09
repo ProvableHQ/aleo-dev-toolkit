@@ -4,6 +4,7 @@ import {
   AlgorithmName,
   KNOWN_ALGORITHMS,
   KnownAlgorithm,
+  LiteralType,
   RecordFieldFilter,
   RecordFilters,
   TransactionInput,
@@ -100,9 +101,17 @@ export function primitiveSlotModes(baseType: string): PrimitiveSlotMode[] {
   return modes;
 }
 
+/** Map a slot's Aleo base type onto the catalog's slot types: literals by name, composites by shape. */
+function algorithmSlotType(baseType: string): string {
+  if (baseType.startsWith('[')) return 'array';
+  if ((Object.values(LiteralType) as string[]).includes(baseType)) return baseType;
+  return 'struct';
+}
+
 export function eligibleAlgorithmsForBaseType(baseType: string): KnownAlgorithm[] {
+  const slotType = algorithmSlotType(baseType);
   return KNOWN_ALGORITHMS.filter(name =>
-    (ALGORITHM_SCHEMAS[name].validSlotTypes as readonly string[]).includes(baseType),
+    (ALGORITHM_SCHEMAS[name].validSlotTypes as readonly string[]).includes(slotType),
   );
 }
 
