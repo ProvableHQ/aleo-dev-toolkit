@@ -32,14 +32,19 @@ export function validateBlindingArgs(args: BlindingArgs): ParsedBlindingArgs {
   if (!args || typeof args !== 'object' || Array.isArray(args))
     throw new Error('Invalid algorithm arguments');
   const schema = ALGORITHM_SCHEMAS['program-scoped-blinding-factor'].args;
-  const types: Record<string, string> = Object.fromEntries(
-    Object.entries(schema).map(([key, spec]) => [key, spec.type]),
-  );
+  // Adding a catalog argument must fail compilation until it is explicitly validated here.
+  const types = {
+    mode: schema.mode.type,
+    membershipProgram: schema.membershipProgram.type,
+    membershipMapping: schema.membershipMapping.type,
+    targetAddress: schema.targetAddress.type,
+  } satisfies Record<keyof typeof schema, AlgorithmArg['type']>;
+  const acceptedTypes: Readonly<Record<string, string>> = types;
   for (const [key, arg] of Object.entries(args)) {
     if (
       !Object.prototype.hasOwnProperty.call(types, key) ||
       !arg ||
-      arg.type !== types[key] ||
+      arg.type !== acceptedTypes[key] ||
       typeof arg.value !== 'string'
     )
       throw new Error('Invalid algorithm argument');

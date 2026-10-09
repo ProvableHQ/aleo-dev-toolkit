@@ -18,6 +18,30 @@ export type Reservation =
   | (ReservationBase & { status: 'confirmed'; txId: string })
   | (ReservationBase & { status: 'reverted'; txId: string });
 
+/** An explicit view of persisted states, without changing the stored row format. */
+export type ReservationState =
+  | { kind: 'approval'; row: Extract<Reservation, { status: 'pending'; txId: null }> }
+  | { kind: 'submitted'; row: Extract<Reservation, { status: 'pending'; txId: string }> }
+  | { kind: 'confirmed'; row: Extract<Reservation, { status: 'confirmed' }> }
+  | { kind: 'reverted'; row: Extract<Reservation, { status: 'reverted' }> };
+
+export function assertNever(value: never): never {
+  throw new Error(`Unexpected state: ${String(value)}`);
+}
+
+export function reservationState(row: Reservation): ReservationState {
+  switch (row.status) {
+    case 'pending':
+      return row.txId === null ? { kind: 'approval', row } : { kind: 'submitted', row };
+    case 'confirmed':
+      return { kind: 'confirmed', row };
+    case 'reverted':
+      return { kind: 'reverted', row };
+    default:
+      return assertNever(row);
+  }
+}
+
 export type ReservationStatus = Reservation['status'];
 
 export interface ReservationCandidate {

@@ -58,7 +58,7 @@ export function complianceProofForSigner(
   const tree = new SealanceMerkleTree();
   const nodes =
     freezeListTree.length === 0
-      ? tree.buildTree(tree.generateLeaves([]))
+      ? tree.buildTree(tree.generateLeaves([], COMPLIANCE_PROOF_DEPTH))
       : tree.convertTreeToBigInt([...freezeListTree]);
   return proofForTree(signerAddress, nodes);
 }
@@ -73,5 +73,8 @@ export function complianceProofFromAddresses(
   frozenAddresses: readonly string[],
 ): string {
   const tree = new SealanceMerkleTree();
-  return proofForTree(signerAddress, tree.buildTree(tree.generateLeaves([...frozenAddresses])));
+  return proofForTree(
+    signerAddress,
+    tree.buildTree(tree.generateLeaves([...frozenAddresses], COMPLIANCE_PROOF_DEPTH)),
+  );
 }

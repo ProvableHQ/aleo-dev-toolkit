@@ -11,3 +11,5 @@ export type {
   ReservationStatus,
   ReservationStore,
 } from './lifecycle/store';
+
+export { reservationState, type ReservationState } from './lifecycle/store';

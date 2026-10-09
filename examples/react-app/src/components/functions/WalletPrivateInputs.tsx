@@ -4,7 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
-import type { Reservation, ReservationStore } from '@provablehq/aleo-wallet-algorithms/lifecycle';
+import {
+  reservationState,
+  type Reservation,
+  type ReservationStore,
+} from '@provablehq/aleo-wallet-algorithms/lifecycle';
 import {
   RECORD_FIXTURE,
   acceptAddress,
@@ -31,6 +35,48 @@ function Output({ children }: { children: string }) {
       {children}
     </pre>
   );
+}
+
+function ReservationAction({
+  row,
+  onResume,
+  onClaim,
+}: {
+  row: Reservation;
+  onResume: (txId: string) => void;
+  onClaim: (address: string) => void;
+}) {
+  const state = reservationState(row);
+  switch (state.kind) {
+    case 'approval':
+      return (
+        <Button variant="outline" size="sm" disabled>
+          Reserved by an approval; cancel in its owning tab
+        </Button>
+      );
+    case 'submitted':
+      return (
+        <Button variant="outline" size="sm" onClick={() => onResume(state.row.txId)}>
+          Resume transaction
+        </Button>
+      );
+    case 'confirmed':
+      return (
+        <Button variant="outline" size="sm" onClick={() => onClaim(state.row.blindedAddress)}>
+          Use for claim
+        </Button>
+      );
+    case 'reverted':
+      return (
+        <Button variant="outline" size="sm" disabled>
+          Available after chain recheck
+        </Button>
+      );
+    default: {
+      const unreachable: never = state;
+      throw new Error(`Unexpected reservation state: ${String(unreachable)}`);
+    }
+  }
 }
 
 const GUIDE_URL =
@@ -359,34 +405,14 @@ export function WalletPrivateInputs() {
                   </p>
                   <code className="body-s font-mono break-all">{row.blindedAddress}</code>
                   <div>
-                    {row.status === 'pending' && row.txId === null ? (
-                      <Button variant="outline" size="sm" disabled>
-                        Reserved by an approval; cancel in its owning tab
-                      </Button>
-                    ) : row.status === 'pending' ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setActiveId(row.txId);
-                          setStatus('Pending transaction selected. Report its simulated outcome.');
-                        }}
-                      >
-                        Resume transaction
-                      </Button>
-                    ) : row.status === 'confirmed' ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setTarget(row.blindedAddress)}
-                      >
-                        Use for claim
-                      </Button>
-                    ) : (
-                      <Button variant="outline" size="sm" disabled>
-                        Available after chain recheck
-                      </Button>
-                    )}
+                    <ReservationAction
+                      row={row}
+                      onClaim={setTarget}
+                      onResume={txId => {
+                        setActiveId(txId);
+                        setStatus('Pending transaction selected. Report its simulated outcome.');
+                      }}
+                    />
                   </div>
                 </article>
               ))}

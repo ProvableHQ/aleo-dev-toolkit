@@ -8,7 +8,23 @@ import {
   type ParsedBlindingArgs,
 } from '../schemas';
 import { findCounterForAddress } from './recovery';
-import { requireTxId, type ReservationScope, type ReservationStore } from './store';
+import { assertNever, requireTxId, type ReservationScope, type ReservationStore } from './store';
+
+function sameArgs(left: ParsedBlindingArgs, right: ParsedBlindingArgs): boolean {
+  if (
+    left.membershipProgram !== right.membershipProgram ||
+    left.membershipMapping !== right.membershipMapping
+  )
+    return false;
+  switch (left.mode) {
+    case 'issue':
+      return right.mode === 'issue';
+    case 'resolve':
+      return right.mode === 'resolve' && left.targetAddress === right.targetAddress;
+    default:
+      return assertNever(left);
+  }
+}
 
 /**
  * Wallet services used to select, reserve, and recover counters.
@@ -69,7 +85,9 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
     queue = result.catch(() => undefined);
     return result;
   };
-  const resolve = async (args: ParsedBlindingArgs): Promise<CachedPair & { issued: boolean }> => {
+  const resolve = async (
+    args: ParsedBlindingArgs,
+  ): Promise<Extract<SessionPhase, { phase: 'issued' | 'recovered' }>> => {
     const viewKeyScalar = options.getViewKeyScalar();
     const pair = (counter: number) => {
       const factor = deriveBlindingFactor({
@@ -107,7 +125,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         isUsed,
         ...options.recovery,
       });
-      return { args, ...pair(counter), issued: false };
+      return { args, ...pair(counter), phase: 'recovered' };
     }
     for (;;) {
       const rows = await options.store.list(scope);
@@ -142,7 +160,7 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
           blindedAddress: candidate.address,
         })
       ) {
-        return { args, factor: candidate.factor, address: candidate.address, issued: true };
+        return { args, factor: candidate.factor, address: candidate.address, phase: 'issued' };
       }
     }
   };
@@ -161,21 +179,8 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
         if (phase.phase === 'closed' || phase.phase === 'committed')
           throw new Error('Derivation session is closed');
         if (phase.phase === 'open') {
-          const resolved = await resolve(parsed);
-          phase = resolved.issued
-            ? {
-                phase: 'issued',
-                args: resolved.args,
-                factor: resolved.factor,
-                address: resolved.address,
-              }
-            : {
-                phase: 'recovered',
-                args: resolved.args,
-                factor: resolved.factor,
-                address: resolved.address,
-              };
-        } else if (JSON.stringify(phase.args) !== JSON.stringify(parsed)) {
+          phase = await resolve(parsed);
+        } else if (!sameArgs(phase.args, parsed)) {
           throw new Error('Paired algorithm arguments must match');
         }
         return algorithm === 'program-scoped-blinding-factor' ? phase.factor : phase.address;
@@ -184,11 +189,24 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
     commit(transactionId) {
       return serial(async () => {
         requireTxId(transactionId);
-        if (phase.phase === 'committed' && phase.txId === transactionId) return;
-        if (phase.phase !== 'issued' && phase.phase !== 'recovered')
-          throw new Error('Session cannot be committed');
-        const ownsRow = phase.phase === 'issued';
-        if (ownsRow) await options.store.commit(scope, phase.address, transactionId);
+        let ownsRow: boolean;
+        switch (phase.phase) {
+          case 'committed':
+            if (phase.txId === transactionId) return;
+            throw new Error('Session cannot be committed');
+          case 'issued':
+            await options.store.commit(scope, phase.address, transactionId);
+            ownsRow = true;
+            break;
+          case 'recovered':
+            ownsRow = false;
+            break;
+          case 'open':
+          case 'closed':
+            throw new Error('Session cannot be committed');
+          default:
+            return assertNever(phase);
+        }
         phase = {
           phase: 'committed',
           args: phase.args,
@@ -202,7 +220,18 @@ export function createBlindingSession(options: BlindingSessionOptions): Blinding
     release() {
       return serial(async () => {
         // Committed counters stay reserved until settlement, even after cached values are cleared.
-        if (phase.phase === 'issued') await options.store.release(scope, phase.address);
+        switch (phase.phase) {
+          case 'issued':
+            await options.store.release(scope, phase.address);
+            break;
+          case 'open':
+          case 'recovered':
+          case 'committed':
+          case 'closed':
+            break;
+          default:
+            return assertNever(phase);
+        }
         phase = { phase: 'closed' };
       });
     },

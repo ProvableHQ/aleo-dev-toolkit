@@ -35,3 +35,37 @@ test('a program that does not require compliance uses the Shield empty literal',
   assert.match(EMPTY_COMPLIANCE_PROOF, /leaf_index: 1u32/);
   assert.equal(EMPTY_COMPLIANCE_PROOF.split('0field').length - 1, 32);
 });
+
+test('address-based proofs accept the full depth-16 capacity and reject overflow', () => {
+  const capacity = 2 ** (COMPLIANCE_PROOF_DEPTH - 1);
+  const proof = complianceProofFromAddresses(signer, Array(capacity).fill(frozen[0]));
+  assert.equal(proof.match(/siblings:/g)?.length, 2);
+  assert.equal(proof.match(/field/g)?.length, 2 * COMPLIANCE_PROOF_DEPTH);
+  assert.throws(
+    () => complianceProofFromAddresses(signer, Array(capacity + 1).fill(frozen[0])),
+    /Leaves limit exceeded/,
+  );
+});
+
+test('tree construction releases owned SDK handles and consumes hash inputs', async t => {
+  const { Field, Plaintext, Poseidon4 } = await import('@provablehq/sdk/testnet.js');
+  const handles = [];
+  for (const [owner, method] of [
+    [Field, 'fromString'],
+    [Plaintext, 'fromString'],
+    [Plaintext.prototype, 'toFields'],
+    [Poseidon4.prototype, 'hash'],
+  ]) {
+    const original = owner[method];
+    t.mock.method(owner, method, function (...args) {
+      const result = original.apply(this, args);
+      handles.push(...(Array.isArray(result) ? result : [result]));
+      return result;
+    });
+  }
+  complianceProofFromAddresses(signer, frozen);
+  complianceProofForSigner(signer, []);
+  assert.ok(handles.length > 0);
+  // wasm-bindgen sets this to zero on free or transfer into Rust. GC is not needed.
+  assert.ok(handles.every(handle => handle.__wbg_ptr === 0));
+});

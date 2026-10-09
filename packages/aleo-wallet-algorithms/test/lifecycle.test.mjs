@@ -140,3 +140,40 @@ test('schemas reject unknown keys, wrong types and mode/target coupling', () => 
   ])
     assert.throws(() => validateBlindingArgs(bad));
 });
+
+test('paired inputs accept reordered keys but reject different membership programs', async () => {
+  const s = session(createMemoryStore());
+  await s.derive(factor, args);
+  assert.equal(
+    await s.derive(address, Object.fromEntries(Object.entries(args).reverse())),
+    v.blindedAddress,
+  );
+  await assert.rejects(
+    s.derive(address, {
+      ...args,
+      membershipProgram: { type: 'string', value: 'other.aleo' },
+    }),
+    /must match/,
+  );
+  await s.release();
+});
+
+test('open and released sessions cannot commit; recovered sessions never own a reservation', async () => {
+  const store = createMemoryStore();
+  const unused = session(store);
+  await assert.rejects(unused.commit('tx'), /cannot be committed/);
+  await unused.release();
+  await unused.release();
+  await assert.rejects(unused.commit('tx'), /cannot be committed/);
+  const recovered = session(store, { readMapping: async () => 'true' });
+  const claim = {
+    ...args,
+    mode: { type: 'string', value: 'resolve' },
+    targetAddress: { type: 'address', value: v.blindedAddress },
+  };
+  await recovered.derive(address, claim);
+  await recovered.commit('claim');
+  await recovered.commit('claim');
+  await recovered.release();
+  assert.deepEqual(await store.list(scope), []);
+});

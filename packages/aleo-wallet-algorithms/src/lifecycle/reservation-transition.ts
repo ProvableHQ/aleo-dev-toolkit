@@ -1,45 +1,96 @@
-import type { Reservation, ReservationCandidate } from './store';
+import {
+  assertNever,
+  reservationState,
+  type Reservation,
+  type ReservationCandidate,
+} from './store';
 
-/** Result of one reservation rule. Stores apply it; they do not re-decide it. */
+type ReservationEvent =
+  | { type: 'reserve'; candidate: ReservationCandidate }
+  | { type: 'commit'; txId: string }
+  | { type: 'release' }
+  | { type: 'remap'; txId: string }
+  | { type: 'settle'; status: 'confirmed' | 'reverted' };
+
+/** Stores apply these decisions exhaustively; all lifecycle rules live here. */
 export type ReservationDecision =
   | { action: 'write'; reservation: Reservation }
   | { action: 'delete' }
   | { action: 'keep' }
   | { action: 'unavailable' };
 
-/** Reserve only when the row is missing or reverted. */
-export function decideReserve(
+export function transitionReservation(
   existing: Reservation | undefined,
-  candidate: ReservationCandidate,
+  event: ReservationEvent,
 ): ReservationDecision {
-  if (existing && existing.status !== 'reverted') return { action: 'unavailable' };
-  return { action: 'write', reservation: { ...candidate, status: 'pending', txId: null } };
-}
-
-/** Stamp a transaction id onto a pending row. Repeating the same id is allowed. */
-export function decideCommit(existing: Reservation | undefined, txId: string): ReservationDecision {
-  if (
-    !existing ||
-    existing.status !== 'pending' ||
-    (existing.txId !== null && existing.txId !== txId)
-  )
-    throw new Error('Reservation cannot be committed');
-  return { action: 'write', reservation: { ...existing, txId } };
-}
-
-/** Delete only an approval that was never submitted. */
-export function decideRelease(existing: Reservation | undefined): ReservationDecision {
-  if (existing?.status === 'pending' && existing.txId === null) return { action: 'delete' };
-  return { action: 'keep' };
-}
-
-/** Point a submitted reservation at a new transaction id. */
-export function decideRemap(existing: Reservation, newId: string): Reservation {
-  return { ...existing, txId: newId };
-}
-
-/** Record a known outcome once. A later call cannot replace it. */
-export function decideSettle(existing: Reservation, status: 'confirmed' | 'reverted'): Reservation {
-  if (existing.status !== 'pending' || existing.txId === null) return existing;
-  return { ...existing, status };
+  const state = existing ? reservationState(existing) : { kind: 'missing' as const };
+  switch (event.type) {
+    case 'reserve':
+      switch (state.kind) {
+        case 'missing':
+        case 'reverted':
+          return {
+            action: 'write',
+            reservation: { ...event.candidate, status: 'pending', txId: null },
+          };
+        case 'approval':
+        case 'submitted':
+        case 'confirmed':
+          return { action: 'unavailable' };
+        default:
+          return assertNever(state);
+      }
+    case 'commit':
+      switch (state.kind) {
+        case 'approval':
+          return { action: 'write', reservation: { ...state.row, txId: event.txId } };
+        case 'submitted':
+          if (state.row.txId === event.txId) return { action: 'keep' };
+          throw new Error('Reservation cannot be committed');
+        case 'missing':
+        case 'confirmed':
+        case 'reverted':
+          throw new Error('Reservation cannot be committed');
+        default:
+          return assertNever(state);
+      }
+    case 'release':
+      switch (state.kind) {
+        case 'approval':
+          return { action: 'delete' };
+        case 'missing':
+        case 'submitted':
+        case 'confirmed':
+        case 'reverted':
+          return { action: 'keep' };
+        default:
+          return assertNever(state);
+      }
+    case 'remap':
+      switch (state.kind) {
+        case 'submitted':
+        case 'confirmed':
+        case 'reverted':
+          return { action: 'write', reservation: { ...state.row, txId: event.txId } };
+        case 'missing':
+        case 'approval':
+          return { action: 'keep' };
+        default:
+          return assertNever(state);
+      }
+    case 'settle':
+      switch (state.kind) {
+        case 'submitted':
+          return { action: 'write', reservation: { ...state.row, status: event.status } };
+        case 'missing':
+        case 'approval':
+        case 'confirmed':
+        case 'reverted':
+          return { action: 'keep' };
+        default:
+          return assertNever(state);
+      }
+    default:
+      return assertNever(event);
+  }
 }

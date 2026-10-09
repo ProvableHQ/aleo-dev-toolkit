@@ -78,10 +78,18 @@ class SealanceMerkleTree {
     if (!el1 || !el2) {
       throw new Error('Invalid inputs: elements cannot be empty');
     }
-    const fields = [Field.fromString(prefix), Field.fromString(el1), Field.fromString(el2)];
-    const arrayPlaintext = Plaintext.fromString(`[${fields.map(f => f.toString()).join(',')}]`);
-
-    return SealanceMerkleTree.hasher.hash(arrayPlaintext.toFields());
+    const fields: Field[] = [];
+    let arrayPlaintext: Plaintext | undefined;
+    try {
+      // Append individually so an invalid later input still releases earlier fields.
+      for (const literal of [prefix, el1, el2]) fields.push(Field.fromString(literal));
+      arrayPlaintext = Plaintext.fromString(`[${fields.map(f => f.toString()).join(',')}]`);
+      // hash consumes the handles returned by toFields; the caller owns the result.
+      return SealanceMerkleTree.hasher.hash(arrayPlaintext.toFields());
+    } finally {
+      arrayPlaintext?.free();
+      for (const field of fields) field.free();
+    }
   }
 
   /**
@@ -117,7 +125,11 @@ class SealanceMerkleTree {
         const right = currentLevel[i + 1];
         const prefix = leaves.length === levelSize ? '1field' : '0field';
         const hash = this.hashTwoElements(prefix, left, right);
-        nextLevel.push(hash.toString());
+        try {
+          nextLevel.push(hash.toString());
+        } finally {
+          hash.free();
+        }
       }
       tree = [...tree, ...nextLevel];
       currentLevel = nextLevel;
@@ -281,7 +293,7 @@ class SealanceMerkleTree {
     leafIndex: number,
     depth: number,
   ): { siblings: bigint[]; leaf_index: number } {
-    let num_leaves = Math.floor((tree.length + 1) / 2);
+    const num_leaves = Math.floor((tree.length + 1) / 2);
     const siblingPath: bigint[] = [];
 
     let index = leafIndex;
@@ -297,7 +309,7 @@ class SealanceMerkleTree {
       if (step === 0) {
         throw new Error('Freeze list tree is not a complete binary tree');
       }
-      let siblingIndex = index % 2 === 0 ? index + 1 : index - 1; // Get the sibling index
+      const siblingIndex = index % 2 === 0 ? index + 1 : index - 1; // Get the sibling index
       siblingPath.push(tree[siblingIndex]);
 
       index = parentIndex + Math.floor(leafIndex / 2 ** level); // Move up to the parent node
