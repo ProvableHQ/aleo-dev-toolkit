@@ -4,6 +4,7 @@ const entry = {
   'program-scoped-blinding-factor': 'src/program-scoped-blinding-factor.ts',
   'program-scoped-blinded-address': 'src/program-scoped-blinded-address.ts',
   'program-scoped-blinding': 'src/program-scoped-blinding.ts',
+  'compliance-proof': 'src/arc22/compliance-proof.ts',
   'storage/indexeddb': 'src/storage/indexeddb.ts',
   schemas: 'src/schemas.ts',
   lifecycle: 'src/lifecycle.ts',

@@ -1,12 +1,14 @@
 # Integrate wallet-hosted algorithms
 
+Start with [Wallet private inputs](./wallet-private-inputs.md). That page is the implementation guide for ARC-22 records, ARC-22 proofs, and blinded addresses for private swaps. The rest of this page is the dapp request shape those wallet values fill.
+
 This guide explains how to add private swap inputs to an Aleo wallet and request them through the Wallet Adapter. The wallet computes these inputs from the account's view key, so the dapp can request a swap without receiving the key.
 
 A wallet-hosted algorithm is a function installed in the wallet. The dapp identifies the function by name and supplies typed arguments. The wallet checks permission, computes the value, and fills the transaction input before proving.
 
 `@provablehq/aleo-wallet-algorithms` implements the swap calculations with SDK 0.11.11. Import each algorithm separately; bundles can omit unused algorithms, reservation helpers, and storage. The wallet can keep its existing counter and database logic.
 
-Start with the [runnable browser example](../examples/wallet-algorithms). Its [integration notes](../examples/wallet-algorithms/INTEGRATION.md) explain how to handle provider requests and store reservations. The [blinding reference](../packages/aleo-wallet-algorithms/docs/program-scoped-blinding.md) covers both algorithms, their exact calculations and compatibility vector, and the optional lifecycle helpers.
+The runnable lab is the Wallet Inputs page in [examples/react-app](../examples/react-app) (`pnpm adapter-app:dev`, then Wallet Inputs). The [blinding reference](../packages/aleo-wallet-algorithms/docs/program-scoped-blinding.md) covers both algorithms, their exact calculations and compatibility vector, and the optional lifecycle helpers.
 
 ## Implement in the wallet
 
@@ -144,7 +146,7 @@ const claim = await adapter.executeTransaction({
 
 ## Run the live demo
 
-The [Private Inputs demo](https://aleo-dev-toolkit-react-app.vercel.app/private-inputs) shows the grant and transaction flow with Shield. It defaults to a credits transfer; configure it for a deployed Shield Swap program. A swap needs an existing pool, an eligible token record, and fee funds.
+The [Private Inputs demo](https://aleo-dev-toolkit-react-app.vercel.app/private-inputs) shows the grant and transaction flow with Shield. It defaults to a credits transfer; configure it for a deployed private swap program that uses blinded addresses. A swap needs an existing pool, an eligible token record, and fee funds.
 
 1. Select the deployment's network and add the swap and token programs to **Programs**. Under **Function inputs**, enter the deployed program ID and `swap_private`.
 2. Add algorithm grants for the factor at position 1 and address at position 2, plus access to the input token record. Confirm indices against the deployed function: form labels #2 and #3 correspond to zero-based grant positions 1 and 2.

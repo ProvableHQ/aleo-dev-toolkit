@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "@provablehq/sdk": "0.11.11",
-    "@provablehq/aleo-types": "workspace:*"
+    "@provablehq/aleo-types": "workspace:*",
+    "@scure/base": "1.2.6"
   },
   "devDependencies": {
     "tsup": "^8.0.2",
@@ -85,6 +86,16 @@
       "require": {
         "types": "./dist/schemas.d.ts",
         "default": "./dist/schemas.js"
+      }
+    },
+    "./compliance-proof": {
+      "import": {
+        "types": "./dist/compliance-proof.d.mts",
+        "default": "./dist/compliance-proof.mjs"
+      },
+      "require": {
+        "types": "./dist/compliance-proof.d.ts",
+        "default": "./dist/compliance-proof.js"
       }
     },
     "./lifecycle": {
@@ -165,6 +176,16 @@
       "require": {
         "types": "./dist/mainnet/lifecycle.d.ts",
         "default": "./dist/mainnet/lifecycle.js"
+      }
+    },
+    "./mainnet/compliance-proof": {
+      "import": {
+        "types": "./dist/mainnet/compliance-proof.d.mts",
+        "default": "./dist/mainnet/compliance-proof.mjs"
+      },
+      "require": {
+        "types": "./dist/mainnet/compliance-proof.d.ts",
+        "default": "./dist/mainnet/compliance-proof.js"
       }
     },
     "./storage/indexeddb": {

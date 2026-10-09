@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as algorithms from '../dist/index.mjs';
+import { SHIELD_BLINDING_VECTOR as shield } from '../dist/testing.mjs';
 const programAddress = 'aleo1x7kxvcemxhlsd7x7wapwdjuyav0h6yvpe76e8fs9hmf3t53apq9s7tkyfw';
 const signerAddress = 'aleo1c4ymujuysflp8uurmk5n8zrquur9pyqdhz2ty9s82prs96eydqpsfrahgf';
 const factor = '1486597362053800819779203635782691618849211330039711566246697090413632396910field';
@@ -17,6 +18,24 @@ test('address matches the independent public compatibility vector', () => {
   assert.equal(
     algorithms.deriveBlindedAddress({ programAddress, signerAddress, blindingFactor: factor }),
     address,
+  );
+});
+test('factor and address match the Shield wallet oracle', () => {
+  assert.equal(
+    algorithms.deriveBlindingFactor({
+      programAddress: shield.programAddress,
+      viewKeyScalar: shield.viewKeyScalar,
+      counter: shield.counter,
+    }),
+    shield.blindingFactor,
+  );
+  assert.equal(
+    algorithms.deriveBlindedAddress({
+      programAddress: shield.programAddress,
+      signerAddress: shield.signerAddress,
+      blindingFactor: shield.blindingFactor,
+    }),
+    shield.blindedAddress,
   );
 });
 test('rejects counters that cannot be represented as u32', () => {
