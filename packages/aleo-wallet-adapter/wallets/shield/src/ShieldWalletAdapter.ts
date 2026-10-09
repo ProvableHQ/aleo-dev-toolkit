@@ -2,6 +2,8 @@ import {
   Account,
   KNOWN_ALGORITHMS,
   Network,
+  PrepareShieldedUsdcxMintOptions,
+  ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
@@ -19,12 +21,14 @@ import {
   filterRecordsByStatus,
   scopePollingDetectionStrategy,
   validateInputRequests,
+  shieldedUsdcxMintPreparation,
   WalletConnectionCancelledError,
   WalletConnectionError,
   WalletDecryptionError,
   WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
+  WalletFeatureNotAvailableError,
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletSwitchNetworkError,
@@ -661,17 +665,34 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     }
   }
 
-  /**
-   * Shield's currently-supported derived-input algorithms. Returns the SDK's
-   * known-algorithm catalog; the wallet itself is the source of truth at
-   * runtime and will reject any algorithm it doesn't implement.
-   *
-   * TODO(wallet): when the injector exposes an `algorithmsSupported` message,
-   * replace this static list with a real round-trip so dapps see what THIS
-   * Shield build supports, not just the SDK's static catalog.
-   */
+  /** Whether the active provider implements bridge preparation. */
+  get supportsShieldedUsdcxMint(): boolean {
+    const wallet = this._shieldWallet ?? this._window?.shield;
+    return typeof wallet?.prepareShieldedUsdcxMint === 'function';
+  }
+
+  async prepareShieldedUsdcxMint(
+    options: PrepareShieldedUsdcxMintOptions,
+  ): Promise<ShieldedUsdcxMintPreparation> {
+    if (!this.account || !this._shieldWallet) throw new WalletNotConnectedError();
+    const wallet = this._shieldWallet;
+    if (typeof wallet.prepareShieldedUsdcxMint !== 'function') {
+      throw new WalletFeatureNotAvailableError('shield:prepare-shielded-usdcx-mint');
+    }
+    const request = this.shieldedMintRequestIds.resolve(options);
+    try {
+      const response = await wallet.prepareShieldedUsdcxMint(request);
+      return shieldedUsdcxMintPreparation(response, request.requestId);
+    } catch (error) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /** Query the provider when supported; retain the legacy fallback for older wallets. */
   async algorithmsSupported(): Promise<string[]> {
-    return [...KNOWN_ALGORITHMS];
+    const wallet = this._shieldWallet ?? this._window?.shield;
+    return wallet?.algorithmsSupported ? await wallet.algorithmsSupported() : [...KNOWN_ALGORITHMS];
   }
 
   /**

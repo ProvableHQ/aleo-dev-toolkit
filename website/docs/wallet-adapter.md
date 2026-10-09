@@ -706,3 +706,15 @@ export const App: FC = () => {
   );
 };
 ```
+
+## Shield XReserve mint preparation
+
+Compatible Shield extensions expose `useWallet().prepareShieldedUsdcxMint()` and
+`supportsShieldedUsdcxMint`. Preparation accepts an optional arbitrary Aleo
+`recipient` and generates a `requestId` automatically. The expected EVM
+`depositor` is optional, allowing encoding before selecting an EVM account. It returns public
+commitment and deposit parameters; the wallet retains the secret nonce.
+
+See the [XReserve integration guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/feat/xreserve-address-encoding/docs/xreserve-shielded-mint-integration.md)
+for connection grants, request persistence, and completion. Older wallets and
+the current remote/mobile facade do not implement preparation.
