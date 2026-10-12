@@ -28,6 +28,8 @@ export interface ShieldRemoteTransportOptions {
  * Wallet-initiated RPC events, mirroring the injected provider surface
  * one-for-one (these are what the adapter forwards):
  * - `networkChanged`, `accountChanged`, `disconnect`
+ * - `connectionRestored`, `walletActive` — the app is back and can answer;
+ *   both are forwarded as the adapter's `walletActive`
  *
  * Transport lifecycle (deliberately NOT forwarded as wallet events):
  * - `walletConnected` — key handshake completed
@@ -37,11 +39,16 @@ export interface ShieldRemoteTransportOptions {
  *   valid — responses are recovered from channel history on resume. Only an
  *   explicit `disconnect` RPC event ends the session.
  * - `handshakeRejected` — a forged/unauthenticated handshake was dropped
+ * - `walletPresenceChanged(present)` — the wallet came onto or left the
+ *   channel. Forwarded as is; a leave is NOT a `disconnect`.
  */
 export type ShieldRemoteTransportEvent =
   | 'networkChanged'
   | 'accountChanged'
   | 'disconnect'
+  | 'connectionRestored'
+  | 'walletActive'
+  | 'walletPresenceChanged'
   | 'walletConnected'
   | 'walletDisconnected'
   | 'handshakeRejected';
@@ -56,19 +63,19 @@ export interface ShieldRemoteTransportLike {
   /**
    * Opens (or resumes) the relay channel; returns the connect/deeplink URL.
    *
-   * `initialRequest` asks the transport to carry that request inside the link
-   * rather than send it over the channel, and `initialResponse` is how it is
-   * answered. Both are optional in every direction: a transport predating the
-   * bundle ignores the argument and returns no `initialResponse`, and the
-   * adapter then sends the request over the channel as it always did.
+   * `grant` is the params of the `connect` call, and `connected` its answer.
+   * The transport carries it in the link or over the channel, as it sees fit.
+   * A transport that returns no `connected` gets the request over the channel.
    */
-  connect(options?: {
-    initialRequest?: { method: string; params?: unknown };
-  }): Promise<{ url: string; resumed: boolean; initialResponse?: Promise<unknown> }>;
+  connect(
+    grant?: unknown,
+  ): Promise<{ url: string; resumed: boolean; connected?: Promise<unknown> }>;
   /** Resolves once the wallet has joined and completed the key handshake. */
   waitForWallet(): Promise<void>;
   /** True once paired with the wallet. */
   connected: boolean;
+  /** Asks the relay whether the wallet is on the channel right now. */
+  isWalletPresent?(): Promise<boolean>;
   /** Mirrors window.shield method calls over the relay. */
   request<T = unknown>(method: string, params?: unknown): Promise<T>;
   on(event: ShieldRemoteTransportEvent, listener: (data?: unknown) => void): void;
@@ -100,6 +107,9 @@ export interface ShieldRemoteConfig {
    * Defaults to `shield://connect`. Universal links are not configured on
    * the app yet, so `https://app.shield.app/connect` will not open it; the
    * dev and preview channels use `shield-dev://` and `shield-preview://`.
+   * Must be a custom scheme: an `http(s):` base throws. The connect URL
+   * carries the pairing secret in its query string, and an http(s) link
+   * would send it to the fallback web server.
    */
   deeplinkBase?: string;
   /** Per-request timeout. The transport's default is generous — proving is slow. */
@@ -231,6 +241,8 @@ export interface ShieldWalletEvents {
   networkChanged(network: Network): void;
   disconnect(): void;
   accountChanged(): void;
+  walletPresenceChanged(present: boolean): void;
+  walletActive(): void;
 }
 
 export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
@@ -251,6 +263,8 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   executeDeployment(deployment: ShieldDeployment): Promise<{ transactionId: string }>;
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+  /** Relay only. The injected provider has no relay, so it is always reachable. */
+  isWalletPresent?(): Promise<boolean>;
 }
 
 export interface ShieldWindow extends Window {

@@ -96,6 +96,10 @@ new ShieldWalletAdapter({
 });
 ```
 
+`deeplinkBase` must be a custom scheme. An `http(s):` base throws, because
+the connect URL carries the pairing secret in its query string, and a device
+without the app would send it to the fallback web server.
+
 `remote: false` keeps injected-only behavior (`NotDetected` when no extension
 is present). `remote: true` is equivalent to omitting `remote`.
 
@@ -154,6 +158,15 @@ Behavior:
   `shield://wake?channelId=…` link. Call these from a user gesture: browsers
   refuse to open another app otherwise. Reads the wallet answers silently stay
   on the channel and are answered the next time the app is open.
+- Over the relay, the Shield app leaves the channel whenever the phone locks
+  or the app backgrounds; the session stays valid. The adapter emits
+  `walletPresenceChanged(present)` when it comes or goes (a leave is **not** a
+  `disconnect`), and `walletActive` when the app says it is back and can
+  answer, which is a good moment to refetch. `await adapter.isWalletPresent()`
+  asks the relay directly; it is always `true` for the extension and `false`
+  when not connected. Use it to pause background reads while the app is away
+  and to show "open Shield" only for actions. A lock is noticed only when the
+  relay misses a ping, so `false` can lag it by tens of seconds.
 - On a relay `connect()`, the adapter sets `dapp.sameDevice` from the page's
   user agent (`true` on a mobile browser, `false` on desktop). Dapps do not
   configure this. The wallet can use it to skip "return to your browser"

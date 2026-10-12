@@ -45,10 +45,42 @@ export function resolveRemoteConfig(
 ): ResolvedShieldRemoteConfig | undefined {
   if (remote === false) return undefined;
   const overrides: ShieldRemoteConfig = typeof remote === 'object' ? remote : {};
+  const deeplinkBase = overrides.deeplinkBase ?? DEFAULT_SHIELD_DEEPLINK_BASE;
+  assertCustomSchemeDeeplinkBase(deeplinkBase);
   return {
     ...overrides,
     relayUrl: overrides.relayUrl ?? DEFAULT_SHIELD_RELAY_URL,
-    deeplinkBase: overrides.deeplinkBase ?? DEFAULT_SHIELD_DEEPLINK_BASE,
+    deeplinkBase,
     transport: overrides.transport ?? defaultShieldRemoteTransport,
   };
+}
+
+/**
+ * Refuse an `http(s):` deeplink base until connect params move to the URL
+ * fragment.
+ *
+ * The connect URL carries the bearer pairing `secret` in its query string.
+ * On an `http(s):` base, a device without the app loads the fallback page and
+ * sends that query string to the web server — access logs, proxies,
+ * analytics. Anyone who reads it there can compute a valid handshake MAC and
+ * claim the pairing before Shield does. Key pinning only protects a pairing
+ * after its first handshake. A custom scheme never reaches a server.
+ *
+ * Lift this once shield-relay serializes http(s) params into the fragment and
+ * the Shield app's parser (`parseRelayUri`) reads them there. See
+ * ProvableHQ/shield-relay#12.
+ */
+function assertCustomSchemeDeeplinkBase(deeplinkBase: string): void {
+  let protocol: string;
+  try {
+    protocol = new URL(deeplinkBase).protocol;
+  } catch {
+    throw new Error(`Shield remote: invalid deeplinkBase "${deeplinkBase}"`);
+  }
+  if (protocol === 'http:' || protocol === 'https:') {
+    throw new Error(
+      `Shield remote: deeplinkBase must be a custom scheme (e.g. ${DEFAULT_SHIELD_DEEPLINK_BASE}), ` +
+        `not ${protocol} — an http(s) link would send the pairing secret to the fallback web server`,
+    );
+  }
 }

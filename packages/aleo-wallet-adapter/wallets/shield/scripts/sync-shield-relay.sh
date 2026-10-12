@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # Bump after merging upstream changes (use the shield-relay main commit).
-PIN="1c390ae"
+PIN="dff4c2d"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -58,7 +58,7 @@ mkdir -p "$OUT_DIR"
   header "packages/protocol/src: types.ts + crypto.ts + connectUrl.ts"
   cat "$SRC/protocol/src/types.ts"
   grep -vE "from '\\./(types|connectUrl)\\.js'" "$SRC/protocol/src/crypto.ts"
-  grep -vE "from '\\./(types|connectUrl)\\.js'" "$SRC/protocol/src/connectUrl.ts"
+  grep -vE "from '\\./(types|crypto)\\.js'" "$SRC/protocol/src/connectUrl.ts"
 } > "$OUT_DIR/protocol.ts"
 
 {
