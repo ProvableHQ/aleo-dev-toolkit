@@ -55,6 +55,21 @@ export interface WalletEvents {
    * Only adapters that declare `supportsRemotePairing` emit this.
    */
   connectUrl(url: string, context: ConnectUrlContext): void;
+  /**
+   * Emitted when a remotely paired wallet app comes onto or leaves the relay
+   * channel. Leaving is not a disconnect: the app leaves whenever the phone
+   * locks or it backgrounds, and the session stays valid.
+   *
+   * Only adapters that declare `supportsRemotePairing` emit this.
+   */
+  walletPresenceChanged(present: boolean): void;
+  /**
+   * Emitted when a remotely paired wallet app says it is back in the
+   * foreground and able to answer. A good moment to refetch.
+   *
+   * Only adapters that declare `supportsRemotePairing` emit this.
+   */
+  walletActive(): void;
 
   // /**
   //  * Index signature for additional events

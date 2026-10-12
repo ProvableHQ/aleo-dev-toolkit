@@ -675,6 +675,17 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   }
 
   /**
+   * Whether the Shield app can answer right now. Over the relay it is false
+   * while the phone is locked or the app is in the background; the extension
+   * is always reachable. False when not connected.
+   */
+  async isWalletPresent(): Promise<boolean> {
+    if (!this._shieldWallet) return false;
+    if (!this._shieldWallet.isWalletPresent) return true;
+    return this._shieldWallet.isWalletPresent();
+  }
+
+  /**
    * EVENTS HANDLING
    */
 
@@ -691,6 +702,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this._publicKey = '';
     this.account = undefined;
     this.emit('accountChange');
+  };
+
+  _onWalletPresenceChanged = (present: boolean) => {
+    this.emit('walletPresenceChanged', present);
+  };
+
+  _onWalletActive = () => {
+    this.emit('walletActive');
   };
 
   // Disconnect listener — runs for BOTH adapter-initiated and
@@ -716,6 +735,8 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this._shieldWallet.on('networkChanged', this._onNetworkChange);
     this._shieldWallet.on('disconnect', this._onDisconnect);
     this._shieldWallet.on('accountChanged', this._onAccountChange);
+    this._shieldWallet.on('walletPresenceChanged', this._onWalletPresenceChanged);
+    this._shieldWallet.on('walletActive', this._onWalletActive);
   }
 
   /**
@@ -727,6 +748,8 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this._shieldWallet.off('networkChanged', this._onNetworkChange);
     this._shieldWallet.off('disconnect', this._onDisconnect);
     this._shieldWallet.off('accountChanged', this._onAccountChange);
+    this._shieldWallet.off('walletPresenceChanged', this._onWalletPresenceChanged);
+    this._shieldWallet.off('walletActive', this._onWalletActive);
   }
 }
 
