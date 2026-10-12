@@ -96,6 +96,10 @@ new ShieldWalletAdapter({
 });
 ```
 
+`deeplinkBase` must be a custom scheme. An `http(s):` base throws, because
+the connect URL carries the pairing secret in its query string, and a device
+without the app would send it to the fallback web server.
+
 `remote: false` keeps injected-only behavior (`NotDetected` when no extension
 is present). `remote: true` is equivalent to omitting `remote`.
 
