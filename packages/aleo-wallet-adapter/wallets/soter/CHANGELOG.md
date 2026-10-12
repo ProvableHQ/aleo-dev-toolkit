@@ -1,5 +1,16 @@
 # @provablehq/aleo-wallet-adapter-soter
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [8eb8d2a]
+- Updated dependencies [670be5e]
+  - @provablehq/aleo-types@1.1.0
+  - @provablehq/aleo-wallet-standard@1.4.0
+  - @provablehq/aleo-wallet-adapter-core@1.1.2
+  - @provablehq/aleo-wallet-adapter-leo@1.1.2
+
 ## 1.1.1
 
 ### Patch Changes

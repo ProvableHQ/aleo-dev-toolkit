@@ -1,5 +1,22 @@
 # @provablehq/aleo-wallet-adapter-shield
 
+## 1.3.0
+
+### Minor Changes
+
+- 670be5e: Shield relay: emit `walletPresenceChanged(present)` when the Shield app comes onto or leaves the relay channel, and `walletActive` when it says it is back; add `isWalletPresent()` (always `true` for the extension). Re-vendor the relay client from shield-relay main, which also pins the wallet key after pairing and negotiates `connect` as part of pairing.
+
+  The remote `deeplinkBase` must now be a custom scheme: an `http(s):` base throws, because connect params (including the pairing secret) travel in the query string and would reach the fallback web server.
+
+### Patch Changes
+
+- 8eb8d2a: Add the `program-freezelist-exclusion-proof` derived-input algorithm to the catalog. The wallet produces a `[MerkleProof; 2]` Merkle non-inclusion witness proving an address is absent from a freezelist program's tree; args are `freezelistProgram` (the freezelist program whose `freeze_list_root` the target contract asserts) and an optional `address` (the subject; defaults to the signer). `ALGORITHM_SCHEMAS` entries now type `outputType` and `validSlotTypes` as `AlgorithmSlotType` (`LiteralType | 'array' | 'struct'`) so composite outputs can be described. Shield's `algorithmsSupported()` lists the new algorithm.
+- Updated dependencies [8eb8d2a]
+- Updated dependencies [670be5e]
+  - @provablehq/aleo-types@1.1.0
+  - @provablehq/aleo-wallet-standard@1.4.0
+  - @provablehq/aleo-wallet-adapter-core@1.1.2
+
 ## 1.2.1
 
 ### Patch Changes

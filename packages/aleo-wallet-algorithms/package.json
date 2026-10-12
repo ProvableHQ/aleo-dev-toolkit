@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-wallet-algorithms",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Standard Aleo wallet algorithms with optional lifecycle and IndexedDB helpers",
   "license": "GPL-3.0-or-later",
   "main": "./dist/index.js",
