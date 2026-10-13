@@ -4,6 +4,7 @@ import {
   Network,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusSubscription,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import {
@@ -26,6 +27,7 @@ import {
   WalletDisconnectionError,
   WalletError,
   WalletNotConnectedError,
+  MethodNotImplementedError,
   WalletSignMessageError,
   WalletSwitchNetworkError,
   WalletTransactionError,
@@ -529,6 +531,50 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       );
     }
   }
+
+  get supportsTransactionStatusSubscriptions(): boolean {
+    const wallet = this._shieldWallet;
+    // Older in-app providers synthesize functions for unknown properties through
+    // a Proxy. Check membership as well as typeof to avoid advertising those.
+    return Boolean(
+      this.account &&
+        wallet &&
+        'subscribeTransactionStatus' in wallet &&
+        typeof wallet.subscribeTransactionStatus === 'function',
+    );
+  }
+
+  subscribeTransactionStatus: TransactionStatusSubscription = async (
+    transactionId,
+    onStatus,
+    onError,
+  ) => {
+    if (!this.account) throw new WalletNotConnectedError();
+    const wallet = this._shieldWallet;
+    if (!this.supportsTransactionStatusSubscriptions || !wallet?.subscribeTransactionStatus) {
+      throw new MethodNotImplementedError('subscribeTransactionStatus');
+    }
+    try {
+      return await wallet.subscribeTransactionStatus(transactionId, onStatus, onError);
+    } catch (error) {
+      throw new WalletTransactionError(
+        error instanceof Error ? error.message : 'Failed to subscribe to transaction status',
+      );
+    }
+  };
+
+  onTransactionFinalized: TransactionStatusSubscription = async (
+    transactionId,
+    onStatus,
+    onError,
+  ) =>
+    this.subscribeTransactionStatus(
+      transactionId,
+      update => {
+        if (update.isTerminal) onStatus(update);
+      },
+      onError,
+    );
 
   /**
    * Switch the network

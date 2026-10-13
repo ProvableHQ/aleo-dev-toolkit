@@ -11,23 +11,30 @@ export const PLACEHOLDERS = {
 } as const;
 
 export const codeExamples = {
-  executeTransaction: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+  executeTransaction: `import { useState } from 'react';
+import { useTransactionStatus, useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
-const { executeTransaction, transactionStatus } = useWallet();
+// Inside your component:
+const { executeTransaction } = useWallet();
+const [transactionHandle, setTransactionHandle] = useState<string | null>(null);
+const { update, error, isWatching } = useTransactionStatus(transactionHandle);
 
-// Execute a transaction
-const result = await executeTransaction({
-  program: '${PLACEHOLDERS.PROGRAM}',
-  function: '${PLACEHOLDERS.FUNCTION}',
-  inputs: [${PLACEHOLDERS.INPUTS}],
-  fee: ${PLACEHOLDERS.FEE},
-  // imports: ['target_program.aleo'], // required when calling functions that use call.dynamic
-});
+const execute = async () => {
+  const result = await executeTransaction({
+    program: '${PLACEHOLDERS.PROGRAM}',
+    function: '${PLACEHOLDERS.FUNCTION}',
+    inputs: [${PLACEHOLDERS.INPUTS}],
+    fee: ${PLACEHOLDERS.FEE},
+    // imports: ['target_program.aleo'], // required for call.dynamic
+  });
+  if (result?.transactionId) setTransactionHandle(result.transactionId);
+};
 
-// Poll for transaction status
-const status = await transactionStatus(result.transactionId);
-console.log('Status:', status.status);
-console.log('On-chain TX ID:', status.transactionId);`,
+// Render update?.status, update?.transactionId, and error?.message.
+// update?.isTerminal includes success, rejection, and proving failure.
+// isWatching is true until the watch completes or fails.
+// Shield sends updates; other connections use serial one-second polling.
+// The hook disposes on unmount or wallet/account/network change.`,
 
   signMessage: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 

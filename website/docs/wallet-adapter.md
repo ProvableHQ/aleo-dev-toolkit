@@ -138,6 +138,9 @@ function MyComponent() {
     disconnect,
     executeTransaction,
     transactionStatus,
+    supportsTransactionStatusSubscriptions,
+    subscribeTransactionStatus,
+    onTransactionFinalized,
     signMessage,
     switchNetwork,
     decrypt,
@@ -323,115 +326,116 @@ export const RequestRecords: FC = () => {
 
 ## 📡 Executing Transactions
 
+`executeTransaction()` returns a wallet-issued transaction handle. Keep that handle for status tracking; the on-chain transaction ID becomes available later. For Shield, a public on-chain ID is not a substitute for the wallet handle.
+
+### Track status with a React hook
+
+`useTransactionStatus(handle)` subscribes to updates when the connected wallet supports them. It returns the current `update`, a tracking `error`, and `isWatching`. An already-completed transaction is delivered immediately, and a terminal outcome includes rejection or proving failure as well as success.
+
+Shield's extension and in-app browser provide native subscriptions. Other wallet connections, including Shield's relay connection, use a serial status check with a one-second delay after each response. The hook cancels its subscription or timer on unmount, a changed handle, disconnect, or wallet/account/network change. A handle stays bound to the wallet scope in which tracking started; submit a new transaction or clear the handle before tracking in another scope.
+
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
-import { TransactionOptions } from '@provablehq/aleo-types';
-import React, { FC, useCallback, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useTransactionStatus, useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
-export const ExecuteTransaction: FC = () => {
-  const { address, executeTransaction, transactionStatus, connected } = useWallet();
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+export function ExecuteTransaction() {
+  const { connected, wallet, address, network, executeTransaction } = useWallet();
+  const [handle, setHandle] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+  const { update, error, isWatching } = useTransactionStatus(handle);
+  const generation = useRef(0);
 
-  const pollTransactionStatus = useCallback(
-    async (tempTransactionId: string) => {
-      try {
-        const statusResponse = await transactionStatus(tempTransactionId);
-        console.log('Transaction Status:', statusResponse.status);
-
-        if (statusResponse.status.toLowerCase() !== 'pending') {
-          // Stop polling when status is no longer pending
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-
-          if (statusResponse.transactionId) {
-            // Transaction is now on-chain, we have the final transaction ID
-            console.log('On-chain Transaction ID:', statusResponse.transactionId);
-          }
-
-          if (statusResponse.status.toLowerCase() === 'accepted') {
-            console.log('Transaction accepted!');
-          } else if (
-            statusResponse.status.toLowerCase() === 'failed' ||
-            statusResponse.status.toLowerCase() === 'rejected'
-          ) {
-            console.error('Transaction failed:', statusResponse.error || statusResponse.status);
-          }
-        }
-      } catch (error) {
-        console.error('Error polling transaction status:', error);
-        // Stop polling on error
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-      }
-    },
-    [transactionStatus],
-  );
-
-  const onClick = useCallback(async () => {
-    if (!connected || !address) {
-      throw new WalletNotConnectedError();
-    }
-
-    const transactionOptions: TransactionOptions = {
-      program: 'credits.aleo',
-      function: 'transfer_public',
-      inputs: [
-        'aleo1...', // Recipient address
-        '100u64', // Amount
-      ],
-      fee: 100000, // Transaction fee in microcredits
-      privateFee: false, // Whether the fee is private
-    };
-
-    try {
-      // Execute the transaction
-      const result = await executeTransaction(transactionOptions);
-
-      // NOTE: This is not the on-chain transaction id
-      // This is a temporary transaction ID that can be used to check the transaction status.
-      console.log('Temporary Transaction ID:', result?.transactionId);
-
-      if (result?.transactionId) {
-        // Start polling for transaction status every 1 second
-        // Poll until status is no longer "pending"
-        pollingIntervalRef.current = setInterval(() => {
-          pollTransactionStatus(result.transactionId);
-        }, 1000);
-
-        // Initial status check
-        await pollTransactionStatus(result.transactionId);
-      }
-    } catch (error) {
-      console.error('Transaction failed:', error);
-      // Clean up polling interval on error
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    }
-  }, [address, executeTransaction, pollTransactionStatus, connected]);
-
-  // Cleanup polling interval on unmount
   useEffect(() => {
+    generation.current++;
+    setHandle(null);
+    setSubmitting(false);
+    setExecutionError(null);
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
+      generation.current++;
     };
-  }, []);
+  }, [connected, wallet?.adapter, address, network]);
+
+  const execute = async () => {
+    const attempt = ++generation.current;
+    setHandle(null);
+    setExecutionError(null);
+    setSubmitting(true);
+    try {
+      const result = await executeTransaction({
+        program: 'credits.aleo',
+        function: 'transfer_public',
+        inputs: ['aleo1...', '100u64'],
+        fee: 100000,
+        privateFee: false,
+      });
+      if (attempt !== generation.current) return;
+      if (!result?.transactionId) throw new Error('Wallet returned no transaction handle');
+      setHandle(result.transactionId);
+    } catch (cause) {
+      if (attempt === generation.current) {
+        setExecutionError(cause instanceof Error ? cause.message : 'Transaction execution failed');
+      }
+    } finally {
+      if (attempt === generation.current) setSubmitting(false);
+    }
+  };
 
   return (
-    <button onClick={onClick} disabled={!connected}>
-      Execute Transaction
-    </button>
+    <div>
+      <button onClick={execute} disabled={!connected || submitting || isWatching}>
+        Execute Transaction
+      </button>
+      {update && <p>Status: {update.status}</p>}
+      {update?.isTerminal && <p>Tracking complete: {update.status}</p>}
+      {(executionError || error || update?.error) && (
+        <p role="alert">{executionError || error?.message || update?.error}</p>
+      )}
+    </div>
   );
-};
+}
 ```
+
+`update.requestedTransactionId` remains the wallet handle; `update.transactionId` contains the wallet's current ID, which changes to the on-chain ID when known. A terminal outcome is not necessarily successful. `update.error` describes a transaction failure, whereas the hook's `error` means tracking could not start or was interrupted.
+
+### Use callbacks directly
+
+`useWallet()` also exposes `subscribeTransactionStatus` and `onTransactionFinalized`. Check `supportsTransactionStatusSubscriptions` before using them; unsupported connections reject with `MethodNotImplementedError` rather than silently polling.
+
+```tsx
+const {
+  supportsTransactionStatusSubscriptions,
+  subscribeTransactionStatus,
+  onTransactionFinalized,
+} = useWallet();
+
+if (supportsTransactionStatusSubscriptions) {
+  const unsubscribe = await subscribeTransactionStatus(
+    walletTransactionHandle,
+    update => {
+      console.log('Status:', update.status);
+      console.log('Original wallet handle:', update.requestedTransactionId);
+      console.log('Current transaction ID:', update.transactionId);
+    },
+    error => console.error('Status subscription interrupted:', error.message),
+  );
+  // Retain unsubscribe and call it when the consuming UI leaves or changes scope.
+}
+
+// Or receive only the terminal outcome, including unsuccessful outcomes:
+if (supportsTransactionStatusSubscriptions) {
+  const stop = await onTransactionFinalized(
+    walletTransactionHandle,
+    update => console.log('Terminal outcome:', update.status, update.error),
+    error => console.error('Status subscription interrupted:', error.message),
+  );
+  // Retain stop and call it to cancel before the terminal outcome.
+}
+```
+
+Registration failures reject the returned promise. Later tracking failures go to `onError`. The current snapshot can arrive before registration resolves, so callbacks must not rely on the returned disposer already being assigned. Native subscriptions close at the terminal outcome; explicitly dispose when leaving the UI earlier. `useTransactionStatus` handles this cleanup, including registration still pending at unmount.
+
+For either direct callback method, use the same capability check. Transaction status subscriptions close when the wallet locks, authorization is revoked, the document navigates, or the account/network changes.
 
 ## 💻 Deploying Programs
 
@@ -571,7 +575,7 @@ export const GetTransitionViewKeys: FC = () => {
       throw new WalletNotConnectedError();
     }
 
-    const transactionId = 'at1...'; // Transaction ID
+    const transactionId = 'wallet-issued-handle'; // Transaction ID
     const viewKeys = await transitionViewKeys(transactionId);
     console.log('Transition View Keys:', viewKeys);
   }, [address, transitionViewKeys, connected]);
@@ -585,6 +589,10 @@ export const GetTransitionViewKeys: FC = () => {
 ```
 
 ## 📊 Checking Transaction Status
+
+`transactionStatus(handle)` performs one status check. It does not subscribe, repeat automatically, or wait for finalization; `await` only waits for that check's response. `useWallet()` itself does not poll. For continuous updates, use `useTransactionStatus` or the subscription methods above.
+
+With Shield, the status check reads the wallet's stored status. The wallet updates that state through its existing background status resolution. A native subscription observes those changes and removes repeated dapp-to-wallet requests; it does not remove the wallet's own network polling.
 
 ```tsx
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
@@ -601,7 +609,7 @@ export const CheckTransactionStatus: FC = () => {
 
     // Some wallets might only accept an internal transactionId,
     // others might accept both onchainId or wallet-specific internal transactionId
-    const transactionId = 'at1...';
+    const transactionId = 'wallet-issued-handle';
     const status = await transactionStatus(transactionId);
     console.log('Status:', status.status);
     console.log('On-chain Transaction ID:', status.transactionId);
@@ -669,7 +677,7 @@ function WalletApp() {
       if (result?.transactionId) {
         setTxId(result.transactionId);
 
-        // Poll for status
+        // Read one snapshot; use useTransactionStatus for continuous updates.
         const status = await transactionStatus(result.transactionId);
         console.log('Transaction status:', status);
       }

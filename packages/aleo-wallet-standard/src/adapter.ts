@@ -3,6 +3,7 @@ import {
   Network,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusSubscription,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
@@ -138,6 +139,15 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns The transaction status
    */
   transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
+
+  /** Whether this connection supports wallet-delivered status subscriptions. */
+  readonly supportsTransactionStatusSubscriptions?: boolean;
+
+  /** Subscribe using the wallet-issued handle. The result disposes the subscription. */
+  subscribeTransactionStatus?: TransactionStatusSubscription;
+
+  /** Receive only the terminal outcome, including failure. */
+  onTransactionFinalized?: TransactionStatusSubscription;
 
   /**
    * Sign a message
