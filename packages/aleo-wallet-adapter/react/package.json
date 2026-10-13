@@ -15,12 +15,12 @@
     "clean": "rimraf dist",
     "dev": "tsup --watch",
     "lint": "eslint src/**/*.ts*",
-    "test": "jest --passWithNoTests"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
+    "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adapter-core": "workspace:*",
-    "@provablehq/aleo-wallet-standard": "workspace:*",
-    "@provablehq/aleo-types": "workspace:*"
+    "@provablehq/aleo-wallet-standard": "workspace:*"
   },
   "repository": {
     "type": "git",
@@ -45,6 +45,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "jsdom": "^26.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "rimraf": "^5.0.5",

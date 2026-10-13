@@ -15,6 +15,7 @@ import {
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusSubscription,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import type { WalletBalancesOptions } from '@provablehq/aleo-wallet-adapter-core';
@@ -133,6 +134,8 @@ export interface WalletContextState {
    * Get transaction status
    */
   transactionStatus: (transactionId: string) => Promise<TransactionStatusResponse>;
+
+  subscribeTransactionStatus: TransactionStatusSubscription;
 
   /**
    * Sign a message

@@ -10,7 +10,7 @@ The **Aleo Wallet Adapter** provides a simple and unified interface for integrat
 
 > **Migrating an existing app?** The `@provablehq/aleo-wallet-adaptor-*` names
 > are deprecated in favor of `@provablehq/aleo-wallet-adapter-*`. See the
-> [migration guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/migrating-to-adapter.md) for uninstall/install
+> [migration guide](../../docs/migrating-to-adapter.md) for uninstall/install
 > commands and import changes, including CSS.
 
 ## 📲 Installation
@@ -91,7 +91,7 @@ export const App: FC = () => {
 };
 ```
 
-`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. An installed extension is preferred unless you set `preferExtension: false`, or pass `pairing: 'remote'` on a single `selectWallet` / `connect`. See the [Shield adapter README](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/packages/aleo-wallet-adapter/wallets/shield/README.md).
+`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. An installed extension is preferred unless you set `preferExtension: false`, or pass `pairing: 'remote'` on a single `selectWallet` / `connect`. See the [Shield adapter README](./wallets/shield/README.md).
 
 ### Provider Props
 
@@ -110,7 +110,7 @@ export const App: FC = () => {
 - **`recordAccess`** (optional, Shield only): Fine-grained grant controlling which record fields the dapp may read, narrowed by program, record, and field.
 - **`algorithmsAllowed`** (optional, Shield only): Opt-in allowlist of wallet-side algorithms that can compute private inputs (e.g. blinding factors) without exposing them to the dapp.
 
-For full details on the privacy props and how to use them, see the [Privacy-Preserving Dapps guide](/docs/privacy-preserving-dapps).
+For full details on the privacy props and how to use them, see the [Privacy-Preserving Dapps guide](../../docs/privacy-preserving-dapps.md).
 
 ## Using the `useWallet` Hook
 
@@ -138,6 +138,7 @@ function MyComponent() {
     disconnect,
     executeTransaction,
     transactionStatus,
+    subscribeTransactionStatus,
     signMessage,
     switchNetwork,
     decrypt,
@@ -182,7 +183,7 @@ The `WalletMultiButton` component automatically:
 - Displays the connected wallet address when connected
 - Provides a dropdown menu to disconnect or switch wallets
 
-![Connect Wallet Modal](https://raw.githubusercontent.com/ProvableHQ/aleo-dev-toolkit/master/packages/aleo-wallet-adapter/docs/images/connect-modal.png)
+![Connect Wallet Modal](./docs/images/connect-modal.png)
 
 ### Manual Approach (Custom UI)
 
@@ -323,115 +324,85 @@ export const RequestRecords: FC = () => {
 
 ## 📡 Executing Transactions
 
+`executeTransaction()` returns a wallet-issued transaction handle. Keep that handle for status tracking; the on-chain transaction ID becomes available later. For Shield, a public on-chain ID is not a substitute for the wallet handle.
+
+### Submit and observe
+
+`useTransaction()` submits a transaction and observes its wallet-issued handle. It clears state when the wallet, account, network, or connection changes. It also discards submission results that arrive after those changes or after a newer execution.
+
 ```tsx
-import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
-import { WalletNotConnectedError } from '@provablehq/aleo-wallet-adapter-core';
-import { TransactionOptions } from '@provablehq/aleo-types';
-import React, { FC, useCallback, useRef, useEffect } from 'react';
+import { useTransaction, useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
-export const ExecuteTransaction: FC = () => {
-  const { address, executeTransaction, transactionStatus, connected } = useWallet();
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+export function ExecuteTransaction() {
+  const { connected } = useWallet();
+  const { execute, update, error, phase } = useTransaction();
+  const busy = phase === 'submitting' || phase === 'watching';
 
-  const pollTransactionStatus = useCallback(
-    async (tempTransactionId: string) => {
-      try {
-        const statusResponse = await transactionStatus(tempTransactionId);
-        console.log('Transaction Status:', statusResponse.status);
-
-        if (statusResponse.status.toLowerCase() !== 'pending') {
-          // Stop polling when status is no longer pending
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-
-          if (statusResponse.transactionId) {
-            // Transaction is now on-chain, we have the final transaction ID
-            console.log('On-chain Transaction ID:', statusResponse.transactionId);
-          }
-
-          if (statusResponse.status.toLowerCase() === 'accepted') {
-            console.log('Transaction accepted!');
-          } else if (
-            statusResponse.status.toLowerCase() === 'failed' ||
-            statusResponse.status.toLowerCase() === 'rejected'
-          ) {
-            console.error('Transaction failed:', statusResponse.error || statusResponse.status);
-          }
-        }
-      } catch (error) {
-        console.error('Error polling transaction status:', error);
-        // Stop polling on error
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-      }
-    },
-    [transactionStatus],
-  );
-
-  const onClick = useCallback(async () => {
-    if (!connected || !address) {
-      throw new WalletNotConnectedError();
-    }
-
-    const transactionOptions: TransactionOptions = {
+  const submit = () =>
+    execute({
       program: 'credits.aleo',
       function: 'transfer_public',
-      inputs: [
-        'aleo1...', // Recipient address
-        '100u64', // Amount
-      ],
-      fee: 100000, // Transaction fee in microcredits
-      privateFee: false, // Whether the fee is private
-    };
-
-    try {
-      // Execute the transaction
-      const result = await executeTransaction(transactionOptions);
-
-      // NOTE: This is not the on-chain transaction id
-      // This is a temporary transaction ID that can be used to check the transaction status.
-      console.log('Temporary Transaction ID:', result?.transactionId);
-
-      if (result?.transactionId) {
-        // Start polling for transaction status every 1 second
-        // Poll until status is no longer "pending"
-        pollingIntervalRef.current = setInterval(() => {
-          pollTransactionStatus(result.transactionId);
-        }, 1000);
-
-        // Initial status check
-        await pollTransactionStatus(result.transactionId);
-      }
-    } catch (error) {
-      console.error('Transaction failed:', error);
-      // Clean up polling interval on error
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    }
-  }, [address, executeTransaction, pollTransactionStatus, connected]);
-
-  // Cleanup polling interval on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
+      inputs: ['aleo1...', '100u64'],
+      fee: 100000,
+      privateFee: false,
+    });
 
   return (
-    <button onClick={onClick} disabled={!connected}>
-      Execute Transaction
-    </button>
+    <div>
+      <button onClick={submit} disabled={!connected || busy}>
+        Execute Transaction
+      </button>
+      <p>Phase: {phase}</p>
+      {update && <p>Status: {update.status}</p>}
+      {update?.transactionId && <p>On-chain ID: {update.transactionId}</p>}
+      {(error || update?.error) && <p role="alert">{error?.message || update?.error}</p>}
+    </div>
   );
-};
+}
 ```
+
+`phase` is `idle`, `submitting`, `watching`, `done`, or `failed`. Successful statuses include `accepted`, `confirmed`, `completed`, and `finalized`. Rejection, proving failure, and other unsuccessful terminal outcomes set `phase` to `failed`. A tracking interruption also sets `failed`; it does not establish that the chain rejected the transaction.
+
+`execute(options)` resolves with the submitted handle. It resolves with `undefined` after an execution error or when a newer execution, scope change, or unmount supersedes the result. Execution and tracking errors appear in `error`; wallet-reported transaction details appear in `update.error`. Resetting the hook state does not cancel a transaction already submitted to the wallet.
+
+`update.requestedTransactionId` always remains the wallet handle. `update.transactionId` is the on-chain ID and is absent before broadcast. The Shield adapter removes temporary handle echoes from older mobile providers, so applications need no ID-prefix checks.
+
+### Observe an existing handle
+
+```tsx
+import { useTransactionStatus } from '@provablehq/aleo-wallet-adapter-react';
+import { isSuccessfulTransactionStatus } from '@provablehq/aleo-types';
+
+const { update, error, isWatching } = useTransactionStatus(walletTransactionHandle);
+const succeeded = Boolean(update?.isTerminal && isSuccessfulTransactionStatus(update.status));
+```
+
+This primitive resets when its handle, adapter, account, network, or connection changes. It removes the previous subscription and ignores late updates. It does not own a submission that started outside the hook; use `useTransaction()` to cover that phase too. Ordinary provider re-renders and callback identity changes do not restart either hook's watch.
+
+### Use callbacks directly
+
+`useWallet()` and adapters expose `subscribeTransactionStatus(handle, onStatus, onError?)`. Shield uses native updates in the extension and in-app browser when the provider implements them. The base adapter supplies a serial poller for other connections, including older Shield providers and relay connections. It queries immediately, then waits one second after each response. Requests never overlap.
+
+```tsx
+const { subscribeTransactionStatus } = useWallet();
+const unsubscribe = await subscribeTransactionStatus(
+  walletTransactionHandle,
+  update => {
+    console.log('Status:', update.status);
+    console.log('Wallet handle:', update.requestedTransactionId);
+    console.log('On-chain ID:', update.transactionId);
+    if (update.isTerminal) console.log('Terminal outcome:', update.status, update.error);
+  },
+  error => console.error('Status observation interrupted:', error.message),
+);
+// Retain unsubscribe and call it when the consumer leaves or changes scope.
+```
+
+Registration failures reject the promise. Later observation errors reach `onError`. A native registration failure does not switch to polling. An already-terminal snapshot can arrive before registration resolves. Subscriptions stop at terminal outcomes, including failures. Both React hooks also handle cleanup while registration is pending.
+
+`isTerminalTransactionStatus(status)` and `isSuccessfulTransactionStatus(status)` from `@provablehq/aleo-types` share known status checks, ignoring case and surrounding whitespace. Native updates can additionally mark a future status terminal with `isTerminal: true`; an unknown status is never assumed successful.
+
+`transactionStatus(handle)` remains a single request. Calling it once does not install a subscription or a recurring poll. Custom adapters that do not extend `BaseAleoWalletAdapter` must implement `subscribeTransactionStatus` to support these hooks.
 
 ## 💻 Deploying Programs
 
@@ -623,7 +594,7 @@ export const GetTransitionViewKeys: FC = () => {
       throw new WalletNotConnectedError();
     }
 
-    const transactionId = 'at1...'; // Transaction ID
+    const transactionId = 'wallet-issued-handle'; // Transaction ID
     const viewKeys = await transitionViewKeys(transactionId);
     console.log('Transition View Keys:', viewKeys);
   }, [address, transitionViewKeys, connected]);
@@ -637,6 +608,10 @@ export const GetTransitionViewKeys: FC = () => {
 ```
 
 ## 📊 Checking Transaction Status
+
+`transactionStatus(handle)` performs one status check. It does not subscribe, repeat automatically, or wait for finalization; `await` only waits for that check's response. `useWallet()` itself does not poll. For continuous updates, use `useTransactionStatus` or the subscription methods above.
+
+With Shield, the status check reads the wallet's stored status. The wallet updates that state through its existing background status resolution. A native subscription observes those changes and removes repeated dapp-to-wallet requests; it does not remove the wallet's own network polling.
 
 ```tsx
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
@@ -653,7 +628,7 @@ export const CheckTransactionStatus: FC = () => {
 
     // Some wallets might only accept an internal transactionId,
     // others might accept both onchainId or wallet-specific internal transactionId
-    const transactionId = 'at1...';
+    const transactionId = 'wallet-issued-handle';
     const status = await transactionStatus(transactionId);
     console.log('Status:', status.status);
     console.log('On-chain Transaction ID:', status.transactionId);
@@ -681,7 +656,7 @@ The **Shield wallet** supports a set of advanced privacy features that let your 
 
 These features are opt-in and additive — existing dapps using literal string inputs continue to work unchanged.
 
-For a full guide including the permission model, `InputRequest` shapes, derived inputs, and error handling, see the [Privacy-Preserving Dapps guide](/docs/privacy-preserving-dapps).
+For a full guide including the permission model, `InputRequest` shapes, derived inputs, and error handling, see the [Privacy-Preserving Dapps guide](../../docs/privacy-preserving-dapps.md).
 
 ## 🎯 Complete Example
 
@@ -721,7 +696,7 @@ function WalletApp() {
       if (result?.transactionId) {
         setTxId(result.transactionId);
 
-        // Poll for status
+        // Read one snapshot; use useTransactionStatus for continuous updates.
         const status = await transactionStatus(result.transactionId);
         console.log('Transaction status:', status);
       }

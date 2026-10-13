@@ -6,8 +6,35 @@ import { LiteralType } from './data';
 export enum TransactionStatus {
   PENDING = 'pending',
   ACCEPTED = 'accepted',
+  CONFIRMED = 'confirmed',
+  COMPLETED = 'completed',
+  FINALIZED = 'finalized',
   FAILED = 'failed',
   REJECTED = 'rejected',
+  ABORTED = 'aborted',
+  EXPIRED = 'expired',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded',
+}
+
+const successfulTransactionStatuses = new Set<string>([
+  TransactionStatus.ACCEPTED,
+  TransactionStatus.CONFIRMED,
+  TransactionStatus.COMPLETED,
+  TransactionStatus.FINALIZED,
+]);
+const terminalTransactionStatuses = new Set<string>(
+  Object.values(TransactionStatus).filter(status => status !== TransactionStatus.PENDING),
+);
+
+/** Whether a status reports successful on-chain execution. */
+export function isSuccessfulTransactionStatus(status: string): boolean {
+  return successfulTransactionStatuses.has(status.trim().toLowerCase());
+}
+
+/** Whether a known status ends observation, including unsuccessful outcomes. */
+export function isTerminalTransactionStatus(status: string): boolean {
+  return terminalTransactionStatuses.has(status.trim().toLowerCase());
 }
 
 /**
@@ -308,6 +335,20 @@ export interface TransactionStatusResponse {
    */
   error?: string;
 }
+
+/** A wallet status update, retaining the handle used to register the subscription. */
+export interface TransactionStatusUpdate extends TransactionStatusResponse {
+  requestedTransactionId: string;
+  /** Includes unsuccessful outcomes such as rejection and proving failure. */
+  isTerminal: boolean;
+}
+
+/** Registration rejects on failure; later errors go to onError. */
+export type TransactionStatusSubscription = (
+  transactionId: string,
+  onStatus: (update: TransactionStatusUpdate) => void,
+  onError?: (error: Error) => void,
+) => Promise<() => void>;
 
 /**
  * response of requestTransactionHistory

@@ -13,7 +13,8 @@
   "scripts": {
     "build": "tsup",
     "clean": "rimraf dist",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@noble/curves": "1.9.7",

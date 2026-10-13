@@ -52,23 +52,25 @@ export function App() {
     </AleoWalletProvider>
   );
 }`,
-  executeTransaction: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+  executeTransaction: `import { useTransaction } from '@provablehq/aleo-wallet-adapter-react';
 
-const { executeTransaction, transactionStatus } = useWallet();
+// Inside your component:
+const { execute, update, error, phase } = useTransaction();
 
-// Execute a transaction
-const result = await executeTransaction({
+const submit = () => execute({
   program: '${PLACEHOLDERS.PROGRAM}',
   function: '${PLACEHOLDERS.FUNCTION}',
   inputs: [${PLACEHOLDERS.INPUTS}],
   fee: ${PLACEHOLDERS.FEE},
-  // imports: ['target_program.aleo'], // required when calling functions that use call.dynamic
+  // imports: ['target_program.aleo'], // required for call.dynamic
 });
 
-// Poll for transaction status
-const status = await transactionStatus(result.transactionId);
-console.log('Status:', status.status);
-console.log('On-chain TX ID:', status.transactionId);`,
+// Render update?.status, update?.transactionId, and error?.message.
+// Disable submission while phase is 'submitting' or 'watching'.
+// phase is 'done' on success, or 'failed' on rejection or a tracking error.
+// Shield uses native updates; older connections use serial one-second polling.
+// The hook clears state on wallet/account/network/disconnect changes.
+// Late submission results and updates from previous scopes are discarded.`,
 
   signMessage: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
