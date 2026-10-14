@@ -22,11 +22,13 @@ A compliance token is a verified catalog token with `complianceFreezeList` set. 
 }
 ```
 
-| Action | Inputs |
-| --- | --- |
+That shape is the data model, not the wire literal. A record input serializes with every member the program's record type declares, each with its visibility marker — e.g. `{ owner: aleo1….private, amount: 5000000000u128.private, _nonce: 0group.public }` for an owner-bearing record. Dropping members or `.private`/`.public` suffixes fails input parsing.
+
+| Action                   | Inputs                                                        |
+| ------------------------ | ------------------------------------------------------------- |
 | Private send or unshield | recipient, amount as `u128`, the record, the compliance proof |
-| Public send or shield | recipient, amount as `u128` |
-| Split | the record, amount as `u128` |
+| Public send or shield    | recipient, amount as `u128`                                   |
+| Split                    | the record, amount as `u128`                                  |
 
 Public sends, shields, and splits do not take a proof.
 
@@ -43,7 +45,7 @@ import {
 const proof = complianceProofForSigner(signerAddress, freezeListTree);
 ```
 
-`freezeListTree` is the decimal node list from `GET /{network}/programs/{freezeListProgramId}/compliance/freeze-list`. An empty array builds the empty-list proof.
+`freezeListTree` is the decimal node list from `GET https://api.provable.com/v2/{network}/programs/{freezeListProgramId}/compliance/freeze-list`. An empty array builds the empty-list proof.
 
 `EMPTY_COMPLIANCE_PROOF` is a different value. Use it only when the program does not require compliance, which is what the private swap program does for credits and registry tokens. Each of its two proofs is 16 `0field` siblings and `leaf_index: 1u32`.
 
