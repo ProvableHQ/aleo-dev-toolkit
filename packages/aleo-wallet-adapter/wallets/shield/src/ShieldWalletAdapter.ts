@@ -667,7 +667,9 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
   /** Whether the active provider implements bridge preparation. */
   get supportsShieldedUsdcxMint(): boolean {
-    const wallet = this._shieldWallet ?? this._window?.shield;
+    const wallet =
+      this._shieldWallet ??
+      (!this.willPairRemotely && !this.isRemotePairingPending ? this._window?.shield : undefined);
     return typeof wallet?.prepareShieldedUsdcxMint === 'function';
   }
 
