@@ -2,6 +2,8 @@ import {
   Account,
   AlgorithmArg,
   Network,
+  PrepareShieldedUsdcxMintOptions,
+  ShieldedUsdcxMintPreparation,
   TransactionInput,
   TransactionOptions,
   TransactionStatusResponse,
@@ -28,6 +30,7 @@ import {
   WalletNotConnectedError,
 } from './errors';
 import { WalletConnectionError } from './errors';
+import { ShieldedUsdcxMintRequestIds, shieldedUsdcxMintPreparation } from './shieldedUsdcx';
 
 /**
  * Base class for Aleo wallet adapters
@@ -313,6 +316,28 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_TRANSACTION_HISTORY);
     }
     return feature.requestTransactionHistory(program);
+  }
+
+  protected readonly shieldedMintRequestIds = new ShieldedUsdcxMintRequestIds();
+
+  get supportsShieldedUsdcxMint(): boolean {
+    const feature = this._wallet?.features[WalletFeatureName.PREPARE_SHIELDED_USDCX_MINT];
+    return feature?.available === true && typeof feature.prepareShieldedUsdcxMint === 'function';
+  }
+
+  async prepareShieldedUsdcxMint(
+    options: PrepareShieldedUsdcxMintOptions,
+  ): Promise<ShieldedUsdcxMintPreparation> {
+    if (!this._wallet || !this.account) throw new WalletNotConnectedError();
+    const feature = this._wallet.features[WalletFeatureName.PREPARE_SHIELDED_USDCX_MINT];
+    if (!feature?.available || typeof feature.prepareShieldedUsdcxMint !== 'function') {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.PREPARE_SHIELDED_USDCX_MINT);
+    }
+    const request = this.shieldedMintRequestIds.resolve(options);
+    return shieldedUsdcxMintPreparation(
+      await feature.prepareShieldedUsdcxMint(request),
+      request.requestId,
+    );
   }
 
   /**

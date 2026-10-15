@@ -1,6 +1,8 @@
 import {
   Account,
   Network,
+  PrepareShieldedUsdcxMintOptions,
+  ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
@@ -205,6 +207,12 @@ export interface WalletAdapterProps<Name extends string = string> {
    * No connection required.
    */
   algorithmsSupported: () => Promise<string[]>;
+
+  /** Optional bridge capability; legacy wallets may omit it. */
+  readonly supportsShieldedUsdcxMint?: boolean;
+  prepareShieldedUsdcxMint?: (
+    options: PrepareShieldedUsdcxMintOptions,
+  ) => Promise<ShieldedUsdcxMintPreparation>;
 }
 
 export type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> &

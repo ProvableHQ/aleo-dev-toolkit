@@ -1,5 +1,7 @@
 import {
   Network,
+  PrepareShieldedUsdcxMintRequest,
+  PreparedShieldedUsdcxMint,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
@@ -247,6 +249,10 @@ export interface ShieldWalletEvents {
 
 export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   publicKey?: string;
+  algorithmsSupported?(): Promise<string[]>;
+  prepareShieldedUsdcxMint?(
+    request: PrepareShieldedUsdcxMintRequest,
+  ): Promise<PreparedShieldedUsdcxMint>;
   connect(
     network: Network,
     decryptPermission: WalletDecryptPermission,

@@ -20,13 +20,14 @@
     "dev:example": "pnpm --filter react-app-example dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "publish-packages": "pnpm test:release && turbo run build lint && changeset publish",
+    "publish-packages": "pnpm test:release && turbo run build lint && pnpm test:xreserve && changeset publish",
     "docs:dev": "cd website && pnpm start",
     "docs:build": "cd website && pnpm build",
     "docs:serve": "cd website && pnpm serve",
     "version-packages": "changeset version",
     "deprecate-adaptors": "node scripts/deprecate-adaptors.mjs",
-    "test:release": "node --test scripts/deprecate-adaptors.test.mjs"
+    "test:release": "node --test scripts/deprecate-adaptors.test.mjs",
+    "test:xreserve": "node --test scripts/shielded-usdcx-mint.test.mjs"
   },
   "dependencies": {
     "@provablehq/wasm": "^0.8.8"

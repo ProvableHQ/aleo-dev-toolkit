@@ -13,7 +13,11 @@ import {
   RecordAccessGrant,
   RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
-import { Network, TransactionOptions } from '@provablehq/aleo-types';
+import {
+  Network,
+  PrepareShieldedUsdcxMintOptions,
+  TransactionOptions,
+} from '@provablehq/aleo-types';
 import { Wallet, WalletContext, SelectWalletOptions } from './context';
 import { useLocalStorage } from './useLocalStorage';
 import {
@@ -639,6 +643,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     }
   }, [adapter]);
 
+  const prepareShieldedUsdcxMint = useCallback(
+    async (options: PrepareShieldedUsdcxMintOptions) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter?.prepareShieldedUsdcxMint) {
+        throw handleError(new MethodNotImplementedError('prepareShieldedUsdcxMint'));
+      }
+      return await adapter.prepareShieldedUsdcxMint(options);
+    },
+    [adapter, handleError, connected],
+  );
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -676,6 +691,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         transitionViewKeys,
         requestTransactionHistory,
         algorithmsSupported,
+        prepareShieldedUsdcxMint,
+        supportsShieldedUsdcxMint: adapter?.supportsShieldedUsdcxMint ?? false,
       }}
     >
       {children}
