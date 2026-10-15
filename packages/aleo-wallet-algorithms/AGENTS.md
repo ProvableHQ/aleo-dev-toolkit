@@ -29,11 +29,11 @@ Scaffold:
 3. Select a record large enough for the spend.
 4. Build inputs in this order:
 
-| Action | Inputs |
-| --- | --- |
+| Action                   | Inputs                                                       |
+| ------------------------ | ------------------------------------------------------------ |
 | Private send or unshield | recipient, amount `u128`, record plaintext, compliance proof |
-| Public send or shield | recipient, amount `u128` |
-| Split | record plaintext, amount `u128` |
+| Public send or shield    | recipient, amount `u128`                                     |
+| Split                    | record plaintext, amount `u128`                              |
 
 Check: a private spend contains the record and leaves a slot after it for the proof from area 2. A public send has no record and no proof.
 
@@ -73,7 +73,7 @@ Scaffold:
 
 1. Import `deriveBlindingFactor` and `deriveBlindedAddress`.
 2. Derive the scope program address from its deployed source with `Program.fromString(source).address()`.
-3. Convert the active view key with `ViewKey.fromString(key).toScalar()`. Keep both values inside the wallet.
+3. Convert the active view key with `ViewKey.from_string(key).to_scalar()`. The WASM bindings are snake_case — `Scalar.fromString`/`Field.fromString` are camelCase, but `ViewKey` and `Address` are not. Keep both values inside the wallet.
 4. Choose one `u32` counter and call both functions with it. The factor is private. The address is public.
 5. Store enough to recover that counter from the public blinded address. Use the wallet's own storage.
 6. On a claim, derive the same pair again. Do not allocate a new counter.
@@ -93,7 +93,9 @@ const address = deriveBlindedAddress({ ...shield, blindingFactor: factor });
 // address === shield.blindedAddress
 ```
 
-Repeat with `BLINDING_TEST_VECTOR`. Both must match. `SHIELD_BLINDING_VECTOR` is the Shield wallet oracle.
+Repeat with `BLINDING_TEST_VECTOR`. Both must match. `SHIELD_BLINDING_VECTOR` is the Shield wallet oracle. In this repo, `pnpm --filter @provablehq/aleo-wallet-algorithms test` asserts both vectors in `test/algorithms.test.mjs` — that is the CI-level check; the lab's "Check Shield oracle" is the same assertion rendered visually.
+
+The vectors' `programAddress` is a scope-program address passed in as input — not the swap program's address (it is not `Address.fromProgramId('shield_swap.aleo')`). The scope is whatever program the grant flow approved; feed the vectors verbatim and do not "fix" a passing implementation over the difference.
 
 ## Lab
 

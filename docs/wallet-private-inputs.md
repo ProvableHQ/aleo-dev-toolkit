@@ -18,13 +18,15 @@ A compliance token is a verified catalog token whose `complianceFreezeList` is s
 }
 ```
 
+That shape is the data model, not the wire literal. When the record is placed as a transaction input it must be serialized with every member the program's record type declares, each carrying its visibility marker — for an owner-bearing record that looks like `{ owner: aleo1….private, amount: 5000000000u128.private, _nonce: 0group.public }`. Read the declared members from the deployed program source; omitting `owner`/`_nonce` or dropping `.private`/`.public` suffixes fails input parsing.
+
 Input order for the token program:
 
-| Action | Inputs |
-| --- | --- |
+| Action                   | Inputs                                                        |
+| ------------------------ | ------------------------------------------------------------- |
 | Private send or unshield | recipient, amount as `u128`, the record, the compliance proof |
-| Public send or shield | recipient, amount as `u128` |
-| Split | the record, amount as `u128` |
+| Public send or shield    | recipient, amount as `u128`                                   |
+| Split                    | the record, amount as `u128`                                  |
 
 Public sends, shields, and splits do not take a proof.
 
@@ -45,7 +47,8 @@ import {
   EMPTY_COMPLIANCE_PROOF,
 } from '@provablehq/aleo-wallet-algorithms/compliance-proof';
 
-// Tree published by GET /{network}/programs/{freezeListProgramId}/compliance/freeze-list.
+// Tree published on the Provable API:
+//   GET https://api.provable.com/v2/{network}/programs/{freezeListProgramId}/compliance/freeze-list
 // Each entry is a decimal tree node. An empty array means the list is empty.
 const proof = complianceProofForSigner(signerAddress, freezeListTree);
 ```
@@ -111,10 +114,10 @@ Open Wallet Inputs. Sections 01–03 are the checks. “Check Shield oracle” s
 
 ## Package layout
 
-| Import | Use it for |
-| --- | --- |
-| `/compliance-proof` | ARC-22 proof and the empty literal |
-| `/program-scoped-blinding-factor` | Private factor for a blinded address |
-| `/program-scoped-blinded-address` | Blinded address for a private swap |
-| `/lifecycle` and `/storage/indexeddb` | Optional counter sample |
-| `/testing` | The two blinding vectors and storage checks |
+| Import                                | Use it for                                  |
+| ------------------------------------- | ------------------------------------------- |
+| `/compliance-proof`                   | ARC-22 proof and the empty literal          |
+| `/program-scoped-blinding-factor`     | Private factor for a blinded address        |
+| `/program-scoped-blinded-address`     | Blinded address for a private swap          |
+| `/lifecycle` and `/storage/indexeddb` | Optional counter sample                     |
+| `/testing`                            | The two blinding vectors and storage checks |
