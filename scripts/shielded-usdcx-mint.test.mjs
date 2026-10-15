@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
 import { test } from 'node:test';
 import { createRequire } from 'node:module';
+
+globalThis.crypto ??= webcrypto;
+
 const require = createRequire(import.meta.url);
 const {
   BaseAleoWalletAdapter,
@@ -13,7 +17,7 @@ const {
 const {
   ShieldWalletAdapter,
 } = require('../packages/aleo-wallet-adapter/wallets/shield/dist/index.js');
-const { Network } = require('../packages/aleo-types/dist/index.js');
+const { KNOWN_ALGORITHMS, Network } = require('../packages/aleo-types/dist/index.js');
 const {
   WalletDecryptPermission,
   WalletFeatureName,
@@ -42,7 +46,11 @@ const response = {
   },
 };
 
-function fixture({ prepare = async () => response, supported = true } = {}) {
+function fixture({
+  prepare = async () => response,
+  supported = true,
+  adapterConfig = { remote: false },
+} = {}) {
   const calls = [];
   const provider = {
     connect: async (_network, _decrypt, _programs, opts) => ({
@@ -65,7 +73,7 @@ function fixture({ prepare = async () => response, supported = true } = {}) {
   const previousDocument = globalThis.document;
   globalThis.window = { shield: provider, addEventListener() {}, removeEventListener() {} };
   globalThis.document = { readyState: 'complete' };
-  const adapter = new ShieldWalletAdapter({ remote: false });
+  const adapter = new ShieldWalletAdapter(adapterConfig);
   globalThis.window = previousWindow;
   globalThis.document = previousDocument;
   const connect = opts =>
@@ -202,8 +210,55 @@ test('a saved factory request preserves retries across new adapter instances', a
 });
 
 test('algorithm discovery uses the provider rather than the old static list', async () => {
-  const { adapter } = fixture();
+  const { adapter, connect } = fixture();
   assert.deepEqual(await adapter.algorithmsSupported(), ['shielded-usdcx-secret-nonce']);
+  await connect();
+  assert.deepEqual(await adapter.algorithmsSupported(), ['shielded-usdcx-secret-nonce']);
+});
+
+test('algorithm discovery ignores the extension when configured for remote pairing', async () => {
+  const { adapter, provider } = fixture({ adapterConfig: { preferExtension: false } });
+  provider.algorithmsSupported = async () => {
+    throw new Error('Unexpected extension query');
+  };
+  assert.equal(adapter.willPairRemotely, true);
+  assert.deepEqual(await adapter.algorithmsSupported(), [...KNOWN_ALGORITHMS]);
+});
+
+test('algorithm discovery ignores the extension while explicit remote pairing is pending', async () => {
+  let releaseTransport;
+  const transportBlocked = new Promise(resolve => {
+    releaseTransport = resolve;
+  });
+  let markStarted;
+  const transportStarted = new Promise(resolve => {
+    markStarted = resolve;
+  });
+  const { adapter, provider, connect } = fixture({
+    adapterConfig: {
+      remote: {
+        transport: async () => {
+          markStarted();
+          await transportBlocked;
+          throw new Error('Test remote transport stopped');
+        },
+      },
+    },
+  });
+  provider.algorithmsSupported = async () => {
+    throw new Error('Unexpected extension query');
+  };
+  const pending = connect({ pairing: 'remote' });
+  const rejected = assert.rejects(pending, /Test remote transport stopped/);
+  try {
+    await transportStarted;
+    assert.equal(adapter.willPairRemotely, false);
+    assert.equal(adapter.isRemotePairingPending, true);
+    assert.deepEqual(await adapter.algorithmsSupported(), [...KNOWN_ALGORITHMS]);
+  } finally {
+    releaseTransport();
+    await rejected;
+  }
 });
 
 test('base adapters expose an optional wallet-standard feature and fail closed when unavailable', async () => {

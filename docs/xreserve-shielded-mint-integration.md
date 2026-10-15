@@ -63,10 +63,12 @@ still be canonical and nonzero. Do not add or change it on a retry under the
 same request ID; retain the original preparation request.
 
 An omitted recipient defaults inside the wallet to the connected Aleo account.
-An explicit recipient can be another person's address. The wallet validates and
-shows the actual recipient for approval, and binds the commitment and completion
-to it. The wallet preparing the deposit retains the private nonce and recovery
-identity even when another address receives the tokens. Address-withheld
+An explicit recipient can be another person's address. The wallet validates the
+recipient and binds the commitment and completion to it. Preparation uses the
+existing connection grants without an approval popup; completion shows the
+recipient in normal transaction approval. The wallet preparing the deposit
+retains the private nonce and recovery identity even when another address
+receives the tokens. Address-withheld
 connections do not require the adapter to learn the default recipient.
 
 `prepared.deposit.remoteRecipient` is the encoded wrapper address, not the
@@ -105,11 +107,11 @@ bridge lifecycle ends or the user deliberately starts a separate deposit.
 
 ## Complete the mint
 
-Submit XReserve's source-chain deposit using the approved public parameters.
+Submit XReserve's source-chain deposit using the prepared public parameters.
 Once Circle supplies `{ payload, attestation, messageHash }`, complete via the
 existing `executeTransaction` API with `private_mint` and a
 `shielded-usdcx-secret-nonce` derived input at slot 3. Use the same recipient
-approved during preparation. The adapter does not fetch, expose, or store the
+specified during preparation. The adapter does not fetch, expose, or store the
 secret scalar. `executeTransaction` submits after wallet approval; it is not a
 simulation API.
 

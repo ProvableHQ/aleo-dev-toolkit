@@ -693,8 +693,12 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
   /** Query the provider when supported; retain the legacy fallback for older wallets. */
   async algorithmsSupported(): Promise<string[]> {
-    const wallet = this._shieldWallet ?? this._window?.shield;
-    return wallet?.algorithmsSupported ? await wallet.algorithmsSupported() : [...KNOWN_ALGORITHMS];
+    const wallet =
+      this._shieldWallet ??
+      (!this.willPairRemotely && !this.isRemotePairingPending ? this._window?.shield : undefined);
+    return typeof wallet?.algorithmsSupported === 'function'
+      ? await wallet.algorithmsSupported()
+      : [...KNOWN_ALGORITHMS];
   }
 
   /**
