@@ -11,6 +11,7 @@ import {
   Network,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusSubscription,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 
@@ -128,6 +129,11 @@ export interface WalletContextState {
    * Get transaction status
    */
   transactionStatus: (transactionId: string) => Promise<TransactionStatusResponse>;
+
+  /** True when the connected wallet can deliver status updates without dapp polling. */
+  supportsTransactionStatusSubscriptions: boolean;
+  subscribeTransactionStatus: TransactionStatusSubscription;
+  onTransactionFinalized: TransactionStatusSubscription;
 
   /**
    * Sign a message

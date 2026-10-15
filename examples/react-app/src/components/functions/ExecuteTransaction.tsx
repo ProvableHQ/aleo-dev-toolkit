@@ -6,9 +6,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Copy, CheckCircle, Loader2, Zap, Code2, XCircle, Info, X, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { useTransactionStatus, useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
-import { Network, TransactionStatus } from '@provablehq/aleo-types';
+import { Network } from '@provablehq/aleo-types';
 import { CodePanel } from '../CodePanel';
 import { codeExamples, PLACEHOLDERS } from '@/lib/codeExamples';
 import { ProgramAutocomplete } from '../ProgramAutocomplete';
@@ -28,24 +28,29 @@ import { DispatchPrepPanel } from './DispatchPrepPanel';
 import { Switch } from '../ui/switch';
 
 export function ExecuteTransaction() {
-  const {
-    connected,
-    executeTransaction,
-    transactionStatus: getTransactionStatus,
-    network,
-  } = useWallet();
+  const { connected, executeTransaction, network, address, wallet } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
   const [program, setProgram] = useAtom(programAtom);
   const [functionName, setFunctionName] = useAtom(functionNameAtom);
   const [inputs, setInputs] = useState('');
   const [dynamicInputValues, setDynamicInputValues] = useState<string[]>([]);
   const [fee, setFee] = useState('100000');
-  const [onchainTransactionId, setOnchainTransactionId] = useState<string | null>(null);
+  const [transactionHandle, setTransactionHandle] = useState<string | null>(null);
   const [isExecutingTransaction, setIsExecutingTransaction] = useState(false);
-  const [isPollingStatus, setIsPollingStatus] = useState(false);
-  const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
-  const [transactionError, setTransactionError] = useState<string | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+  const executionGenerationRef = useRef(0);
+  const { update, error: trackingError, isWatching } = useTransactionStatus(transactionHandle);
+  const transactionStatus = update?.status ?? null;
+  const transactionError = executionError ?? trackingError?.message ?? update?.error ?? null;
+  const onchainTransactionId =
+    update?.transactionId &&
+    (update.transactionId !== update.requestedTransactionId ||
+      update.transactionId.startsWith('at1'))
+      ? update.transactionId
+      : null;
+  const isAccepted = ['accepted', 'completed', 'finalized'].includes(
+    transactionStatus?.toLowerCase() ?? '',
+  );
   // Tracks whether the user has manually edited the target input for the current
   // (program, function). When dirty, auto-populate skips this input until the
   // program or function changes.
@@ -142,13 +147,27 @@ export function ExecuteTransaction() {
   }, [selectedImport]);
 
   useEffect(() => {
-    if (!connected) {
-      setTransactionStatus(null);
-      setOnchainTransactionId(null);
-      setTransactionError(null);
-      setIsPollingStatus(false);
+    executionGenerationRef.current++;
+    setTransactionHandle(null);
+    setExecutionError(null);
+    setIsExecutingTransaction(false);
+    return () => {
+      executionGenerationRef.current++;
+    };
+  }, [connected, wallet?.adapter, address, network]);
+
+  useEffect(() => {
+    if (!update?.isTerminal) return;
+    if (['accepted', 'completed', 'finalized'].includes(update.status.toLowerCase())) {
+      toast.success('Transaction ' + update.status);
+    } else {
+      toast.error('Transaction ' + update.status);
     }
-  }, [connected]);
+  }, [update]);
+
+  useEffect(() => {
+    if (trackingError) toast.error(trackingError.message);
+  }, [trackingError]);
 
   useEffect(() => {
     if (functionNames.length > 0 && isLoading) {
@@ -256,57 +275,6 @@ export function ExecuteTransaction() {
     }
   }, [programIsError]);
 
-  // Cleanup polling interval on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Function to poll transaction status
-  const pollTransactionStatus = async (tempTransactionId: string) => {
-    function clear() {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    }
-    try {
-      const statusResponse = await getTransactionStatus(tempTransactionId);
-      setTransactionStatus(statusResponse.status);
-      if (statusResponse.transactionId) {
-        // Transaction is now onchain, we have the final transaction ID
-        setOnchainTransactionId(statusResponse.transactionId);
-      }
-
-      if (statusResponse.status.toLowerCase() === TransactionStatus.ACCEPTED.toLowerCase()) {
-        setIsPollingStatus(false);
-        clear();
-        toast.success('Transaction ' + statusResponse.status);
-      } else if (
-        statusResponse.status.toLowerCase() === TransactionStatus.FAILED.toLowerCase() ||
-        statusResponse.status.toLowerCase() === TransactionStatus.REJECTED.toLowerCase()
-      ) {
-        // Transaction failed
-        setIsPollingStatus(false);
-        if (statusResponse.error) {
-          setTransactionError(statusResponse.error);
-        }
-        clear();
-        toast.error('Transaction ' + statusResponse.status);
-      }
-    } catch (error) {
-      console.error('Error polling transaction status, will stop polling. Error:', error);
-      toast.error('Error polling transaction status. Check console for details.');
-      setTransactionError('Error polling transaction status');
-      setIsPollingStatus(false);
-      setTransactionStatus(TransactionStatus.FAILED);
-      clear();
-    }
-  };
-
   const handleExecuteTransaction = async () => {
     if (!connected) {
       openWalletModal(true);
@@ -316,10 +284,10 @@ export function ExecuteTransaction() {
       toast.error('Please enter program, function, and fee');
       return;
     }
+    const generation = ++executionGenerationRef.current;
     setIsExecutingTransaction(true);
-    setOnchainTransactionId(null);
-    setTransactionStatus(null);
-    setTransactionError(null);
+    setTransactionHandle(null);
+    setExecutionError(null);
     try {
       let inputArray: string[];
 
@@ -347,25 +315,20 @@ export function ExecuteTransaction() {
         ...(importsArray.length > 0 ? { imports: importsArray } : {}),
       });
 
+      if (generation !== executionGenerationRef.current) return;
       if (tx?.transactionId) {
         toast.success('Transaction submitted successfully');
-        setIsPollingStatus(true);
-
-        // Start polling for transaction status every 1 second
-        pollingIntervalRef.current = setInterval(() => {
-          pollTransactionStatus(tx.transactionId);
-        }, 1000);
-
-        // Initial status check
-        pollTransactionStatus(tx.transactionId);
+        setTransactionHandle(tx.transactionId);
       } else {
         toast.error('Failed to get transaction ID');
       }
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to execute transaction. Check console for details.');
+      if (generation !== executionGenerationRef.current) return;
+      const message = error instanceof Error ? error.message : 'Failed to execute transaction';
+      setExecutionError(message);
+      toast.error(message);
     } finally {
-      setIsExecutingTransaction(false);
+      if (generation === executionGenerationRef.current) setIsExecutingTransaction(false);
     }
   };
 
@@ -669,9 +632,7 @@ export function ExecuteTransaction() {
 
       <Button
         onClick={handleExecuteTransaction}
-        disabled={
-          isExecutingTransaction || isPollingStatus || !program.trim() || !functionName.trim()
-        }
+        disabled={isExecutingTransaction || isWatching || !program.trim() || !functionName.trim()}
         className="w-full transition-all duration-200"
       >
         {isExecutingTransaction ? (
@@ -679,7 +640,7 @@ export function ExecuteTransaction() {
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Executing Transaction...
           </>
-        ) : isPollingStatus ? (
+        ) : isWatching ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Waiting for Confirmation...
@@ -697,12 +658,11 @@ export function ExecuteTransaction() {
         )}
       </Button>
 
-      {(transactionStatus || onchainTransactionId) && (
+      {(transactionStatus || onchainTransactionId || transactionError) && (
         <Alert>
-          {transactionStatus?.toLowerCase() === TransactionStatus.ACCEPTED.toLowerCase() ? (
+          {isAccepted ? (
             <CheckCircle className="h-4 w-4 " />
-          ) : transactionStatus?.toLowerCase() === TransactionStatus.REJECTED.toLowerCase() ||
-            transactionStatus?.toLowerCase() === TransactionStatus.FAILED.toLowerCase() ? (
+          ) : trackingError || executionError || (update?.isTerminal && !isAccepted) ? (
             <XCircle className="h-4 w-4" />
           ) : (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -711,7 +671,7 @@ export function ExecuteTransaction() {
             <div className="space-y-2">
               <p className="body-m">
                 Transaction status:{' '}
-                <span className="body-m-bold capitalize">{transactionStatus || 'Pending'}</span>
+                <span className="body-m-bold capitalize">{transactionStatus || 'Unavailable'}</span>
               </p>
 
               {onchainTransactionId ? (

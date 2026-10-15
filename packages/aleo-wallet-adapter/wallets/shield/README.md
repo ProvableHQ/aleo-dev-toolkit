@@ -116,8 +116,8 @@ To force the relay for one connect without changing the rest of the dapp:
 selectWallet('Shield Wallet', { pairing: 'remote' });
 ```
 
-`willPairRemotely` on the adapter is the constructor policy (preferExtension
-+ readyState). UI reads that instead of reconstructing it from other flags.
+`willPairRemotely` on the adapter is the constructor policy (`preferExtension + readyState`).
+UI reads that instead of reconstructing it from other flags.
 
 The production defaults are also exported as `DEFAULT_SHIELD_RELAY_URL` and
 `DEFAULT_SHIELD_DEEPLINK_BASE` if you need to read them.
@@ -183,3 +183,11 @@ Behavior:
 - `@provablehq/aleo-wallet-adapter-react` – provider that wires this adapter into React apps.
 
 Live demo: https://aleo-dev-toolkit-react-app.vercel.app/
+
+## Transaction status subscriptions
+
+After connecting to an injected Shield extension or in-app browser provider, check `adapter.supportsTransactionStatusSubscriptions`. `adapter.subscribeTransactionStatus(handle, onStatus, onError?)` delivers the current snapshot and subsequent changes. `adapter.onTransactionFinalized(handle, onFinalized, onError?)` delivers only a terminal outcome, including rejection or proving failure. Both return a promise for a disposer; registration can deliver an already-terminal snapshot before that promise resolves.
+
+Use the wallet-issued handle returned by `executeTransaction`, retaining `update.requestedTransactionId` as the on-chain `update.transactionId` arrives. Registration failures reject; later interruption errors reach `onError`. Retain the disposer and call it when leaving the consuming UI. Wallet lock, revoked authorization, navigation, disconnect, and account/network changes close the native subscription.
+
+Relay connections and older injected providers do not advertise subscription support. `transactionStatus(handle)` remains a single status query. React consumers can use `useTransactionStatus(handle)` from `@provablehq/aleo-wallet-adapter-react` for automatic cleanup and serial one-second polling when native subscriptions are unavailable.

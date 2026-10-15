@@ -309,6 +309,20 @@ export interface TransactionStatusResponse {
   error?: string;
 }
 
+/** A wallet status update, retaining the handle used to register the subscription. */
+export interface TransactionStatusUpdate extends TransactionStatusResponse {
+  requestedTransactionId: string;
+  /** Includes unsuccessful outcomes such as rejection and proving failure. */
+  isTerminal: boolean;
+}
+
+/** Registration rejects on failure; later errors go to onError. */
+export type TransactionStatusSubscription = (
+  transactionId: string,
+  onStatus: (update: TransactionStatusUpdate) => void,
+  onError?: (error: Error) => void,
+) => Promise<() => void>;
+
 /**
  * response of requestTransactionHistory
  */

@@ -13,7 +13,7 @@ import {
   RecordAccessGrant,
   RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
-import { Network, TransactionOptions } from '@provablehq/aleo-types';
+import { Network, TransactionOptions, TransactionStatusSubscription } from '@provablehq/aleo-types';
 import { Wallet, WalletContext, SelectWalletOptions } from './context';
 import { useLocalStorage } from './useLocalStorage';
 import {
@@ -532,6 +532,33 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const supportsTransactionStatusSubscriptions = Boolean(
+    connected && adapter?.supportsTransactionStatusSubscriptions,
+  );
+
+  const subscribeTransactionStatus = useCallback<TransactionStatusSubscription>(
+    async (transactionId, onStatus, onError) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter?.supportsTransactionStatusSubscriptions || !adapter.subscribeTransactionStatus) {
+        throw handleError(new MethodNotImplementedError('subscribeTransactionStatus'));
+      }
+      return await adapter.subscribeTransactionStatus(transactionId, onStatus, onError);
+    },
+    [adapter, handleError, connected],
+  );
+
+  const onTransactionFinalized = useCallback<TransactionStatusSubscription>(
+    (transactionId, onStatus, onError) =>
+      subscribeTransactionStatus(
+        transactionId,
+        update => {
+          if (update.isTerminal) onStatus(update);
+        },
+        onError,
+      ),
+    [subscribeTransactionStatus],
+  );
+
   // Sign an arbitrary message if the wallet supports it
   const signMessage = useMemo(
     () =>
@@ -668,6 +695,9 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         disconnect,
         executeTransaction,
         transactionStatus,
+        supportsTransactionStatusSubscriptions,
+        subscribeTransactionStatus,
+        onTransactionFinalized,
         signMessage,
         switchNetwork,
         decrypt,

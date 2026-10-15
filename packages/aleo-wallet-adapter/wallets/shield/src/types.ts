@@ -2,6 +2,7 @@ import {
   Network,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusSubscription,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import {
@@ -258,6 +259,8 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   decrypt(cipherText: string): Promise<string>;
   executeTransaction(transactionOptions: ShieldTransaction): Promise<{ transactionId?: string }>;
   transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
+  /** Injected extension/in-app-browser providers; not yet available over relay. */
+  subscribeTransactionStatus?: TransactionStatusSubscription;
   switchNetwork(network: Network): Promise<void>;
   requestRecords(program: string, includePlaintext?: boolean): Promise<unknown[]>;
   executeDeployment(deployment: ShieldDeployment): Promise<{ transactionId: string }>;
