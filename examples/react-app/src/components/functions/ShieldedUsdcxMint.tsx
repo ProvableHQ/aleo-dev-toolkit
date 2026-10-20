@@ -5,7 +5,6 @@ import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
 import {
   createShieldedUsdcxMintRequest,
-  DecryptPermission,
   SHIELDED_USDCX_MINT_GRANT,
 } from '@provablehq/aleo-wallet-adapter-core';
 import { Network } from '@provablehq/aleo-types';
@@ -19,12 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CodePanel } from '@/components/CodePanel';
 import { codeExamples } from '@/lib/codeExamples';
-import {
-  algorithmsAllowedAtom,
-  decryptPermissionAtom,
-  programsAtom,
-  recordAccessAtom,
-} from '@/lib/store/global';
+import { algorithmsAllowedAtom, programsAtom } from '@/lib/store/global';
 
 const STORAGE_KEY = 'shield:xreserve:pending-mint';
 
@@ -50,8 +44,6 @@ export function ShieldedUsdcxMint() {
   const { setVisible } = useWalletModal();
   const setPrograms = useSetAtom(programsAtom);
   const setAlgorithms = useSetAtom(algorithmsAllowedAtom);
-  const setDecryptPermission = useSetAtom(decryptPermissionAtom);
-  const setRecordAccess = useSetAtom(recordAccessAtom);
   const [pending, setPending] = useState(loadPendingMint);
   const [amount, setAmount] = useState('1000000');
   const [maxFee, setMaxFee] = useState('10000');
@@ -64,11 +56,24 @@ export function ShieldedUsdcxMint() {
     network === Network.MAINNET || network === Network.TESTNET ? network : undefined;
   const wrongNetwork = pending && pending.request.network !== network;
 
+  // Add the mint grant to the shared connection settings without dropping what other pages need.
   async function configurePermissions() {
-    setPrograms(['shielded_usdcx_wrapper.aleo']);
-    setAlgorithms([{ ...SHIELDED_USDCX_MINT_GRANT }]);
-    setDecryptPermission(DecryptPermission.NoDecrypt);
-    setRecordAccess(undefined);
+    const grant = SHIELDED_USDCX_MINT_GRANT;
+    setPrograms(programs =>
+      programs.includes(grant.program) ? programs : [...programs, grant.program],
+    );
+    setAlgorithms(grants => {
+      const current = grants ?? [];
+      const present = current.some(
+        g =>
+          g.algorithm === grant.algorithm &&
+          g.program === grant.program &&
+          g.function === grant.function &&
+          g.inputPosition === grant.inputPosition &&
+          (g.scopeProgram ?? g.program) === (grant.scopeProgram ?? grant.program),
+      );
+      return present ? current : [...current, { ...grant }];
+    });
     try {
       if (connected) await disconnect();
       toast.success('Mint permissions saved. Reconnect with the Shield extension to approve them.');
