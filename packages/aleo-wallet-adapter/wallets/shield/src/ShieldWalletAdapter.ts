@@ -2,7 +2,7 @@ import {
   Account,
   KNOWN_ALGORITHMS,
   Network,
-  PrepareShieldedUsdcxMintOptions,
+  PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
@@ -21,7 +21,6 @@ import {
   filterRecordsByStatus,
   scopePollingDetectionStrategy,
   validateInputRequests,
-  shieldedUsdcxMintPreparation,
   WalletConnectionCancelledError,
   WalletConnectionError,
   WalletDecryptionError,
@@ -29,6 +28,7 @@ import {
   WalletDisconnectionError,
   WalletError,
   WalletFeatureNotAvailableError,
+  WalletInputRequestInvalidError,
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletSwitchNetworkError,
@@ -44,6 +44,7 @@ import {
 import { buildDappMetadata } from './dappMetadata';
 import { isMobileUserAgent } from './isMobileUserAgent';
 import { resolveRemoteConfig, type ResolvedShieldRemoteConfig } from './remoteDefaults';
+import { SHIELDED_USDCX_MINT_FEATURE, shieldedUsdcxMintPreparation } from './shieldedUsdcx';
 
 /**
  * Shield wallet adapter
@@ -252,6 +253,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   get isRemotePairingPending(): boolean {
     return this._pendingRemote;
+  }
+
+  /** The active provider, or the injected provider when the next route permits discovery. */
+  private get discoverableProvider(): ShieldWallet | undefined {
+    return (
+      this._shieldWallet ??
+      (!this.willPairRemotely && !this.isRemotePairingPending ? this._window?.shield : undefined)
+    );
   }
 
   /**
@@ -667,24 +676,27 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
   /** Whether the active provider implements bridge preparation. */
   get supportsShieldedUsdcxMint(): boolean {
-    const wallet =
-      this._shieldWallet ??
-      (!this.willPairRemotely && !this.isRemotePairingPending ? this._window?.shield : undefined);
-    return typeof wallet?.prepareShieldedUsdcxMint === 'function';
+    return typeof this.discoverableProvider?.prepareShieldedUsdcxMint === 'function';
   }
 
   async prepareShieldedUsdcxMint(
-    options: PrepareShieldedUsdcxMintOptions,
+    request: PrepareShieldedUsdcxMintRequest,
   ): Promise<ShieldedUsdcxMintPreparation> {
     if (!this.account || !this._shieldWallet) throw new WalletNotConnectedError();
     const wallet = this._shieldWallet;
     if (typeof wallet.prepareShieldedUsdcxMint !== 'function') {
-      throw new WalletFeatureNotAvailableError('shield:prepare-shielded-usdcx-mint');
+      throw new WalletFeatureNotAvailableError(SHIELDED_USDCX_MINT_FEATURE);
     }
-    const request = this.shieldedMintRequestIds.resolve(options);
+    const { requestId } = request;
+    if (typeof requestId !== 'string' || requestId.length === 0 || requestId.length > 128) {
+      throw new WalletInputRequestInvalidError(
+        'Shielded mint preparation requires a requestId (1–128 characters). ' +
+          'Create the request with createShieldedUsdcxMintRequest before calling the wallet.',
+      );
+    }
     try {
-      const response = await wallet.prepareShieldedUsdcxMint(request);
-      return shieldedUsdcxMintPreparation(response, request.requestId);
+      const response = await wallet.prepareShieldedUsdcxMint({ ...request });
+      return shieldedUsdcxMintPreparation(response, requestId);
     } catch (error) {
       this.emit('error', error instanceof Error ? error : new Error(String(error)));
       throw error;
@@ -693,9 +705,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
   /** Query the provider when supported; retain the legacy fallback for older wallets. */
   async algorithmsSupported(): Promise<string[]> {
-    const wallet =
-      this._shieldWallet ??
-      (!this.willPairRemotely && !this.isRemotePairingPending ? this._window?.shield : undefined);
+    const wallet = this.discoverableProvider;
     return typeof wallet?.algorithmsSupported === 'function'
       ? await wallet.algorithmsSupported()
       : [...KNOWN_ALGORITHMS];

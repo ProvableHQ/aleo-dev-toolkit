@@ -711,7 +711,9 @@ export const App: FC = () => {
 
 Compatible Shield extensions expose `useWallet().prepareShieldedUsdcxMint()` and
 `supportsShieldedUsdcxMint`. Preparation accepts an optional arbitrary Aleo
-`recipient` and generates a `requestId` automatically. The expected EVM
+`recipient` and requires a `requestId`. Generate it once per deposit with
+`createShieldedUsdcxMintRequest` and save the request before the first wallet call.
+The expected EVM
 `depositor` is optional, allowing encoding before selecting an EVM account. It returns public
 commitment and deposit parameters; the wallet retains the secret nonce.
 

@@ -1,7 +1,7 @@
 import {
   Account,
   Network,
-  PrepareShieldedUsdcxMintOptions,
+  PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
@@ -211,7 +211,7 @@ export interface WalletAdapterProps<Name extends string = string> {
   /** Optional bridge capability; legacy wallets may omit it. */
   readonly supportsShieldedUsdcxMint?: boolean;
   prepareShieldedUsdcxMint?: (
-    options: PrepareShieldedUsdcxMintOptions,
+    options: PrepareShieldedUsdcxMintRequest,
   ) => Promise<ShieldedUsdcxMintPreparation>;
 }
 

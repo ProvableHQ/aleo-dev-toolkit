@@ -7,7 +7,6 @@ globalThis.crypto ??= webcrypto;
 
 const require = createRequire(import.meta.url);
 const {
-  BaseAleoWalletAdapter,
   createShieldedUsdcxMintRequest,
   SHIELDED_USDCX_MINT_GRANT,
   WalletFeatureNotAvailableError,
@@ -17,11 +16,9 @@ const {
 const {
   ShieldWalletAdapter,
 } = require('../packages/aleo-wallet-adapter/wallets/shield/dist/index.js');
-const { KNOWN_ALGORITHMS, Network } = require('../packages/aleo-types/dist/index.js');
-const {
-  WalletDecryptPermission,
-  WalletFeatureName,
-} = require('../packages/aleo-wallet-standard/dist/index.js');
+const { LeoWalletAdapter } = require('../packages/aleo-wallet-adapter/wallets/leo/dist/index.js');
+const { Network } = require('../packages/aleo-types/dist/index.js');
+const { WalletDecryptPermission } = require('../packages/aleo-wallet-standard/dist/index.js');
 
 const options = () => ({
   network: Network.TESTNET,
@@ -30,6 +27,7 @@ const options = () => ({
   maxFee: '10000',
   depositor: '0x1E196D0A7d8189054C4dB744AB3340C3f1c68b19',
 });
+const request = () => createShieldedUsdcxMintRequest(options());
 const response = {
   mintId: 'mint-1',
   commitmentHex: 'ab'.repeat(32),
@@ -46,11 +44,7 @@ const response = {
   },
 };
 
-function fixture({
-  prepare = async () => response,
-  supported = true,
-  adapterConfig = { remote: false },
-} = {}) {
+function fixture({ prepare = async () => response, supported = true } = {}) {
   const calls = [];
   const provider = {
     connect: async (_network, _decrypt, _programs, opts) => ({
@@ -59,7 +53,6 @@ function fixture({
     disconnect: async () => undefined,
     on: () => undefined,
     off: () => undefined,
-    algorithmsSupported: async () => ['shielded-usdcx-secret-nonce'],
     ...(supported
       ? {
           prepareShieldedUsdcxMint: async request => {
@@ -73,7 +66,7 @@ function fixture({
   const previousDocument = globalThis.document;
   globalThis.window = { shield: provider, addEventListener() {}, removeEventListener() {} };
   globalThis.document = { readyState: 'complete' };
-  const adapter = new ShieldWalletAdapter(adapterConfig);
+  const adapter = new ShieldWalletAdapter({ remote: false });
   globalThis.window = previousWindow;
   globalThis.document = previousDocument;
   const connect = opts =>
@@ -104,12 +97,24 @@ test('invalid explicit retry IDs fail before contacting a wallet', () => {
   }
 });
 
+test('preparation rejects missing or invalid request IDs before contacting the provider', async () => {
+  const { adapter, calls, connect } = fixture();
+  await connect();
+  for (const requestId of [undefined, '', 'a'.repeat(129), 42]) {
+    await assert.rejects(
+      adapter.prepareShieldedUsdcxMint({ ...options(), requestId }),
+      WalletInputRequestInvalidError,
+    );
+  }
+  assert.equal(calls.length, 0);
+});
+
 test('requires a connection and detects old providers without preparation support', async () => {
   const { adapter, connect } = fixture({ supported: false });
   assert.equal(adapter.supportsShieldedUsdcxMint, false);
-  await assert.rejects(adapter.prepareShieldedUsdcxMint(options()), WalletNotConnectedError);
+  await assert.rejects(adapter.prepareShieldedUsdcxMint(request()), WalletNotConnectedError);
   await connect();
-  await assert.rejects(adapter.prepareShieldedUsdcxMint(options()), WalletFeatureNotAvailableError);
+  await assert.rejects(adapter.prepareShieldedUsdcxMint(request()), WalletFeatureNotAvailableError);
 });
 
 test('forwards arbitrary recipients and returns only public response fields plus retry ID', async () => {
@@ -123,31 +128,31 @@ test('forwards arbitrary recipients and returns only public response fields plus
   });
   assert.equal(adapter.supportsShieldedUsdcxMint, true);
   await connect();
-  const input = Object.freeze({ ...options(), recipient: 'aleo1differentRecipient' });
+  const input = Object.freeze({ ...request(), recipient: 'aleo1differentRecipient' });
   const prepared = await adapter.prepareShieldedUsdcxMint(input);
   assert.equal(calls[0].recipient, input.recipient);
   assert.equal(calls[0].requestId, prepared.requestId);
   assert.deepEqual(prepared, { ...response, requestId: prepared.requestId });
-  assert.equal(input.requestId, undefined);
+  assert.equal(input.requestId, prepared.requestId);
 });
 
 test('does not fill the recipient from adapter account state, including withheld accounts', async () => {
   const { adapter, calls, connect } = fixture();
   await connect({ readAddress: false });
-  await adapter.prepareShieldedUsdcxMint(options());
+  await adapter.prepareShieldedUsdcxMint(request());
   assert.equal(calls[0].recipient, undefined);
   assert.equal(adapter.account.address, '');
 });
 
-test('concurrent calls and retries of one options object preserve its ID', async () => {
+test('concurrent calls and retries preserve an explicit ID across new request objects', async () => {
   const { adapter, calls, connect } = fixture();
   await connect();
-  const input = options();
+  const input = request();
   const [first, second] = await Promise.all([
-    adapter.prepareShieldedUsdcxMint(input),
-    adapter.prepareShieldedUsdcxMint(input),
+    adapter.prepareShieldedUsdcxMint({ ...input }),
+    adapter.prepareShieldedUsdcxMint({ ...input }),
   ]);
-  const third = await adapter.prepareShieldedUsdcxMint(input);
+  const third = await adapter.prepareShieldedUsdcxMint({ ...input });
   assert.equal(first.requestId, second.requestId);
   assert.equal(first.requestId, third.requestId);
   assert.equal(new Set(calls.map(request => request.requestId)).size, 1);
@@ -156,12 +161,12 @@ test('concurrent calls and retries of one options object preserve its ID', async
 test('a separate deposit attempt gets a fresh ID even with identical parameters', async () => {
   const { adapter, connect } = fixture();
   await connect();
-  const first = await adapter.prepareShieldedUsdcxMint(options());
-  const second = await adapter.prepareShieldedUsdcxMint(options());
+  const first = await adapter.prepareShieldedUsdcxMint(request());
+  const second = await adapter.prepareShieldedUsdcxMint(request());
   assert.notEqual(first.requestId, second.requestId);
 });
 
-test('retry after a provider failure preserves its identity and rejection', async () => {
+test('retrying a saved request after a provider failure preserves its ID and rejection', async () => {
   const failure = new Error('approval failed');
   let count = 0;
   const { adapter, calls, connect } = fixture({
@@ -171,13 +176,13 @@ test('retry after a provider failure preserves its identity and rejection', asyn
     },
   });
   await connect();
-  const input = options();
-  await assert.rejects(adapter.prepareShieldedUsdcxMint(input), error => error === failure);
-  await adapter.prepareShieldedUsdcxMint(input);
+  const input = request();
+  await assert.rejects(adapter.prepareShieldedUsdcxMint({ ...input }), error => error === failure);
+  await adapter.prepareShieldedUsdcxMint({ ...input });
   assert.equal(calls[0].requestId, calls[1].requestId);
 });
 
-test('changing a retried request keeps its ID so the wallet can reject altered inputs', async () => {
+test('changed inputs under the same explicit ID are forwarded for wallet rejection', async () => {
   const saved = new Map();
   const { adapter, calls, connect } = fixture({
     prepare: async request => {
@@ -189,10 +194,12 @@ test('changing a retried request keeps its ID so the wallet can reject altered i
     },
   });
   await connect();
-  const input = options();
-  await adapter.prepareShieldedUsdcxMint(input);
-  input.recipient = 'aleo1other';
-  await assert.rejects(adapter.prepareShieldedUsdcxMint(input), /already used/);
+  const input = request();
+  await adapter.prepareShieldedUsdcxMint({ ...input });
+  await assert.rejects(
+    adapter.prepareShieldedUsdcxMint({ ...input, recipient: 'aleo1other' }),
+    /already used/,
+  );
   assert.equal(calls[0].requestId, calls[1].requestId);
 });
 
@@ -209,109 +216,12 @@ test('a saved factory request preserves retries across new adapter instances', a
   assert.deepEqual(first.calls[0], second.calls[0]);
 });
 
-test('algorithm discovery uses the provider rather than the old static list', async () => {
-  const { adapter, connect } = fixture();
-  assert.deepEqual(await adapter.algorithmsSupported(), ['shielded-usdcx-secret-nonce']);
-  await connect();
-  assert.deepEqual(await adapter.algorithmsSupported(), ['shielded-usdcx-secret-nonce']);
-});
-
-test('algorithm discovery ignores the extension when configured for remote pairing', async () => {
-  const { adapter, provider } = fixture({ adapterConfig: { preferExtension: false } });
-  provider.algorithmsSupported = async () => {
-    throw new Error('Unexpected extension query');
-  };
-  assert.equal(adapter.willPairRemotely, true);
-  assert.deepEqual(await adapter.algorithmsSupported(), [...KNOWN_ALGORITHMS]);
-});
-
-test('algorithm discovery ignores the extension while explicit remote pairing is pending', async () => {
-  let releaseTransport;
-  const transportBlocked = new Promise(resolve => {
-    releaseTransport = resolve;
-  });
-  let markStarted;
-  const transportStarted = new Promise(resolve => {
-    markStarted = resolve;
-  });
-  const { adapter, provider, connect } = fixture({
-    adapterConfig: {
-      remote: {
-        transport: async () => {
-          markStarted();
-          await transportBlocked;
-          throw new Error('Test remote transport stopped');
-        },
-      },
-    },
-  });
-  provider.algorithmsSupported = async () => {
-    throw new Error('Unexpected extension query');
-  };
-  const pending = connect({ pairing: 'remote' });
-  const rejected = assert.rejects(pending, /Test remote transport stopped/);
-  try {
-    await transportStarted;
-    assert.equal(adapter.willPairRemotely, false);
-    assert.equal(adapter.isRemotePairingPending, true);
-    assert.deepEqual(await adapter.algorithmsSupported(), [...KNOWN_ALGORITHMS]);
-  } finally {
-    releaseTransport();
-    await rejected;
-  }
-});
-
-test('base adapters expose an optional wallet-standard feature and fail closed when unavailable', async () => {
-  class Adapter extends BaseAleoWalletAdapter {
-    constructor(feature) {
-      super();
-      this.account = { address: 'aleo1signer' };
-      this._wallet = {
-        features: feature ? { [WalletFeatureName.PREPARE_SHIELDED_USDCX_MINT]: feature } : {},
-      };
-    }
-  }
-  const unavailable = new Adapter();
-  assert.equal(unavailable.supportsShieldedUsdcxMint, false);
-  await assert.rejects(
-    unavailable.prepareShieldedUsdcxMint(options()),
-    WalletFeatureNotAvailableError,
-  );
-  const calls = [];
-  const adapter = new Adapter({
-    available: true,
-    prepareShieldedUsdcxMint: async request => {
-      calls.push(request);
-      return response;
-    },
-  });
-  assert.equal(adapter.supportsShieldedUsdcxMint, true);
-  const input = options();
-  await adapter.prepareShieldedUsdcxMint(input);
-  const result = await adapter.prepareShieldedUsdcxMint(input);
-  assert.equal(calls[0].requestId, calls[1].requestId);
-  assert.equal(result.requestId, calls[0].requestId);
-});
-
-test('disabled and malformed wallet-standard features are not advertised', async () => {
-  class Adapter extends BaseAleoWalletAdapter {
-    constructor(feature) {
-      super();
-      this.account = { address: 'aleo1signer' };
-      this._wallet = { features: { [WalletFeatureName.PREPARE_SHIELDED_USDCX_MINT]: feature } };
-    }
-  }
-  for (const feature of [
-    { available: false, prepareShieldedUsdcxMint: async () => response },
-    { available: true },
-  ]) {
-    const adapter = new Adapter(feature);
-    assert.equal(adapter.supportsShieldedUsdcxMint, false);
-    await assert.rejects(
-      adapter.prepareShieldedUsdcxMint(options()),
-      WalletFeatureNotAvailableError,
-    );
-  }
+test('unsupported shipped adapters omit preparation even when connected', () => {
+  const adapter = new LeoWalletAdapter();
+  adapter.account = { address: 'aleo1signer' };
+  assert.equal(adapter.connected, true);
+  assert.equal('prepareShieldedUsdcxMint' in adapter, false);
+  assert.equal(adapter.supportsShieldedUsdcxMint, undefined);
 });
 
 test('React useWallet exposes preparation and fails safely before connection', async () => {
@@ -338,7 +248,7 @@ test('React useWallet exposes preparation and fails safely before connection', a
     );
     assert.equal(context.supportsShieldedUsdcxMint, false);
     assert.equal(typeof context.prepareShieldedUsdcxMint, 'function');
-    await assert.rejects(context.prepareShieldedUsdcxMint(options()), WalletNotConnectedError);
+    await assert.rejects(context.prepareShieldedUsdcxMint(request()), WalletNotConnectedError);
   } finally {
     globalThis.localStorage = previousStorage;
   }
@@ -347,9 +257,9 @@ test('React useWallet exposes preparation and fails safely before connection', a
 test('preparation without an EVM account forwards no depositor and retains its retry ID', async () => {
   const { adapter, calls, connect } = fixture();
   await connect();
-  const { depositor: _depositor, ...input } = options();
-  const prepared = await adapter.prepareShieldedUsdcxMint(input);
-  await adapter.prepareShieldedUsdcxMint(input);
+  const { depositor: _depositor, ...input } = request();
+  const prepared = await adapter.prepareShieldedUsdcxMint({ ...input });
+  await adapter.prepareShieldedUsdcxMint({ ...input });
   assert.equal(Object.hasOwn(calls[0], 'depositor'), false);
   assert.equal(calls[0].requestId, prepared.requestId);
   assert.equal(calls[1].requestId, prepared.requestId);

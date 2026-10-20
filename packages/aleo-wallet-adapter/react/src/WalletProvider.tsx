@@ -15,7 +15,7 @@ import {
 } from '@provablehq/aleo-wallet-standard';
 import {
   Network,
-  PrepareShieldedUsdcxMintOptions,
+  PrepareShieldedUsdcxMintRequest,
   TransactionOptions,
 } from '@provablehq/aleo-types';
 import { Wallet, WalletContext, SelectWalletOptions } from './context';
@@ -644,9 +644,13 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
   }, [adapter]);
 
   const prepareShieldedUsdcxMint = useCallback(
-    async (options: PrepareShieldedUsdcxMintOptions) => {
+    async (options: PrepareShieldedUsdcxMintRequest) => {
       if (!connected) throw handleError(new WalletNotConnectedError());
-      if (!adapter?.prepareShieldedUsdcxMint) {
+      if (
+        !adapter ||
+        !('prepareShieldedUsdcxMint' in adapter) ||
+        !adapter.prepareShieldedUsdcxMint
+      ) {
         throw handleError(new MethodNotImplementedError('prepareShieldedUsdcxMint'));
       }
       return await adapter.prepareShieldedUsdcxMint(options);

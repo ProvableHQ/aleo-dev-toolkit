@@ -2,7 +2,7 @@
 
 The optional `prepareShieldedUsdcxMint` adapter method asks Shield to prepare a
 shielded USDCx deposit. It returns a public commitment, XReserve deposit
-parameters, a wallet mint ID, and the adapter's retry ID. It does not submit an
+parameters, a wallet mint ID, and the request's retry ID. It does not submit an
 EVM deposit or an Aleo transaction, and never returns the secret scalar.
 
 The injected Shield provider must implement this method. Older extensions and
@@ -39,19 +39,21 @@ providers at runtime so a bridge can also discover the nonce algorithm.
 
 ```tsx
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
-import { Network, type PrepareShieldedUsdcxMintOptions } from '@provablehq/aleo-types';
+import { createShieldedUsdcxMintRequest } from '@provablehq/aleo-wallet-adapter-core';
+import { Network } from '@provablehq/aleo-types';
 
 const { prepareShieldedUsdcxMint, supportsShieldedUsdcxMint } = useWallet();
 if (!supportsShieldedUsdcxMint) throw new Error('Select a compatible Shield wallet');
 
-// Retain this object for retries of this deposit attempt.
-const request: PrepareShieldedUsdcxMintOptions = {
+// Generate and save once when the user starts this deposit attempt.
+const request = createShieldedUsdcxMintRequest({
   network: Network.TESTNET,
   sourceChain: 'ethereum-sepolia',
   amount: '1000000', // 1 USDC, in base units
   maxFee: '10000',
   recipient: recipientAddressFromForm, // optional; any valid Aleo address
-};
+});
+sessionStorage.setItem('bridge:pending-mint', JSON.stringify(request));
 const prepared = await prepareShieldedUsdcxMint(request);
 ```
 
@@ -76,34 +78,29 @@ recipient entered in the form. `hookData` is `0x02 || commitment32 || zero32`.
 The final 305-byte payload and Circle attestation become available after the
 source-chain deposit; preparation cannot generate them in advance.
 
-## Automatic retry identity
+## Persistent retry identity
 
-Users never enter `requestId`. The adapter generates a UUID when it is omitted.
-Reusing the same options object with the same adapter reuses that UUID, including
-concurrent calls and retries after a failure. A new options object creates a new
-deposit attempt, even if its other fields are identical. The adapter never
-mutates the caller's object.
+Users never enter `requestId`. `createShieldedUsdcxMintRequest` generates a UUID
+when it is omitted; `prepareShieldedUsdcxMint` requires that ID. Generate and save
+the request **before** the first wallet call, including in React. Create it in
+the handler that starts a deposit, rather than during render or on every retry.
 
-For retries across reloads, or code that reconstructs request objects on every
-render, create and save a request **before** making the first wallet call:
+Retry with the saved request, including after a reload or adapter recreation:
 
 ```ts
-import { createShieldedUsdcxMintRequest } from '@provablehq/aleo-wallet-adapter-core';
-
-const savedRequest = createShieldedUsdcxMintRequest(request);
-sessionStorage.setItem('bridge:pending-mint', JSON.stringify(savedRequest));
-const prepared = await prepareShieldedUsdcxMint(savedRequest);
-
 // After a reload, reconnect with the same account/network/origin and grants.
 const restored = JSON.parse(sessionStorage.getItem('bridge:pending-mint')!);
 const retried = await prepareShieldedUsdcxMint(restored);
 ```
 
-Persist the public response along with the request when available. An already
-prepared attempt can also be retried with `{ ...request, requestId:
-prepared.requestId }`. An explicit ID is forwarded unchanged. The wallet rejects
-changed inputs under an existing ID. Clear the saved attempt only when your
-bridge lifecycle ends or the user deliberately starts a separate deposit.
+The ID is forwarded unchanged regardless of the request object's reference.
+Concurrent calls, reconstructed objects, and new adapter instances can all
+retry the same deposit by retaining the ID and inputs. The wallet rejects
+changed inputs under an existing ID. The adapter never mutates the request.
+Persist the public response alongside the request when available. Clear the
+saved attempt only when the bridge lifecycle ends or the user deliberately
+starts a separate deposit. Calling the factory again without an ID creates a
+new deposit attempt, even when all other inputs are identical.
 
 ## Complete the mint
 
@@ -118,10 +115,29 @@ simulation API.
 ## Validation
 
 ```sh
-pnpm -r --filter @provablehq/aleo-wallet-adapter-react... --filter @provablehq/aleo-wallet-adapter-shield... build
+pnpm -r --filter react-app-example... build
 pnpm test:xreserve
+pnpm test:wallet-discovery
 ```
 
 Tests cover provider forwarding, arbitrary and omitted recipients, address
-withholding, unsupported wallets, automatic and persistent retry IDs,
+withholding, unsupported wallets, required and persistent retry IDs,
 concurrency, failed retries, changed-input rejection, and public-only responses.
+
+The example app includes an **XReserve Mint** page at `/xreserve`, with a code
+sample, permission configuration, saved requests, and public deposit parameters.
+To check a compatible Shield extension:
+
+1. Start the example with `pnpm adapter-app:dev`, then open `/xreserve`.
+2. Choose the Aleo network, click **Configure mint permissions**, and connect
+   with the Shield extension. Approve the wrapper program and nonce algorithm
+   grant in the wallet.
+3. Prepare with an omitted recipient and depositor. Verify that preparation
+   returns a commitment and deposit parameters without another approval popup.
+4. Retry, reload, and reconnect with the same wallet account, network, and grants.
+   The saved attempt should return the same request ID, mint ID, and commitment.
+5. Start a new deposit attempt and try an explicit Aleo recipient and expected
+   EVM depositor. Also check failed retries and an older or unsupported wallet.
+
+The example only prepares parameters. A funded source-chain deposit, Circle
+attestation, and approved Aleo mint are separate steps in the bridge lifecycle.

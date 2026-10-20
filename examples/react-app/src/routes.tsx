@@ -9,6 +9,7 @@ import {
   RecordsPage,
   PrivateInputsPage,
   RemoteConnectPage,
+  ShieldedUsdcxMintPage,
   ViewKeysPage,
   TransactionHistoryPage,
 } from '@/pages';
@@ -38,6 +39,10 @@ export const routes: RouteObject[] = [
       {
         path: 'execute',
         element: <ExecuteTransactionPage />,
+      },
+      {
+        path: 'xreserve',
+        element: <ShieldedUsdcxMintPage />,
       },
       {
         path: 'deploy',

@@ -9,7 +9,7 @@ import {
 } from '@provablehq/aleo-wallet-standard';
 import {
   Network,
-  PrepareShieldedUsdcxMintOptions,
+  PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
@@ -179,7 +179,7 @@ export interface WalletContextState {
   /** True when the selected wallet provider implements shielded mint preparation. */
   supportsShieldedUsdcxMint: boolean;
   prepareShieldedUsdcxMint: (
-    options: PrepareShieldedUsdcxMintOptions,
+    options: PrepareShieldedUsdcxMintRequest,
   ) => Promise<ShieldedUsdcxMintPreparation>;
 }
 

@@ -6,4 +6,4 @@
 '@provablehq/aleo-wallet-adapter-react': minor
 ---
 
-Expose optional Shield XReserve mint preparation through adapters and useWallet, with arbitrary Aleo recipients, optional expected EVM depositors, and automatically generated retry IDs. Return only public commitment and deposit parameters; the wallet retains the secret nonce.
+Expose optional Shield XReserve mint preparation through the Shield adapter and useWallet, with arbitrary Aleo recipients, optional expected EVM depositors, and factory-generated request IDs retained across retries. Return only public commitment and deposit parameters; the wallet retains the secret nonce.
