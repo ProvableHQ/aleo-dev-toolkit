@@ -8,11 +8,14 @@ import {
   WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
 import {
+  BalancesResult,
+  GetBalancesParams,
   Network,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
+import type { WalletBalancesOptions } from '@provablehq/aleo-wallet-adapter-core';
 
 export interface Wallet {
   adapter: WalletAdapter;
@@ -167,6 +170,16 @@ export interface WalletContextState {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+  /**
+   * The public and private balance of each token, from the connected wallet: its
+   * own `getBalances` where it has one, otherwise the private side added up from
+   * `requestRecords` and the public side read from the ledger. Pass `options.tokens`
+   * for wallets that cannot list their own.
+   */
+  getBalances: (
+    params?: GetBalancesParams,
+    options?: WalletBalancesOptions,
+  ) => Promise<BalancesResult>;
   /**
    * Return the algorithm names this wallet implements for `type: "derived"`
    * InputRequests. A dapp calls this before connect to pick which entries to

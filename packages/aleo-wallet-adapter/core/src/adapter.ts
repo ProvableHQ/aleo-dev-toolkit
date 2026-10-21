@@ -1,6 +1,8 @@
 import {
   Account,
   AlgorithmArg,
+  BalancesResult,
+  GetBalancesParams,
   Network,
   TransactionInput,
   TransactionOptions,
@@ -313,6 +315,18 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.REQUEST_TRANSACTION_HISTORY);
     }
     return feature.requestTransactionHistory(program);
+  }
+
+  async getBalances(params?: GetBalancesParams): Promise<BalancesResult> {
+    if (!this._wallet || !this.account) {
+      throw new WalletNotConnectedError();
+    }
+    this.assertReadAddressAllowed('getBalances');
+    const feature = this._wallet.features[WalletFeatureName.GET_BALANCES];
+    if (!feature || !feature.available) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.GET_BALANCES);
+    }
+    return feature.getBalances(params);
   }
 
   /**

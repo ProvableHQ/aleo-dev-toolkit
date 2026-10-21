@@ -1,5 +1,7 @@
 import {
   Account,
+  BalancesResult,
+  GetBalancesParams,
   Network,
   TransactionOptions,
   TransactionStatusResponse,
@@ -205,4 +207,20 @@ export interface RequestTransactionHistoryFeature extends WalletFeature {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+}
+
+export interface GetBalancesFeature extends WalletFeature {
+  name: 'standard:get-balances';
+
+  /**
+   * The public and private balance of each token the wallet lists, or of the
+   * tokens named. The wallet adds the private balance up itself, so records
+   * never reach the dapp, and reports amounts as base-unit strings.
+   *
+   * A private balance the connection does not let the dapp read comes back with
+   * `status: 'not_granted'` rather than an error. Needs a connection.
+   * @param params Optional filter of the tokens to report
+   * @returns The balances, one entry per token
+   */
+  getBalances(params?: GetBalancesParams): Promise<BalancesResult>;
 }

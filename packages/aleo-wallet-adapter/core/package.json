@@ -15,7 +15,7 @@
     "clean": "rimraf dist",
     "dev": "tsup --watch",
     "lint": "eslint src/**/*.ts*",
-    "test": "jest --passWithNoTests"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@provablehq/aleo-wallet-standard": "workspace:*",

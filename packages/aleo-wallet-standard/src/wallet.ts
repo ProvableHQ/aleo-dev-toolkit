@@ -7,6 +7,7 @@ import {
   DecryptFeature,
   ExecuteDeploymentFeature,
   ExecuteFeature,
+  GetBalancesFeature,
   RequestRecordsFeature,
   SignFeature,
   SwitchNetworkFeature,
@@ -107,6 +108,10 @@ export interface WalletFeatures {
    * The requestTransactionHistory feature
    */
   [WalletFeatureName.REQUEST_TRANSACTION_HISTORY]?: RequestTransactionHistoryFeature;
+  /**
+   * The get balances feature
+   */
+  [WalletFeatureName.GET_BALANCES]?: GetBalancesFeature;
 
   /**
    * Other features
@@ -130,6 +135,7 @@ export enum WalletFeatureName {
   EXECUTE_DEPLOYMENT = 'standard:execute-deployment',
   TRANSITION_VIEWKEYS = 'standard:transition_viewkeys',
   REQUEST_TRANSACTION_HISTORY = 'standard:request_transaction_history',
+  GET_BALANCES = 'standard:get-balances',
 }
 
 /**

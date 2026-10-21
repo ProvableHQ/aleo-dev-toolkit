@@ -1,5 +1,7 @@
 import {
   Account,
+  BalancesResult,
+  GetBalancesParams,
   KNOWN_ALGORITHMS,
   Network,
   TransactionOptions,
@@ -11,6 +13,7 @@ import {
   ConnectOptions,
   RecordStatusFilter,
   WalletDecryptPermission,
+  WalletFeatureName,
   WalletName,
   WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
@@ -25,6 +28,7 @@ import {
   WalletDecryptionNotAllowedError,
   WalletDisconnectionError,
   WalletError,
+  WalletFeatureNotAvailableError,
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletSwitchNetworkError,
@@ -572,6 +576,30 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       return filterRecordsByStatus(result || [], statusFilter);
     } catch (error: Error | unknown) {
       throw new WalletError(error instanceof Error ? error.message : 'Failed to request records');
+    }
+  }
+
+  /**
+   * The public and private balance of each token Shield lists. Shield adds the
+   * private balance up itself, so the records stay in the wallet.
+   *
+   * Throws `WalletFeatureNotAvailableError` where the wallet has no such method
+   * (an older extension, or a mobile wallet over the relay); `getWalletBalances`
+   * then reads the balances by other means.
+   * @param params Optional filter of the tokens to report
+   */
+  async getBalances(params?: GetBalancesParams): Promise<BalancesResult> {
+    if (!this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const wallet = this._shieldWallet;
+    if (!wallet?.getBalances) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.GET_BALANCES);
+    }
+    try {
+      return await wallet.getBalances(params);
+    } catch (error: Error | unknown) {
+      throw new WalletError(error instanceof Error ? error.message : 'Failed to get balances');
     }
   }
 
