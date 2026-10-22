@@ -7,6 +7,7 @@ import {
   SignMessagePage,
   DecryptPage,
   RecordsPage,
+  BalancesPage,
   PrivateInputsPage,
   WalletPrivateInputsPage,
   RemoteConnectPage,
@@ -60,6 +61,10 @@ export const routes: RouteObject[] = [
       {
         path: 'records',
         element: <RecordsPage />,
+      },
+      {
+        path: 'balances',
+        element: <BalancesPage />,
       },
       {
         path: 'private-inputs',

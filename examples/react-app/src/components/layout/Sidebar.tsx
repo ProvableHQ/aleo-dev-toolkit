@@ -6,6 +6,7 @@ import {
   PenLine,
   KeyRound,
   Database,
+  Coins,
   Key,
   History,
   Lock,
@@ -56,6 +57,7 @@ const navigationGroups: NavGroup[] = [
     title: 'Data',
     items: [
       { to: '/records', label: 'Records', icon: Database },
+      { to: '/balances', label: 'Balances', icon: Coins },
       { to: '/private-inputs', label: 'Private Inputs', icon: Lock },
       { to: '/wallet-inputs', label: 'Wallet Inputs', icon: Shield },
       { to: '/decrypt', label: 'Decrypt', icon: KeyRound },

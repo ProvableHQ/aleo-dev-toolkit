@@ -1,4 +1,6 @@
 import {
+  BalancesResult,
+  GetBalancesParams,
   Network,
   PrepareShieldedUsdcxMintRequest,
   PreparedShieldedUsdcxMint,
@@ -269,6 +271,8 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   executeDeployment(deployment: ShieldDeployment): Promise<{ transactionId: string }>;
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+  /** Absent from older extensions. Over the relay, a wallet without it answers 4200. */
+  getBalances?(params?: GetBalancesParams): Promise<BalancesResult>;
   /** Relay only. The injected provider has no relay, so it is always reachable. */
   isWalletPresent?(): Promise<boolean>;
 }

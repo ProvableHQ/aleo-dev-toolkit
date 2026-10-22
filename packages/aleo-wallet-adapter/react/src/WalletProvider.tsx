@@ -14,6 +14,7 @@ import {
   RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
 import {
+  GetBalancesParams,
   Network,
   PrepareShieldedUsdcxMintRequest,
   TransactionOptions,
@@ -29,6 +30,8 @@ import {
   MethodNotImplementedError,
   WalletSwitchNetworkError,
   DecryptPermission,
+  getWalletBalances,
+  WalletBalancesOptions,
 } from '@provablehq/aleo-wallet-adapter-core';
 
 export interface WalletProviderProps {
@@ -632,6 +635,16 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const getBalances = useCallback(
+    async (params?: GetBalancesParams, options?: WalletBalancesOptions) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter) throw handleError(new MethodNotImplementedError('getBalances'));
+
+      return await getWalletBalances(adapter, params, options);
+    },
+    [adapter, handleError, connected],
+  );
+
   // Doesn't require a connection — dapps may call this before connect to discover
   // which algorithms a wallet supports and to populate `algorithmsAllowed`.
   const algorithmsSupported = useCallback(async () => {
@@ -694,6 +707,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         executeDeployment,
         transitionViewKeys,
         requestTransactionHistory,
+        getBalances,
         algorithmsSupported,
         prepareShieldedUsdcxMint,
         supportsShieldedUsdcxMint: adapter?.supportsShieldedUsdcxMint ?? false,

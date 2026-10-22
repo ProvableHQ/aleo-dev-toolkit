@@ -1,5 +1,7 @@
 import {
   Account,
+  BalancesResult,
+  GetBalancesParams,
   Network,
   PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
@@ -200,6 +202,14 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns array of transactionId
    */
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
+
+  /**
+   * The public and private balance of each token the wallet lists. Optional:
+   * wallets without it are read through `getWalletBalances` in
+   * `@provablehq/aleo-wallet-adapter-core`, which adds the records up itself.
+   * @param params Optional filter of the tokens to report
+   */
+  getBalances?: (params?: GetBalancesParams) => Promise<BalancesResult>;
 
   /**
    * Return the algorithm names this wallet implements for `type: "derived"`

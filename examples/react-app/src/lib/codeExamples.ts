@@ -98,6 +98,20 @@ const { requestRecords } = useWallet();
 const records = await requestRecords('${PLACEHOLDERS.PROGRAM}', false, '${PLACEHOLDERS.STATUS_FILTER}');
 console.log('Records:', records);`,
 
+  getBalances: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { ALEO_BALANCE_TOKEN } from '@provablehq/aleo-wallet-adapter-core';
+
+const { getBalances } = useWallet();
+
+// The wallet's own getBalances where it has one (Shield), otherwise the private
+// side is added up from requestRecords and the public side read from the ledger.
+const { balances } = await getBalances(undefined, { tokens: [ALEO_BALANCE_TOKEN] });
+
+for (const { symbol, decimals, public: pub, private: priv } of balances) {
+  // Amounts are base-unit strings; status says whether to trust them.
+  console.log(symbol, pub.amount, pub.status, priv.amount, priv.status);
+}`,
+
   executeDeployment: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { executeDeployment, address } = useWallet();

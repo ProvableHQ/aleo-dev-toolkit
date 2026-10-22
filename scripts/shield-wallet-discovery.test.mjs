@@ -87,3 +87,25 @@ test('algorithm discovery ignores the extension while explicit remote pairing is
     await rejected;
   }
 });
+
+test('getBalances answers from the wallet, and reports a wallet without it as the feature missing', async () => {
+  const { adapter, provider, connect } = fixture();
+  const answer = { network: 'testnet', balances: [] };
+  provider.getBalances = async () => answer;
+  await connect();
+  assert.equal(await adapter.getBalances(), answer);
+
+  // A relay wallet that does not know the method answers JSON-RPC 4200.
+  provider.getBalances = async () => {
+    throw Object.assign(new Error('Unsupported method: getBalances'), { code: 4200 });
+  };
+  await assert.rejects(adapter.getBalances(), { name: 'WalletFeatureNotAvailableError' });
+
+  delete provider.getBalances;
+  await assert.rejects(adapter.getBalances(), { name: 'WalletFeatureNotAvailableError' });
+
+  provider.getBalances = async () => {
+    throw new Error('Wallet is locked');
+  };
+  await assert.rejects(adapter.getBalances(), /Wallet is locked/);
+});

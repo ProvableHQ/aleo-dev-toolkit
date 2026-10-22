@@ -1,5 +1,7 @@
 import {
   Account,
+  BalancesResult,
+  GetBalancesParams,
   KNOWN_ALGORITHMS,
   Network,
   PrepareShieldedUsdcxMintRequest,
@@ -13,6 +15,7 @@ import {
   ConnectOptions,
   RecordStatusFilter,
   WalletDecryptPermission,
+  WalletFeatureName,
   WalletName,
   WalletReadyState,
 } from '@provablehq/aleo-wallet-standard';
@@ -45,6 +48,15 @@ import { buildDappMetadata } from './dappMetadata';
 import { isMobileUserAgent } from './isMobileUserAgent';
 import { resolveRemoteConfig, type ResolvedShieldRemoteConfig } from './remoteDefaults';
 import { SHIELDED_USDCX_MINT_FEATURE, shieldedUsdcxMintPreparation } from './shieldedUsdcx';
+
+/**
+ * A relay wallet's answer to a method it does not have (JSON-RPC 4200). Read
+ * off the error rather than by class: the relay client is loaded on demand.
+ */
+const isUnsupportedMethod = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { code?: unknown }).code === 4200;
 
 /**
  * Shield wallet adapter
@@ -585,6 +597,33 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       return filterRecordsByStatus(result || [], statusFilter);
     } catch (error: Error | unknown) {
       throw new WalletError(error instanceof Error ? error.message : 'Failed to request records');
+    }
+  }
+
+  /**
+   * The public and private balance of each token Shield lists. Shield adds the
+   * private balance up itself, so the records stay in the wallet.
+   *
+   * Throws `WalletFeatureNotAvailableError` where the wallet has no such method
+   * (an older extension, or a relay wallet that answers it as unsupported);
+   * `getWalletBalances` then reads the balances by other means.
+   * @param params Optional filter of the tokens to report
+   */
+  async getBalances(params?: GetBalancesParams): Promise<BalancesResult> {
+    if (!this.account) {
+      throw new WalletNotConnectedError();
+    }
+    const wallet = this._shieldWallet;
+    if (!wallet?.getBalances) {
+      throw new WalletFeatureNotAvailableError(WalletFeatureName.GET_BALANCES);
+    }
+    try {
+      return await wallet.getBalances(params);
+    } catch (error: Error | unknown) {
+      if (isUnsupportedMethod(error)) {
+        throw new WalletFeatureNotAvailableError(WalletFeatureName.GET_BALANCES);
+      }
+      throw new WalletError(error instanceof Error ? error.message : 'Failed to get balances');
     }
   }
 

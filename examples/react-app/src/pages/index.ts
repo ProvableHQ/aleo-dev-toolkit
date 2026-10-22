@@ -4,6 +4,7 @@ export { DeployProgramPage } from './DeployProgramPage';
 export { SignMessagePage } from './SignMessagePage';
 export { DecryptPage } from './DecryptPage';
 export { RecordsPage } from './RecordsPage';
+export { BalancesPage } from './BalancesPage';
 export { ViewKeysPage } from './ViewKeysPage';
 export { TransactionHistoryPage } from './TransactionHistoryPage';
 export { PrivateInputsPage } from './PrivateInputsPage';
