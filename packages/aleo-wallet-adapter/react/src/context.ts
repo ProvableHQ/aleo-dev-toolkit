@@ -11,6 +11,8 @@ import {
   BalancesResult,
   GetBalancesParams,
   Network,
+  PrepareShieldedUsdcxMintRequest,
+  ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
@@ -187,6 +189,11 @@ export interface WalletContextState {
    * return `[]`.
    */
   algorithmsSupported: () => Promise<string[]>;
+  /** True when the selected wallet provider implements shielded mint preparation. */
+  supportsShieldedUsdcxMint: boolean;
+  prepareShieldedUsdcxMint: (
+    options: PrepareShieldedUsdcxMintRequest,
+  ) => Promise<ShieldedUsdcxMintPreparation>;
 }
 
 /**

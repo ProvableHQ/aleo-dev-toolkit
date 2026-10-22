@@ -13,7 +13,12 @@ import {
   RecordAccessGrant,
   RecordStatusFilter,
 } from '@provablehq/aleo-wallet-standard';
-import { GetBalancesParams, Network, TransactionOptions } from '@provablehq/aleo-types';
+import {
+  GetBalancesParams,
+  Network,
+  PrepareShieldedUsdcxMintRequest,
+  TransactionOptions,
+} from '@provablehq/aleo-types';
 import { Wallet, WalletContext, SelectWalletOptions } from './context';
 import { useLocalStorage } from './useLocalStorage';
 import {
@@ -651,6 +656,21 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     }
   }, [adapter]);
 
+  const prepareShieldedUsdcxMint = useCallback(
+    async (options: PrepareShieldedUsdcxMintRequest) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (
+        !adapter ||
+        !('prepareShieldedUsdcxMint' in adapter) ||
+        !adapter.prepareShieldedUsdcxMint
+      ) {
+        throw handleError(new MethodNotImplementedError('prepareShieldedUsdcxMint'));
+      }
+      return await adapter.prepareShieldedUsdcxMint(options);
+    },
+    [adapter, handleError, connected],
+  );
+
   const checkNetwork = useCallback(async () => {
     if (adapter && adapter.network !== initialNetwork) {
       const switchResult = await switchNetwork(initialNetwork);
@@ -689,6 +709,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         requestTransactionHistory,
         getBalances,
         algorithmsSupported,
+        prepareShieldedUsdcxMint,
+        supportsShieldedUsdcxMint: adapter?.supportsShieldedUsdcxMint ?? false,
       }}
     >
       {children}

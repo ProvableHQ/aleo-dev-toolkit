@@ -11,6 +11,47 @@ export const PLACEHOLDERS = {
 } as const;
 
 export const codeExamples = {
+  shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { createShieldedUsdcxMintRequest, DecryptPermission, SHIELDED_USDCX_MINT_GRANT } from '@provablehq/aleo-wallet-adapter-core';
+import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
+import { Network } from '@provablehq/aleo-types';
+
+const wallets = [new ShieldWalletAdapter({ remote: false })];
+
+function MintExample() {
+  const { connected, supportsShieldedUsdcxMint, prepareShieldedUsdcxMint } = useWallet();
+
+  async function prepare() {
+    // Save before the first call; retry the same request after a failure or reload.
+    // Reconnect with the same account/network/origin and permissions before retrying.
+    const stored = sessionStorage.getItem('bridge:pending-mint');
+    const request = stored ? JSON.parse(stored) : createShieldedUsdcxMintRequest({
+      network: Network.TESTNET,
+      sourceChain: 'ethereum-sepolia',
+      amount: '1000000',
+      maxFee: '10000',
+      // recipient: optionalAleoRecipient,
+      // depositor: optionalEvmAddress,
+    });
+    sessionStorage.setItem('bridge:pending-mint', JSON.stringify(request));
+    const prepared = await prepareShieldedUsdcxMint(request);
+    console.log(prepared); // Public parameters and requestId; no secret nonce.
+  }
+
+  return <button disabled={!connected || !supportsShieldedUsdcxMint} onClick={prepare}>Prepare deposit</button>;
+}
+
+// Add your connection UI inside this provider.
+export function App() {
+  return (
+    <AleoWalletProvider wallets={wallets} network={Network.TESTNET}
+      decryptPermission={DecryptPermission.NoDecrypt}
+      programs={['shielded_usdcx_wrapper.aleo']}
+      algorithmsAllowed={[SHIELDED_USDCX_MINT_GRANT]}>
+      <MintExample />
+    </AleoWalletProvider>
+  );
+}`,
   executeTransaction: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 
 const { executeTransaction, transactionStatus } = useWallet();

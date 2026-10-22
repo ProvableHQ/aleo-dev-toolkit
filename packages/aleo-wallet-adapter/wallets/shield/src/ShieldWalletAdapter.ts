@@ -4,6 +4,8 @@ import {
   GetBalancesParams,
   KNOWN_ALGORITHMS,
   Network,
+  PrepareShieldedUsdcxMintRequest,
+  ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
   TxHistoryResult,
@@ -29,6 +31,7 @@ import {
   WalletDisconnectionError,
   WalletError,
   WalletFeatureNotAvailableError,
+  WalletInputRequestInvalidError,
   WalletNotConnectedError,
   WalletSignMessageError,
   WalletSwitchNetworkError,
@@ -44,6 +47,7 @@ import {
 import { buildDappMetadata } from './dappMetadata';
 import { isMobileUserAgent } from './isMobileUserAgent';
 import { resolveRemoteConfig, type ResolvedShieldRemoteConfig } from './remoteDefaults';
+import { SHIELDED_USDCX_MINT_FEATURE, shieldedUsdcxMintPreparation } from './shieldedUsdcx';
 
 /**
  * Shield wallet adapter
@@ -252,6 +256,14 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
    */
   get isRemotePairingPending(): boolean {
     return this._pendingRemote;
+  }
+
+  /** The active provider, or the injected provider when the next route permits discovery. */
+  private get discoverableProvider(): ShieldWallet | undefined {
+    return (
+      this._shieldWallet ??
+      (!this.willPairRemotely && !this.isRemotePairingPending ? this._window?.shield : undefined)
+    );
   }
 
   /**
@@ -689,17 +701,41 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     }
   }
 
-  /**
-   * Shield's currently-supported derived-input algorithms. Returns the SDK's
-   * known-algorithm catalog; the wallet itself is the source of truth at
-   * runtime and will reject any algorithm it doesn't implement.
-   *
-   * TODO(wallet): when the injector exposes an `algorithmsSupported` message,
-   * replace this static list with a real round-trip so dapps see what THIS
-   * Shield build supports, not just the SDK's static catalog.
-   */
+  /** Whether the active provider implements bridge preparation. */
+  get supportsShieldedUsdcxMint(): boolean {
+    return typeof this.discoverableProvider?.prepareShieldedUsdcxMint === 'function';
+  }
+
+  async prepareShieldedUsdcxMint(
+    request: PrepareShieldedUsdcxMintRequest,
+  ): Promise<ShieldedUsdcxMintPreparation> {
+    if (!this.account || !this._shieldWallet) throw new WalletNotConnectedError();
+    const wallet = this._shieldWallet;
+    if (typeof wallet.prepareShieldedUsdcxMint !== 'function') {
+      throw new WalletFeatureNotAvailableError(SHIELDED_USDCX_MINT_FEATURE);
+    }
+    const { requestId } = request;
+    if (typeof requestId !== 'string' || requestId.length === 0 || requestId.length > 128) {
+      throw new WalletInputRequestInvalidError(
+        'Shielded mint preparation requires a requestId (1–128 characters). ' +
+          'Create the request with createShieldedUsdcxMintRequest before calling the wallet.',
+      );
+    }
+    try {
+      const response = await wallet.prepareShieldedUsdcxMint({ ...request });
+      return shieldedUsdcxMintPreparation(response, requestId);
+    } catch (error) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /** Query the provider when supported; retain the legacy fallback for older wallets. */
   async algorithmsSupported(): Promise<string[]> {
-    return [...KNOWN_ALGORITHMS];
+    const wallet = this.discoverableProvider;
+    return typeof wallet?.algorithmsSupported === 'function'
+      ? await wallet.algorithmsSupported()
+      : [...KNOWN_ALGORITHMS];
   }
 
   /**
