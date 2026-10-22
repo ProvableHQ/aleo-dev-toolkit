@@ -1,4 +1,6 @@
 import {
+  BalancesResult,
+  GetBalancesParams,
   Network,
   TransactionOptions,
   TransactionStatusResponse,
@@ -247,6 +249,11 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
 
   async requestTransactionHistory(program: string): Promise<TxHistoryResult> {
     return this.request('requestTransactionHistory', [program]);
+  }
+
+  /** A wallet without it answers 4200, which the adapter reports as the feature missing. */
+  async getBalances(params?: GetBalancesParams): Promise<BalancesResult> {
+    return this.request('getBalances', params === undefined ? [] : [params]);
   }
 
   /**

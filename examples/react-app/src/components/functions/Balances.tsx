@@ -18,8 +18,8 @@ import { codeExamples } from '@/lib/codeExamples';
  */
 const FALLBACK_TOKENS: BalanceToken[] = [
   ALEO_BALANCE_TOKEN,
-  { programId: 'usdcx_stablecoin.aleo', symbol: 'USDCx', decimals: 6 },
-  { programId: 'usad_stablecoin.aleo', symbol: 'USAD', decimals: 6 },
+  { programId: 'usdcx_stablecoin.aleo', symbol: 'USDCx', decimals: 6, publicMapping: 'balances' },
+  { programId: 'usad_stablecoin.aleo', symbol: 'USAD', decimals: 6, publicMapping: 'balances' },
 ];
 
 /** At most four decimals, cut rather than rounded. */

@@ -271,7 +271,7 @@ export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   executeDeployment(deployment: ShieldDeployment): Promise<{ transactionId: string }>;
   transitionViewKeys: (transactionId: string) => Promise<string[]>;
   requestTransactionHistory: (program: string) => Promise<TxHistoryResult>;
-  /** Injected extension only: the relay wallet has none, so the adapter reports the feature missing. */
+  /** Absent from older extensions. Over the relay, a wallet without it answers 4200. */
   getBalances?(params?: GetBalancesParams): Promise<BalancesResult>;
   /** Relay only. The injected provider has no relay, so it is always reachable. */
   isWalletPresent?(): Promise<boolean>;

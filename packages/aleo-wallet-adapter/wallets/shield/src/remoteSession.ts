@@ -155,6 +155,10 @@ export function needsApproval(
       return decryptPermission === WalletDecryptPermission.UponRequest;
     case 'requestRecords':
       return params[1] === true && decryptPermission === WalletDecryptPermission.UponRequest;
+    // Asks only when it would share a private balance, which the dapp can't
+    // tell from here; waking for nothing beats a sheet nobody sees.
+    case 'getBalances':
+      return decryptPermission === WalletDecryptPermission.UponRequest;
     default:
       return false;
   }

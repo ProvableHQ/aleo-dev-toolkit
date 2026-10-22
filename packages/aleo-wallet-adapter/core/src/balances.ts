@@ -17,6 +17,14 @@ import { WalletFeatureNotAvailableError } from './errors';
 export interface BalanceToken extends BalanceTokenRef {
   symbol: string;
   decimals: number;
+  /**
+   * The mapping that holds this token's public balances, keyed by the owner's
+   * address: `balances` for ARC-20 programs and the compliance stablecoins.
+   * `credits.aleo` needs none. Without it the public balance is `unavailable`:
+   * the ledger answers null for a mapping a program does not have, which reads
+   * the same as an empty balance.
+   */
+  publicMapping?: string;
 }
 
 /** Aleo credits: the native token, held by `credits.aleo`. */
@@ -69,9 +77,13 @@ function plaintextOf(record: unknown): string | undefined {
 /**
  * The sum of the amounts in a token's records, as the base-unit string of a
  * private balance. Records that are spent or still pending are left out, so the
- * result is what can be spent now.
+ * result is what can be spent now. Undefined when a record's amount cannot be
+ * read (no plaintext, or the field withheld): a partial sum is not the balance.
  */
-export function sumRecordBalance(records: readonly unknown[], token: BalanceTokenRef): string {
+export function sumRecordBalance(
+  records: readonly unknown[],
+  token: BalanceTokenRef,
+): string | undefined {
   const field = token.programId === 'credits.aleo' ? 'microcredits' : 'amount';
   let total = BigInt(0);
   for (const record of records) {
@@ -80,35 +92,38 @@ export function sumRecordBalance(records: readonly unknown[], token: BalanceToke
     if (meta.spent === true || meta.provisional === true) continue;
     if (typeof meta.status === 'string' && meta.status.toLowerCase() !== 'unspent') continue;
     const plaintext = plaintextOf(record);
-    if (plaintext === undefined) continue;
+    if (plaintext === undefined) return undefined;
     if (token.tokenId !== undefined && readTokenId(plaintext) !== token.tokenId) continue;
-    total += readField(plaintext, field) ?? BigInt(0);
+    const amount = readField(plaintext, field);
+    if (amount === undefined) return undefined;
+    total += amount;
   }
   return total.toString();
 }
 
 /**
- * The public balance of an address in a token's program, from the ledger.
- * Covers `credits.aleo` and the programs that keep a `balances` mapping keyed by
- * address (ARC-20, ARC-22). Tokens held in `token_registry.aleo` are keyed by a
- * hash that needs the Aleo SDK, so they come back unavailable.
+ * The public balance of an address in a token's program, from the ledger:
+ * `credits.aleo`'s `account` mapping, or the token's `publicMapping` keyed by
+ * address (ARC-20, the compliance stablecoins). Any other layout comes back
+ * unavailable, as do tokens in `token_registry.aleo`, keyed by a hash that
+ * needs the Aleo SDK.
  */
 export async function getPublicBalance(
   network: Network | `${Network}`,
   address: string,
-  token: BalanceTokenRef,
+  token: BalanceTokenRef & Pick<BalanceToken, 'publicMapping'>,
   options: Pick<WalletBalancesOptions, 'apiUrl' | 'fetch'> = {},
 ): Promise<BalanceValue> {
   if (token.programId === 'token_registry.aleo') return unreadable('unavailable');
-  const mapping = token.programId === 'credits.aleo' ? 'account' : 'balances';
+  const mapping = token.programId === 'credits.aleo' ? 'account' : token.publicMapping;
+  if (!mapping) return unreadable('unavailable');
   const base = (options.apiUrl ?? DEFAULT_PUBLIC_BALANCE_API).replace(/\/$/, '');
   const url = `${base}/${network}/program/${token.programId}/mapping/${mapping}/${address}`;
   try {
     const response = await (options.fetch ?? fetch)(url);
-    // No entry in the mapping means the address holds none.
-    if (response.status === 404) return { amount: '0', status: 'ok', updatedAt: Date.now() };
     if (!response.ok) return unreadable('unavailable');
     const value: unknown = await response.json();
+    // No entry in the mapping means the address holds none.
     if (value === null || value === 'null')
       return { amount: '0', status: 'ok', updatedAt: Date.now() };
     const amount = typeof value === 'string' ? /^(\d+)u(?:64|128)$/.exec(value)?.[1] : undefined;
@@ -127,7 +142,11 @@ export async function getPrivateBalance(
 ): Promise<BalanceValue> {
   try {
     const records = await wallet.requestRecords(token.programId, true, 'unspent');
-    return { amount: sumRecordBalance(records, token), status: 'ok', updatedAt: Date.now() };
+    const amount = sumRecordBalance(records, token);
+    // A record whose amount the connection hides leaves the balance unknown.
+    return amount === undefined
+      ? unreadable('not_granted')
+      : { amount, status: 'ok', updatedAt: Date.now() };
   } catch {
     // Refused (no decrypt permission, program not granted) or unreachable.
     return unreadable('not_granted');

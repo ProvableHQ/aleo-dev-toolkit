@@ -10,7 +10,12 @@ import {
 } from '../dist/index.js';
 
 const ADDRESS = 'aleo1owner';
-const USDCX = { programId: 'usdcx_stablecoin.aleo', symbol: 'USDCx', decimals: 6 };
+const USDCX = {
+  programId: 'usdcx_stablecoin.aleo',
+  symbol: 'USDCx',
+  decimals: 6,
+  publicMapping: 'balances',
+};
 const REGISTRY = {
   programId: 'token_registry.aleo',
   tokenId: '77field',
@@ -40,16 +45,22 @@ describe('sumRecordBalance', () => {
     assert.equal(sumRecordBalance([credits(5), credits(7)], ALEO_BALANCE_TOKEN), '12');
   });
 
-  it('leaves out spent records, pending outputs and records without a plaintext', () => {
+  it('leaves out spent records and pending outputs', () => {
     const records = [
       credits(5),
       credits(7, { spent: true }),
       credits(11, { provisional: true }),
       credits(13, { status: 'pending' }),
-      { spent: false },
+      { spent: true },
       null,
     ];
     assert.equal(sumRecordBalance(records, ALEO_BALANCE_TOKEN), '5');
+  });
+
+  it('gives no sum when a record`s amount cannot be read, rather than a partial one', () => {
+    assert.equal(sumRecordBalance([credits(5), { spent: false }], ALEO_BALANCE_TOKEN), undefined);
+    const withheld = { recordPlaintext: `{\n  owner: ${ADDRESS}.private\n}`, spent: false };
+    assert.equal(sumRecordBalance([credits(5), withheld], ALEO_BALANCE_TOKEN), undefined);
   });
 
   it('keeps a u128 exact', () => {
@@ -101,19 +112,30 @@ describe('getPublicBalance', () => {
   });
 
   it('counts a missing entry as zero', async () => {
-    for (const fetch of [async () => response(404, null), async () => response(200, null)]) {
-      assert.equal(
-        (await getPublicBalance('mainnet', ADDRESS, ALEO_BALANCE_TOKEN, { fetch })).amount,
-        '0',
-      );
-    }
+    const result = await getPublicBalance('mainnet', ADDRESS, ALEO_BALANCE_TOKEN, {
+      fetch: async () => response(200, null),
+    });
+    assert.equal(result.amount, '0');
+    assert.equal(result.status, 'ok');
+  });
+
+  it('does not guess where a token keeps its public balances', async () => {
+    // The ledger answers null for a mapping a program lacks, the same as an
+    // empty balance, so an unknown layout is unavailable rather than zero.
+    const { publicMapping: _, ...unknown } = USDCX;
+    const result = await getPublicBalance('mainnet', ADDRESS, unknown, {
+      fetch: async () => assert.fail('no request expected'),
+    });
+    assert.deepEqual(result, { amount: null, status: 'unavailable' });
   });
 
   it('does not call a failed read zero', async () => {
-    const failed = await getPublicBalance('mainnet', ADDRESS, ALEO_BALANCE_TOKEN, {
-      fetch: async () => response(500, null),
-    });
-    assert.deepEqual(failed, { amount: null, status: 'unavailable' });
+    for (const status of [404, 500]) {
+      const failed = await getPublicBalance('mainnet', ADDRESS, ALEO_BALANCE_TOKEN, {
+        fetch: async () => response(status, null),
+      });
+      assert.deepEqual(failed, { amount: null, status: 'unavailable' });
+    }
     const thrown = await getPublicBalance('mainnet', ADDRESS, ALEO_BALANCE_TOKEN, {
       fetch: async () => {
         throw new Error('offline');
@@ -139,6 +161,14 @@ describe('getPrivateBalance', () => {
     const result = await getPrivateBalance(wallet, ALEO_BALANCE_TOKEN);
     assert.deepEqual(calls, [['credits.aleo', true, 'unspent']]);
     assert.equal(result.amount, '12');
+  });
+
+  it('says the balance is not readable when the connection hides an amount', async () => {
+    const wallet = { requestRecords: async () => [credits(5), { spent: false }] };
+    assert.deepEqual(await getPrivateBalance(wallet, ALEO_BALANCE_TOKEN), {
+      amount: null,
+      status: 'not_granted',
+    });
   });
 
   it('says so when the wallet refuses the records', async () => {
@@ -215,7 +245,7 @@ describe('getWalletBalances', () => {
     };
     const options = {
       tokens: [ALEO_BALANCE_TOKEN, USDCX],
-      fetch: async () => response(404, null),
+      fetch: async () => response(200, null),
     };
     const all = await getWalletBalances(wallet, {}, options);
     assert.deepEqual(

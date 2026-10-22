@@ -554,6 +554,58 @@ export const RequestTransactionHistory: FC = () => {
 };
 ```
 
+## 💰 Reading Balances
+
+`getBalances` returns the public and private balance of each token. Amounts are
+base-unit strings, so a u128 stays exact. Each reading has a `status`, so an
+unknown balance is never shown as zero:
+
+- `ok`: read recently.
+- `stale`: the last good reading, not refreshed lately.
+- `syncing`: the wallet has not read it yet.
+- `not_granted`: the connection doesn't allow it, such as a private balance under `NO_DECRYPT`.
+- `unavailable`: no reading is coming.
+
+A wallet with its own `getBalances` (Shield) answers for the tokens it lists, and
+adds the private side up itself, so records never reach the dapp. For any other
+wallet, pass the tokens to report. The private side is then added up from
+`requestRecords` (so the connection must allow reading records), and the public
+side is read from the ledger.
+
+```tsx
+import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { ALEO_BALANCE_TOKEN } from '@provablehq/aleo-wallet-adapter-core';
+import React, { FC, useCallback } from 'react';
+
+// Used only for wallets that can't list their own tokens.
+const TOKENS = [
+  ALEO_BALANCE_TOKEN,
+  // `publicMapping`: where the program keeps public balances by address.
+  { programId: 'usdcx_stablecoin.aleo', symbol: 'USDCx', decimals: 6, publicMapping: 'balances' },
+];
+
+export const Balances: FC = () => {
+  const { getBalances, connected } = useWallet();
+
+  const onClick = useCallback(async () => {
+    const { balances } = await getBalances(undefined, { tokens: TOKENS });
+    for (const { symbol, public: pub, private: priv } of balances) {
+      console.log(symbol, pub.amount, pub.status, priv.amount, priv.status);
+    }
+  }, [getBalances]);
+
+  return (
+    <button onClick={onClick} disabled={!connected}>
+      Get Balances
+    </button>
+  );
+};
+```
+
+Pass `{ tokens: [{ programId, tokenId? }] }` as the first argument to narrow the
+answer. Outside React, `getWalletBalances(adapter, params, options)` from
+`@provablehq/aleo-wallet-adapter-core` does the same.
+
 ## 🔑 Getting Transition View Keys
 
 This requires the `OnChainHistory` decrypt permission:
@@ -706,17 +758,3 @@ export const App: FC = () => {
   );
 };
 ```
-
-## Shield XReserve mint preparation
-
-Compatible Shield extensions expose `useWallet().prepareShieldedUsdcxMint()` and
-`supportsShieldedUsdcxMint`. Preparation accepts an optional arbitrary Aleo
-`recipient` and requires a `requestId`. Generate it once per deposit with
-`createShieldedUsdcxMintRequest` and save the request before the first wallet call.
-The expected EVM
-`depositor` is optional, allowing encoding before selecting an EVM account. It returns public
-commitment and deposit parameters; the wallet retains the secret nonce.
-
-See the [XReserve integration guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/xreserve-shielded-mint-integration.md)
-for connection grants, request persistence, and completion. Older wallets and
-the current remote/mobile facade do not implement preparation.
