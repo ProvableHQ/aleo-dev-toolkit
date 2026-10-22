@@ -44,6 +44,7 @@ const navigationGroups: NavGroup[] = [
     title: 'Transactions',
     items: [
       { to: '/execute', label: 'Execute', icon: Send },
+      { to: '/xreserve', label: 'XReserve Mint', icon: Lock },
       { to: '/deploy', label: 'Deploy', icon: Rocket },
     ],
   },
