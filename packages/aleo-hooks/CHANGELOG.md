@@ -1,5 +1,14 @@
 # @provablehq/aleo-hooks
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [cd40894]
+- Updated dependencies [a364bc1]
+  - @provablehq/aleo-types@1.2.0
+  - @provablehq/aleo-wallet-standard@1.5.0
+
 ## 1.0.4
 
 ### Patch Changes

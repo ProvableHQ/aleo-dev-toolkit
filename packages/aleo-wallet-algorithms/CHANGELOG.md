@@ -1,5 +1,13 @@
 # @provablehq/aleo-wallet-algorithms
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [cd40894]
+- Updated dependencies [a364bc1]
+  - @provablehq/aleo-types@1.2.0
+
 ## 0.2.0
 
 ### Minor Changes

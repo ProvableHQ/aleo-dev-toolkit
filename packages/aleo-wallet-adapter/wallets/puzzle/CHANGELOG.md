@@ -1,5 +1,15 @@
 # @provablehq/aleo-wallet-adapter-puzzle
 
+## 1.1.3
+
+### Patch Changes
+
+- Updated dependencies [cd40894]
+- Updated dependencies [a364bc1]
+  - @provablehq/aleo-types@1.2.0
+  - @provablehq/aleo-wallet-standard@1.5.0
+  - @provablehq/aleo-wallet-adapter-core@1.2.0
+
 ## 1.1.2
 
 ### Patch Changes
