@@ -1,5 +1,20 @@
 # @provablehq/aleo-wallet-adapter-shield
 
+## 1.5.0
+
+### Minor Changes
+
+- 619d38b: Add `subscribeTransactionStatus()` across wallet adapters. Shield uses native wallet updates when available; the base adapter provides serial one-second polling otherwise. Add shared terminal and success status helpers, including `confirmed`, and normalize Shield status IDs to on-chain IDs only. Add `useTransaction()` to own submission and observation across wallet scope changes, plus `useTransactionStatus()` for existing handles. Update the execution example and documentation.
+
+  Normalize Fox's pre-inclusion `Completed` status to `pending` and its unsuccessful `Unaccepted` outcome to `failed`, so subscriptions continue until the wallet reports the final outcome.
+
+### Patch Changes
+
+- Updated dependencies [619d38b]
+  - @provablehq/aleo-types@1.3.0
+  - @provablehq/aleo-wallet-standard@1.6.0
+  - @provablehq/aleo-wallet-adapter-core@1.3.0
+
 ## 1.4.0
 
 ### Minor Changes
