@@ -2,12 +2,14 @@ import {
   Account,
   BalancesResult,
   GetBalancesParams,
+  isTerminalTransactionStatus,
   KNOWN_ALGORITHMS,
   Network,
   PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusSubscription,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import {
@@ -54,9 +56,27 @@ import { SHIELDED_USDCX_MINT_FEATURE, shieldedUsdcxMintPreparation } from './shi
  * off the error rather than by class: the relay client is loaded on demand.
  */
 const isUnsupportedMethod = (error: unknown): boolean =>
-  typeof error === 'object' &&
-  error !== null &&
-  (error as { code?: unknown }).code === 4200;
+  typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 4200;
+
+// Legacy mobile Proxies synthesize functions for properties the provider does not implement.
+function providerHasMethod<K extends keyof ShieldWallet>(
+  provider: ShieldWallet | undefined,
+  method: K,
+): provider is ShieldWallet & Required<Pick<ShieldWallet, K>> {
+  return Boolean(provider && method in provider && typeof provider[method] === 'function');
+}
+
+function normalizeTransactionStatus<T extends TransactionStatusResponse>(
+  handle: string,
+  response: T,
+): T {
+  const normalized = { ...response, status: response.status.trim().toLowerCase() };
+  // Mobile can echo the local handle before broadcast; a chain handle already starts with at1.
+  if (normalized.transactionId === handle && !handle.startsWith('at1')) {
+    delete normalized.transactionId;
+  }
+  return normalized;
+}
 
 /**
  * Shield wallet adapter
@@ -547,10 +567,37 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletTransactionError('Could not get transaction status');
       }
 
-      return result;
+      return normalizeTransactionStatus(transactionId, result);
     } catch (error: Error | unknown) {
+      if (error instanceof WalletError) throw error;
       throw new WalletTransactionError(
         error instanceof Error ? error.message : 'Failed to get transaction status',
+      );
+    }
+  }
+
+  async subscribeTransactionStatus(
+    ...[transactionId, onStatus, onError]: Parameters<TransactionStatusSubscription>
+  ): Promise<() => void> {
+    if (!this.account) throw new WalletNotConnectedError();
+    const wallet = this._shieldWallet;
+    if (!providerHasMethod(wallet, 'subscribeTransactionStatus')) {
+      return super.subscribeTransactionStatus(transactionId, onStatus, onError);
+    }
+    try {
+      return await wallet.subscribeTransactionStatus(
+        transactionId,
+        update =>
+          onStatus({
+            ...normalizeTransactionStatus(transactionId, update),
+            isTerminal: update.isTerminal || isTerminalTransactionStatus(update.status),
+          }),
+        onError,
+      );
+    } catch (error) {
+      if (error instanceof WalletError) throw error;
+      throw new WalletTransactionError(
+        error instanceof Error ? error.message : 'Failed to subscribe to transaction status',
       );
     }
   }
@@ -715,7 +762,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
 
   /** Whether the active provider implements bridge preparation. */
   get supportsShieldedUsdcxMint(): boolean {
-    return typeof this.discoverableProvider?.prepareShieldedUsdcxMint === 'function';
+    return providerHasMethod(this.discoverableProvider, 'prepareShieldedUsdcxMint');
   }
 
   async prepareShieldedUsdcxMint(
@@ -723,7 +770,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   ): Promise<ShieldedUsdcxMintPreparation> {
     if (!this.account || !this._shieldWallet) throw new WalletNotConnectedError();
     const wallet = this._shieldWallet;
-    if (typeof wallet.prepareShieldedUsdcxMint !== 'function') {
+    if (!providerHasMethod(wallet, 'prepareShieldedUsdcxMint')) {
       throw new WalletFeatureNotAvailableError(SHIELDED_USDCX_MINT_FEATURE);
     }
     const { requestId } = request;
@@ -745,7 +792,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   /** Query the provider when supported; retain the legacy fallback for older wallets. */
   async algorithmsSupported(): Promise<string[]> {
     const wallet = this.discoverableProvider;
-    return typeof wallet?.algorithmsSupported === 'function'
+    return providerHasMethod(wallet, 'algorithmsSupported')
       ? await wallet.algorithmsSupported()
       : [...KNOWN_ALGORITHMS];
   }

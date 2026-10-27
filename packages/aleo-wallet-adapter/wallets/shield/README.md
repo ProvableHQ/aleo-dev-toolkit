@@ -116,8 +116,8 @@ To force the relay for one connect without changing the rest of the dapp:
 selectWallet('Shield Wallet', { pairing: 'remote' });
 ```
 
-`willPairRemotely` on the adapter is the constructor policy (preferExtension
-+ readyState). UI reads that instead of reconstructing it from other flags.
+`willPairRemotely` on the adapter is the constructor policy (`preferExtension + readyState`).
+UI reads that instead of reconstructing it from other flags.
 
 The production defaults are also exported as `DEFAULT_SHIELD_RELAY_URL` and
 `DEFAULT_SHIELD_DEEPLINK_BASE` if you need to read them.
@@ -183,3 +183,13 @@ Behavior:
 - `@provablehq/aleo-wallet-adapter-react` – provider that wires this adapter into React apps.
 
 Live demo: https://aleo-dev-toolkit-react-app.vercel.app/
+
+## Transaction status subscriptions
+
+`adapter.subscribeTransactionStatus(handle, onStatus, onError?)` observes the handle returned by `executeTransaction`. Injected extension and in-app browser providers use native updates when available. Older providers and relay connections inherit the base adapter's serial fallback: one query immediately, then one second after each response.
+
+The returned promise resolves to a disposer. A native snapshot can arrive before registration resolves. Keep the disposer and call it when the consumer leaves. Native registrations reject on failure; later observation errors reach `onError`. A registration error does not start polling.
+
+`update.requestedTransactionId` remains the wallet-issued handle. `update.transactionId` contains only the on-chain ID, once known. Shield normalizes temporary handle echoes from older mobile providers at the adapter boundary. `update.isTerminal` includes unsuccessful outcomes; use `isSuccessfulTransactionStatus(update.status)` from `@provablehq/aleo-types` to identify success, including `confirmed`.
+
+`transactionStatus(handle)` remains a single query. React consumers can use `useTransaction()` to submit and observe, or `useTransactionStatus(handle)` to observe an existing handle. The hooks dispose on unmount or scope changes, handle pending registration, and ignore late results. `useTransaction()` also discards submissions that finish after the wallet scope changes.

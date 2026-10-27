@@ -3,10 +3,12 @@ import {
   AlgorithmArg,
   BalancesResult,
   GetBalancesParams,
+  isTerminalTransactionStatus,
   Network,
   TransactionInput,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusUpdate,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import {
@@ -28,6 +30,7 @@ import {
   WalletFeatureNotAvailableError,
   WalletInputRequestInvalidError,
   WalletNotConnectedError,
+  WalletTransactionError,
 } from './errors';
 import { WalletConnectionError } from './errors';
 
@@ -217,6 +220,63 @@ export abstract class BaseAleoWalletAdapter
       throw new WalletFeatureNotAvailableError(WalletFeatureName.EXECUTE);
     }
     return feature.executeTransaction(options);
+  }
+
+  /** Observe a handle with serial polls, one second after each response. */
+  async subscribeTransactionStatus(
+    transactionId: string,
+    onStatus: (update: TransactionStatusUpdate) => void,
+    onError?: (error: Error) => void,
+  ): Promise<() => void> {
+    if (!this.account) throw new WalletNotConnectedError();
+    const account = this.account;
+    const network = this.network;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      clearTimeout(timer);
+      this.off('disconnect', scopeChanged);
+      this.off('accountChange', scopeChanged);
+      this.off('networkChange', scopeChanged);
+    };
+    const fail = (error: unknown) => {
+      if (stopped) return;
+      stop();
+      onError?.(
+        error instanceof Error
+          ? error
+          : new WalletTransactionError('Transaction status unavailable'),
+      );
+    };
+    const scopeChanged = () => fail(new WalletTransactionError('Wallet scope changed'));
+    const poll = async () => {
+      try {
+        const response = await this.transactionStatus(transactionId);
+        if (stopped) return;
+        if (this.account !== account || this.network !== network) {
+          scopeChanged();
+          return;
+        }
+        const update = {
+          ...response,
+          status: response.status.trim().toLowerCase(),
+          requestedTransactionId: transactionId,
+          isTerminal: isTerminalTransactionStatus(response.status),
+        };
+        if (update.isTerminal) stop();
+        onStatus(update);
+        if (!stopped) timer = setTimeout(() => void poll(), 1000);
+      } catch (error) {
+        fail(error);
+      }
+    };
+    this.on('disconnect', scopeChanged);
+    this.on('accountChange', scopeChanged);
+    this.on('networkChange', scopeChanged);
+    void poll();
+    return stop;
   }
 
   /**

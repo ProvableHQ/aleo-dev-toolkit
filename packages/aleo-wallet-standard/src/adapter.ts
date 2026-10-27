@@ -7,6 +7,7 @@ import {
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
   TransactionStatusResponse,
+  TransactionStatusSubscription,
   TxHistoryResult,
 } from '@provablehq/aleo-types';
 import { AleoChain } from './chains';
@@ -142,6 +143,9 @@ export interface WalletAdapterProps<Name extends string = string> {
    * @returns The transaction status
    */
   transactionStatus(transactionId: string): Promise<TransactionStatusResponse>;
+
+  /** Observe a wallet handle. Base adapters poll serially when native updates are unavailable. */
+  subscribeTransactionStatus?: TransactionStatusSubscription;
 
   /**
    * Sign a message

@@ -18,6 +18,7 @@ import {
   Network,
   PrepareShieldedUsdcxMintRequest,
   TransactionOptions,
+  TransactionStatusSubscription,
 } from '@provablehq/aleo-types';
 import { Wallet, WalletContext, SelectWalletOptions } from './context';
 import { useLocalStorage } from './useLocalStorage';
@@ -539,6 +540,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     [adapter, handleError, connected],
   );
 
+  const subscribeTransactionStatus = useCallback<TransactionStatusSubscription>(
+    async (transactionId, onStatus, onError) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter?.subscribeTransactionStatus) {
+        throw handleError(new MethodNotImplementedError('subscribeTransactionStatus'));
+      }
+      return await adapter.subscribeTransactionStatus(transactionId, onStatus, onError);
+    },
+    [adapter, handleError, connected],
+  );
+
   // Sign an arbitrary message if the wallet supports it
   const signMessage = useMemo(
     () =>
@@ -700,6 +712,7 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         disconnect,
         executeTransaction,
         transactionStatus,
+        subscribeTransactionStatus,
         signMessage,
         switchNetwork,
         decrypt,
