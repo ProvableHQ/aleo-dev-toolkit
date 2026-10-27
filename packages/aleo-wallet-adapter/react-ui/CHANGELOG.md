@@ -1,5 +1,15 @@
 # @provablehq/aleo-wallet-adapter-react-ui
 
+## 1.3.3
+
+### Patch Changes
+
+- Updated dependencies [619d38b]
+  - @provablehq/aleo-types@1.3.0
+  - @provablehq/aleo-wallet-standard@1.6.0
+  - @provablehq/aleo-wallet-adapter-core@1.3.0
+  - @provablehq/aleo-wallet-adapter-react@1.5.0
+
 ## 1.3.2
 
 ### Patch Changes

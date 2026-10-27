@@ -1,6 +1,6 @@
 {
   "name": "@provablehq/aleo-wallet-adapter-react-ui",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "UI components for wallet adapter integration",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
