@@ -10,7 +10,7 @@ The **Aleo Wallet Adapter** provides a simple and unified interface for integrat
 
 > **Migrating an existing app?** The `@provablehq/aleo-wallet-adaptor-*` names
 > are deprecated in favor of `@provablehq/aleo-wallet-adapter-*`. See the
-> [migration guide](../../docs/migrating-to-adapter.md) for uninstall/install
+> [migration guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/migrating-to-adapter.md) for uninstall/install
 > commands and import changes, including CSS.
 
 ## 📲 Installation
@@ -91,7 +91,7 @@ export const App: FC = () => {
 };
 ```
 
-`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. An installed extension is preferred unless you set `preferExtension: false`, or pass `pairing: 'remote'` on a single `selectWallet` / `connect`. See the [Shield adapter README](./wallets/shield/README.md).
+`ShieldWalletAdapter` pairs with the Shield app from a plain mobile browser (no extension) by default. Production relay URL, deeplink, and transport are built in — pass a config object only to override them for testing, or `{ remote: false }` for injected-only behavior. An installed extension is preferred unless you set `preferExtension: false`, or pass `pairing: 'remote'` on a single `selectWallet` / `connect`. See the [Shield adapter README](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/packages/aleo-wallet-adapter/wallets/shield/README.md).
 
 ### Provider Props
 
@@ -110,7 +110,7 @@ export const App: FC = () => {
 - **`recordAccess`** (optional, Shield only): Fine-grained grant controlling which record fields the dapp may read, narrowed by program, record, and field.
 - **`algorithmsAllowed`** (optional, Shield only): Opt-in allowlist of wallet-side algorithms that can compute private inputs (e.g. blinding factors) without exposing them to the dapp.
 
-For full details on the privacy props and how to use them, see the [Privacy-Preserving Dapps guide](../../docs/privacy-preserving-dapps.md).
+For full details on the privacy props and how to use them, see the [Privacy-Preserving Dapps guide](/docs/privacy-preserving-dapps).
 
 ## Using the `useWallet` Hook
 
@@ -183,7 +183,7 @@ The `WalletMultiButton` component automatically:
 - Displays the connected wallet address when connected
 - Provides a dropdown menu to disconnect or switch wallets
 
-![Connect Wallet Modal](./docs/images/connect-modal.png)
+![Connect Wallet Modal](https://raw.githubusercontent.com/ProvableHQ/aleo-dev-toolkit/master/packages/aleo-wallet-adapter/docs/images/connect-modal.png)
 
 ### Manual Approach (Custom UI)
 
@@ -401,6 +401,8 @@ const unsubscribe = await subscribeTransactionStatus(
 Registration failures reject the promise. Later observation errors reach `onError`. A native registration failure does not switch to polling. An already-terminal snapshot can arrive before registration resolves. Subscriptions stop at terminal outcomes, including failures. Both React hooks also handle cleanup while registration is pending.
 
 `isTerminalTransactionStatus(status)` and `isSuccessfulTransactionStatus(status)` from `@provablehq/aleo-types` share known status checks, ignoring case and surrounding whitespace. Native updates can additionally mark a future status terminal with `isTerminal: true`; an unknown status is never assumed successful.
+
+Adapters normalize provider-specific states before observation. Fox's `Completed` stays `pending` until confirmation, and `Unaccepted` becomes `failed`.
 
 `transactionStatus(handle)` remains a single request. Calling it once does not install a subscription or a recurring poll. Custom adapters that do not extend `BaseAleoWalletAdapter` must implement `subscribeTransactionStatus` to support these hooks.
 
@@ -656,7 +658,7 @@ The **Shield wallet** supports a set of advanced privacy features that let your 
 
 These features are opt-in and additive — existing dapps using literal string inputs continue to work unchanged.
 
-For a full guide including the permission model, `InputRequest` shapes, derived inputs, and error handling, see the [Privacy-Preserving Dapps guide](../../docs/privacy-preserving-dapps.md).
+For a full guide including the permission model, `InputRequest` shapes, derived inputs, and error handling, see the [Privacy-Preserving Dapps guide](/docs/privacy-preserving-dapps).
 
 ## 🎯 Complete Example
 

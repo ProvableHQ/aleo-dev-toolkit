@@ -3,6 +3,7 @@ import {
   hasInputRequest,
   Network,
   TransactionOptions,
+  TransactionStatus,
   TransactionStatusResponse,
 } from '@provablehq/aleo-types';
 import {
@@ -324,9 +325,16 @@ export class FoxWalletAdapter extends BaseAleoWalletAdapter {
         throw new WalletTransactionError('Could not get transaction status');
       }
 
-      return {
-        status: result.status,
-      };
+      const foxStatus = result.status.trim().toLowerCase();
+      // Fox reports Completed before on-chain inclusion.
+      const status =
+        foxStatus === 'completed'
+          ? TransactionStatus.PENDING
+          : foxStatus === 'unaccepted'
+            ? TransactionStatus.FAILED
+            : result.status;
+
+      return { status };
     } catch (error: Error | unknown) {
       throw new WalletTransactionError(
         error instanceof Error ? error.message : 'Failed to get transaction status',

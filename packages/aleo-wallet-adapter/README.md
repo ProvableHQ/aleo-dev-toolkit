@@ -398,6 +398,8 @@ Registration failures reject the promise. Later observation errors reach `onErro
 
 `isTerminalTransactionStatus(status)` and `isSuccessfulTransactionStatus(status)` from `@provablehq/aleo-types` share known status checks, ignoring case and surrounding whitespace. Native updates can additionally mark a future status terminal with `isTerminal: true`; an unknown status is never assumed successful.
 
+Adapters normalize provider-specific states before observation. Fox's `Completed` stays `pending` until confirmation, and `Unaccepted` becomes `failed`.
+
 `transactionStatus(handle)` remains a single request. Calling it once does not install a subscription or a recurring poll. Custom adapters that do not extend `BaseAleoWalletAdapter` must implement `subscribeTransactionStatus` to support these hooks.
 
 ## 💻 Deploying Programs
