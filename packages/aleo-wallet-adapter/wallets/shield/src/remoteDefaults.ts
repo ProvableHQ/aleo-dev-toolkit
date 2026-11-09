@@ -10,10 +10,19 @@ import type {
 export const DEFAULT_SHIELD_RELAY_URL = 'wss://relay.shield.app';
 
 /**
- * Custom-scheme connect URL. Universal links are not configured on the app
- * yet, so `https://app.shield.app/connect` will not open it.
+ * Custom-scheme connect URL. Stays the default until most Shield app installs
+ * register the verified link below: an older app does not claim it, so the
+ * link would open a 404 page instead of the app.
  */
 export const DEFAULT_SHIELD_DEEPLINK_BASE = 'shield://connect';
+
+/**
+ * Verified (universal / app) link connect URL. The OS hands it only to the
+ * signed Shield app, unlike `shield://`, which any installed app can claim.
+ * Connect params travel in the fragment, so they never reach the link host.
+ * Opt in with `remote: { deeplinkBase: SHIELD_VERIFIED_DEEPLINK_BASE }`.
+ */
+export const SHIELD_VERIFIED_DEEPLINK_BASE = 'https://connect.shield.app/connect';
 
 /**
  * Resolved remote config the adapter and `RemoteShieldWallet` consume. Public
@@ -46,7 +55,7 @@ export function resolveRemoteConfig(
   if (remote === false) return undefined;
   const overrides: ShieldRemoteConfig = typeof remote === 'object' ? remote : {};
   const deeplinkBase = overrides.deeplinkBase ?? DEFAULT_SHIELD_DEEPLINK_BASE;
-  assertCustomSchemeDeeplinkBase(deeplinkBase);
+  assertDeeplinkBase(deeplinkBase);
   return {
     ...overrides,
     relayUrl: overrides.relayUrl ?? DEFAULT_SHIELD_RELAY_URL,
@@ -56,31 +65,24 @@ export function resolveRemoteConfig(
 }
 
 /**
- * Refuse an `http(s):` deeplink base until connect params move to the URL
- * fragment.
+ * Accept a custom scheme or an `https:` verified link; refuse plain `http:`.
  *
- * The connect URL carries the bearer pairing `secret` in its query string.
- * On an `http(s):` base, a device without the app loads the fallback page and
- * sends that query string to the web server — access logs, proxies,
- * analytics. Anyone who reads it there can compute a valid handshake MAC and
- * claim the pairing before Shield does. Key pinning only protects a pairing
- * after its first handshake. A custom scheme never reaches a server.
- *
- * Lift this once shield-relay serializes http(s) params into the fragment and
- * the Shield app's parser (`parseRelayUri`) reads them there. See
- * ProvableHQ/shield-relay#12.
+ * On `https:` the relay protocol puts every connect param, the bearer pairing
+ * `secret` included, in the URL fragment, which the browser never sends to
+ * the link host. Plain `http:` can never be a verified link, so it can only
+ * open a web page that is not the app.
  */
-function assertCustomSchemeDeeplinkBase(deeplinkBase: string): void {
+function assertDeeplinkBase(deeplinkBase: string): void {
   let protocol: string;
   try {
     protocol = new URL(deeplinkBase).protocol;
   } catch {
     throw new Error(`Shield remote: invalid deeplinkBase "${deeplinkBase}"`);
   }
-  if (protocol === 'http:' || protocol === 'https:') {
+  if (protocol === 'http:') {
     throw new Error(
-      `Shield remote: deeplinkBase must be a custom scheme (e.g. ${DEFAULT_SHIELD_DEEPLINK_BASE}), ` +
-        `not ${protocol} — an http(s) link would send the pairing secret to the fallback web server`,
+      `Shield remote: deeplinkBase must be https (e.g. ${SHIELD_VERIFIED_DEEPLINK_BASE}) ` +
+        `or a custom scheme (e.g. ${DEFAULT_SHIELD_DEEPLINK_BASE}), not http:`,
     );
   }
 }

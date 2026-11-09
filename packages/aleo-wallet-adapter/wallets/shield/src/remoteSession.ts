@@ -104,24 +104,27 @@ export function isExpired(record: RestorableConnection, now = Date.now()): boole
 export function channelIdOf(connectUrl: string): string | undefined {
   try {
     const url = new URL(connectUrl);
-    const params = url.hash.length > 1 ? new URLSearchParams(url.hash.slice(1)) : url.searchParams;
+    const params = isWebUrl(url) ? new URLSearchParams(url.hash.slice(1)) : url.searchParams;
     return params.get('channelId') ?? undefined;
   } catch {
     return undefined;
   }
 }
 
+function isWebUrl(url: URL): boolean {
+  return url.protocol === 'http:' || url.protocol === 'https:';
+}
+
 /**
  * The link that brings the Shield app to the foreground for an existing
- * session, e.g. `shield://wake?channelId=…`.
+ * session: `shield://wake?channelId=…`, or on a verified-link base the sibling
+ * `/wake` path, e.g. `https://connect.shield.app/wake#channelId=…`.
  *
  * Carries the channel and nothing else: the wallet already holds the keys, and
- * the request itself goes over the channel. Opening any `shield://` link
- * foregrounds the app, and builds that predate the route ignore it, so it is
- * safe against every app version.
- *
- * Custom schemes only. An http(s) base would navigate this page away to a URL
- * that universal links do not route to the app yet.
+ * the request itself goes over the channel. On https the channel rides the
+ * fragment like every connect param, so it never reaches the link host.
+ * Undefined for an https base whose last path segment is not `connect`, which
+ * has no wake route to derive.
  */
 export function wakeUrlFor(deeplinkBase: string, channelId: string): string | undefined {
   let base: URL;
@@ -130,8 +133,13 @@ export function wakeUrlFor(deeplinkBase: string, channelId: string): string | un
   } catch {
     return undefined;
   }
-  if (base.protocol === 'http:' || base.protocol === 'https:') return undefined;
-  return `${base.protocol}//wake?channelId=${encodeURIComponent(channelId)}`;
+  if (!isWebUrl(base)) {
+    return `${base.protocol}//wake?channelId=${encodeURIComponent(channelId)}`;
+  }
+  const segments = base.pathname.replace(/\/+$/, '').split('/');
+  if (segments[segments.length - 1] !== 'connect') return undefined;
+  segments[segments.length - 1] = 'wake';
+  return `${base.origin}${segments.join('/')}#channelId=${encodeURIComponent(channelId)}`;
 }
 
 /**
