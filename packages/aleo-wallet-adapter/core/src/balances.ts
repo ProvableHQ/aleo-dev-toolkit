@@ -77,8 +77,11 @@ function plaintextOf(record: unknown): string | undefined {
 /**
  * The sum of the amounts in a token's records, as the base-unit string of a
  * private balance. Records that are spent or still pending are left out, so the
- * result is what can be spent now. Undefined when a record's amount cannot be
- * read (no plaintext, or the field withheld): a partial sum is not the balance.
+ * result is what can be spent now. A record Shield marks `provisional` counts: it
+ * is the output of a transaction the network accepted, which Shield's scanner has
+ * not indexed yet, and its inputs have already left the list. Undefined when a
+ * record's amount cannot be read (no plaintext, or the field withheld): a partial
+ * sum is not the balance.
  */
 export function sumRecordBalance(
   records: readonly unknown[],
@@ -89,7 +92,7 @@ export function sumRecordBalance(
   for (const record of records) {
     if (!record || typeof record !== 'object') continue;
     const meta = record as Record<string, unknown>;
-    if (meta.spent === true || meta.provisional === true) continue;
+    if (meta.spent === true) continue;
     if (typeof meta.status === 'string' && meta.status.toLowerCase() !== 'unspent') continue;
     const plaintext = plaintextOf(record);
     if (plaintext === undefined) return undefined;

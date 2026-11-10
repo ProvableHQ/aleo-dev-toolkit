@@ -49,12 +49,16 @@ describe('sumRecordBalance', () => {
     const records = [
       credits(5),
       credits(7, { spent: true }),
-      credits(11, { provisional: true }),
       credits(13, { status: 'pending' }),
       { spent: true },
       null,
     ];
     assert.equal(sumRecordBalance(records, ALEO_BALANCE_TOKEN), '5');
+  });
+
+  it('counts a provisional record, the accepted output that Shield has not indexed yet', () => {
+    const records = [credits(5), credits(11, { provisional: true })];
+    assert.equal(sumRecordBalance(records, ALEO_BALANCE_TOKEN), '16');
   });
 
   it('gives no sum when a record`s amount cannot be read, rather than a partial one', () => {
