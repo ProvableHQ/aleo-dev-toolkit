@@ -1,3 +1,4 @@
+import { buildWakeUrl } from './relay/linkForm';
 import type {
   ShieldRemoteConfig,
   ShieldRemoteTransportLike,
@@ -73,16 +74,22 @@ export function resolveRemoteConfig(
  * open a web page that is not the app.
  */
 function assertDeeplinkBase(deeplinkBase: string): void {
-  let protocol: string;
+  let url: URL;
   try {
-    protocol = new URL(deeplinkBase).protocol;
+    url = new URL(deeplinkBase);
   } catch {
     throw new Error(`Shield remote: invalid deeplinkBase "${deeplinkBase}"`);
   }
-  if (protocol === 'http:') {
+  if (url.protocol === 'http:') {
     throw new Error(
       `Shield remote: deeplinkBase must be https (e.g. ${SHIELD_VERIFIED_DEEPLINK_BASE}) ` +
         `or a custom scheme (e.g. ${DEFAULT_SHIELD_DEEPLINK_BASE}), not http:`,
+    );
+  }
+  // Same rule the wake link is derived by, so a base that could not wake the app fails here.
+  if (url.protocol === 'https:' && buildWakeUrl(deeplinkBase, 'check') === undefined) {
+    throw new Error(
+      `Shield remote: an https deeplinkBase must end with /connect (e.g. ${SHIELD_VERIFIED_DEEPLINK_BASE})`,
     );
   }
 }

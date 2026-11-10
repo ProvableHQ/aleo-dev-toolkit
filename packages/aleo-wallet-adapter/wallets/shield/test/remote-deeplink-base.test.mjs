@@ -27,3 +27,7 @@ test('refuses a plain http base, which can never be a verified link', () => {
 test('refuses a base that is not a URL', () => {
   assert.throws(withBase('connect.shield.app/connect'), /invalid deeplinkBase/);
 });
+
+test('refuses an https base with no wake route, rather than failing silently later', () => {
+  assert.throws(withBase('https://connect.shield.app/pair'), /must end with \/connect/);
+});

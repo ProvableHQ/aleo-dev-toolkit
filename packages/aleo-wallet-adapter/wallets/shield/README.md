@@ -71,7 +71,9 @@ is labelling, not identification.
 > the `shield://` custom scheme, and the app's QR scanner currently only
 > reads addresses. A phone camera therefore
 > cannot reliably act on a scanned pairing code. The same-device mobile
-> deeplink — the flow this fallback exists for — works today.
+> deeplink — the flow this fallback exists for — works today. With
+> `deeplinkBase: SHIELD_VERIFIED_DEEPLINK_BASE` the QR code carries an https
+> verified link, which the phone camera opens straight in the Shield app.
 
 On plain mobile Safari/Chrome there is no injected `window.shield`. Zero-config
 construction still pairs with the Shield **app** via a deeplink and an

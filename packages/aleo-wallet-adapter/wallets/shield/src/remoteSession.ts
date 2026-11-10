@@ -1,5 +1,6 @@
 import { Network } from '@provablehq/aleo-types';
 import { WalletDecryptPermission } from '@provablehq/aleo-wallet-standard';
+import { buildWakeUrl, linkParams } from './relay/linkForm';
 import type { ShieldConnectOptions } from './types';
 
 /**
@@ -97,50 +98,21 @@ export function isExpired(record: RestorableConnection, now = Date.now()): boole
   return now - record.pairedAt >= REMOTE_SESSION_TTL_MS;
 }
 
-/**
- * The relay channel a connect URL pairs on. The custom-scheme form carries it
- * in the query string, the http(s) form in the fragment.
- */
+/** The relay channel a connect URL pairs on, read by the link-form rule the relay protocol owns. */
 export function channelIdOf(connectUrl: string): string | undefined {
   try {
-    const url = new URL(connectUrl);
-    const params = isWebUrl(url) ? new URLSearchParams(url.hash.slice(1)) : url.searchParams;
-    return params.get('channelId') ?? undefined;
+    return linkParams(new URL(connectUrl)).get('channelId') ?? undefined;
   } catch {
     return undefined;
   }
-}
-
-function isWebUrl(url: URL): boolean {
-  return url.protocol === 'http:' || url.protocol === 'https:';
 }
 
 /**
  * The link that brings the Shield app to the foreground for an existing
- * session: `shield://wake?channelId=…`, or on a verified-link base the sibling
- * `/wake` path, e.g. `https://connect.shield.app/wake#channelId=…`.
- *
- * Carries the channel and nothing else: the wallet already holds the keys, and
- * the request itself goes over the channel. On https the channel rides the
- * fragment like every connect param, so it never reaches the link host.
- * Undefined for an https base whose last path segment is not `connect`, which
- * has no wake route to derive.
+ * session: `shield://wake?channelId=…`, or `https://connect.shield.app/wake#channelId=…`
+ * on a verified-link base. Undefined when the base has no wake route.
  */
-export function wakeUrlFor(deeplinkBase: string, channelId: string): string | undefined {
-  let base: URL;
-  try {
-    base = new URL(deeplinkBase);
-  } catch {
-    return undefined;
-  }
-  if (!isWebUrl(base)) {
-    return `${base.protocol}//wake?channelId=${encodeURIComponent(channelId)}`;
-  }
-  const segments = base.pathname.replace(/\/+$/, '').split('/');
-  if (segments[segments.length - 1] !== 'connect') return undefined;
-  segments[segments.length - 1] = 'wake';
-  return `${base.origin}${segments.join('/')}#channelId=${encodeURIComponent(channelId)}`;
-}
+export const wakeUrlFor = buildWakeUrl;
 
 /**
  * Whether the wallet shows an approval for this request, and so has to be in
