@@ -105,9 +105,9 @@ export abstract class BaseAleoWalletAdapter
   }
 
   /**
-   * Tracks `options.readAddress` for adapters that go through the wallet-standard
-   * feature surface. Concrete extension adapters may forward options directly to
-   * the provider and let the wallet enforce the permission boundary itself.
+   * Tracks `options.readAddress` to guard address-revealing operations.
+   * Adapters overriding connect must call setReadAddressFromConnectOptions(options)
+   * after a successful connection and before emitting the connect event.
    */
   protected _readAddress: boolean = true;
 
@@ -198,6 +198,8 @@ export abstract class BaseAleoWalletAdapter
     if (!this._wallet || !this.account) {
       throw new WalletNotConnectedError();
     }
+    // Aleo signatures expose the compute key from which the address can be derived.
+    this.assertReadAddressAllowed('signMessage');
     const feature = this._wallet.features[WalletFeatureName.SIGN];
     if (!feature || !feature.available) {
       throw new WalletFeatureNotAvailableError(WalletFeatureName.SIGN);

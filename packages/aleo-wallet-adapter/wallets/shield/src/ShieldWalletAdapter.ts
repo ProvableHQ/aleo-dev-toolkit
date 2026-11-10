@@ -418,6 +418,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
       // leaves the adapter holding an unusable wallet.
       this._shieldWallet = wallet;
       this._publicKey = publicKey;
+      this.setReadAddressFromConnectOptions(options);
       this._onNetworkChange(network);
 
       this._setupListeners();
@@ -476,6 +477,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     if (!this.account) {
       throw new WalletNotConnectedError();
     }
+    this.assertReadAddressAllowed('signMessage');
 
     try {
       // Pass only the parameters expected by the Shield SDK
@@ -845,6 +847,7 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     this._shieldWallet = undefined;
     this._publicKey = '';
     this.account = undefined;
+    this.resetReadAddress();
     this.emit('disconnect');
   };
 
