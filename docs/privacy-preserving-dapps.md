@@ -28,6 +28,7 @@ and the provider wiring in [`examples/react-app/src/App.tsx`](../examples/react-
     - [`algorithmsAllowed`](#algorithmsallowed)
   - [5. Legacy apps and the version boundary](#5-legacy-apps-and-the-version-boundary)
   - [6. Reading records](#6-reading-records)
+    - [Records change between reads](#records-change-between-reads)
   - [7. Composing transaction inputs](#7-composing-transaction-inputs)
     - [Choosing the right `type: "record"` shape](#choosing-the-right-type-record-shape)
     - [Validating early](#validating-early)
@@ -381,6 +382,32 @@ expose them. Finally, non-Shield wallets ignore the envelope contract and return
 objects, so you should treat `recordView` and `uid` as optional and feature-detect before relying on
 them.
 
+### Records change between reads
+
+The list that `requestRecords` returns is a snapshot. The wallet keeps working with the same records
+after it answers:
+
+- Transactions from the wallet itself and from other dapps spend records.
+- Shield's Auto-Join merges small records of a token in the background. While a merge runs, the list
+  still contains the records being merged. Once the network accepts the merge, the list contains the
+  merged record instead.
+- The outputs of a transaction that the network has accepted can appear before the wallet's scanner
+  indexes them.
+
+Treat the list as a view of what the user holds, not as a reservation:
+
+- For balance and pre-flight checks, read the amount from `recordView` instead of decrypting each
+  record.
+- To spend, send a `filters` request. The wallet then picks a record that is unspent when the user
+  approves. Shield also pauses Auto-Join while such an approval is open, and lets a running merge
+  finish first.
+- A record pinned by `uid` can be spent before the user approves, and the transaction then fails.
+  Read the records again and build a new request instead of retrying the same `uid`.
+
+There is no signal that tells a dapp that Auto-Join is running, and a dapp does not need one. A
+`filters` request cannot race a merge, and the merged record is in the list as soon as the network
+accepts the merge.
+
 ---
 
 ## 7. Composing transaction inputs
@@ -428,8 +455,9 @@ because every `type: "record"` slot names the record type as `program/recordname
 that is raised before the request ever reaches the wallet.
 
 Beyond that, choose the shape based on intent. Use the `uid` form when you have already called
-`requestRecords` and want one exact record. Use the `filters` form when you want the wallet to pick
-any unspent record that matches your conditions. Supplying both `uid` and `filters` is an error and
+`requestRecords` and want one exact record; that record can be spent before the user approves (see
+[Records change between reads](#records-change-between-reads)). Use the `filters` form when you want
+the wallet to pick any unspent record that matches your conditions. Supplying both `uid` and `filters` is an error and
 throws `WalletInputRequestInvalidError` on the client.
 
 ```ts
