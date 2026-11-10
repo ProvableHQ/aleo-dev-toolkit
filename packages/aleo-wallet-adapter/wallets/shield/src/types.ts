@@ -109,12 +109,12 @@ export interface ShieldRemoteConfig {
    */
   relayUrl?: string;
   /**
-   * Defaults to `shield://connect`. Universal links are not configured on
-   * the app yet, so `https://app.shield.app/connect` will not open it; the
-   * dev and preview channels use `shield-dev://` and `shield-preview://`.
-   * Must be a custom scheme: an `http(s):` base throws. The connect URL
-   * carries the pairing secret in its query string, and an http(s) link
-   * would send it to the fallback web server.
+   * Defaults to `shield://connect`. `SHIELD_VERIFIED_DEEPLINK_BASE`
+   * (`https://connect.shield.app/connect`) is the verified link only the
+   * signed Shield app can open; its connect params travel in the fragment.
+   * Preview and dev builds use `shield-preview://` / `shield-dev://`, or
+   * `https://connect.shield.app/preview/connect` / `…/dev/connect`.
+   * Plain `http:` throws.
    */
   deeplinkBase?: string;
   /** Per-request timeout. The transport's default is generous — proving is slow. */

@@ -67,11 +67,13 @@ is labelling, not identification.
 > `{ remote: false }` for injected-only behavior — everything else in this
 > package is unaffected.
 >
-> **Desktop QR scanning is not wired up yet.** The connect URL uses the
-> `shield://` custom scheme (the app declares no universal links), and the
-> app's QR scanner currently only reads addresses. A phone camera therefore
+> **Desktop QR scanning is not wired up yet.** The connect URL defaults to
+> the `shield://` custom scheme, and the app's QR scanner currently only
+> reads addresses. A phone camera therefore
 > cannot reliably act on a scanned pairing code. The same-device mobile
-> deeplink — the flow this fallback exists for — works today.
+> deeplink — the flow this fallback exists for — works today. With
+> `deeplinkBase: SHIELD_VERIFIED_DEEPLINK_BASE` the QR code carries an https
+> verified link, which the phone camera opens straight in the Shield app.
 
 On plain mobile Safari/Chrome there is no injected `window.shield`. Zero-config
 construction still pairs with the Shield **app** via a deeplink and an
@@ -96,9 +98,13 @@ new ShieldWalletAdapter({
 });
 ```
 
-`deeplinkBase` must be a custom scheme. An `http(s):` base throws, because
-the connect URL carries the pairing secret in its query string, and a device
-without the app would send it to the fallback web server.
+`deeplinkBase` is a custom scheme or an `https:` verified link; plain `http:`
+throws. `SHIELD_VERIFIED_DEEPLINK_BASE` (`https://connect.shield.app/connect`)
+opens only the signed Shield app, where any installed app can claim
+`shield://`. On https every connect param, the pairing secret included,
+travels in the URL fragment, so it never reaches the link host. It is opt-in
+until most installs run a Shield app version that registers the link: an older
+app does not claim it, and the link opens a 404 instead.
 
 `remote: false` keeps injected-only behavior (`NotDetected` when no extension
 is present). `remote: true` is equivalent to omitting `remote`.

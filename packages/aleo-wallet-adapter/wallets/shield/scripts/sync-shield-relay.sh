@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # Bump after merging upstream changes (use the shield-relay main commit).
-PIN="dff4c2d"
+PIN="5bdacc5"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -54,11 +54,20 @@ header() {
 
 mkdir -p "$OUT_DIR"
 
+# Its own file, with no imports, so the adapter can use the link-form rule
+# without loading the protocol crypto that the transport lazy-loads.
 {
-  header "packages/protocol/src: types.ts + crypto.ts + connectUrl.ts"
+  header "packages/protocol/src/linkForm.ts"
+  cat "$SRC/protocol/src/linkForm.ts"
+} > "$OUT_DIR/linkForm.ts"
+
+{
+  header "packages/protocol/src: types.ts + crypto.ts + connectUrl.ts (linkForm.ts imported)"
+  echo "export * from './linkForm';"
   cat "$SRC/protocol/src/types.ts"
   grep -vE "from '\\./(types|connectUrl)\\.js'" "$SRC/protocol/src/crypto.ts"
-  grep -vE "from '\\./(types|crypto)\\.js'" "$SRC/protocol/src/connectUrl.ts"
+  grep -vE "from '\\./(types|crypto)\\.js'" "$SRC/protocol/src/connectUrl.ts" |
+    sed "s|from './linkForm.js'|from './linkForm'|"
 } > "$OUT_DIR/protocol.ts"
 
 {
@@ -66,6 +75,6 @@ mkdir -p "$OUT_DIR"
   sed "s|'@shield/relay-protocol'|'./protocol'|" "$SRC/dapp-client/src/transport.ts"
 } > "$OUT_DIR/transport.ts"
 
-(cd "$ROOT_DIR" && pnpm exec prettier --write "$OUT_DIR/protocol.ts" "$OUT_DIR/transport.ts" >/dev/null)
+(cd "$ROOT_DIR" && pnpm exec prettier --write "$OUT_DIR/linkForm.ts" "$OUT_DIR/protocol.ts" "$OUT_DIR/transport.ts" >/dev/null)
 
 echo "vendored shield-relay@$PIN into $OUT_DIR"

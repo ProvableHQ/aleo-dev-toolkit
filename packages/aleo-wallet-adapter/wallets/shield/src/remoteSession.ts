@@ -1,5 +1,6 @@
 import { Network } from '@provablehq/aleo-types';
 import { WalletDecryptPermission } from '@provablehq/aleo-wallet-standard';
+import { buildWakeUrl, linkParams } from './relay/linkForm';
 import type { ShieldConnectOptions } from './types';
 
 /**
@@ -97,15 +98,10 @@ export function isExpired(record: RestorableConnection, now = Date.now()): boole
   return now - record.pairedAt >= REMOTE_SESSION_TTL_MS;
 }
 
-/**
- * The relay channel a connect URL pairs on. The custom-scheme form carries it
- * in the query string, the http(s) form in the fragment.
- */
+/** The relay channel a connect URL pairs on, read by the link-form rule the relay protocol owns. */
 export function channelIdOf(connectUrl: string): string | undefined {
   try {
-    const url = new URL(connectUrl);
-    const params = url.hash.length > 1 ? new URLSearchParams(url.hash.slice(1)) : url.searchParams;
-    return params.get('channelId') ?? undefined;
+    return linkParams(new URL(connectUrl)).get('channelId') ?? undefined;
   } catch {
     return undefined;
   }
@@ -113,26 +109,10 @@ export function channelIdOf(connectUrl: string): string | undefined {
 
 /**
  * The link that brings the Shield app to the foreground for an existing
- * session, e.g. `shield://wake?channelId=…`.
- *
- * Carries the channel and nothing else: the wallet already holds the keys, and
- * the request itself goes over the channel. Opening any `shield://` link
- * foregrounds the app, and builds that predate the route ignore it, so it is
- * safe against every app version.
- *
- * Custom schemes only. An http(s) base would navigate this page away to a URL
- * that universal links do not route to the app yet.
+ * session: `shield://wake?channelId=…`, or `https://connect.shield.app/wake#channelId=…`
+ * on a verified-link base. Undefined when the base has no wake route.
  */
-export function wakeUrlFor(deeplinkBase: string, channelId: string): string | undefined {
-  let base: URL;
-  try {
-    base = new URL(deeplinkBase);
-  } catch {
-    return undefined;
-  }
-  if (base.protocol === 'http:' || base.protocol === 'https:') return undefined;
-  return `${base.protocol}//wake?channelId=${encodeURIComponent(channelId)}`;
-}
+export const wakeUrlFor = buildWakeUrl;
 
 /**
  * Whether the wallet shows an approval for this request, and so has to be in
