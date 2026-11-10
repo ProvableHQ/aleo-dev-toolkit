@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # Bump after merging upstream changes (use the shield-relay main commit).
-PIN="dff4c2d"
+PIN="4b4d529"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
