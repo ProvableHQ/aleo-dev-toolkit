@@ -197,7 +197,7 @@ export class WalletInputRequestInvalidError extends WalletError {
 
 /**
  * Thrown when a dapp tries to call a method that the wallet refuses while
- * the connection was made with `readAddress: false` (e.g. `decrypt`,
+ * the connection was made with `readAddress: false` (e.g. `signMessage`, `decrypt`,
  * `requestRecords`, `transitionViewKeys`, `requestTransactionHistory`).
  */
 export class WalletAddressWithheldError extends WalletError {

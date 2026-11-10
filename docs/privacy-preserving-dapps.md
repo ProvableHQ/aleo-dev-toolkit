@@ -297,6 +297,13 @@ few constraints on such a connection.
 - The methods `decrypt`, `requestRecords` with `includePlaintext: true`, `transitionViewKeys`, and
   `requestTransactionHistory` all throw `WalletAddressWithheldError` on this connection, and
   `useWallet().address` is `null`.
+- `signMessage` also throws `WalletAddressWithheldError` before requesting a signature from the
+  wallet. Aleo signatures expose a compute key from which the signer's address can be derived.
+
+Custom adapters extending `BaseAleoWalletAdapter` that override `connect` must call
+`this.setReadAddressFromConnectOptions(options)` after connecting successfully and before emitting
+`connect`. Signing overrides must call `this.assertReadAddressAllowed('signMessage')` before
+requesting a signature. Call `this.resetReadAddress()` when clearing the disconnected account.
 
 ### `algorithmsAllowed`
 
