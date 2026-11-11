@@ -5,6 +5,8 @@ import {
   isTerminalTransactionStatus,
   KNOWN_ALGORITHMS,
   Network,
+  AddressEncoding,
+  AddressEncodingRequest,
   PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
@@ -50,6 +52,11 @@ import { buildDappMetadata } from './dappMetadata';
 import { isMobileUserAgent } from './isMobileUserAgent';
 import { resolveRemoteConfig, type ResolvedShieldRemoteConfig } from './remoteDefaults';
 import { SHIELDED_USDCX_MINT_FEATURE, shieldedUsdcxMintPreparation } from './shieldedUsdcx';
+import {
+  ADDRESS_ENCODING_FEATURE,
+  addressEncoding,
+  addressEncodingRequest,
+} from './addressEncoding';
 
 /**
  * A relay wallet's answer to a method it does not have (JSON-RPC 4200). Read
@@ -757,6 +764,26 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
         );
       }
     } catch (error: Error | unknown) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /** Discovered from the actual provider, including when it changes after pairing. */
+  get supportsAddressEncoding(): boolean {
+    return providerHasMethod(this.discoverableProvider, 'requestAddressEncoding');
+  }
+
+  async requestAddressEncoding(request: AddressEncodingRequest): Promise<AddressEncoding> {
+    if (!this.account || !this._shieldWallet) throw new WalletNotConnectedError();
+    const wallet = this._shieldWallet;
+    if (!providerHasMethod(wallet, 'requestAddressEncoding')) {
+      throw new WalletFeatureNotAvailableError(ADDRESS_ENCODING_FEATURE);
+    }
+    const payload = addressEncodingRequest(request);
+    try {
+      return addressEncoding(await wallet.requestAddressEncoding(payload));
+    } catch (error) {
       this.emit('error', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }

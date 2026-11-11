@@ -3,6 +3,8 @@ import {
   BalancesResult,
   GetBalancesParams,
   Network,
+  AddressEncoding,
+  AddressEncodingRequest,
   PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
@@ -221,6 +223,10 @@ export interface WalletAdapterProps<Name extends string = string> {
    * No connection required.
    */
   algorithmsSupported: () => Promise<string[]>;
+
+  /** Optional bridge-independent address commitment request. */
+  readonly supportsAddressEncoding?: boolean;
+  requestAddressEncoding?: (request: AddressEncodingRequest) => Promise<AddressEncoding>;
 
   /** Optional bridge capability; legacy wallets may omit it. */
   readonly supportsShieldedUsdcxMint?: boolean;

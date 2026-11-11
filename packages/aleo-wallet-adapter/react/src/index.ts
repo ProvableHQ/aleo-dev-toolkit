@@ -7,3 +7,5 @@ export type {
   TransactionStatusSubscription,
   TransactionStatusUpdate,
 } from '@provablehq/aleo-types';
+
+export type { AddressEncoding, AddressEncodingRequest } from '@provablehq/aleo-types';

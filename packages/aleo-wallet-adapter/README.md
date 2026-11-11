@@ -732,6 +732,17 @@ export const App: FC = () => {
 };
 ```
 
+## Generic address encoding
+
+Compatible wallets expose `useWallet().requestAddressEncoding({ network, recipient? })`
+and `supportsAddressEncoding`. The request returns only `{ commitmentHex }` and
+requires no bridge or warp route. Each successful request issues a fresh commitment;
+keep its returned encoding before starting a deposit. Older wallets report the
+capability as unavailable.
+
+See the [address encoding guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/address-encoding.md)
+for connection requirements, Hyperlane packing, and private claim input order.
+
 ## Shield XReserve mint preparation
 
 Compatible Shield extensions expose `useWallet().prepareShieldedUsdcxMint()` and

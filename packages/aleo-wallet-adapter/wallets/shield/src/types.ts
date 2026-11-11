@@ -2,6 +2,8 @@ import {
   BalancesResult,
   GetBalancesParams,
   Network,
+  AddressEncoding,
+  AddressEncodingRequest,
   PrepareShieldedUsdcxMintRequest,
   PreparedShieldedUsdcxMint,
   TransactionOptions,
@@ -253,6 +255,8 @@ export interface ShieldWalletEvents {
 export interface ShieldWallet extends EventEmitter<ShieldWalletEvents> {
   publicKey?: string;
   algorithmsSupported?(): Promise<string[]>;
+  /** Public commitment issuance; a route or destination program is not required. */
+  requestAddressEncoding?(request: AddressEncodingRequest): Promise<AddressEncoding>;
   prepareShieldedUsdcxMint?(
     request: PrepareShieldedUsdcxMintRequest,
   ): Promise<PreparedShieldedUsdcxMint>;
