@@ -14,6 +14,7 @@ const {
 } = require('../packages/aleo-wallet-adapter/wallets/shield/dist/index.js');
 const { WalletDecryptPermission } = require('../packages/aleo-wallet-standard/dist/index.js');
 const request = () => ({ network: Network.TESTNET });
+const recipient = 'aleo1c4ymujuysflp8uurmk5n8zrquur9pyqdhz2ty9s82prs96eydqpsfrahgf';
 const response = { commitmentHex: 'ab'.repeat(32) };
 function fixture({ encode = async () => response, supported = true } = {}) {
   const calls = [];
@@ -65,6 +66,12 @@ test('requires connection and the actual provider capability', async () => {
   await connect();
   await assert.rejects(adapter.requestAddressEncoding(request()), WalletFeatureNotAvailableError);
 });
+test('does not advertise methods synthesized by a legacy mobile proxy', () => {
+  const { adapter, provider } = fixture({ supported: false });
+  Object.setPrototypeOf(provider, new Proxy({}, { get: () => async () => response }));
+  assert.equal(typeof provider.requestAddressEncoding, 'function');
+  assert.equal(adapter.supportsAddressEncoding, false);
+});
 test('requires no route or bridge grant and returns only the public commitment', async () => {
   const { adapter, calls, connect } = fixture({
     encode: async () => ({ ...response, secretNonce: 'private', counter: 12, recipient: 'hidden' }),
@@ -76,9 +83,7 @@ test('requires no route or bridge grant and returns only the public commitment',
 test('copies supported request fields without exposing caller objects to provider mutations', async () => {
   const input = Object.freeze({
     ...request(),
-    recipient: 'aleo1recipient',
-    bridge: 'hyperlane',
-    program: 'warp.aleo',
+    recipient,
   });
   const { adapter, calls, connect } = fixture({
     encode: async payload => {
@@ -88,9 +93,19 @@ test('copies supported request fields without exposing caller objects to provide
   });
   await connect();
   await adapter.requestAddressEncoding(input);
-  assert.equal(input.recipient, 'aleo1recipient');
-  assert.equal(Object.hasOwn(calls[0], 'bridge'), false);
-  assert.equal(Object.hasOwn(calls[0], 'program'), false);
+  assert.equal(input.recipient, recipient);
+  assert.deepEqual(calls, [{ network: Network.TESTNET, recipient: 'changed' }]);
+});
+test('forwards mainnet and testnet requests with an explicit Aleo recipient', async () => {
+  const { adapter, calls, connect } = fixture();
+  await connect();
+  for (const network of [Network.MAINNET, Network.TESTNET]) {
+    assert.deepEqual(await adapter.requestAddressEncoding({ network, recipient }), response);
+  }
+  assert.deepEqual(calls, [
+    { network: Network.MAINNET, recipient },
+    { network: Network.TESTNET, recipient },
+  ]);
 });
 test('rejects malformed requests before contacting the wallet', async () => {
   const { adapter, calls, connect } = fixture();
@@ -98,11 +113,23 @@ test('rejects malformed requests before contacting the wallet', async () => {
   for (const input of [
     undefined,
     null,
+    'testnet',
+    [],
+    Object.assign([], request()),
     {},
     { network: Network.CANARY },
     { ...request(), recipient: '' },
     { ...request(), recipient: 42 },
     { ...request(), recipient: 'a'.repeat(129) },
+    { ...request(), recipient: 'aleo1recipient' },
+    { ...request(), recipient: recipient.toUpperCase() },
+    { ...request(), recipient: 'aleo1' + 'b'.repeat(58) },
+    { ...request(), recipient: recipient.slice(0, -1) },
+    { ...request(), recipient: recipient + 'q' },
+    { ...request(), bridge: 'hyperlane' },
+    { ...request(), program: 'warp.aleo' },
+    { ...request(), amount: '100' },
+    { ...request(), recipient, requestId: 'deposit-1' },
   ]) {
     await assert.rejects(adapter.requestAddressEncoding(input), WalletInputRequestInvalidError);
   }

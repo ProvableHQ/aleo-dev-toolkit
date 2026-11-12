@@ -3,15 +3,24 @@ import { WalletError, WalletInputRequestInvalidError } from '@provablehq/aleo-wa
 
 export const ADDRESS_ENCODING_FEATURE = 'shield:request-address-encoding';
 
-/** Snapshot only supported public fields; bridge hints never reach the wallet. */
+/** Match core's strict wire schema, then snapshot the supported public fields. */
 export function addressEncodingRequest(request: AddressEncodingRequest): AddressEncodingRequest {
-  if (!request || (request.network !== Network.MAINNET && request.network !== Network.TESTNET)) {
-    throw new WalletInputRequestInvalidError('Address encoding requires mainnet or testnet.');
+  if (!request || typeof request !== 'object' || Array.isArray(request)) {
+    throw new WalletInputRequestInvalidError('Address encoding requires a request object.');
+  }
+  if (Object.keys(request).some(key => key !== 'network' && key !== 'recipient')) {
+    throw new WalletInputRequestInvalidError(
+      'Address encoding accepts only network and recipient.',
+    );
   }
   const { network, recipient } = request;
+  if (network !== Network.MAINNET && network !== Network.TESTNET) {
+    throw new WalletInputRequestInvalidError('Address encoding requires mainnet or testnet.');
+  }
   if (
     recipient !== undefined &&
-    (typeof recipient !== 'string' || recipient.length === 0 || recipient.length > 128)
+    (typeof recipient !== 'string' ||
+      !/^aleo1[023456789acdefghjklmnpqrstuvwxyz]{58}$/.test(recipient))
   ) {
     throw new WalletInputRequestInvalidError('Address encoding recipient must be an Aleo address.');
   }

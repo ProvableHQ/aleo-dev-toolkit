@@ -1,9 +1,9 @@
 import type { Network } from './network';
 
-/** Each successful call requests a fresh commitment, independent of bridge or route. */
+/** Each successful call requests a fresh commitment. Only network and recipient are accepted. */
 export interface AddressEncodingRequest {
   network: Network.MAINNET | Network.TESTNET;
-  /** Omitted means the connected account. Validated by the wallet. */
+  /** Aleo address; omitted means the connected account. Validated by the wallet. */
   recipient?: string;
 }
 
