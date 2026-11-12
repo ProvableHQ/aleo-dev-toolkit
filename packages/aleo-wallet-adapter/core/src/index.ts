@@ -15,3 +15,5 @@ export type {
   PreparedShieldedUsdcxMint,
   ShieldedUsdcxMintPreparation,
 } from '@provablehq/aleo-types';
+
+export type { AddressEncoding, AddressEncodingRequest } from '@provablehq/aleo-types';
