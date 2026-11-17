@@ -33,18 +33,68 @@ wallet/network counter. Save the returned commitment before starting a deposit;
 calling this method again requests a new identity. This method does not prepare
 a deposit, submit a transaction, or grant permission to consume its private nonce.
 
-For the proposed Hyperlane verifier, interpret the first and last 16 bytes as little-endian `u128`
-values to form the `[u128; 2]` claimable mapping key. The agreed `claim_private`
-input order is `recipient`, gross `amount`, private `secret_nonce`, and public
-`unverified_fee_bps`: the private nonce belongs at zero-based input index 2.
-Claim execution needs the wallet's separate integration with an authorized
-deployed verifier. XReserve's existing preparation API and its nonce slot are
-unchanged.
+## Hyperlane recipient selection
 
-Generic issuance does not enable Hyperlane claims by itself. The sample verifier
-is not deployed or registered, and the current Hyperlane transfer path still
-encodes the recipient address directly. Using commitments there requires separate
-ABI and recovery integration with the final deployed verifier.
+The React example app exposes **Transactions → Hyperlane Recipient** at
+`/hyperlane`. Choose **Wallet-issued address encoding (private mint)**, request
+an encoding, and select it in **Saved address encoding**. The page saves the
+public encoding before producing arguments and only offers entries for the
+connected wallet, account, Aleo network, and intended recipient. A later request
+creates a new identity; selecting a saved entry reuses it without another wallet
+call. Saved encodings survive reloads. The alternative **Manual bytes32
+recipient** accepts an explicitly supplied `0x`-prefixed 32-byte recipient.
+
+For an EVM source, add the hex prefix without reversing or reinterpreting bytes:
+
+```ts
+import {
+  addressEncodingToHyperlaneRecipient,
+  createHyperlaneTransferRemoteArgs,
+} from '@provablehq/aleo-wallet-adapter-core';
+
+const recipient = addressEncodingToHyperlaneRecipient({ commitmentHex });
+const args = createHyperlaneTransferRemoteArgs({
+  destination: 1634493807, // Aleo's Hyperlane destination domain
+  recipient,
+  amount: '1000000', // Source token base units, returned as bigint
+});
+
+// Use your source-chain client with a compatible deployed private-mint route:
+await router.transferRemote(...args);
+```
+
+The ABI stays `transferRemote(uint32 destination, bytes32 recipient, uint256
+amount)`. The encoding replaces the serialized address in the **existing recipient
+input**; it is not a fourth input. The helper validates uint32/uint256 bounds and
+preserves the 32-byte order. Solana uses those same raw 32 bytes in its existing
+recipient slot. These source-transfer inputs apply to transfers **into Aleo**;
+Aleo-origin `transfer_remote` inputs are unchanged.
+
+The example prepares and copies arguments; it does not connect to an EVM wallet
+or submit funds. The private-mint warp routes are not deployed yet. A compatible
+route, source transaction construction, and redemption support are required
+before funding an encoded recipient. Public-mint calls continue using the
+serialized public address unless the caller explicitly chooses an encoding.
+
+For Aleo redemption, interpret each 16-byte half of `commitmentHex` as a
+little-endian `u128`: the first half is the low limb, the second the high limb.
+The planned warp-route ABI is:
+
+```leo
+fn redeem(
+    public commitment: [u128; 2],
+    public amount: u128,
+    private recipient: address,
+    private secret: scalar,
+    private recipient_merkle_proofs: [IARC22::MerkleProof; 2],
+) -> (dyn record, dyn record, Final)
+```
+
+The secret scalar belongs at zero-based input **3**. Issuance does not authorize
+secret fulfillment: the wallet still needs an explicitly authorized deployed
+program and compliant Merkle-proof fulfillment. Existing USDCx-specific nonce
+grants do not authorize a warp-route `redeem` call. XReserve's preparation API
+and nonce slot are unchanged.
 
 The Shield adapter detects the provider method itself. Older extensions and
 relay/mobile providers without that method report `supportsAddressEncoding ===

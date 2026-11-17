@@ -12,6 +12,7 @@ import {
   WalletPrivateInputsPage,
   RemoteConnectPage,
   ShieldedUsdcxMintPage,
+  HyperlaneRecipientPage,
   ViewKeysPage,
   TransactionHistoryPage,
 } from '@/pages';
@@ -45,6 +46,10 @@ export const routes: RouteObject[] = [
       {
         path: 'xreserve',
         element: <ShieldedUsdcxMintPage />,
+      },
+      {
+        path: 'hyperlane',
+        element: <HyperlaneRecipientPage />,
       },
       {
         path: 'deploy',

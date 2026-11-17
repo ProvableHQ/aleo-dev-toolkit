@@ -17,3 +17,8 @@ export type {
 } from '@provablehq/aleo-types';
 
 export type { AddressEncoding, AddressEncodingRequest } from '@provablehq/aleo-types';
+export {
+  addressEncodingToHyperlaneRecipient,
+  createHyperlaneTransferRemoteArgs,
+} from './hyperlane';
+export type { HyperlaneRecipient } from './hyperlane';
