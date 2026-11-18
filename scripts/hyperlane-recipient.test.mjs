@@ -100,6 +100,33 @@ test('validates destination and amount bounds without losing uint256 precision',
   }
 });
 
+test('rejects numeric and coercible amounts before constructing transfer arguments', () => {
+  for (const amount of [
+    1,
+    Number.MAX_SAFE_INTEGER,
+    Number('9007199254740993'),
+    1e18,
+    NaN,
+    Infinity,
+    null,
+    undefined,
+    true,
+    { toString: () => '1' },
+    ['1'],
+  ]) {
+    assert.throws(
+      () => createHyperlaneTransferRemoteArgs({ destination: 1634493807, recipient, amount }),
+      WalletInputRequestInvalidError,
+    );
+  }
+  for (const amount of ['9007199254740993', 9007199254740993n]) {
+    assert.equal(
+      createHyperlaneTransferRemoteArgs({ destination: 1634493807, recipient, amount })[2],
+      9007199254740993n,
+    );
+  }
+});
+
 test('persists separate public identities across reloads without erasing earlier requests', () => {
   const storage = storageFixture();
   saveAddressEncoding(storage, { ...entry, secret: 'must not persist', counter: 7 });

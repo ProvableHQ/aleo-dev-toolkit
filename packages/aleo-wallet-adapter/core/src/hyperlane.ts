@@ -33,6 +33,11 @@ export function createHyperlaneTransferRemoteArgs(params: {
       'Hyperlane recipient must be a 0x-prefixed bytes32 value.',
     );
   }
+  if (typeof params.amount !== 'string' && typeof params.amount !== 'bigint') {
+    throw new WalletInputRequestInvalidError(
+      'Hyperlane amount must be supplied as a string or bigint to preserve precision.',
+    );
+  }
   const amount = String(params.amount);
   if (!/^\d+$/.test(amount) || BigInt(amount) <= 0n || BigInt(amount) >= 1n << 256n) {
     throw new WalletInputRequestInvalidError(
