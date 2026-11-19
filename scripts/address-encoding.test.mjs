@@ -86,6 +86,15 @@ test('forwards the original request unchanged for wallet-owned validation', asyn
   await adapter.requestAddressEncoding(input);
   assert.equal(calls[0], input);
 });
+test('preserves the provider receiver for optional method calls', async () => {
+  const { adapter, provider, connect } = fixture();
+  provider.requestAddressEncoding = async function () {
+    assert.equal(this, provider);
+    return response;
+  };
+  await connect();
+  assert.deepEqual(await adapter.requestAddressEncoding(request()), response);
+});
 test('forwards mainnet and testnet requests with an explicit Aleo recipient', async () => {
   const { adapter, calls, connect } = fixture();
   await connect();
@@ -131,7 +140,13 @@ test('rejects malformed provider commitments', async () => {
   ]) {
     const { adapter, connect } = fixture({ encode: async () => invalid });
     await connect();
-    await assert.rejects(adapter.requestAddressEncoding(request()), WalletError);
+    const errors = [];
+    adapter.on('error', error => errors.push(error));
+    await assert.rejects(adapter.requestAddressEncoding(request()), error => {
+      assert.ok(error instanceof WalletError);
+      assert.equal(errors.at(-1), error);
+      return true;
+    });
   }
 });
 test('each call requests a fresh identity', async () => {

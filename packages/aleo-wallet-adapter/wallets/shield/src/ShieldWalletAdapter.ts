@@ -770,18 +770,30 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     return providerHasMethod(this.discoverableProvider, 'requestAddressEncoding');
   }
 
-  async requestAddressEncoding(request: AddressEncodingRequest): Promise<AddressEncoding> {
+  private async callOptionalProviderMethod<K extends keyof ShieldWallet, T>(
+    method: K,
+    feature: string,
+    call: (wallet: ShieldWallet & Required<Pick<ShieldWallet, K>>) => Promise<T>,
+  ): Promise<T> {
     if (!this.account || !this._shieldWallet) throw new WalletNotConnectedError();
     const wallet = this._shieldWallet;
-    if (!providerHasMethod(wallet, 'requestAddressEncoding')) {
-      throw new WalletFeatureNotAvailableError(ADDRESS_ENCODING_FEATURE);
+    if (!providerHasMethod(wallet, method)) {
+      throw new WalletFeatureNotAvailableError(feature);
     }
     try {
-      return addressEncoding(await wallet.requestAddressEncoding(request));
+      return await call(wallet);
     } catch (error) {
       this.emit('error', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
+  }
+
+  async requestAddressEncoding(request: AddressEncodingRequest): Promise<AddressEncoding> {
+    return this.callOptionalProviderMethod(
+      'requestAddressEncoding',
+      ADDRESS_ENCODING_FEATURE,
+      async wallet => addressEncoding(await wallet.requestAddressEncoding(request)),
+    );
   }
 
   /** Whether the active provider implements bridge preparation. */
@@ -792,25 +804,21 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   async prepareShieldedUsdcxMint(
     request: PrepareShieldedUsdcxMintRequest,
   ): Promise<ShieldedUsdcxMintPreparation> {
-    if (!this.account || !this._shieldWallet) throw new WalletNotConnectedError();
-    const wallet = this._shieldWallet;
-    if (!providerHasMethod(wallet, 'prepareShieldedUsdcxMint')) {
-      throw new WalletFeatureNotAvailableError(SHIELDED_USDCX_MINT_FEATURE);
-    }
-    const { requestId } = request;
-    if (typeof requestId !== 'string' || requestId.length === 0 || requestId.length > 128) {
-      throw new WalletInputRequestInvalidError(
-        'Shielded mint preparation requires a requestId (1–128 characters). ' +
-          'Create the request with createShieldedUsdcxMintRequest before calling the wallet.',
-      );
-    }
-    try {
-      const response = await wallet.prepareShieldedUsdcxMint({ ...request });
-      return shieldedUsdcxMintPreparation(response, requestId);
-    } catch (error) {
-      this.emit('error', error instanceof Error ? error : new Error(String(error)));
-      throw error;
-    }
+    return this.callOptionalProviderMethod(
+      'prepareShieldedUsdcxMint',
+      SHIELDED_USDCX_MINT_FEATURE,
+      async wallet => {
+        const { requestId } = request;
+        if (typeof requestId !== 'string' || requestId.length === 0 || requestId.length > 128) {
+          throw new WalletInputRequestInvalidError(
+            'Shielded mint preparation requires a requestId (1–128 characters). ' +
+              'Create the request with createShieldedUsdcxMintRequest before calling the wallet.',
+          );
+        }
+        const response = await wallet.prepareShieldedUsdcxMint({ ...request });
+        return shieldedUsdcxMintPreparation(response, requestId);
+      },
+    );
   }
 
   /** Query the provider when supported; retain the legacy fallback for older wallets. */
