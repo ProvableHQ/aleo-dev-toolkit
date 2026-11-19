@@ -1,6 +1,6 @@
 /**
  * Vendored from ProvableHQ/sdk `src/integrations/sealance/merkle-tree.ts`
- * (GPL-3.0). The published `@provablehq/sdk` package does not export this class.
+ * (MIT). The published `@provablehq/sdk` package does not export this class.
  * Imports point at the public SDK. Proof depth is chosen by the caller:
  * Shield uses 16, while the examples in the original file use 15.
  */

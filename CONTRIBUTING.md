@@ -303,7 +303,7 @@ We welcome contributions in many areas:
 
 ## License
 
-By contributing to this project, you agree that your contributions will be licensed under the same license as the project (GPL-3.0-or-later). See [LICENSE](LICENSE) for details.
+By contributing to this project, you agree that your contributions will be licensed under the same license as the project (MIT). See [LICENSE](LICENSE) for details.
 
 ---
 

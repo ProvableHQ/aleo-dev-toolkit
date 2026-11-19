@@ -2,7 +2,7 @@
   "name": "@provablehq/aleo-wallet-algorithms",
   "version": "0.2.2",
   "description": "Standard Aleo wallet algorithms with optional lifecycle and IndexedDB helpers",
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
