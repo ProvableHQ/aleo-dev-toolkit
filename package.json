@@ -28,7 +28,8 @@
     "deprecate-adaptors": "node scripts/deprecate-adaptors.mjs",
     "test:release": "node --test scripts/deprecate-adaptors.test.mjs",
     "test:xreserve": "node --test scripts/shielded-usdcx-mint.test.mjs",
-    "test:wallet-discovery": "node --test scripts/shield-wallet-discovery.test.mjs"
+    "test:wallet-discovery": "node --test scripts/shield-wallet-discovery.test.mjs",
+    "test:multichain": "pnpm --filter @provablehq/shield-multichain build && pnpm --filter @provablehq/shield-multichain test"
   },
   "dependencies": {
     "@provablehq/wasm": "^0.8.8"

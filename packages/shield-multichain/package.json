@@ -1,0 +1,26 @@
+{
+  "name": "@provablehq/shield-multichain",
+  "version": "0.0.0",
+  "description": "Optional Shield EVM and Solana provider client, separate from the Aleo adapter",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "license": "GPL-3.0-or-later",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "test": "node --test test/*.test.mjs",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rimraf dist"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "rimraf": "^5.0.5"
+  }
+}
