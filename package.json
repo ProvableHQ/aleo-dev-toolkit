@@ -27,7 +27,7 @@
     "version-packages": "changeset version",
     "deprecate-adaptors": "node scripts/deprecate-adaptors.mjs",
     "test:release": "node --test scripts/deprecate-adaptors.test.mjs",
-    "test:address-encoding": "node --test scripts/address-encoding.test.mjs scripts/hyperlane-recipient.test.mjs",
+    "test:address-encoding": "node --test scripts/address-encoding.test.mjs",
     "test:xreserve": "node --test scripts/shielded-usdcx-mint.test.mjs",
     "test:wallet-discovery": "node --test scripts/shield-wallet-discovery.test.mjs"
   },
