@@ -22,6 +22,7 @@ import {
   ShieldWalletEvents,
 } from './types';
 import { isMobileUserAgent } from './isMobileUserAgent';
+import type { SessionStorageLike } from './relay/transport';
 import type { ResolvedShieldRemoteConfig } from './remoteDefaults';
 import {
   channelIdOf,
@@ -30,6 +31,7 @@ import {
   isExpired,
   loadRestorableConnection,
   needsApproval,
+  relayStorage,
   saveRestorableConnection,
   wakeUrlFor,
 } from './remoteSession';
@@ -61,6 +63,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   publicKey?: string;
 
   private transport?: ShieldRemoteTransportLike;
+  private readonly storage: SessionStorageLike;
 
   /** The paired relay channel, read off the connect URL. Addresses the wake link. */
   private channelId?: string;
@@ -80,6 +83,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
 
   constructor(private readonly config: ResolvedShieldRemoteConfig) {
     super();
+    this.storage = relayStorage(config.origin);
   }
 
   async connect(
@@ -93,7 +97,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     try {
       // The wallet has already forgotten an expired session, so resuming it
       // would pair with nobody. Drop it and pair afresh.
-      const previous = loadRestorableConnection();
+      const previous = loadRestorableConnection(this.storage);
       if (previous && isExpired(previous)) {
         await this.loadTransport();
         this.teardown();
@@ -111,7 +115,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
       // A reload of a page that already connected is answered from the
       // record below, so the grant is withheld: handing it over would ask an
       // app that is in the background a question nobody waits for.
-      const restorable = loadRestorableConnection();
+      const restorable = loadRestorableConnection(this.storage);
       const mayRestore = restorable?.grant === grant && !isExpired(restorable);
 
       // The transport decides whether the grant rides in the link (a fresh
@@ -305,14 +309,14 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
    */
   private rememberConnection(resumed: boolean, grant: string): void {
     if (!this.channelId || this.publicKey === undefined) return;
-    const previous = loadRestorableConnection();
+    const previous = loadRestorableConnection(this.storage);
     const pairedAt = !resumed
       ? Date.now()
       : previous?.channelId === this.channelId
         ? previous.pairedAt
         : undefined;
     if (pairedAt === undefined) return;
-    saveRestorableConnection({
+    saveRestorableConnection(this.storage, {
       channelId: this.channelId,
       address: this.publicKey,
       grant,
@@ -328,6 +332,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     const transport = await this.config.transport({
       relayUrl: this.config.relayUrl,
       deeplinkBase: this.config.deeplinkBase,
+      origin: this.config.origin,
       requestTimeoutMs: this.config.requestTimeoutMs,
     });
 
@@ -340,11 +345,11 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     // Either change makes the recorded connect answer stale, so the next
     // connect has to ask the wallet again.
     transport.on('networkChanged', data => {
-      clearRestorableConnection();
+      clearRestorableConnection(this.storage);
       this.emit('networkChanged', data as Network);
     });
     transport.on('accountChanged', () => {
-      clearRestorableConnection();
+      clearRestorableConnection(this.storage);
       this.emit('accountChanged');
     });
     transport.on('walletPresenceChanged', present => {
@@ -380,7 +385,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     this.publicKey = undefined;
     this.channelId = undefined;
     this.decryptPermission = undefined;
-    clearRestorableConnection();
+    clearRestorableConnection(this.storage);
   }
 
   private async waitForPairing(transport: ShieldRemoteTransportLike): Promise<void> {

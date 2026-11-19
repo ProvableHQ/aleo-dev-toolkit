@@ -60,20 +60,16 @@ Neither field grants anything. The wallet keeps the origin as the primary
 identity on the screen and will not let a declared name displace it, so this
 is labelling, not identification.
 
-## Remote (relay) fallback — mobile browsers without an extension
+## Remote (relay) pairing
 
 > **Requires Shield app v1.11.2 (build 147) or newer.** Relay pairing ships
 > in the released app; earlier builds cannot answer a pairing link. Pass
 > `{ remote: false }` for injected-only behavior — everything else in this
 > package is unaffected.
 >
-> **Desktop QR scanning is not wired up yet.** The connect URL defaults to
-> the `shield://` custom scheme, and the app's QR scanner currently only
-> reads addresses. A phone camera therefore
-> cannot reliably act on a scanned pairing code. The same-device mobile
-> deeplink — the flow this fallback exists for — works today. With
-> `deeplinkBase: SHIELD_VERIFIED_DEEPLINK_BASE` the QR code carries an https
-> verified link, which the phone camera opens straight in the Shield app.
+> **For desktop QR pairing, use an HTTPS app link.** Set
+> `deeplinkBase: SHIELD_VERIFIED_DEEPLINK_BASE` and scan the QR with the
+> phone's camera. This requires Shield app v1.15.3 (build 169) or newer.
 
 On plain mobile Safari/Chrome there is no injected `window.shield`. Zero-config
 construction still pairs with the Shield **app** via a deeplink and an
@@ -105,6 +101,29 @@ opens only the signed Shield app, where any installed app can claim
 travels in the URL fragment, so it never reaches the link host. It is opt-in
 until most installs run a Shield app version that registers the link: an older
 app does not claim it, and the link opens a 404 instead.
+
+For a desktop WebView, set `remote.origin` to an HTTPS origin you control.
+This supplies the origin in relay messages when the WebView's own origin is
+local or uses a custom scheme. It is a self-reported identity on the wallet's
+approval screen. Pairings made with an explicit origin are saved under that
+origin within the WebView's existing storage.
+
+```tsx
+import {
+  SHIELD_VERIFIED_DEEPLINK_BASE,
+  ShieldWalletAdapter,
+} from '@provablehq/aleo-wallet-adapter-shield';
+
+const adapter = new ShieldWalletAdapter({
+  appName: 'Example Desktop',
+  remote: {
+    origin: 'https://example.com',
+    deeplinkBase: SHIELD_VERIFIED_DEEPLINK_BASE,
+  },
+});
+```
+
+Use the wallet modal or handle `connectUrl` to display the pairing QR.
 
 `remote: false` keeps injected-only behavior (`NotDetected` when no extension
 is present). `remote: true` is equivalent to omitting `remote`.

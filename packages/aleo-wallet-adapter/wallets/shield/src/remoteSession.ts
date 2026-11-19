@@ -1,6 +1,7 @@
 import { Network } from '@provablehq/aleo-types';
 import { WalletDecryptPermission } from '@provablehq/aleo-wallet-standard';
 import { buildWakeUrl, linkParams } from './relay/linkForm';
+import type { SessionStorageLike } from './relay/transport';
 import type { ShieldConnectOptions } from './types';
 
 /**
@@ -59,9 +60,11 @@ function stableStringify(value: unknown): string {
   );
 }
 
-export function loadRestorableConnection(): RestorableConnection | undefined {
+export function loadRestorableConnection(
+  storage: SessionStorageLike,
+): RestorableConnection | undefined {
   try {
-    const raw = storage()?.getItem(STORAGE_KEY);
+    const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return undefined;
     const record = JSON.parse(raw) as Partial<RestorableConnection>;
     if (
@@ -78,17 +81,20 @@ export function loadRestorableConnection(): RestorableConnection | undefined {
   }
 }
 
-export function saveRestorableConnection(record: RestorableConnection): void {
+export function saveRestorableConnection(
+  storage: SessionStorageLike,
+  record: RestorableConnection,
+): void {
   try {
-    storage()?.setItem(STORAGE_KEY, JSON.stringify(record));
+    storage.setItem(STORAGE_KEY, JSON.stringify(record));
   } catch {
     // Best effort: without the record a reload asks the wallet, as it always did.
   }
 }
 
-export function clearRestorableConnection(): void {
+export function clearRestorableConnection(storage: SessionStorageLike): void {
   try {
-    storage()?.removeItem(STORAGE_KEY);
+    storage.removeItem(STORAGE_KEY);
   } catch {
     // Nothing to clean up if storage is unavailable.
   }
@@ -144,6 +150,21 @@ export function needsApproval(
   }
 }
 
-function storage(): Storage | undefined {
-  return typeof localStorage !== 'undefined' ? localStorage : undefined;
+/** The wallet binds relay sessions to the origin declared at pairing. */
+export function relayStorage(origin?: string): SessionStorageLike {
+  const scopedKey = (key: string) => (origin === undefined ? key : `${key}:${origin}`);
+  return {
+    getItem: key => browserStorage()?.getItem(scopedKey(key)) ?? null,
+    setItem: (key, value) => browserStorage()?.setItem(scopedKey(key), value),
+    removeItem: key => browserStorage()?.removeItem(scopedKey(key)),
+  };
+}
+
+function browserStorage(): Storage | undefined {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    // Some WebViews deny access to persistent storage for their app origin.
+    return undefined;
+  }
 }

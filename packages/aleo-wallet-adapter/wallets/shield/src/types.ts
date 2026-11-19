@@ -24,6 +24,7 @@ import {
 export interface ShieldRemoteTransportOptions {
   relayUrl: string;
   deeplinkBase: string;
+  origin?: string;
   requestTimeoutMs?: number;
 }
 
@@ -90,15 +91,11 @@ export interface ShieldRemoteTransportLike {
 }
 
 /**
- * Remote (relay) fallback configuration — lets a dapp in a plain mobile
- * browser connect to the Shield app via deeplink + end-to-end-encrypted
- * relay when no injected `window.shield` provider exists.
+ * Connect to the Shield app over an end-to-end-encrypted relay using a
+ * same-device deeplink or a cross-device QR code.
  *
- * Requires Shield app v1.11.2 (build 147) or newer, where relay pairing
- * shipped. Note that desktop QR scanning is not usable end-to-end yet: the
- * connect URL is a `shield://` custom-scheme link and the app has no pairing
- * scanner, so a phone camera cannot reliably act on it. Same-device mobile
- * deeplinking — the case this exists for — works.
+ * Relay pairing requires Shield app v1.11.2 (build 147) or newer. For desktop
+ * QR pairing, use the verified HTTPS app link with v1.15.3 (build 169) or newer.
  */
 export interface ShieldRemoteConfig {
   /**
@@ -117,6 +114,13 @@ export interface ShieldRemoteConfig {
    * Plain `http:` throws.
    */
   deeplinkBase?: string;
+  /**
+   * Origin declared to the wallet for relay pairing and requests. Defaults to
+   * the browser's location.origin. An explicit value must be an HTTP(S) origin.
+   * Use an HTTPS origin you control for a desktop WebView in production.
+   * The wallet treats it as self-reported.
+   */
+  origin?: string;
   /** Per-request timeout. The transport's default is generous — proving is slow. */
   requestTimeoutMs?: number;
   /** How long connect() waits for the user to pair in the Shield app. Default 5 min. */

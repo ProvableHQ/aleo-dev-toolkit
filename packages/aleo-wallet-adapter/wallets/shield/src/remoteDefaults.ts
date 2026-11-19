@@ -1,4 +1,5 @@
 import { buildWakeUrl } from './relay/linkForm';
+import { relayStorage } from './remoteSession';
 import type {
   ShieldRemoteConfig,
   ShieldRemoteTransportLike,
@@ -43,7 +44,9 @@ export async function defaultShieldRemoteTransport(
   options: ShieldRemoteTransportOptions,
 ): Promise<ShieldRemoteTransportLike> {
   const { RemoteShieldTransport } = await import('./relay/transport');
-  return new RemoteShieldTransport(options);
+  return new RemoteShieldTransport(
+    options.origin === undefined ? options : { ...options, storage: relayStorage(options.origin) },
+  );
 }
 
 /**
@@ -61,8 +64,30 @@ export function resolveRemoteConfig(
     ...overrides,
     relayUrl: overrides.relayUrl ?? DEFAULT_SHIELD_RELAY_URL,
     deeplinkBase,
+    origin: overrides.origin === undefined ? undefined : normalizeRelayOrigin(overrides.origin),
     transport: overrides.transport ?? defaultShieldRemoteTransport,
   };
+}
+
+function normalizeRelayOrigin(origin: string): string {
+  const message = 'Shield remote: origin must be an HTTP(S) origin, e.g. https://example.com';
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    throw new Error(message);
+  }
+  if (
+    (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+    url.username ||
+    url.password ||
+    url.pathname !== '/' ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error(message);
+  }
+  return url.origin;
 }
 
 /**
