@@ -17,28 +17,27 @@ const { commitmentHex } = await requestAddressEncoding({
 });
 ```
 
-A normal wallet connection with address access is required. No destination
-program, source chain, asset, amount, depositor, or bridge-specific grant is
-needed for issuance. The adapter forwards the request unchanged. The wallet
-validates the request schema, recipient address, and selected network. The wallet rechecks the
-active account, selected network, and connection/address access after issuance;
-it withholds the result if the context changes or access is revoked.
+A wallet connection with address access is required. The request accepts
+`network` (`Network.MAINNET` or `Network.TESTNET`) and optional `recipient`.
+No destination program, source chain, asset, amount, depositor, or bridge-specific
+grant is needed for issuance. The adapter forwards the request unchanged; the
+wallet validates its schema, recipient address, network, and access permissions.
+
 The response contains only `commitmentHex`: 64 lowercase hex characters without
-`0x`, encoding the canonical 32-byte little-endian BHP256 commitment field.
-The wallet retains the private scalar and permanent counter association.
+`0x`, encoding the canonical 32-byte little-endian commitment field. The wallet
+retains the private nonce. The Shield adapter validates the commitment format
+and excludes extra provider response fields.
 
-Every successful request issues a fresh commitment and consumes the shared
-wallet/network counter. Save the returned commitment before starting a deposit;
-calling this method again requests a new identity. This method does not prepare
-a deposit, submit a transaction, or grant permission to consume its private nonce.
+Every successful request issues a fresh commitment. Save the returned encoding
+before starting a deposit; calling this method again requests a new identity.
+Issuance does not prepare a deposit, submit a transaction, or authorize use of the
+private nonce in a later transaction.
 
-## Hyperlane recipient selection
+Check `supportsAddressEncoding` before requesting an encoding. Older providers
+without the method report `false`; the adapter does not substitute USDCx mint
+preparation for generic address encoding.
 
-The React example app exposes **Transactions → Hyperlane Recipient** at
-`/hyperlane`. Connect a compatible wallet and request an encoding for the
-connected account and selected Aleo network. The page displays the `0x`-prefixed
-recipient in memory. Each request creates a fresh commitment; save the returned
-encoding in your application before starting a deposit.
+## Hyperlane recipient example
 
 For an EVM source, add the hex prefix without reversing or reinterpreting bytes:
 
@@ -51,43 +50,13 @@ const amount = 1000000n; // Source token base units
 await router.transferRemote(destination, recipient, amount);
 ```
 
-The ABI stays `transferRemote(uint32 destination, bytes32 recipient, uint256
-amount)`. The encoding replaces the serialized address in the **existing recipient
-input**; it is not a fourth input. The source-chain ABI encoder validates the
-transfer arguments. Solana uses those same raw 32 bytes in its existing
-recipient slot. These source-transfer inputs apply to transfers **into Aleo**;
-Aleo-origin `transfer_remote` inputs are unchanged.
+The commitment occupies the existing `bytes32` recipient input. Your source-chain
+client handles ABI encoding and validation. Use a deployed route that supports
+encoded recipients before funding a deposit. Route and claim integration details
+belong to the [Hyperlane private-mint specification](https://github.com/ProvableHQ/shield-core/blob/ff23ea9086327f2eed2782a1ef1e8392d55ed81b/docs/hyperlane-private-mint.md);
+use the deployed destination program's ABI when implementing claims.
 
-Aleo-origin `transfer_remote_private` is a separate interface; see the
-[canonical private-outbound ABI](https://github.com/ProvableHQ/shield-core/blob/ff23ea9086327f2eed2782a1ef1e8392d55ed81b/docs/hyperlane-private-mint.md#aleo-origin-private-outbound-transfers).
-The EVM source-transfer example above uses that chain's router interface.
-The managed wallet bridge currently unshields when needed and uses public
-`transfer_remote`; direct private-outbound construction needs separate integration.
-
-The example displays the encoded recipient; it does not submit funds. A compatible deployed private-mint route, source transaction
-construction, and redemption support are required
-before funding an encoded recipient. Public-mint calls continue using the
-serialized public address unless the caller explicitly chooses an encoding.
-
-For Aleo redemption, interpret each 16-byte half of `commitmentHex` as a
-little-endian `u128`: the first half is the low limb, the second the high limb.
-The intended `claim_private` input ABI is defined in the
-[canonical Hyperlane private-mint specification](https://github.com/ProvableHQ/shield-core/blob/ff23ea9086327f2eed2782a1ef1e8392d55ed81b/docs/hyperlane-private-mint.md).
-Use that reference for the full input order, types, and visibility. It describes
-the intended integration ABI; a destination must still be verified and registered
-before private-mint transfers or claims can be enabled.
-
-The secret scalar belongs at zero-based input **3**. Issuance does not authorize
-secret fulfillment: the wallet still needs an explicitly authorized deployed
-program and compliant Merkle-proof fulfillment. Existing USDCx-specific nonce
-grants do not authorize a warp-route `claim_private` call. XReserve's preparation
-API and nonce slot are unchanged.
-
-The Shield adapter detects the provider method itself. Older extensions and
-relay/mobile providers without that method report `supportsAddressEncoding ===
-false`; the adapter does not substitute the USDCx-specific preparation method.
-Supporting extensions require the matching shield-core generic issuance API.
-Wallet hosts use `AddressCommitmentCapabilities` in core and
-`issueWalletAddressCommitment({ account, network, recipient? })` in the extension.
-Issuance needs wallet key capabilities and the durable commitment store; mapping
-reads, program lookup, and transaction fulfillment capabilities are not required.
+The React example app exposes **Transactions → Hyperlane Recipient** at
+`/hyperlane`. Connect a compatible wallet and request an encoding for the
+connected account and selected Aleo network. The page displays the `0x`-prefixed
+recipient in memory and does not submit a transfer.

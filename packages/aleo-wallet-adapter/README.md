@@ -734,15 +734,9 @@ export const App: FC = () => {
 
 ## Generic address encoding
 
-Compatible wallets expose `useWallet().requestAddressEncoding({ network, recipient? })`
-and `supportsAddressEncoding`. The request returns only `{ commitmentHex }` and
-requires no bridge or warp route. Each successful request issues a fresh commitment;
-keep its returned encoding before starting a deposit. Older wallets report the
-capability as unavailable.
-
-See the [address encoding guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/address-encoding.md)
-for connection requirements, Hyperlane recipient selection, and the planned `redeem` input order.
-The React example app demonstrates requesting a Hyperlane recipient at `/hyperlane`.
+Use `useWallet().requestAddressEncoding({ network, recipient? })` to request a fresh
+public commitment from a compatible wallet. See the [address encoding guide](../../docs/address-encoding.md)
+for capability checks, request and response semantics, and the Hyperlane example.
 
 ## Shield XReserve mint preparation
 
