@@ -19,9 +19,8 @@ const { commitmentHex } = await requestAddressEncoding({
 
 A normal wallet connection with address access is required. No destination
 program, source chain, asset, amount, depositor, or bridge-specific grant is
-needed for issuance. Only `network` and optional `recipient` are accepted; unknown
-fields are rejected. The adapter checks the recipient's Aleo address format, and
-the wallet validates the address and selected network. The wallet rechecks the
+needed for issuance. The adapter forwards the request unchanged. The wallet
+validates the request schema, recipient address, and selected network. The wallet rechecks the
 active account, selected network, and connection/address access after issuance;
 it withholds the result if the context changes or access is revoked.
 The response contains only `commitmentHex`: 64 lowercase hex characters without

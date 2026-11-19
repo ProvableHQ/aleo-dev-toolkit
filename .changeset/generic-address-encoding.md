@@ -7,6 +7,6 @@
 ---
 
 Add a bridge-independent requestAddressEncoding API, optional provider capability
-detection, strict request validation, public commitment response validation, and
+detection, wallet-owned request validation, public commitment response validation, and
 React wallet support, plus an example-app recipient selector with saved
 account/network-scoped encodings.

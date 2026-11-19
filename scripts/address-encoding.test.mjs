@@ -7,7 +7,6 @@ const {
   WalletError,
   WalletFeatureNotAvailableError,
   WalletNotConnectedError,
-  WalletInputRequestInvalidError,
 } = require('../packages/aleo-wallet-adapter/core/dist/index.js');
 const {
   ShieldWalletAdapter,
@@ -80,21 +79,12 @@ test('requires no route or bridge grant and returns only the public commitment',
   assert.deepEqual(await adapter.requestAddressEncoding(Object.freeze(request())), response);
   assert.deepEqual(calls, [{ network: Network.TESTNET }]);
 });
-test('copies supported request fields without exposing caller objects to provider mutations', async () => {
-  const input = Object.freeze({
-    ...request(),
-    recipient,
-  });
-  const { adapter, calls, connect } = fixture({
-    encode: async payload => {
-      payload.recipient = 'changed';
-      return response;
-    },
-  });
+test('forwards the original request unchanged for wallet-owned validation', async () => {
+  const input = Object.freeze({ ...request(), recipient });
+  const { adapter, calls, connect } = fixture();
   await connect();
   await adapter.requestAddressEncoding(input);
-  assert.equal(input.recipient, recipient);
-  assert.deepEqual(calls, [{ network: Network.TESTNET, recipient: 'changed' }]);
+  assert.equal(calls[0], input);
 });
 test('forwards mainnet and testnet requests with an explicit Aleo recipient', async () => {
   const { adapter, calls, connect } = fixture();
@@ -107,33 +97,27 @@ test('forwards mainnet and testnet requests with an explicit Aleo recipient', as
     { network: Network.TESTNET, recipient },
   ]);
 });
-test('rejects malformed requests before contacting the wallet', async () => {
-  const { adapter, calls, connect } = fixture();
+test('delegates invalid requests to the wallet and preserves its rejection', async () => {
+  const failure = new Error('Wallet rejected the request');
+  const { adapter, calls, connect } = fixture({
+    encode: async () => {
+      throw failure;
+    },
+  });
   await connect();
+  const errors = [];
+  adapter.on('error', error => errors.push(error));
   for (const input of [
     undefined,
     null,
-    'testnet',
-    [],
-    Object.assign([], request()),
     {},
     { network: Network.CANARY },
-    { ...request(), recipient: '' },
-    { ...request(), recipient: 42 },
-    { ...request(), recipient: 'a'.repeat(129) },
-    { ...request(), recipient: 'aleo1recipient' },
-    { ...request(), recipient: recipient.toUpperCase() },
-    { ...request(), recipient: 'aleo1' + 'b'.repeat(58) },
-    { ...request(), recipient: recipient.slice(0, -1) },
-    { ...request(), recipient: recipient + 'q' },
     { ...request(), bridge: 'hyperlane' },
-    { ...request(), program: 'warp.aleo' },
-    { ...request(), amount: '100' },
-    { ...request(), recipient, requestId: 'deposit-1' },
   ]) {
-    await assert.rejects(adapter.requestAddressEncoding(input), WalletInputRequestInvalidError);
+    await assert.rejects(adapter.requestAddressEncoding(input), error => error === failure);
+    assert.equal(calls.at(-1), input);
+    assert.equal(errors.at(-1), failure);
   }
-  assert.equal(calls.length, 0);
 });
 test('rejects malformed provider commitments', async () => {
   for (const invalid of [

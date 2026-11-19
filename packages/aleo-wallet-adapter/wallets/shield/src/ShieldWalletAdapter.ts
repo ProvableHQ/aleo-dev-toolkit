@@ -52,11 +52,7 @@ import { buildDappMetadata } from './dappMetadata';
 import { isMobileUserAgent } from './isMobileUserAgent';
 import { resolveRemoteConfig, type ResolvedShieldRemoteConfig } from './remoteDefaults';
 import { SHIELDED_USDCX_MINT_FEATURE, shieldedUsdcxMintPreparation } from './shieldedUsdcx';
-import {
-  ADDRESS_ENCODING_FEATURE,
-  addressEncoding,
-  addressEncodingRequest,
-} from './addressEncoding';
+import { ADDRESS_ENCODING_FEATURE, addressEncoding } from './addressEncoding';
 
 /**
  * A relay wallet's answer to a method it does not have (JSON-RPC 4200). Read
@@ -780,9 +776,8 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
     if (!providerHasMethod(wallet, 'requestAddressEncoding')) {
       throw new WalletFeatureNotAvailableError(ADDRESS_ENCODING_FEATURE);
     }
-    const payload = addressEncodingRequest(request);
     try {
-      return addressEncoding(await wallet.requestAddressEncoding(payload));
+      return addressEncoding(await wallet.requestAddressEncoding(request));
     } catch (error) {
       this.emit('error', error instanceof Error ? error : new Error(String(error)));
       throw error;
