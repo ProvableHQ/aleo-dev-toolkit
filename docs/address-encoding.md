@@ -70,31 +70,31 @@ preserves the 32-byte order. Solana uses those same raw 32 bytes in its existing
 recipient slot. These source-transfer inputs apply to transfers **into Aleo**;
 Aleo-origin `transfer_remote` inputs are unchanged.
 
+Aleo-origin `transfer_remote_private` is a separate interface; see the
+[canonical private-outbound ABI](https://github.com/ProvableHQ/shield-core/blob/ff23ea9086327f2eed2782a1ef1e8392d55ed81b/docs/hyperlane-private-mint.md#aleo-origin-private-outbound-transfers).
+The helper above builds EVM source-transfer arguments, not that Aleo private call.
+The managed wallet bridge currently unshields when needed and uses public
+`transfer_remote`; direct private-outbound construction needs separate integration.
+
 The example prepares and copies arguments; it does not connect to an EVM wallet
-or submit funds. The private-mint warp routes are not deployed yet. A compatible
-route, source transaction construction, and redemption support are required
+or submit funds. A compatible deployed private-mint route, source transaction
+construction, and redemption support are required
 before funding an encoded recipient. Public-mint calls continue using the
 serialized public address unless the caller explicitly chooses an encoding.
 
 For Aleo redemption, interpret each 16-byte half of `commitmentHex` as a
 little-endian `u128`: the first half is the low limb, the second the high limb.
-The planned warp-route ABI is:
-
-```leo
-fn redeem(
-    public commitment: [u128; 2],
-    public amount: u128,
-    private recipient: address,
-    private secret: scalar,
-    private recipient_merkle_proofs: [IARC22::MerkleProof; 2],
-) -> (dyn record, dyn record, Final)
-```
+The intended `claim_private` input ABI is defined in the
+[canonical Hyperlane private-mint specification](https://github.com/ProvableHQ/shield-core/blob/ff23ea9086327f2eed2782a1ef1e8392d55ed81b/docs/hyperlane-private-mint.md).
+Use that reference for the full input order, types, and visibility. It describes
+the intended integration ABI; a destination must still be verified and registered
+before private-mint transfers or claims can be enabled.
 
 The secret scalar belongs at zero-based input **3**. Issuance does not authorize
 secret fulfillment: the wallet still needs an explicitly authorized deployed
 program and compliant Merkle-proof fulfillment. Existing USDCx-specific nonce
-grants do not authorize a warp-route `redeem` call. XReserve's preparation API
-and nonce slot are unchanged.
+grants do not authorize a warp-route `claim_private` call. XReserve's preparation
+API and nonce slot are unchanged.
 
 The Shield adapter detects the provider method itself. Older extensions and
 relay/mobile providers without that method report `supportsAddressEncoding ===
