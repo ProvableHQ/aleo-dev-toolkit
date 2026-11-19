@@ -8,5 +8,5 @@
 
 Add a bridge-independent requestAddressEncoding API, optional provider capability
 detection, wallet-owned request validation, public commitment response validation, and
-React wallet support, plus an example-app recipient selector with saved
-account/network-scoped encodings.
+React wallet support, plus a minimal example that requests an encoding and
+displays the EVM recipient.

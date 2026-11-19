@@ -35,13 +35,10 @@ a deposit, submit a transaction, or grant permission to consume its private nonc
 ## Hyperlane recipient selection
 
 The React example app exposes **Transactions → Hyperlane Recipient** at
-`/hyperlane`. Choose **Wallet-issued address encoding (private mint)**, request
-an encoding, and select it in **Saved address encoding**. The page saves the
-public encoding before producing arguments and only offers entries for the
-connected wallet, account, Aleo network, and intended recipient. A later request
-creates a new identity; selecting a saved entry reuses it without another wallet
-call. Saved encodings survive reloads. The alternative **Manual bytes32
-recipient** accepts an explicitly supplied `0x`-prefixed 32-byte recipient.
+`/hyperlane`. Connect a compatible wallet and request an encoding for the
+connected account and selected Aleo network. The page displays the `0x`-prefixed
+recipient in memory. Each request creates a fresh commitment; save the returned
+encoding in your application before starting a deposit.
 
 For an EVM source, add the hex prefix without reversing or reinterpreting bytes:
 
@@ -67,8 +64,7 @@ The EVM source-transfer example above uses that chain's router interface.
 The managed wallet bridge currently unshields when needed and uses public
 `transfer_remote`; direct private-outbound construction needs separate integration.
 
-The example prepares and copies arguments; it does not connect to an EVM wallet
-or submit funds. A compatible deployed private-mint route, source transaction
+The example displays the encoded recipient; it does not submit funds. A compatible deployed private-mint route, source transaction
 construction, and redemption support are required
 before funding an encoded recipient. Public-mint calls continue using the
 serialized public address unless the caller explicitly chooses an encoding.
