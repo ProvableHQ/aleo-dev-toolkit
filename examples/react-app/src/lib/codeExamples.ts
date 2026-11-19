@@ -12,7 +12,6 @@ export const PLACEHOLDERS = {
 
 export const codeExamples = {
   hyperlaneRecipient: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
-import { addressEncodingToHyperlaneRecipient, createHyperlaneTransferRemoteArgs } from '@provablehq/aleo-wallet-adapter-core';
 import { Network } from '@provablehq/aleo-types';
 
 const { requestAddressEncoding, supportsAddressEncoding } = useWallet();
@@ -20,16 +19,13 @@ if (!supportsAddressEncoding) throw new Error('This wallet does not support addr
 
 // Request once for this intended deposit, then save before funding it.
 const encoding = await requestAddressEncoding({ network: Network.TESTNET });
-const recipient = addressEncodingToHyperlaneRecipient(encoding);
+const recipient = \`0x\${encoding.commitmentHex}\`;
 // Save encoding with the connected account, network and intended recipient.
-const args = createHyperlaneTransferRemoteArgs({
-  destination: 1634493807,
-  recipient,
-  amount: '1000000', // Source-token base units; returned as bigint.
-});
+const destination = 1634493807;
+const amount = 1000000n; // Source-token base units.
 
 // Source-chain client, on a compatible deployed private-mint route:
-// await router.transferRemote(...args);
+// await router.transferRemote(destination, recipient, amount);
 // Same three inputs. The commitment occupies the existing bytes32 recipient.
 // Solana uses the same 32 raw bytes, without the EVM 0x prefix.
 `,

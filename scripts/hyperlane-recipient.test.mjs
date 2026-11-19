@@ -4,11 +4,6 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
-const {
-  addressEncodingToHyperlaneRecipient,
-  createHyperlaneTransferRemoteArgs,
-  WalletInputRequestInvalidError,
-} = require('../packages/aleo-wallet-adapter/core/dist/index.js');
 const { Network } = require('../packages/aleo-types/dist/index.js');
 const ts = require('typescript');
 const source = readFileSync(
@@ -27,7 +22,6 @@ const {
 } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
 const commitmentHex = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f';
-const recipient = `0x${commitmentHex}`;
 const account = 'aleo1c4ymujuysflp8uurmk5n8zrquur9pyqdhz2ty9s82prs96eydqpsfrahgf';
 const context = { wallet: 'Shield Wallet', account, network: Network.TESTNET, recipient: account };
 const entry = { ...context, commitmentHex, createdAt: 100 };
@@ -44,88 +38,6 @@ function storageFixture() {
     },
   };
 }
-
-test('uses exactly the wallet commitment bytes in the existing recipient slot', () => {
-  assert.equal(addressEncodingToHyperlaneRecipient({ commitmentHex }), recipient);
-  const args = createHyperlaneTransferRemoteArgs({
-    destination: '1634493807',
-    recipient,
-    amount: '1000000',
-  });
-  assert.deepEqual(args, [1634493807, recipient, 1000000n]);
-  assert.equal(args.length, 3);
-  assert.equal(Buffer.from(args[1].slice(2), 'hex').toString('hex'), commitmentHex);
-});
-
-test('does not accept malformed or noncanonical wallet encodings', () => {
-  for (const invalid of [
-    null,
-    {},
-    { commitmentHex: 42 },
-    { commitmentHex: `0x${commitmentHex}` },
-    { commitmentHex: 'AB'.repeat(32) },
-    { commitmentHex: 'ab'.repeat(31) },
-    { commitmentHex: 'g'.repeat(64) },
-  ]) {
-    assert.throws(
-      () => addressEncodingToHyperlaneRecipient(invalid),
-      WalletInputRequestInvalidError,
-    );
-  }
-});
-
-test('validates destination and amount bounds without losing uint256 precision', () => {
-  const max = (1n << 256n) - 1n;
-  assert.deepEqual(
-    createHyperlaneTransferRemoteArgs({ destination: 0xffffffff, recipient, amount: max }),
-    [0xffffffff, recipient, max],
-  );
-  for (const destination of [-1, 1.1, '1e3', '0x1', '4294967296', '', NaN, Infinity]) {
-    assert.throws(
-      () => createHyperlaneTransferRemoteArgs({ destination, recipient, amount: '1' }),
-      WalletInputRequestInvalidError,
-    );
-  }
-  for (const amount of ['0', '-1', '1.1', '1e18', '', 1n << 256n]) {
-    assert.throws(
-      () => createHyperlaneTransferRemoteArgs({ destination: 1, recipient, amount }),
-      WalletInputRequestInvalidError,
-    );
-  }
-  for (const invalid of [commitmentHex, 'aleo1recipient', '0xab', `0x${'gg'.repeat(32)}`]) {
-    assert.throws(
-      () => createHyperlaneTransferRemoteArgs({ destination: 1, recipient: invalid, amount: '1' }),
-      WalletInputRequestInvalidError,
-    );
-  }
-});
-
-test('rejects numeric and coercible amounts before constructing transfer arguments', () => {
-  for (const amount of [
-    1,
-    Number.MAX_SAFE_INTEGER,
-    Number('9007199254740993'),
-    1e18,
-    NaN,
-    Infinity,
-    null,
-    undefined,
-    true,
-    { toString: () => '1' },
-    ['1'],
-  ]) {
-    assert.throws(
-      () => createHyperlaneTransferRemoteArgs({ destination: 1634493807, recipient, amount }),
-      WalletInputRequestInvalidError,
-    );
-  }
-  for (const amount of ['9007199254740993', 9007199254740993n]) {
-    assert.equal(
-      createHyperlaneTransferRemoteArgs({ destination: 1634493807, recipient, amount })[2],
-      9007199254740993n,
-    );
-  }
-});
 
 test('persists separate public identities across reloads without erasing earlier requests', () => {
   const storage = storageFixture();

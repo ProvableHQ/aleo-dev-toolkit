@@ -746,9 +746,7 @@ capability as unavailable.
 
 See the [address encoding guide](https://github.com/ProvableHQ/aleo-dev-toolkit/blob/master/docs/address-encoding.md)
 for connection requirements, Hyperlane recipient selection, and the planned `redeem` input order.
-The React example app provides a Hyperlane recipient selector at `/hyperlane`;
-`addressEncodingToHyperlaneRecipient` and `createHyperlaneTransferRemoteArgs`
-from adapter core prepare the existing three source-transfer inputs.
+The React example app demonstrates requesting a Hyperlane recipient at `/hyperlane`.
 
 ## Shield XReserve mint preparation
 

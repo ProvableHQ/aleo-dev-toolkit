@@ -1,10 +1,6 @@
 import { useRef, useState } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
-import {
-  addressEncodingToHyperlaneRecipient,
-  createHyperlaneTransferRemoteArgs,
-} from '@provablehq/aleo-wallet-adapter-core';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,15 +55,15 @@ export function HyperlaneRecipient() {
   const recipient =
     mode === 'encoding'
       ? selected
-        ? addressEncodingToHyperlaneRecipient(selected)
+        ? `0x${selected.commitmentHex}`
         : ''
       : manualRecipient.trim();
   let preview: string | undefined;
   let validation: string | undefined;
   if (recipient) {
     try {
-      const args = createHyperlaneTransferRemoteArgs({ destination, recipient, amount });
-      preview = JSON.stringify([args[0], args[1], args[2].toString()], null, 2);
+      const args = [Number(destination), recipient, BigInt(amount)];
+      preview = JSON.stringify(args, (_, value) => typeof value === 'bigint' ? value.toString() : value, 2);
     } catch (cause) {
       validation = cause instanceof Error ? cause.message : String(cause);
     }
