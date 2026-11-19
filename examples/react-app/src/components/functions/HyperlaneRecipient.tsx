@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Network } from '@provablehq/aleo-types';
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
@@ -10,27 +10,59 @@ import { CodePanel } from '@/components/CodePanel';
 import { codeExamples } from '@/lib/codeExamples';
 
 export function HyperlaneRecipient() {
-  const { connected, network, supportsAddressEncoding, requestAddressEncoding } = useWallet();
+  const { wallet, address, connected, network, supportsAddressEncoding, requestAddressEncoding } =
+    useWallet();
   const { setVisible } = useWalletModal();
-  const [recipient, setRecipient] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
+  const adapter = wallet?.adapter;
+  const scope = useMemo(
+    () => ({ adapter, address, network, connected, supportsAddressEncoding }),
+    [adapter, address, network, connected, supportsAddressEncoding],
+  );
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const attemptRef = useRef<object | null>(null);
+  const [result, setResult] = useState<{
+    scope: typeof scope;
+    recipient?: string;
+    error?: string;
+    busy: boolean;
+  }>();
+  useEffect(
+    () => () => {
+      attemptRef.current = null;
+    },
+    [scope],
+  );
+  // Hide stale output during render, including before effect cleanup runs.
+  const current = result?.scope === scope ? result : undefined;
+  const recipient = current?.recipient;
+  const error = current?.error;
+  const busy = current?.busy ?? false;
 
   async function requestEncoding() {
+    if (scopeRef.current !== scope || !connected || !supportsAddressEncoding) return;
     if (network !== Network.MAINNET && network !== Network.TESTNET) {
-      setError('Select mainnet or testnet to request an encoding.');
+      setResult({
+        scope,
+        busy: false,
+        error: 'Select mainnet or testnet to request an encoding.',
+      });
       return;
     }
-    setBusy(true);
-    setRecipient('');
-    setError(undefined);
+    const attempt = {};
+    attemptRef.current = attempt;
+    setResult({ scope, busy: true });
     try {
       const { commitmentHex } = await requestAddressEncoding({ network });
-      setRecipient(`0x${commitmentHex}`);
+      if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
+      setResult({ scope, busy: false, recipient: `0x${commitmentHex}` });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setBusy(false);
+      if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
+      setResult({
+        scope,
+        busy: false,
+        error: cause instanceof Error ? cause.message : String(cause),
+      });
     }
   }
 
