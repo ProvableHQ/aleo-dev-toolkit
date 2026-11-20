@@ -16,6 +16,7 @@ import {
   EventEmitter,
   WalletDecryptPermission,
 } from '@provablehq/aleo-wallet-standard';
+import type { SessionStorageLike } from './relay/transport';
 
 /**
  * Options handed to the relay transport (mirrors RemoteTransportOptions in
@@ -25,6 +26,8 @@ export interface ShieldRemoteTransportOptions {
   relayUrl: string;
   deeplinkBase: string;
   origin?: string;
+  /** Use this storage for relay sessions. The adapter scopes it to the active origin override. */
+  storage?: SessionStorageLike;
   requestTimeoutMs?: number;
 }
 
@@ -115,10 +118,10 @@ export interface ShieldRemoteConfig {
    */
   deeplinkBase?: string;
   /**
-   * Origin declared to the wallet for relay pairing and requests. Defaults to
-   * the browser's location.origin. An explicit value must be an HTTP(S) origin.
-   * Use an HTTPS origin you control for a desktop WebView in production.
-   * The wallet treats it as self-reported.
+   * Origin declared to the wallet for relay pairing and requests. Hosted
+   * HTTP(S) pages use location.origin. Local or non-web environments can
+   * supply an HTTPS origin they control. Local HTTP origins are accepted for
+   * testing. The wallet treats relay origins as self-reported.
    */
   origin?: string;
   /** Per-request timeout. The transport's default is generous — proving is slow. */

@@ -104,9 +104,12 @@ app does not claim it, and the link opens a 404 instead.
 
 For a desktop WebView, set `remote.origin` to an HTTPS origin you control.
 This supplies the origin in relay messages when the WebView's own origin is
-local or uses a custom scheme. It is a self-reported identity on the wallet's
-approval screen. Pairings made with an explicit origin are saved under that
-origin within the WebView's existing storage.
+local (including `tauri.localhost`) or uses a custom scheme. Hosted HTTP(S)
+pages use `location.origin`. The relay origin is self-reported on the
+wallet's approval screen. Pairings made with an explicit origin are saved
+under that origin within the WebView's existing storage. If you are retiring
+an origin, disconnect with the old configuration before switching to remove
+its saved session and notify the wallet.
 
 ```tsx
 import {
@@ -198,9 +201,11 @@ Behavior:
   after a cross-device QR approval.
 - The relay transport is **bundled and lazy-loaded** by this package. Dapps
   that pass `remote: false` never load it. `remote.transport` remains as an
-  advanced override for tests; until `@shield/relay-dapp-client` is published
-  (Linear WS-92) the bundled copy is vendored from a pinned shield-relay
-  commit via `scripts/sync-shield-relay.sh` in this package.
+  advanced override for tests. Custom transports should use the supplied
+  `storage` option to persist relay sessions with the same scope as cached
+  approvals. Until `@shield/relay-dapp-client` is published (Linear WS-92), the
+  bundled copy is vendored from a pinned shield-relay commit via
+  `scripts/sync-shield-relay.sh` in this package.
 
 ## Related packages
 

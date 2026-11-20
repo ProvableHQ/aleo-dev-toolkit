@@ -154,17 +154,28 @@ export function needsApproval(
 export function relayStorage(origin?: string): SessionStorageLike {
   const scopedKey = (key: string) => (origin === undefined ? key : `${key}:${origin}`);
   return {
-    getItem: key => browserStorage()?.getItem(scopedKey(key)) ?? null,
-    setItem: (key, value) => browserStorage()?.setItem(scopedKey(key), value),
-    removeItem: key => browserStorage()?.removeItem(scopedKey(key)),
+    getItem: key => withBrowserStorage(storage => storage.getItem(scopedKey(key))) ?? null,
+    setItem: (key, value) => {
+      const target = scopedKey(key);
+      withBrowserStorage(storage => {
+        try {
+          storage.setItem(target, value);
+        } catch {
+          // A failed write must not leave stale relay sequence numbers to restore.
+          storage.removeItem(target);
+        }
+      });
+    },
+    removeItem: key => withBrowserStorage(storage => storage.removeItem(scopedKey(key))),
   };
 }
 
-function browserStorage(): Storage | undefined {
+function withBrowserStorage<T>(operation: (storage: Storage) => T): T | undefined {
   try {
-    return globalThis.localStorage;
+    const storage = globalThis.localStorage;
+    return storage && operation(storage);
   } catch {
-    // Some WebViews deny access to persistent storage for their app origin.
+    // Some WebViews deny access to persistent storage.
     return undefined;
   }
 }

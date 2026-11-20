@@ -23,7 +23,7 @@ import {
 } from './types';
 import { isMobileUserAgent } from './isMobileUserAgent';
 import type { SessionStorageLike } from './relay/transport';
-import type { ResolvedShieldRemoteConfig } from './remoteDefaults';
+import { relayOriginOverride, type ResolvedShieldRemoteConfig } from './remoteDefaults';
 import {
   channelIdOf,
   clearRestorableConnection,
@@ -63,6 +63,7 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
   publicKey?: string;
 
   private transport?: ShieldRemoteTransportLike;
+  private readonly origin?: string;
   private readonly storage: SessionStorageLike;
 
   /** The paired relay channel, read off the connect URL. Addresses the wake link. */
@@ -83,7 +84,8 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
 
   constructor(private readonly config: ResolvedShieldRemoteConfig) {
     super();
-    this.storage = relayStorage(config.origin);
+    this.origin = relayOriginOverride(config.origin);
+    this.storage = relayStorage(this.origin);
   }
 
   async connect(
@@ -332,7 +334,8 @@ export class RemoteShieldWallet extends EventEmitter<ShieldWalletEvents> impleme
     const transport = await this.config.transport({
       relayUrl: this.config.relayUrl,
       deeplinkBase: this.config.deeplinkBase,
-      origin: this.config.origin,
+      origin: this.origin,
+      storage: this.storage,
       requestTimeoutMs: this.config.requestTimeoutMs,
     });
 

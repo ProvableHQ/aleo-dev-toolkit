@@ -22,7 +22,7 @@
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-adapter-core": "workspace:*",
     "@provablehq/aleo-wallet-standard": "workspace:*",
-    "centrifuge": "^5.7.0",
+    "centrifuge": "^5.7.1",
     "eciesjs": "^0.4.18"
   },
   "repository": {
