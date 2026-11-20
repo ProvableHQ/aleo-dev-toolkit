@@ -732,6 +732,12 @@ export const App: FC = () => {
 };
 ```
 
+## Generic address encoding
+
+Use `useWallet().requestAddressEncoding({ network, recipient? })` to request a fresh
+public commitment from a compatible wallet. See the [address encoding guide](../../docs/address-encoding.md)
+for capability checks, request and response semantics, and the Hyperlane example.
+
 ## Shield XReserve mint preparation
 
 Compatible Shield extensions expose `useWallet().prepareShieldedUsdcxMint()` and
