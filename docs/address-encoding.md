@@ -54,10 +54,10 @@ await router.transferRemote(destination, recipient, amount, { value: quotedNativ
 The commitment occupies the existing `bytes32` recipient input. Your source-chain
 client handles ABI encoding and validation. Use a deployed route that supports
 encoded recipients before funding a deposit. Route and claim integration details
-belong to the [Hyperlane private-mint specification](https://github.com/ProvableHQ/shield-core/blob/ff23ea9086327f2eed2782a1ef1e8392d55ed81b/docs/hyperlane-private-mint.md);
+belong to the [Hyperlane private-mint specification](https://github.com/ProvableHQ/shield-core/blob/37d2c3c/docs/hyperlane-private-mint.md);
 use the deployed destination program's ABI when implementing claims.
 
-## Try a Sepolia ETH deposit
+## Try the testnet deposit, claim, and private burn
 
 Run the React example:
 
@@ -66,42 +66,111 @@ pnpm install
 pnpm adapter-app:dev
 ```
 
-Open `/hyperlane` (**Transactions → Hyperlane Testnet Mint**):
+Open `/hyperlane` (**Transactions → Hyperlane Testnet ETH**):
 
-1. Connect an Aleo wallet on **testnet** and request an encoding. The returned
-   `0x` recipient fills the mint form. You can also paste an existing testnet
-   encoding into **Address encoding — second input (bytes32)** without connecting
-   an Aleo wallet. Keep the issuing wallet: its private nonce is needed to claim.
-2. Enter an amount in Sepolia ETH. The default is `0.001`; the call's third input
-   is its exact integer amount in wei.
-3. Select **Connect Sepolia wallet & quote**. Approve the EVM wallet connection
-   and switch to Ethereum Sepolia (chain ID `11155111`) if prompted.
-4. Review the sender, bridge fee, full ETH transaction value, and all three
-   `transferRemote` inputs. The second input is the unchanged 32-byte commitment;
-   the first input is Aleo testnet's domain `1617853565`, not the mainnet domain.
-5. Select **Send Sepolia ETH** and approve the transaction in your EVM wallet.
-   Follow the Sepolia receipt and Hyperlane delivery links shown afterward.
+1. Select **Configure Hyperlane testnet permissions**, then reconnect the updated
+   Shield extension and approve the grants. This switches the example to testnet.
+   The wallet must support address encoding, `hyperlane-claim-secret`, and
+   `program-freezelist-exclusion-proof`. An older wallet cannot fund a deposit
+   through this demo. The local Shield extension build must include private-claim
+   support; address encoding alone is insufficient.
+2. Request an encoding. Save its exact bytes and keep the issuing wallet and
+   commitment history. The encoding fills both the Sepolia deposit and Aleo claim
+   forms. To recover an earlier deposit, paste its original encoding into the
+   claim form; requesting another encoding creates a different identity.
+3. Enter the Sepolia ETH amount (default `0.001`), select **Connect Sepolia wallet &
+   quote**, and approve the EVM connection and switch to Sepolia (`11155111`).
+   Review all three `transferRemote` inputs, the sender, bridge fee, and full ETH
+   value. Input 1 (zero-based) is the unchanged commitment; destination is Aleo
+   testnet domain `1617853565`.
+4. Select **Send Sepolia ETH**, approve in your EVM wallet, and follow the receipt
+   and Hyperlane delivery links. A source receipt alone does not establish delivery.
+5. Select **Check delivered claimable balance**. After delivery, enter the amount
+   to claim (partial claims are supported), review the separate Aleo execution
+   fee budget, and select **Approve private claim**. Use the wallet that issued
+   this encoding, with its original recipient account selected. No token record
+   is required for a claim. The bridge debits the exact claim amount and creates
+   a private `test_arc20_eth.aleo/Token` record with that full amount.
+6. To send private ETH back, enter the **Sepolia recipient** and **gross private
+   token spend**, then select **Quote private burn**. Review the token fee, net
+   ETH bridged, dispatch payment in microcredits, and separate execution fee.
+   Select **Approve private burn**. The wallet needs a single unspent ETH token
+   record covering the gross spend and a single private credits record covering
+   the dispatch payment. Change records return to the wallet. Split balances
+   may need consolidation in the wallet first.
 
-The default [Sepolia ETH router](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/deployments/warp_routes/ETH/aleotestnet-config.yaml)
+Both Aleo actions use a **public execution fee**, with a user-editable budget in
+microcredits (default `1000000`). Fund the account's public testnet credits balance;
+this is separate from the private credits record consumed by outbound dispatch.
+The wallet shows the final fee before approval. A freeze-listed claim recipient
+or outbound signer cannot obtain a valid exclusion proof.
+
+The fixed [Sepolia ETH router](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/deployments/warp_routes/ETH/aleotestnet-config.yaml)
 is `0x7c4aAAaB1f846881af95f5736d127F3F3F07F25F`, enrolled with
-`test_hyp_warp_token_eth_v2.aleo` on Aleo testnet. The destination token is
-`test_arc20_eth.aleo`. The example is fixed to this existing deployment.
+`test_hyp_warp_token_eth_v2.aleo`. The destination token is `test_arc20_eth.aleo`.
+The example is fixed to this deployment and rejects a changed router or decimals.
 
-The example sums the router's `quoteTransferRemote` native quotes, which already
-include the bridged amount, to set the transaction's ETH value. Sepolia execution
-gas is additional. It rechecks the fee, chain, and EVM account, then simulates the
-exact transaction before requesting a signature. A changed recipient invalidates
-the quote. A submitted hash stays visible even if confirmation times out; check
-that transaction before making another deposit.
+The EVM helper sums native `quoteTransferRemote` payments, which already include
+the bridged principal. It rechecks fees, chain, account, Aleo wallet readiness,
+and recipient, then simulates the exact call before requesting a signature.
+Sepolia execution gas is additional. Save the submitted hash even when receipt
+tracking times out; inspect it before making another deposit.
 
-A Sepolia receipt confirms the source deposit. Hyperlane must still relay the
-message to Aleo, where the encoding receives a claimable balance. The issuing
-wallet must support the deployed route's private claim to receive spendable
-private ETH; this example submits the source deposit and does not construct that
-claim or expose the private nonce.
+### Wallet grants and ABI inputs
 
-The EVM transaction code and its tests stay in the example app, outside the
-wallet-generic adapter packages and release test gate. Run the example tests with:
+The example configures execution access for the warp, token, and credits programs,
+plus these exact derived slots:
+
+| Transition                | Input | Wallet algorithm                     |
+| ------------------------- | ----- | ------------------------------------ |
+| `claim_private`           | 3     | `hyperlane-claim-secret`             |
+| `claim_private`           | 4     | `program-freezelist-exclusion-proof` |
+| `transfer_remote_private` | 9     | `program-freezelist-exclusion-proof` |
+
+Both proof grants constrain `freezelistProgram` to `shield_arc22_freezelist.aleo`.
+Record grants allow filtering `Token.amount` and `credits.microcredits` without
+requesting their plaintext. Existing grants for other example pages are preserved.
+Permission changes disconnect the existing wallet; the user approves them on
+reconnection. Readiness is scoped to wallet, account, network, and connection
+settings, and is checked again after asynchronous preparation.
+
+Claim inputs are commitment limbs, private amount, wallet address request, derived
+original claim secret, and derived recipient proof. The commitment is packed as
+**two little-endian u128 limbs**; its bytes are never reversed for the EVM call.
+The dapp does not derive a secret or scan private records.
+
+Private-burn inputs follow the deployed eleven-input ABI: token record, credits
+record, app metadata, mailbox hook state, remote router, destination domain, EVM
+recipient limbs, **gross** amount, four hook allowances, signer proof, and fee bps.
+The outbound EVM recipient is left-padded to 32 bytes before packing into limbs;
+it is not an inbound address commitment. The proof subject defaults to the Aleo
+signer, rather than the EVM destination.
+
+The quote reads deployed `private_transfer_fee_bps__[false]` (absent means zero),
+metadata, router, mailbox, and both effective and required dispatch hooks. It
+supports no-op, Merkle-tree, and gas-paymaster hooks; unknown hooks or failed reads
+stop preparation. Gas-paymaster payment is
+`(gas_limit + gas_overhead) * gas_price * exchange_rate / 10^10`, floored, with a
+`50000` gas-limit fallback when the router specifies zero. The token fee is
+`floor(gross * fee_bps / 10000)`, computed without overflowing u128. Both hook
+payments count toward the credits requirement, including when the same hook runs
+twice. A fresh read before submission rejects changed route or fee data.
+
+Aleo transaction status is shown after submission. Outbound Aleo success still
+requires Hyperlane delivery to Sepolia. Unknown outcomes and tracking errors do
+not automatically enable another submission; check wallet activity before using
+**prepare another transaction**. After a reload, inspect wallet history before
+retrying. Claim preparation rechecks the current balance and pause state; the
+updated Shield wallet also validates claims and refreshes their compliance proof
+at confirmation. On-chain finalization validates burn metadata, fees, proofs,
+and pause state.
+
+The implementation lives in the example's
+[`hyperlaneAleoTestnet.ts`](../examples/react-app/src/lib/hyperlaneAleoTestnet.ts),
+[`HyperlaneAleoActions.tsx`](../examples/react-app/src/components/functions/HyperlaneAleoActions.tsx),
+and [`HyperlaneRecipientPage.tsx`](../examples/react-app/src/pages/HyperlaneRecipientPage.tsx).
+Bridge-specific helpers remain outside the published adapter packages and release
+test gate. Run the example's ABI, fee, lifecycle, and form tests with:
 
 ```sh
 pnpm --filter react-app-example test:hyperlane

@@ -6,11 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CodePanel } from '@/components/CodePanel';
-import { codeExamples } from '@/lib/codeExamples';
-import { HyperlaneTestnetMint } from '@/components/functions/HyperlaneTestnetMint';
 
-export function HyperlaneRecipient() {
+export function HyperlaneRecipient({ onEncoding }: { onEncoding?: (encoding: string) => void }) {
   const { wallet, address, connected, network, supportsAddressEncoding, requestAddressEncoding } =
     useWallet();
   const { setVisible } = useWalletModal();
@@ -57,6 +54,7 @@ export function HyperlaneRecipient() {
       const { commitmentHex } = await requestAddressEncoding({ network });
       if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
       setResult({ scope, busy: false, recipient: `0x${commitmentHex}` });
+      onEncoding?.(`0x${commitmentHex}`);
     } catch (cause) {
       if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
       setResult({
@@ -70,7 +68,7 @@ export function HyperlaneRecipient() {
   return (
     <section className="space-y-5">
       <div className="space-y-2">
-        <h1 className="h2">Hyperlane recipient</h1>
+        <h2 className="h2">Hyperlane recipient</h2>
         <p className="body-m text-muted-foreground">
           Request an encoding for the connected Aleo account and add the EVM hex prefix for
           transferRemote's recipient input.
@@ -105,8 +103,6 @@ export function HyperlaneRecipient() {
         Each request creates a fresh commitment. Save the returned encoding before funding a
         deposit. Use the Sepolia example below to fund a testnet deposit.
       </p>
-      <HyperlaneTestnetMint issuedRecipient={network === Network.TESTNET ? recipient : undefined} />
-      <CodePanel code={codeExamples.hyperlaneRecipient} language="tsx" />
     </section>
   );
 }

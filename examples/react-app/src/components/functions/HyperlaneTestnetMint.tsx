@@ -13,7 +13,15 @@ import {
   type TestnetMintQuote,
 } from '@/lib/hyperlaneTestnet';
 
-export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: string }) {
+import { assertHyperlaneReady, type HyperlaneGate } from '@/lib/hyperlanePermissions';
+
+export function HyperlaneTestnetMint({
+  issuedRecipient,
+  claimGate,
+}: {
+  issuedRecipient?: string;
+  claimGate?: HyperlaneGate;
+}) {
   const [recipient, setRecipient] = useState('');
   const [amountEth, setAmountEth] = useState('0.001');
   const [quote, setQuote] = useState<TestnetMintQuote>();
@@ -22,6 +30,9 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
   const [transaction, setTransaction] = useState<{ hash: Hex; status: string }>();
   const active = useRef<object | undefined>(undefined);
   const revision = useRef({});
+  const latestGate = useRef(claimGate);
+  if (latestGate.current !== claimGate) revision.current = {};
+  latestGate.current = claimGate;
   const lastIssued = useRef(issuedRecipient);
   if (lastIssued.current !== issuedRecipient) {
     lastIssued.current = issuedRecipient;
@@ -33,6 +44,9 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
     setRecipient(issuedRecipient ?? '');
     setQuote(undefined);
   }, [issuedRecipient]);
+  useEffect(() => {
+    setQuote(undefined);
+  }, [claimGate]);
   useEffect(
     () => () => {
       active.current = undefined;
@@ -61,7 +75,9 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
     setError(undefined);
     setQuote(undefined);
     try {
+      assertHyperlaneReady(latestGate.current, claimGate);
       const next = await quoteTestnetMint(ethereum, { recipient, amountEth });
+      assertHyperlaneReady(latestGate.current, claimGate);
       if (active.current === attempt && revision.current === version) setQuote(next);
     } catch (cause) {
       if (active.current === attempt && revision.current === version)
@@ -82,7 +98,9 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
     setBusy(true);
     setError(undefined);
     try {
+      assertHyperlaneReady(latestGate.current, claimGate);
       const hash = await sendTestnetMint(provider.current, quote, () => {
+        assertHyperlaneReady(latestGate.current, claimGate);
         if (active.current !== attempt || revision.current !== version) {
           throw new Error('The recipient changed. Quote again.');
         }
@@ -95,7 +113,7 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
         hash,
         status:
           receipt.status === 'success'
-            ? 'Confirmed on Sepolia. Hyperlane delivery and the Aleo private claim are separate steps.'
+            ? 'Confirmed on Sepolia. Wait for delivery, then use the Aleo private claim below.'
             : 'The Sepolia transaction reverted. No bridge deposit was made.',
       });
     } catch (cause) {
@@ -158,7 +176,13 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
         Aleo testnet domain: {ALEO_TESTNET_DOMAIN}. Destination: test_hyp_warp_token_eth_v2.aleo /
         test_arc20_eth.aleo.
       </p>
-      <Button onClick={getQuote} disabled={busy || !recipient.trim()}>
+      {!claimGate?.ready && (
+        <p className="body-s">
+          Connect a claim-capable Aleo testnet wallet with the permissions above before funding a
+          deposit.
+        </p>
+      )}
+      <Button onClick={getQuote} disabled={busy || !recipient.trim() || !claimGate?.ready}>
         {busy ? 'Working…' : 'Connect Sepolia wallet & quote'}
       </Button>
       {quote && (
@@ -175,7 +199,7 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
               2,
             )}
           </pre>
-          <Button onClick={send} disabled={busy}>
+          <Button onClick={send} disabled={busy || !claimGate?.ready}>
             Send Sepolia ETH
           </Button>
         </div>
@@ -210,8 +234,8 @@ export function HyperlaneTestnetMint({ issuedRecipient }: { issuedRecipient?: st
         </Alert>
       )}
       <p className="body-s text-muted-foreground">
-        Save the encoding and transaction hash. This sends the source-chain deposit; claiming
-        private ETH on Aleo requires the issuing wallet's private-claim support.
+        Save the encoding and transaction hash. After Hyperlane delivery, claim private ETH below
+        with the wallet that issued the encoding. The wallet must retain its commitment history.
       </p>
     </section>
   );

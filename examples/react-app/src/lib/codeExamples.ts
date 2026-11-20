@@ -11,22 +11,43 @@ export const PLACEHOLDERS = {
 } as const;
 
 export const codeExamples = {
-  hyperlaneRecipient: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+  hyperlaneRecipient: `import { useWallet, useTransaction } from '@provablehq/aleo-wallet-adapter-react';
 import { Network } from '@provablehq/aleo-types';
+// Example-local helpers, not published adapter APIs:
+import { HYPERLANE_GRANTS, HYPERLANE_PROGRAMS, HYPERLANE_RECORD_ACCESS,
+  preparePrivateClaim, quotePrivateBurn, preparePrivateBurn } from '@/lib/hyperlaneAleoTestnet';
 
-const { requestAddressEncoding, supportsAddressEncoding } = useWallet();
-if (!supportsAddressEncoding) throw new Error('This wallet does not support address encoding.');
+// Connect on testnet with programs: HYPERLANE_PROGRAMS,
+// algorithmsAllowed: HYPERLANE_GRANTS, recordAccess: HYPERLANE_RECORD_ACCESS,
+// and readAddress: true. Reconnect after changing these permissions.
+const { requestAddressEncoding, supportsAddressEncoding, algorithmsSupported,
+  connected, network } = useWallet();
+const { execute, update } = useTransaction();
+const algorithms = await algorithmsSupported();
+if (!connected || network !== Network.TESTNET || !supportsAddressEncoding ||
+    !['hyperlane-claim-secret', 'program-freezelist-exclusion-proof']
+      .every(name => algorithms.includes(name))) throw new Error('Update and reconnect your testnet wallet.');
 
-// Each successful call issues a fresh commitment for the connected account.
 const { commitmentHex } = await requestAddressEncoding({ network: Network.TESTNET });
-const recipient = \`0x\${commitmentHex}\`;
-// Save the returned encoding before starting a deposit.
+const encoding = \`0x\${commitmentHex}\`;
+// Save encoding. On Sepolia use transferRemote(1617853565, encoding, amountWei).
+// Quote all native payments, simulate, and recheck both wallet contexts before sending.
 
-// Sepolia ETH -> Aleo testnet (the example below connects an EVM wallet).
-const destination = 1617853565;
-const amount = 1000000000000000n; // 0.001 ETH in wei.
-// Quote and simulate first. quotedNativeValue includes the amount and all bridge fees.
-// await router.transferRemote(destination, recipient, amount, { value: quotedNativeValue });
+// After delivery, the claimable balance is checked again. The wallet fills
+// input 2 (recipient), input 3 (original secret), and input 4 (recipient proof).
+const claim = await preparePrivateClaim(encoding, '0.001', '1000000');
+await execute(claim); // User approves in wallet. Observe update?.status; do not blindly retry.
+
+// A separate, user-initiated outbound action: show this quote for review first.
+const quote = await quotePrivateBurn('0x1111111111111111111111111111111111111111', '0.001');
+// Show quote.amount, quote.tokenFee, quote.net, and quote.dispatchMicrocredits.
+// Recheck the same wallet account/network/permissions before each execute.
+const burn = await preparePrivateBurn(quote, '1000000'); // Rejects changed route/fees.
+await execute(burn);
+// Wallet fills token record at 0, credits record at 1, signer proof at 9.
+// The EVM destination at 6 is an encoded address, not an inbound commitment.
+// Burn amount at 7 is GROSS; the bridged amount excludes the token fee.
+// Both actions use a separate public Aleo execution fee (microcredits).
 `,
 
   shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';
