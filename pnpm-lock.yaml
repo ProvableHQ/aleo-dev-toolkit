@@ -82,6 +82,9 @@ importers:
       '@provablehq/aleo-wallet-algorithms':
         specifier: workspace:*
         version: link:../../packages/aleo-wallet-algorithms
+      '@provablehq/shield-multichain':
+        specifier: workspace:*
+        version: link:../../packages/shield-multichain
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -562,6 +565,15 @@ importers:
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.1
+    devDependencies:
+      rimraf:
+        specifier: ^5.0.5
+        version: 5.0.10
+      tsup:
+        specifier: ^8.0.2
+        version: 8.4.0(@swc/core@1.12.1)(jiti@2.4.2)(postcss@8.5.9)(typescript@5.8.3)(yaml@2.7.1)
+
+  packages/shield-multichain:
     devDependencies:
       rimraf:
         specifier: ^5.0.5

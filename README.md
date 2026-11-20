@@ -20,6 +20,11 @@ to update dependencies and imports.
 
 For wallet adapter documentation, see the [Wallet Adapter README](/packages/aleo-wallet-adapter/README.md).
 
+The standalone [Shield multichain client](docs/account-discovery.md) uses
+`window.shield.multichain.evm` / `.solana`, separately from the Aleo adapter.
+The lab's `/accounts` page exercises account discovery; its guide maps the
+shared-core and extension/mobile follow-up work.
+
 ## Build
 
 To build all packages (will not build example apps):

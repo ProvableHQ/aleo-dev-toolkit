@@ -11,6 +11,18 @@ export const PLACEHOLDERS = {
 } as const;
 
 export const codeExamples = {
+  accountDiscovery: `import { createShieldMultichainClient } from '@provablehq/shield-multichain';
+
+const multichain = createShieldMultichainClient();
+
+// Separate provider: window.shield.multichain.evm / .solana.
+// Call from an explicit user action. The wallet approves disclosure.
+const evm = await multichain.evm.requestAccount();
+const solana = await multichain.solana.requestAccount();
+
+// Use evm.address / solana.address in your UI.
+// Clear them on multichain accountsChanged / disconnect.
+// Unsupported wallets reject; sharing grants no signing authority.`,
   shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { createShieldedUsdcxMintRequest, DecryptPermission, SHIELDED_USDCX_MINT_GRANT } from '@provablehq/aleo-wallet-adapter-core';
 import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
