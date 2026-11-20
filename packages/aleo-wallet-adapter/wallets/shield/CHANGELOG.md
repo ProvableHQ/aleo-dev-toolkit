@@ -1,5 +1,22 @@
 # @provablehq/aleo-wallet-adapter-shield
 
+## 1.6.0
+
+### Minor Changes
+
+- bb7dd51: Add `remote.origin` for desktop WebViews and other local or non-web clients pairing over Shield Relay. Desktop apps can supply an HTTPS origin they control and use the verified app link for QR pairing. Hosted HTTP(S) pages use their browser origin. The wallet treats relay origins as self-reported. Stored relay sessions are scoped to the explicit origin. Disconnect with the old configuration before retiring an origin to remove its saved session.
+
+  Pairing can continue when browser storage is unavailable. Use Centrifuge 5.7.1 or later for its guarded storage access.
+
+- 7555e30: Shield relay: accept an `https:` verified-link `deeplinkBase` and export `SHIELD_VERIFIED_DEEPLINK_BASE` (`https://connect.shield.app/connect`), which only the signed Shield app can open. Connect params, the pairing secret included, travel in the URL fragment on https, so they never reach the link host; wake links follow the same base (`…/wake#channelId=…`). The default stays `shield://connect` until most installs run an app version that registers the link. Plain `http:` bases throw. Re-vendors the relay client with the fragment form.
+
+### Patch Changes
+
+- 501c494: Reject message signing with WalletAddressWithheldError on readAddress: false connections, since Aleo signatures can reveal the signer's address. Initialize Shield's inherited address permission state on successful connections and reset it on disconnect.
+- Updated dependencies [b8ce774]
+- Updated dependencies [501c494]
+  - @provablehq/aleo-wallet-adapter-core@1.3.1
+
 ## 1.5.0
 
 ### Minor Changes

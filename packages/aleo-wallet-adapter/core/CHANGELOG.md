@@ -1,5 +1,12 @@
 # @provablehq/aleo-wallet-adapter-core
 
+## 1.3.1
+
+### Patch Changes
+
+- b8ce774: Count Shield's provisional records in `sumRecordBalance` and the `getWalletBalances` fallback. A provisional record is the output of a transaction the network accepted that Shield's scanner has not indexed yet. Its inputs have already left the record list, so leaving it out made the private balance dip after each transaction.
+- 501c494: Reject message signing with WalletAddressWithheldError on readAddress: false connections, since Aleo signatures can reveal the signer's address. Initialize Shield's inherited address permission state on successful connections and reset it on disconnect.
+
 ## 1.3.0
 
 ### Minor Changes
