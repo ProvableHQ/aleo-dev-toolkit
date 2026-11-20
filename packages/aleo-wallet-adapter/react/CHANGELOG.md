@@ -1,5 +1,13 @@
 # @provablehq/aleo-wallet-adapter-react
 
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [b8ce774]
+- Updated dependencies [501c494]
+  - @provablehq/aleo-wallet-adapter-core@1.3.1
+
 ## 1.5.0
 
 ### Minor Changes
