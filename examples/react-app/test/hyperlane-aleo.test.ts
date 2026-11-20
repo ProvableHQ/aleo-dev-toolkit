@@ -345,6 +345,14 @@ async function mount(
     container,
     amount: () => container.querySelector<HTMLInputElement>(`#hyperlane-${mode}-amount`)!,
     changeAmount: (value: string) => changeInput(container, `#hyperlane-${mode}-amount`, value),
+    changeEncoding: (value: string) => changeInput(container, '#hyperlane-claim-recipient', value),
+    max: async () => {
+      await act(async () =>
+        [...container.querySelectorAll('button')]
+          .find(b => b.textContent === 'Use maximum')!
+          .click(),
+      );
+    },
     inspect: async () => {
       await act(async () =>
         [...container.querySelectorAll('button')]
@@ -389,6 +397,7 @@ test('a wallet change while refreshing claim state prevents submission', async t
     release = resolve;
   });
   let calls = 0;
+  let pauseReads = false;
   const h = await mount(
     t,
     async () => {
@@ -396,10 +405,11 @@ test('a wallet change while refreshing claim state prevents submission', async t
       return { transactionId: 'id' };
     },
     async (...args) => {
-      await pending;
+      if (pauseReads) await pending;
       return fixture().read(...args);
     },
   );
+  pauseReads = true;
   await h.click();
   await h.render({ ready: false, scope: {} });
   await act(async () => release());
@@ -473,6 +483,7 @@ test('a newly issued encoding cancels an older claim still reading chain state',
     release = resolve;
   });
   let calls = 0;
+  let pauseReads = false;
   const h = await mount(
     t,
     async () => {
@@ -480,10 +491,11 @@ test('a newly issued encoding cancels an older claim still reading chain state',
       return { transactionId: 'id' };
     },
     async (...args) => {
-      await pending;
+      if (pauseReads) await pending;
       return fixture().read(...args);
     },
   );
+  pauseReads = true;
   await h.click();
   await h.render(undefined, `0x${'22'.repeat(32)}`);
   await act(async () => release());
@@ -495,7 +507,7 @@ for (const [baseUnits, displayed] of [
   ['100000000000000000', '0.1'],
   ['100000000000000001', '0.100000000000000001'],
 ]) {
-  test(`checking delivered balance defaults to the exact full claim amount ${displayed}`, async t => {
+  test(`entering an encoding automatically defaults to the exact maximum claim amount ${displayed}`, async t => {
     const chain = fixture();
     chain.set(WARP, 'claimable', bytes32Limbs(encoding), `${baseUnits}u128`);
     const calls: TransactionOptions[] = [];
@@ -509,9 +521,6 @@ for (const [baseUnits, displayed] of [
       'claim',
       '',
     );
-    assert.equal(h.amount().value, '');
-    assert.equal(h.button().disabled, true);
-    await h.inspect();
     assert.equal(h.amount().value, displayed);
     assert.equal(h.button().disabled, false);
     await h.click();
@@ -558,4 +567,84 @@ test('an undelivered or fully claimed encoding does not prefill an arbitrary cla
   assert.equal(h.amount().value, '');
   assert.equal(h.button().disabled, true);
   assert.equal(calls, 0);
+});
+
+test('Use maximum refreshes the mapping and restores the maximum after a partial edit', async t => {
+  const chain = fixture();
+  chain.set(WARP, 'claimable', bytes32Limbs(encoding), '100000000000000000u128');
+  const h = await mount(t, async () => undefined, chain.read, 'claim', '');
+  assert.equal(h.amount().value, '0.1');
+  await h.changeAmount('0.01');
+  chain.set(WARP, 'claimable', bytes32Limbs(encoding), '200000000000000000u128');
+  await h.max();
+  assert.equal(h.amount().value, '0.2');
+});
+
+test('an older mapping response cannot overwrite the maximum for a new encoding', async t => {
+  const next = `0x${'22'.repeat(32)}`;
+  const chain = fixture();
+  chain.set(WARP, 'claimable', bytes32Limbs(next), '200000000000000000u128');
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => {
+    release = resolve;
+  });
+  const h = await mount(
+    t,
+    async () => undefined,
+    async (p, m, k) => {
+      if (m === 'claimable' && k === bytes32Limbs(encoding)) await pending;
+      return chain.read(p, m, k);
+    },
+    'claim',
+    '',
+  );
+  assert.equal(h.amount().value, '');
+  assert.equal(h.button().disabled, true);
+  await h.render(undefined, next);
+  assert.equal(h.amount().value, '0.2');
+  await act(async () => release());
+  assert.equal(h.amount().value, '0.2');
+});
+
+test('a failed mapping read leaves no default amount and cannot open wallet approval', async t => {
+  let calls = 0;
+  const h = await mount(
+    t,
+    async () => {
+      calls++;
+      return undefined;
+    },
+    async () => {
+      throw new Error('Mapping temporarily unavailable');
+    },
+    'claim',
+    '',
+  );
+  assert.equal(h.amount().value, '');
+  assert.equal(h.button().disabled, true);
+  assert.match(h.text(), /Mapping temporarily unavailable/);
+  await h.click();
+  assert.equal(calls, 0);
+});
+
+test('the maximum and partial edits are scoped to the connected wallet context', async t => {
+  const h = await mount(t, async () => undefined, fixture().read, 'claim', '');
+  assert.equal(h.amount().value, '0.001');
+  await h.changeAmount('0.0005');
+  await h.render({ ready: false, scope: {} });
+  assert.equal(h.amount().value, '');
+  assert.equal(h.button().disabled, true);
+  await h.render({ ready: true, scope: {} });
+  assert.equal(h.amount().value, '0.001');
+});
+
+test('an incomplete encoding clears the previous maximum without reading a different mapping key', async t => {
+  const chain = fixture();
+  const h = await mount(t, async () => undefined, chain.read, 'claim', '');
+  assert.equal(h.amount().value, '0.001');
+  const reads = chain.calls.length;
+  await h.changeEncoding('0x12');
+  assert.equal(h.amount().value, '');
+  assert.equal(h.button().disabled, true);
+  assert.equal(chain.calls.length, reads);
 });

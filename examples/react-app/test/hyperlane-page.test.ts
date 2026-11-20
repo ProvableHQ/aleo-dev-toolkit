@@ -30,6 +30,11 @@ async function mount(
   supported = ['hyperlane-claim-secret', 'program-freezelist-exclusion-proof'],
   granted = true,
 ) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) =>
+    new Response(
+      JSON.stringify(String(url).includes('/bridge_pause/') ? null : '0u128'),
+    )) as typeof fetch;
   const store = createStore();
   store.set(programsAtom, HYPERLANE_PROGRAMS);
   store.set(readAddressAtom, true);
@@ -75,6 +80,7 @@ async function mount(
   t.after(async () => {
     await act(async () => root.unmount());
     container.remove();
+    globalThis.fetch = originalFetch;
   });
   return {
     store,

@@ -13,9 +13,10 @@ export const PLACEHOLDERS = {
 export const codeExamples = {
   hyperlaneRecipient: `import { useWallet, useTransaction } from '@provablehq/aleo-wallet-adapter-react';
 import { Network } from '@provablehq/aleo-types';
+import { formatEther } from 'viem';
 // Example-local helpers, not published adapter APIs:
 import { HYPERLANE_GRANTS, HYPERLANE_PROGRAMS, HYPERLANE_RECORD_ACCESS,
-  preparePrivateClaim, quotePrivateBurn, preparePrivateBurn } from '@/lib/hyperlaneAleoTestnet';
+  readClaimable, preparePrivateClaim, quotePrivateBurn, preparePrivateBurn } from '@/lib/hyperlaneAleoTestnet';
 
 // Connect on testnet with programs: HYPERLANE_PROGRAMS,
 // algorithmsAllowed: HYPERLANE_GRANTS, recordAccess: HYPERLANE_RECORD_ACCESS,
@@ -35,7 +36,9 @@ const encoding = \`0x\${commitmentHex}\`;
 
 // After delivery, the claimable balance is checked again. The wallet fills
 // input 2 (recipient), input 3 (original secret), and input 4 (recipient proof).
-const claim = await preparePrivateClaim(encoding, '0.001', '1000000');
+const maximum = await readClaimable(encoding);
+if (maximum === 0n) throw new Error('No delivered balance is available to claim yet.');
+const claim = await preparePrivateClaim(encoding, formatEther(maximum), '1000000');
 await execute(claim); // User approves in wallet. Observe update?.status; do not blindly retry.
 
 // A separate, user-initiated outbound action: show this quote for review first.
