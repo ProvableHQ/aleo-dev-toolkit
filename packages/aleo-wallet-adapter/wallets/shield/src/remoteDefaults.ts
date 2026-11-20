@@ -61,8 +61,54 @@ export function resolveRemoteConfig(
     ...overrides,
     relayUrl: overrides.relayUrl ?? DEFAULT_SHIELD_RELAY_URL,
     deeplinkBase,
+    origin: overrides.origin === undefined ? undefined : normalizeRelayOrigin(overrides.origin),
     transport: overrides.transport ?? defaultShieldRemoteTransport,
   };
+}
+
+/** Keep the browser's actual origin for hosted web pages. */
+export function relayOriginOverride(origin?: string): string | undefined {
+  if (origin === undefined) return undefined;
+  if (isHostedWebOrigin(globalThis.location?.origin) || isHostedWebOrigin(globalThis.origin)) {
+    return undefined;
+  }
+  return origin;
+}
+
+function isHostedWebOrigin(origin?: string): boolean {
+  if (!origin || origin === 'null') return false;
+  const { protocol, hostname } = new URL(origin);
+  return (protocol === 'http:' || protocol === 'https:') && !isLocalHost(hostname);
+}
+
+function isLocalHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname === 'tauri.localhost'
+  );
+}
+
+function normalizeRelayOrigin(origin: string): string {
+  const message = 'Shield remote: origin must be an HTTPS origin or a local HTTP origin';
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    throw new Error(message);
+  }
+  if (
+    (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLocalHost(url.hostname))) ||
+    url.username ||
+    url.password ||
+    url.pathname !== '/' ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error(message);
+  }
+  return url.origin;
 }
 
 /**
