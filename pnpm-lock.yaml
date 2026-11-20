@@ -500,8 +500,8 @@ importers:
         specifier: workspace:*
         version: link:../../../aleo-wallet-standard
       centrifuge:
-        specifier: ^5.7.0
-        version: 5.7.0
+        specifier: ^5.7.1
+        version: 5.7.1
       eciesjs:
         specifier: ^0.4.18
         version: 0.4.18
@@ -4430,8 +4430,8 @@ packages:
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
 
-  centrifuge@5.7.0:
-    resolution: {integrity: sha512-Ptx7ELyVc7/KgzpadVlISTtdTWsuzumze5/vo9sH4RsvtFulJJMhmKr/cNDg6se1eKKbS6ZywIBl4eSZxqY3fw==}
+  centrifuge@5.7.1:
+    resolution: {integrity: sha512-Jq+T/cAulZVJPfRLfKHX2jcELdwt/LNG4wVx7vQlpaLQlNS+s/HVysRlTNYZ/FktP/NY4sKPI1qz2gh2IGamUA==}
 
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
@@ -13712,7 +13712,7 @@ snapshots:
 
   ccount@2.0.1: {}
 
-  centrifuge@5.7.0:
+  centrifuge@5.7.1:
     dependencies:
       events: 3.3.0
       protobufjs: 7.6.5
