@@ -15,7 +15,7 @@ const require = createRequire(import.meta.url);
 const virtual = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
 const ui = virtual(`
   export const Button='button', Input='input', Label='label', Alert='aside', AlertDescription='p';
-  export const CodePanel=()=>null;
+  export const CodePanel=()=>null, HyperlaneTestnetMint=()=>null;
   export const codeExamples={hyperlaneRecipient:''};
 `);
 const modules = {

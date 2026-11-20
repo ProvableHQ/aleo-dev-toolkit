@@ -22,8 +22,11 @@ const { commitmentHex } = await requestAddressEncoding({ network: Network.TESTNE
 const recipient = \`0x\${commitmentHex}\`;
 // Save the returned encoding before starting a deposit.
 
-// Use your source-chain client with a compatible deployed private-mint route:
-// await router.transferRemote(destination, recipient, amount);
+// Sepolia ETH -> Aleo testnet (the example below connects an EVM wallet).
+const destination = 1617853565;
+const amount = 1000000000000000n; // 0.001 ETH in wei.
+// Quote and simulate first. quotedNativeValue includes the amount and all bridge fees.
+// await router.transferRemote(destination, recipient, amount, { value: quotedNativeValue });
 `,
 
   shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';

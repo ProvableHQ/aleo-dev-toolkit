@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CodePanel } from '@/components/CodePanel';
 import { codeExamples } from '@/lib/codeExamples';
+import { HyperlaneTestnetMint } from '@/components/functions/HyperlaneTestnetMint';
 
 export function HyperlaneRecipient() {
   const { wallet, address, connected, network, supportsAddressEncoding, requestAddressEncoding } =
@@ -102,8 +103,9 @@ export function HyperlaneRecipient() {
       )}
       <p className="body-s text-muted-foreground">
         Each request creates a fresh commitment. Save the returned encoding before funding a
-        deposit. This demo displays the recipient in memory and does not submit a transfer.
+        deposit. Use the Sepolia example below to fund a testnet deposit.
       </p>
+      <HyperlaneTestnetMint issuedRecipient={network === Network.TESTNET ? recipient : undefined} />
       <CodePanel code={codeExamples.hyperlaneRecipient} language="tsx" />
     </section>
   );
