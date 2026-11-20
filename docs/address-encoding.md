@@ -85,8 +85,9 @@ Open `/hyperlane` (**Transactions → Hyperlane Testnet ETH**):
    testnet domain `1617853565`.
 4. Select **Send Sepolia ETH**, approve in your EVM wallet, and follow the receipt
    and Hyperlane delivery links. A source receipt alone does not establish delivery.
-5. Select **Check delivered claimable balance**. After delivery, enter the amount
-   to claim (partial claims are supported), review the separate Aleo execution
+5. Select **Check delivered claimable balance**. After delivery, the claim amount
+   fills with the **full claimable balance**. You can reduce it for a partial
+   claim. Review the separate Aleo execution
    fee budget, and select **Approve private claim**. Use the wallet that issued
    this encoding, with its original recipient account selected. No token record
    is required for a claim. The bridge debits the exact claim amount and creates

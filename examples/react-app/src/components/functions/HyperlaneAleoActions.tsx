@@ -26,7 +26,7 @@ export function HyperlaneAleoActions({
   const { executeTransaction } = useWallet();
   const [encoding, setEncoding] = useState(issuedRecipient ?? '');
   const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('0.001');
+  const [amount, setAmount] = useState(mode === 'claim' ? '' : '0.001');
   const [fee, setFee] = useState('1000000');
   const [balanceSnapshot, setBalance] = useState<{ gate: HyperlaneGate; value: string }>();
   const balance = balanceSnapshot?.gate === gate ? balanceSnapshot.value : undefined;
@@ -52,8 +52,9 @@ export function HyperlaneAleoActions({
     if (issuedRecipient) {
       setEncoding(issuedRecipient);
       setBalance(undefined);
+      if (mode === 'claim') setAmount('');
     }
-  }, [issuedRecipient]);
+  }, [issuedRecipient, mode]);
   const quote = quoted?.gate === gate ? quoted.quote : undefined;
   const { update, error: trackingError } = useTransactionStatus(
     submission?.gate === gate ? submission.handle : null,
@@ -87,7 +88,11 @@ export function HyperlaneAleoActions({
         setBalance(undefined);
         const value = await readClaimable(encoding);
         assertCurrent();
-        if (mounted.current) setBalance({ gate, value: formatEther(value) });
+        if (mounted.current) {
+          const fullAmount = formatEther(value);
+          setBalance({ gate, value: fullAmount });
+          setAmount(value > 0n ? fullAmount : '');
+        }
       } else {
         setQuoted(undefined);
         const next = await quotePrivateBurn(recipient, amount);
@@ -123,6 +128,7 @@ export function HyperlaneAleoActions({
     setSubmission(undefined);
     setQuoted(undefined);
     setBalance(undefined);
+    if (mode === 'claim') setAmount('');
     setError(undefined);
   }
   return (
@@ -145,8 +151,10 @@ export function HyperlaneAleoActions({
         value={mode === 'claim' ? encoding : recipient}
         disabled={locked}
         onChange={e => {
-          if (mode === 'claim') setEncoding(e.target.value);
-          else setRecipient(e.target.value);
+          if (mode === 'claim') {
+            setEncoding(e.target.value);
+            setAmount('');
+          } else setRecipient(e.target.value);
           setQuoted(undefined);
           setBalance(undefined);
         }}
@@ -158,12 +166,21 @@ export function HyperlaneAleoActions({
         id={`${id}-amount`}
         value={amount}
         inputMode="decimal"
+        placeholder={
+          mode === 'claim' ? 'Check delivered balance to fill the full amount' : undefined
+        }
         disabled={locked}
         onChange={e => {
           setAmount(e.target.value);
           setQuoted(undefined);
         }}
       />
+      {mode === 'claim' && (
+        <p className="body-s text-muted-foreground">
+          Checking the delivered balance fills the full claim amount. You can enter a smaller amount
+          for a partial claim.
+        </p>
+      )}
       <Label htmlFor={`${id}-fee`}>Aleo execution fee budget (microcredits, public fee)</Label>
       <Input
         id={`${id}-fee`}
@@ -198,7 +215,7 @@ export function HyperlaneAleoActions({
         </div>
       )}
       <Button
-        disabled={locked || !gate.ready || (mode === 'burn' && !quote)}
+        disabled={locked || !gate.ready || (mode === 'burn' ? !quote : !amount.trim())}
         onClick={submit}
         className="ml-2"
       >

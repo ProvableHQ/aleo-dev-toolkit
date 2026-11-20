@@ -105,7 +105,8 @@ test('a fully granted compatible wallet enables the complete flow, and disconnec
   assert.match(h.text(), /Wallet ready for private claims and burns/);
   await h.click('Request an encoding');
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, false);
-  assert.equal(h.button('Approve private claim').disabled, false);
+  assert.equal(h.button('Check delivered claimable balance').disabled, false);
+  assert.equal(h.button('Approve private claim').disabled, true);
   assert.equal(h.button('Quote private burn').disabled, false);
   await h.render({ connected: false });
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);

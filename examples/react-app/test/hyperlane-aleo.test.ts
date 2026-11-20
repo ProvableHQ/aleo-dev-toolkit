@@ -268,11 +268,23 @@ Object.assign(globalThis, {
 });
 const { createRoot } = await import('react-dom/client');
 const { HyperlaneAleoActions } = await import('../src/components/functions/HyperlaneAleoActions');
+async function changeInput(container: HTMLElement, selector: string, value: string) {
+  const input = container.querySelector<HTMLInputElement>(selector)!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!.call(
+      input,
+      value,
+    );
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    input.dispatchEvent(new window.Event('change', { bubbles: true }));
+  });
+}
 async function mount(
   t: test.TestContext,
   execute: (tx: TransactionOptions) => Promise<{ transactionId: string } | undefined>,
   read = fixture().read,
   mode: 'claim' | 'burn' = 'claim',
+  initialClaimAmount = '0.001',
 ) {
   const fetchOriginal = globalThis.fetch;
   globalThis.fetch = (async (url: string) => {
@@ -321,6 +333,8 @@ async function mount(
     );
   };
   await render();
+  if (mode === 'claim' && initialClaimAmount)
+    await changeInput(container, '#hyperlane-claim-amount', initialClaimAmount);
   t.after(async () => {
     await act(async () => root.unmount());
     container.remove();
@@ -329,6 +343,15 @@ async function mount(
   return {
     render,
     container,
+    amount: () => container.querySelector<HTMLInputElement>(`#hyperlane-${mode}-amount`)!,
+    changeAmount: (value: string) => changeInput(container, `#hyperlane-${mode}-amount`, value),
+    inspect: async () => {
+      await act(async () =>
+        [...container.querySelectorAll('button')]
+          .find(b => b.textContent === 'Check delivered claimable balance')!
+          .click(),
+      );
+    },
     failTracking: async () => {
       await act(async () => failTracking?.(new Error('status unavailable')));
     },
@@ -466,4 +489,73 @@ test('a newly issued encoding cancels an older claim still reading chain state',
   await act(async () => release());
   assert.equal(calls, 0);
   assert.match(h.text(), /form changed/);
+});
+
+for (const [baseUnits, displayed] of [
+  ['100000000000000000', '0.1'],
+  ['100000000000000001', '0.100000000000000001'],
+]) {
+  test(`checking delivered balance defaults to the exact full claim amount ${displayed}`, async t => {
+    const chain = fixture();
+    chain.set(WARP, 'claimable', bytes32Limbs(encoding), `${baseUnits}u128`);
+    const calls: TransactionOptions[] = [];
+    const h = await mount(
+      t,
+      async tx => {
+        calls.push(tx);
+        return { transactionId: 'claim-handle' };
+      },
+      chain.read,
+      'claim',
+      '',
+    );
+    assert.equal(h.amount().value, '');
+    assert.equal(h.button().disabled, true);
+    await h.inspect();
+    assert.equal(h.amount().value, displayed);
+    assert.equal(h.button().disabled, false);
+    await h.click();
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].inputs[1], `${baseUnits}u128`);
+  });
+}
+
+test('a full-balance default can still be edited into a partial claim', async t => {
+  const chain = fixture();
+  chain.set(WARP, 'claimable', bytes32Limbs(encoding), '100000000000000000u128');
+  const calls: TransactionOptions[] = [];
+  const h = await mount(
+    t,
+    async tx => {
+      calls.push(tx);
+      return { transactionId: 'claim-handle' };
+    },
+    chain.read,
+    'claim',
+    '',
+  );
+  await h.inspect();
+  await h.changeAmount('0.0005');
+  await h.click();
+  assert.equal(calls[0].inputs[1], '500000000000000u128');
+});
+
+test('an undelivered or fully claimed encoding does not prefill an arbitrary claim amount', async t => {
+  const chain = fixture();
+  chain.set(WARP, 'claimable', bytes32Limbs(encoding), '0u128');
+  let calls = 0;
+  const h = await mount(
+    t,
+    async () => {
+      calls++;
+      return undefined;
+    },
+    chain.read,
+    'claim',
+    '',
+  );
+  await h.inspect();
+  assert.equal(h.amount().value, '');
+  assert.equal(h.button().disabled, true);
+  assert.equal(calls, 0);
 });
