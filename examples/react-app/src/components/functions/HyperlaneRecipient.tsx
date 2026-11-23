@@ -1,28 +1,64 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Network } from '@provablehq/aleo-types';
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { Button } from '@/components/ui/button';
 
 export function HyperlaneRecipient() {
-  const { connected, network, supportsAddressEncoding, requestAddressEncoding } = useWallet();
+  const { wallet, address, connected, network, supportsAddressEncoding, requestAddressEncoding } =
+    useWallet();
   const { setVisible } = useWalletModal();
-  const [recipient, setRecipient] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const adapter = wallet?.adapter;
+  const scope = useMemo(
+    () => ({ adapter, address, connected, network, supportsAddressEncoding }),
+    [adapter, address, connected, network, supportsAddressEncoding],
+  );
+  const latestScope = useRef(scope);
+  latestScope.current = scope;
+  const activeAttempt = useRef<object | null>(null);
+  const [result, setResult] = useState<{
+    scope: typeof scope;
+    recipient?: string;
+    error?: string;
+    busy: boolean;
+  }>();
+  useEffect(
+    () => () => {
+      activeAttempt.current = null;
+    },
+    [scope],
+  );
+  // Scope identity also prevents A -> B -> A from restoring an old result.
+  const current = result?.scope === scope ? result : undefined;
+  const recipient = current?.recipient;
+  const error = current?.error;
+  const busy = current?.busy ?? false;
 
   async function request() {
+    if (
+      !connected ||
+      !supportsAddressEncoding ||
+      latestScope.current !== scope ||
+      activeAttempt.current
+    )
+      return;
     if (network !== Network.MAINNET && network !== Network.TESTNET) return;
-    setBusy(true);
-    setRecipient('');
-    setError('');
+    const attempt = {};
+    activeAttempt.current = attempt;
+    setResult({ scope, busy: true });
+    const isCurrent = () => latestScope.current === scope && activeAttempt.current === attempt;
     try {
       const { commitmentHex } = await requestAddressEncoding({ network });
-      setRecipient(`0x${commitmentHex}`);
+      if (isCurrent()) setResult({ scope, busy: false, recipient: `0x${commitmentHex}` });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      if (isCurrent())
+        setResult({
+          scope,
+          busy: false,
+          error: cause instanceof Error ? cause.message : String(cause),
+        });
     } finally {
-      setBusy(false);
+      if (activeAttempt.current === attempt) activeAttempt.current = null;
     }
   }
 
