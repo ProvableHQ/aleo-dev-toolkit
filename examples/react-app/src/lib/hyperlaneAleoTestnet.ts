@@ -15,7 +15,7 @@ const U64_MAX = (1n << 64n) - 1n;
 export const HYPERLANE_PROGRAMS = [WARP, TOKEN, 'credits.aleo'];
 export const HYPERLANE_GRANTS: AlgorithmGrant[] = [
   {
-    algorithm: 'hyperlane-claim-secret',
+    algorithm: 'route-bound-commitment-secret',
     program: WARP,
     function: 'claim_private',
     inputPosition: 3,
@@ -161,7 +161,7 @@ export async function preparePrivateClaim(
       { type: 'address' },
       {
         type: 'derived',
-        algorithm: 'hyperlane-claim-secret',
+        algorithm: 'route-bound-commitment-secret',
         args: { commitment: { type: 'string', value: hex } },
       },
       proof(),

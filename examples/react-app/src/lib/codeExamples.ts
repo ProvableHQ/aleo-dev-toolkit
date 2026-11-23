@@ -26,7 +26,7 @@ const { requestAddressEncoding, supportsAddressEncoding, algorithmsSupported,
 const { execute, update } = useTransaction();
 const algorithms = await algorithmsSupported();
 if (!connected || network !== Network.TESTNET || !supportsAddressEncoding ||
-    !['hyperlane-claim-secret', 'program-freezelist-exclusion-proof']
+    !['route-bound-commitment-secret', 'program-freezelist-exclusion-proof']
       .every(name => algorithms.includes(name))) throw new Error('Update and reconnect your testnet wallet.');
 
 const { commitmentHex } = await requestAddressEncoding({ network: Network.TESTNET });

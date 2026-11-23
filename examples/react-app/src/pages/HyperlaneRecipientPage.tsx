@@ -63,9 +63,10 @@ export function HyperlaneRecipientPage() {
           if (!stopped)
             setCapability({
               scope,
-              supported: ['hyperlane-claim-secret', 'program-freezelist-exclusion-proof'].every(a =>
-                supported.includes(a),
-              ),
+              supported: [
+                'route-bound-commitment-secret',
+                'program-freezelist-exclusion-proof',
+              ].every(a => supported.includes(a)),
             });
         },
         () => {

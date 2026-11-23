@@ -27,7 +27,7 @@ const { createRoot } = await import('react-dom/client');
 const { HyperlaneRecipientPage } = await import('../src/pages/HyperlaneRecipientPage');
 async function mount(
   t: test.TestContext,
-  supported = ['hyperlane-claim-secret', 'program-freezelist-exclusion-proof'],
+  supported = ['route-bound-commitment-secret', 'program-freezelist-exclusion-proof'],
   granted = true,
 ) {
   const originalFetch = globalThis.fetch;

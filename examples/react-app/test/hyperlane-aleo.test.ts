@@ -104,7 +104,7 @@ test('private claim uses the exact five-input ABI and wallet-owned recipient, se
     { type: 'address' },
     {
       type: 'derived',
-      algorithm: 'hyperlane-claim-secret',
+      algorithm: 'route-bound-commitment-secret',
       args: { commitment: { type: 'string', value: encoding.slice(2) } },
     },
     {

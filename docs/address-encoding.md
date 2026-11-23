@@ -70,7 +70,7 @@ Open `/hyperlane` (**Transactions → Hyperlane Testnet ETH**):
 
 1. Select **Configure Hyperlane testnet permissions**, then reconnect the updated
    Shield extension and approve the grants. This switches the example to testnet.
-   The wallet must support address encoding, `hyperlane-claim-secret`, and
+   The wallet must support address encoding, `route-bound-commitment-secret`, and
    `program-freezelist-exclusion-proof`. An older wallet cannot fund a deposit
    through this demo. The local Shield extension build must include private-claim
    support; address encoding alone is insufficient.
@@ -127,7 +127,7 @@ plus these exact derived slots:
 
 | Transition                | Input | Wallet algorithm                     |
 | ------------------------- | ----- | ------------------------------------ |
-| `claim_private`           | 3     | `hyperlane-claim-secret`             |
+| `claim_private`           | 3     | `route-bound-commitment-secret`      |
 | `claim_private`           | 4     | `program-freezelist-exclusion-proof` |
 | `transfer_remote_private` | 9     | `program-freezelist-exclusion-proof` |
 
