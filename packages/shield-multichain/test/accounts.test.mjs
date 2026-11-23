@@ -224,3 +224,22 @@ test('relay unsupported errors propagate without an Aleo fallback', async () => 
     thrown => thrown === error,
   );
 });
+
+test('trading methods keep receive discovery independent and reject unsupported wallets', async () => {
+  const address = '0x' + '12'.repeat(20);
+  const signature = '0x' + 'ab'.repeat(65);
+  const calls = [];
+  const provider = {
+    version: '1.0.0', on() {}, off() {},
+    evm: {
+      async requestTradingAccount(options) { calls.push(options); return { family: 'evm', address, secret: 'omit' }; },
+      async signTradingAgent() { return signature; },
+    },
+  };
+  const evm = createShieldMultichainClient(() => provider).evm;
+  assert.deepEqual(await evm.requestTradingAccount({ fresh: true }), { family: 'evm', address });
+  assert.deepEqual(calls, [{ fresh: true }]);
+  assert.equal(await evm.signTradingAgent({}), signature);
+  delete provider.evm.signTradingAgent;
+  await assert.rejects(evm.signTradingAgent({}), { code: 'UNSUPPORTED' });
+});

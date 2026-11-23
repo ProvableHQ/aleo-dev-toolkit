@@ -23,6 +23,7 @@ export function AccountDiscovery() {
   const { setVisible } = useWalletModal();
   const [accounts, setAccounts] = useState<Partial<Record<AccountFamily, SharedAccount>>>({});
   const [pending, setPending] = useState<AccountFamily | null>(null);
+  const [trading, setTrading] = useState<string>();
   const [error, setError] = useState('');
   const epoch = useRef(0);
   const inFlight = useRef(false);
@@ -33,6 +34,7 @@ export function AccountDiscovery() {
       epoch.current += 1;
       inFlight.current = false;
       setAccounts({});
+      setTrading(undefined);
       setPending(null);
       setError('');
     };
@@ -88,6 +90,23 @@ export function AccountDiscovery() {
         inFlight.current = false;
         setPending(null);
       }
+    }
+  };
+
+  const requestTrading = async (fresh: boolean) => {
+    if (!connected) return setVisible(true);
+    if (inFlight.current) return;
+    inFlight.current = true;
+    const current = epoch.current;
+    setPending('evm');
+    setError('');
+    try {
+      const account = await multichain.evm.requestTradingAccount({ fresh });
+      if (epoch.current === current) setTrading(account.address);
+    } catch {
+      if (epoch.current === current) setError('Trading account request did not complete.');
+    } finally {
+      if (epoch.current === current) { inFlight.current = false; setPending(null); }
     }
   };
 
@@ -150,11 +169,19 @@ export function AccountDiscovery() {
           );
         })}
       </div>
+      <div className="space-y-3 rounded-lg border p-4">
+        <h2 className="body-m-bold">Hyperliquid trading account</h2>
+        {connected && trading && <p className="break-all">{trading}</p>}
+        <div className="flex gap-2">
+          <Button disabled={pending !== null} onClick={() => void requestTrading(false)}>Request trading account</Button>
+          <Button disabled={pending !== null} variant="outline" onClick={() => void requestTrading(true)}>New trading account</Button>
+        </div>
+      </div>
       {error ? <p role="alert">{error}</p> : null}
       <p className="text-sm text-muted-foreground">
         This lab uses window.shield.multichain through a standalone client. The Aleo adapter is used
         only for the existing connect control. A matching wallet build is required; older builds
-        report unsupported. Balances and signing are separate milestones.
+        report unsupported. Trading agent approval requires a separate request.
       </p>
       <CodePanel code={codeExamples.accountDiscovery} language="tsx" />
     </section>

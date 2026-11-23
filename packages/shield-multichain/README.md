@@ -32,3 +32,16 @@ Its transport owns pairing, approval wake, timeouts and session binding.
 See [the integration guide](../../docs/account-discovery.md) for shared-core,
 extension, mobile and embedded-wallet responsibilities. No wallet implementation,
 RPC service, balances or signing are added by this package.
+
+## Hyperliquid trading accounts
+
+Connect Shield first. `client.evm.requestTradingAccount()` asks for the current trading address.
+Pass `{ fresh: true }` for a new address or `{ restoreIndex: i }` to recover a known index with wallet consent.
+Receive addresses use the separate `requestAccount()` method.
+Shield derives the same trading addresses from an imported Aleo private key or its original phrase.
+
+`client.evm.signTradingAgent({ from, network, agentAddress, nonce, validUntil })` requests a HyperCore agent signature.
+The wallet displays the signer, site, network, agent and expiration before approval.
+Use milliseconds for nonce and expiration. A zero agent and null expiration revoke the unnamed agent.
+Submit the matching approveAgent action to the same HyperCore network. The signature chain ID is 42161 for mainnet and 421614 for testnet.
+Each supported browser host exposes these optional capabilities independently of public address discovery.

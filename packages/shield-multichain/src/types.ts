@@ -13,6 +13,24 @@ export interface MultichainFamilyProvider<Family extends AccountFamily> {
   requestAccount(): Promise<MultichainAccount<Family>>;
 }
 
+export interface TradingAccountRequest {
+  fresh?: boolean;
+  restoreIndex?: number;
+}
+
+export interface TradingAgentRequest {
+  from: string;
+  network: 'Testnet' | 'Mainnet';
+  agentAddress: string;
+  nonce: number;
+  validUntil: number | null;
+}
+
+export interface ShieldTradingProvider {
+  requestTradingAccount(options?: TradingAccountRequest): Promise<MultichainAccount<'evm'>>;
+  signTradingAgent(approval: TradingAgentRequest): Promise<string>;
+}
+
 /** No addresses in events: a site must request disclosure again. */
 export type MultichainEvent = 'accountsChanged' | 'disconnect';
 export type MultichainListener = () => void;
@@ -20,14 +38,14 @@ export type MultichainListener = () => void;
 /** Optional window.shield.multichain contract. No dependency on the Aleo adapter. */
 export interface ShieldMultichainProvider {
   readonly version: typeof SHIELD_MULTICHAIN_VERSION;
-  readonly evm?: MultichainFamilyProvider<'evm'>;
+  readonly evm?: MultichainFamilyProvider<'evm'> & Partial<ShieldTradingProvider>;
   readonly solana?: MultichainFamilyProvider<'solana'>;
   on(event: MultichainEvent, listener: MultichainListener): void;
   off(event: MultichainEvent, listener: MultichainListener): void;
 }
 
 export interface ShieldMultichainClient {
-  readonly evm: MultichainFamilyProvider<'evm'>;
+  readonly evm: MultichainFamilyProvider<'evm'> & ShieldTradingProvider;
   readonly solana: MultichainFamilyProvider<'solana'>;
 }
 
