@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import React, { act } from 'react';
@@ -80,6 +81,17 @@ function fixture() {
   };
   return { values, set, read, calls };
 }
+// Byte-identical to shield-core/src/__tests__/fixtures/hyperlane/u128-limbs.json.
+const encodingVectors = JSON.parse(
+  readFileSync(new URL('./fixtures/hyperlane-u128-limbs.json', import.meta.url), 'utf8'),
+) as { vectors: { name: string; bytes32Hex: string; literal: string }[] };
+for (const vector of encodingVectors.vectors) {
+  test(`fixed cross-repository limb vector: ${vector.name}`, () => {
+    assert.equal(bytes32Limbs(vector.bytes32Hex), vector.literal);
+    assert.equal(bytes32Limbs(`0x${vector.bytes32Hex}`), vector.literal);
+  });
+}
+
 test('commitment limbs preserve the original little-endian byte order', () => {
   assert.equal(
     bytes32Limbs(encoding),
