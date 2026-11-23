@@ -26,7 +26,26 @@ export interface TradingAgentRequest {
   validUntil: number | null;
 }
 
+/** Integer gas fields use decimal strings. The wallet validates the Arc mainnet contract and recipient. */
+export interface TradingArcRequest {
+  from: string;
+  chainId: number;
+  to: string;
+  data: string;
+  nonce: number;
+  gas: string;
+  maxFeePerGas: string;
+  maxPriorityFeePerGas: string;
+}
+export interface TradingWithdrawalRequest {
+  from: string;
+  amount: string;
+  sourceDex: '' | 'spot';
+  nonce: number;
+}
 export interface ShieldTradingProvider {
+  sendTradingArcTransaction(request: TradingArcRequest): Promise<string>;
+  signTradingWithdrawal(request: TradingWithdrawalRequest): Promise<string>;
   requestTradingAccount(options?: TradingAccountRequest): Promise<MultichainAccount<'evm'>>;
   signTradingAgent(approval: TradingAgentRequest): Promise<string>;
 }

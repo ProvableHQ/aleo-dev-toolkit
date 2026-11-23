@@ -243,3 +243,20 @@ test('trading methods keep receive discovery independent and reject unsupported 
   delete provider.evm.signTradingAgent;
   await assert.rejects(evm.signTradingAgent({}), { code: 'UNSUPPORTED' });
 });
+
+test('Arc funding and return accept only a transaction hash and a full signature', async () => {
+  const tx = '0x' + '11'.repeat(32);
+  const sig = '0x' + '22'.repeat(65);
+  const provider = { version: '1.0.0', on() {}, off() {}, evm: {} };
+  const { evm } = createShieldMultichainClient(() => provider);
+  await assert.rejects(evm.sendTradingArcTransaction({}), { code: 'UNSUPPORTED' });
+  await assert.rejects(evm.signTradingWithdrawal({}), { code: 'UNSUPPORTED' });
+  provider.evm.sendTradingArcTransaction = async () => tx;
+  provider.evm.signTradingWithdrawal = async () => sig;
+  assert.equal(await evm.sendTradingArcTransaction({}), tx);
+  assert.equal(await evm.signTradingWithdrawal({}), sig);
+  provider.evm.sendTradingArcTransaction = async () => sig;
+  provider.evm.signTradingWithdrawal = async () => tx;
+  await assert.rejects(evm.sendTradingArcTransaction({}), { code: 'INVALID_RESPONSE' });
+  await assert.rejects(evm.signTradingWithdrawal({}), { code: 'INVALID_RESPONSE' });
+});

@@ -45,3 +45,7 @@ The wallet displays the signer, site, network, agent and expiration before appro
 Use milliseconds for nonce and expiration. A zero agent and null expiration revoke the unnamed agent.
 Submit the matching approveAgent action to the same HyperCore network. The signature chain ID is 42161 for mainnet and 421614 for testnet.
 Each supported browser host exposes these optional capabilities independently of public address discovery.
+
+The optional `evm.sendTradingArcTransaction` method submits one reviewed Arc mainnet bridge call from a shared trading address. It returns the transaction hash. Confirm the receipt before treating the transfer as settled. Gas fields are decimal integers. Shield restricts USDC approvals to Circle's bridge contracts. HyperCore funding pays the same trading address. An Aleo return requires a private mint prepared by this wallet and site.
+
+The optional `evm.signTradingWithdrawal` method approves a HyperCore mainnet USDC withdrawal to the same address on Arc. Pass the decimal USDC amount, source balance (empty string for perps or `spot`), and nonce. It returns the signature for the reviewed action. Both methods require wallet approval and report `UNSUPPORTED` on older wallets.

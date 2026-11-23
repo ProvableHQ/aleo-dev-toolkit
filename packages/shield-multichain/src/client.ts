@@ -23,12 +23,20 @@ export function createShieldMultichainClient(
 ): ShieldMultichainClient {
   const run = async <Family extends AccountFamily, Result>(
     family: Family,
-    call: (namespace: MultichainFamilyProvider<Family> & Partial<ShieldTradingProvider>) => Promise<Result>,
+    call: (
+      namespace: MultichainFamilyProvider<Family> & Partial<ShieldTradingProvider>,
+    ) => Promise<Result>,
   ): Promise<Result> => {
     const provider = source();
-    const namespace = provider?.[family] as (MultichainFamilyProvider<Family> & Partial<ShieldTradingProvider>) | undefined;
-    if (provider?.version !== SHIELD_MULTICHAIN_VERSION || !namespace ||
-        typeof provider.on !== 'function' || typeof provider.off !== 'function') {
+    const namespace = provider?.[family] as
+      | (MultichainFamilyProvider<Family> & Partial<ShieldTradingProvider>)
+      | undefined;
+    if (
+      provider?.version !== SHIELD_MULTICHAIN_VERSION ||
+      !namespace ||
+      typeof provider.on !== 'function' ||
+      typeof provider.off !== 'function'
+    ) {
       throw new ShieldMultichainError('UNSUPPORTED', 'Shield multichain accounts are unavailable.');
     }
     let stale = false;
@@ -59,26 +67,59 @@ export function createShieldMultichainClient(
       for (const event of events) provider.off(event, invalidate);
     }
   };
-  const requestAccount = <Family extends AccountFamily>(family: Family) => run(family, async namespace => {
-    if (typeof namespace.requestAccount !== 'function') throw new ShieldMultichainError('UNSUPPORTED', 'Account discovery is unavailable.');
-    return parseMultichainAccount(await namespace.requestAccount(), family);
-  });
+  const requestAccount = <Family extends AccountFamily>(family: Family) =>
+    run(family, async namespace => {
+      if (typeof namespace.requestAccount !== 'function')
+        throw new ShieldMultichainError('UNSUPPORTED', 'Account discovery is unavailable.');
+      return parseMultichainAccount(await namespace.requestAccount(), family);
+    });
   return {
     evm: {
       requestAccount: () => requestAccount('evm'),
-      requestTradingAccount: options => run('evm', async namespace => {
-        if (!namespace.requestTradingAccount) throw new ShieldMultichainError('UNSUPPORTED', 'Shield trading accounts are unavailable.');
-        return parseMultichainAccount(await namespace.requestTradingAccount(options), 'evm');
-      }),
-      signTradingAgent: approval => run('evm', async namespace => {
-        if (!namespace.signTradingAgent) throw new ShieldMultichainError('UNSUPPORTED', 'Hyperliquid agent approval is unavailable.');
-        const signature = await namespace.signTradingAgent(approval);
-        if (typeof signature !== 'string' || !/^0x[0-9a-fA-F]{130}$/.test(signature)) {
-          throw new ShieldMultichainError('INVALID_RESPONSE', 'Invalid Hyperliquid agent signature.');
-        }
-        return signature;
-      }),
+      requestTradingAccount: options =>
+        run('evm', async namespace => {
+          if (!namespace.requestTradingAccount)
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'Shield trading accounts are unavailable.',
+            );
+          return parseMultichainAccount(await namespace.requestTradingAccount(options), 'evm');
+        }),
+      sendTradingArcTransaction: request =>
+        run('evm', async namespace => {
+          if (!namespace.sendTradingArcTransaction)
+            throw new ShieldMultichainError('UNSUPPORTED', 'The Shield Arc bridge is unavailable.');
+          const hash = await namespace.sendTradingArcTransaction(request);
+          if (typeof hash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+            throw new ShieldMultichainError('INVALID_RESPONSE', 'Invalid Arc transaction hash.');
+          }
+          return hash;
+        }),
+      signTradingWithdrawal: request =>
+        run('evm', async namespace => {
+          if (!namespace.signTradingWithdrawal)
+            throw new ShieldMultichainError('UNSUPPORTED', 'HyperCore withdrawal is unavailable.');
+          const signature = await namespace.signTradingWithdrawal(request);
+          return parseTradingSignature(signature);
+        }),
+      signTradingAgent: approval =>
+        run('evm', async namespace => {
+          if (!namespace.signTradingAgent)
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'Hyperliquid agent approval is unavailable.',
+            );
+          const signature = await namespace.signTradingAgent(approval);
+          return parseTradingSignature(signature);
+        }),
     },
     solana: { requestAccount: () => requestAccount('solana') },
   };
+}
+
+function parseTradingSignature(value: unknown): string {
+  if (typeof value !== 'string' || !/^0x[0-9a-fA-F]{130}$/.test(value)) {
+    throw new ShieldMultichainError('INVALID_RESPONSE', 'Invalid Hyperliquid signature.');
+  }
+  return value;
 }
