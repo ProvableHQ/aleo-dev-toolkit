@@ -2,21 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import React, { act } from 'react';
 import { JSDOM } from 'jsdom';
-import { createStore, Provider } from 'jotai';
 import { WalletContext } from '@provablehq/aleo-wallet-adapter-react';
 import { WalletModalContext } from '@provablehq/aleo-wallet-adapter-react-ui';
 import { Network } from '@provablehq/aleo-types';
-import {
-  HYPERLANE_GRANTS,
-  HYPERLANE_PROGRAMS,
-  HYPERLANE_RECORD_ACCESS,
-} from '../src/lib/hyperlaneAleoTestnet';
-import {
-  algorithmsAllowedAtom,
-  programsAtom,
-  readAddressAtom,
-  recordAccessAtom,
-} from '../src/lib/store/global';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://dapp.test' });
 Object.assign(globalThis, {
   window: dom.window,
@@ -27,19 +15,16 @@ const { createRoot } = await import('react-dom/client');
 const { HyperlaneRecipientPage } = await import('../src/pages/HyperlaneRecipientPage');
 async function mount(
   t: test.TestContext,
-  supported = ['route-bound-commitment-secret', 'program-freezelist-exclusion-proof'],
-  granted = true,
+  supported: string[] | (() => Promise<string[]>) = [
+    'route-bound-commitment-secret',
+    'program-freezelist-exclusion-proof',
+  ],
 ) {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (url: string) =>
     new Response(
       JSON.stringify(String(url).includes('/bridge_pause/') ? null : '0u128'),
     )) as typeof fetch;
-  const store = createStore();
-  store.set(programsAtom, HYPERLANE_PROGRAMS);
-  store.set(readAddressAtom, true);
-  store.set(recordAccessAtom, HYPERLANE_RECORD_ACCESS);
-  store.set(algorithmsAllowedAtom, granted ? HYPERLANE_GRANTS : []);
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
@@ -49,28 +34,20 @@ async function mount(
     connected: true,
     network: Network.TESTNET,
     supportsAddressEncoding: true,
-    algorithmsSupported: async () => supported,
+    algorithmsSupported: typeof supported === 'function' ? supported : async () => supported,
     requestAddressEncoding: async () => ({ commitmentHex: '01'.repeat(32) }),
-    disconnect: async () => {
-      context = { ...context, connected: false };
-      await render();
-    },
   };
   async function render(patch = {}) {
     context = { ...context, ...patch };
     await act(async () =>
       root.render(
         React.createElement(
-          Provider,
-          { store },
+          WalletContext.Provider,
+          { value: context as never },
           React.createElement(
-            WalletContext.Provider,
-            { value: context as never },
-            React.createElement(
-              WalletModalContext.Provider,
-              { value: { visible: false, setVisible: () => {} } },
-              React.createElement(HyperlaneRecipientPage),
-            ),
+            WalletModalContext.Provider,
+            { value: { visible: false, setVisible: () => {} } },
+            React.createElement(HyperlaneRecipientPage),
           ),
         ),
       ),
@@ -83,7 +60,6 @@ async function mount(
     globalThis.fetch = originalFetch;
   });
   return {
-    store,
     render,
     text: () => container.textContent!,
     button: (text: string) =>
@@ -101,8 +77,9 @@ test('an encoding-capable wallet with no claim algorithm cannot fund a deposit',
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
   assert.ok(!h.text().includes('Wallet ready for private claims and burns.'));
 });
-test('capabilities alone cannot bypass connection grants', async t => {
-  const h = await mount(t, undefined, false);
+test('a mainnet wallet cannot fund the testnet bridge', async t => {
+  const h = await mount(t);
+  await h.render({ network: Network.MAINNET });
   await h.click('Request an encoding');
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
 });
@@ -119,20 +96,24 @@ test('a fully granted compatible wallet enables the complete flow, and disconnec
   assert.equal(h.button('Review claim in wallet').disabled, true);
   assert.equal(h.button('Quote private burn').disabled, true);
 });
-test('changing connection settings invalidates approval until reconnection', async t => {
+test('reconnection rechecks the new wallet capabilities', async t => {
   const h = await mount(t);
   await h.click('Request an encoding');
-  await act(async () => h.store.set(programsAtom, [...HYPERLANE_PROGRAMS, 'other.aleo']));
+  await h.render({ connected: false, algorithmsSupported: async () => [] });
+  await h.render({ connected: true });
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
-  await h.render({ connected: false });
-  await h.render({ connected: true });
-  assert.match(h.text(), /Wallet ready for private claims and burns/);
+  assert.equal(h.button('Quote private burn').disabled, true);
 });
-test('configuration disconnects the previous session and saves bounded grants', async t => {
-  const h = await mount(t, undefined, false);
-  await h.click('Configure Hyperlane testnet permissions');
-  assert.deepEqual(h.store.get(algorithmsAllowedAtom), HYPERLANE_GRANTS);
-  assert.equal(h.button('Review claim in wallet').disabled, true);
-  await h.render({ connected: true });
-  assert.match(h.text(), /Wallet ready for private claims and burns/);
+test('a capability response arriving after disconnect cannot enable a deposit', async t => {
+  let resolve!: (supported: string[]) => void;
+  const pending = new Promise<string[]>(done => {
+    resolve = done;
+  });
+  const h = await mount(t, () => pending);
+  await h.render({ connected: false });
+  await act(async () =>
+    resolve(['route-bound-commitment-secret', 'program-freezelist-exclusion-proof']),
+  );
+  assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
+  assert.equal(h.button('Quote private burn').disabled, true);
 });

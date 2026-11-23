@@ -82,9 +82,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      jotai:
-        specifier: ^2.12.5
-        version: 2.12.5(@types/react@19.3.0)(react@19.2.3)
       react:
         specifier: ^19.0.0
         version: 19.2.3

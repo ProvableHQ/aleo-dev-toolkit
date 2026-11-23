@@ -17,8 +17,9 @@ pnpm bridge-app:dev
 
 Open `http://localhost:5175` (the dedicated bridge app):
 
-1. Select **Configure Hyperlane testnet permissions**, then reconnect the updated
-   Shield extension and approve the grants. This switches the example to testnet.
+1. Connect the updated Shield wallet and approve the full testnet bridge grants.
+   The dedicated app always requests its fixed program, algorithm, record-filter
+   and address permissions on testnet; there is no separate permission configuration step.
    The wallet must support address encoding, `route-bound-commitment-secret`, and
    `program-freezelist-exclusion-proof`. An older wallet cannot fund a deposit
    through this demo. The local Shield extension build must include private-claim
@@ -83,9 +84,9 @@ plus these exact derived slots:
 Both proof grants constrain `freezelistProgram` to `shield_arc22_freezelist.aleo`.
 Record grants allow filtering `Token.amount` and `credits.microcredits` without
 requesting their plaintext.
-Permission changes disconnect the existing wallet; the user approves them on
-reconnection. Readiness is scoped to wallet, account, network, and connection
-settings, and is checked again after asynchronous preparation.
+The full grant list is passed directly to the wallet provider at connection time;
+there is no grant merging or containment algebra. Readiness is scoped to wallet,
+account and network, and is checked again after asynchronous preparation.
 
 Claim inputs are commitment limbs, private amount, wallet address request, derived
 original claim secret, and derived recipient proof. The commitment is packed as

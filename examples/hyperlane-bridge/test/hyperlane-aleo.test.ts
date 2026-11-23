@@ -19,17 +19,9 @@ import {
   MAILBOX,
   HOOK_MANAGER,
   ZERO_ADDRESS,
-  HYPERLANE_GRANTS,
-  HYPERLANE_PROGRAMS,
-  HYPERLANE_RECORD_ACCESS,
   type MappingReader,
 } from '../src/lib/hyperlaneAleoTestnet';
-import {
-  hasHyperlanePermissions,
-  withHyperlaneAlgorithms,
-  withHyperlaneRecords,
-  type HyperlaneGate,
-} from '../src/lib/hyperlanePermissions';
+import { HYPERLANE_CONNECTION } from '../src/lib/hyperlanePermissions';
 const hook = 'aleo175xvd3uqmswt9ckt2d4drnxrqu8gzuzz3u3cjlt3cxhru74d2qqsnf5t46';
 const merkle = 'aleo1k45pt4auhdr27hlep9pg47w82nn7vzt2g8tmcxc4gpas25fdrugsapnyvh';
 const recipient = '0x1111111111111111111111111111111111111111';
@@ -255,22 +247,46 @@ test('rejects malformed routes, unknown hooks, invalid fees and missing gas conf
     await assert.rejects(quotePrivateBurn(recipient, '0.001', h.read));
   }
 });
-test('connection grants cover only the three derived slots and hidden record filter fields', () => {
-  const algorithms = withHyperlaneAlgorithms([
-    { ...HYPERLANE_GRANTS[1], argConstraints: { freezelistProgram: ['wrong.aleo'] } },
+test('the bridge connection requests only the required call sites and hidden record fields', () => {
+  assert.equal(HYPERLANE_CONNECTION.network, 'testnet');
+  assert.equal(HYPERLANE_CONNECTION.decryptPermission, 'NO_DECRYPT');
+  assert.equal(HYPERLANE_CONNECTION.readAddress, true);
+  assert.deepEqual(HYPERLANE_CONNECTION.programs, [WARP, TOKEN, 'credits.aleo']);
+  assert.deepEqual(HYPERLANE_CONNECTION.algorithmsAllowed, [
+    {
+      algorithm: 'route-bound-commitment-secret',
+      program: WARP,
+      function: 'claim_private',
+      inputPosition: 3,
+    },
+    {
+      algorithm: 'program-freezelist-exclusion-proof',
+      program: WARP,
+      function: 'claim_private',
+      inputPosition: 4,
+      argConstraints: { freezelistProgram: [FREEZELIST] },
+    },
+    {
+      algorithm: 'program-freezelist-exclusion-proof',
+      program: WARP,
+      function: 'transfer_remote_private',
+      inputPosition: 9,
+      argConstraints: { freezelistProgram: [FREEZELIST] },
+    },
   ]);
-  const records = withHyperlaneRecords({ level: 'none' });
-  assert.deepEqual(algorithms, HYPERLANE_GRANTS);
-  assert.deepEqual(records, HYPERLANE_RECORD_ACCESS);
-  assert.ok(hasHyperlanePermissions(HYPERLANE_PROGRAMS, algorithms, records, true));
-  assert.equal(
-    hasHyperlanePermissions(HYPERLANE_PROGRAMS, algorithms.slice(1), records, true),
-    false,
-  );
-  assert.equal(
-    hasHyperlanePermissions(HYPERLANE_PROGRAMS, algorithms, { level: 'none' }, true),
-    false,
-  );
+  assert.deepEqual(HYPERLANE_CONNECTION.recordAccess, {
+    level: 'byProgram',
+    programs: [
+      {
+        program: TOKEN,
+        records: [{ recordname: 'Token', fields: [{ name: 'amount', readAccess: false }] }],
+      },
+      {
+        program: 'credits.aleo',
+        records: [{ recordname: 'credits', fields: [{ name: 'microcredits', readAccess: false }] }],
+      },
+    ],
+  });
 });
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://dapp.test' });
