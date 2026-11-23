@@ -1,107 +1,53 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Network } from '@provablehq/aleo-types';
 import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { useWalletModal } from '@provablehq/aleo-wallet-adapter-react-ui';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
-export function HyperlaneRecipient({ onEncoding }: { onEncoding?: (encoding: string) => void }) {
-  const { wallet, address, connected, network, supportsAddressEncoding, requestAddressEncoding } =
-    useWallet();
+export function HyperlaneRecipient() {
+  const { connected, network, supportsAddressEncoding, requestAddressEncoding } = useWallet();
   const { setVisible } = useWalletModal();
-  const adapter = wallet?.adapter;
-  const scope = useMemo(
-    () => ({ adapter, address, network, connected, supportsAddressEncoding }),
-    [adapter, address, network, connected, supportsAddressEncoding],
-  );
-  const scopeRef = useRef(scope);
-  scopeRef.current = scope;
-  const attemptRef = useRef<object | null>(null);
-  const [result, setResult] = useState<{
-    scope: typeof scope;
-    recipient?: string;
-    error?: string;
-    busy: boolean;
-  }>();
-  useEffect(
-    () => () => {
-      attemptRef.current = null;
-    },
-    [scope],
-  );
-  // Hide stale output during render, including before effect cleanup runs.
-  const current = result?.scope === scope ? result : undefined;
-  const recipient = current?.recipient;
-  const error = current?.error;
-  const busy = current?.busy ?? false;
+  const [recipient, setRecipient] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  async function requestEncoding() {
-    if (scopeRef.current !== scope || !connected || !supportsAddressEncoding) return;
-    if (network !== Network.MAINNET && network !== Network.TESTNET) {
-      setResult({
-        scope,
-        busy: false,
-        error: 'Select mainnet or testnet to request an encoding.',
-      });
-      return;
-    }
-    const attempt = {};
-    attemptRef.current = attempt;
-    setResult({ scope, busy: true });
+  async function request() {
+    if (network !== Network.MAINNET && network !== Network.TESTNET) return;
+    setBusy(true);
+    setRecipient('');
+    setError('');
     try {
       const { commitmentHex } = await requestAddressEncoding({ network });
-      if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
-      setResult({ scope, busy: false, recipient: `0x${commitmentHex}` });
-      onEncoding?.(`0x${commitmentHex}`);
+      setRecipient(`0x${commitmentHex}`);
     } catch (cause) {
-      if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
-      setResult({
-        scope,
-        busy: false,
-        error: cause instanceof Error ? cause.message : String(cause),
-      });
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <section className="space-y-5">
-      <div className="space-y-2">
-        <h2 className="h2">Hyperlane recipient</h2>
-        <p className="body-m text-muted-foreground">
-          Request an encoding for the connected Aleo account and add the EVM hex prefix for
-          transferRemote's recipient input.
-        </p>
-      </div>
+    <section className="space-y-3">
       {!connected && <Button onClick={() => setVisible(true)}>Connect wallet</Button>}
       {connected && !supportsAddressEncoding && (
-        <Alert>
-          <AlertDescription>This wallet does not support address encoding.</AlertDescription>
-        </Alert>
+        <p>This wallet does not support address encoding.</p>
       )}
-      <Button onClick={requestEncoding} disabled={busy || !connected || !supportsAddressEncoding}>
+      <Button
+        onClick={request}
+        disabled={
+          !connected ||
+          !supportsAddressEncoding ||
+          busy ||
+          (network !== Network.MAINNET && network !== Network.TESTNET)
+        }
+      >
         {busy ? 'Requesting…' : 'Request an encoding'}
       </Button>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {recipient && (
-        <div className="space-y-2">
-          <Label htmlFor="hyperlane-recipient">Issued transferRemote recipient</Label>
-          <Input
-            id="hyperlane-recipient"
-            value={recipient}
-            readOnly
-            className="font-mono text-xs"
-          />
-        </div>
-      )}
-      <p className="body-s text-muted-foreground">
-        Each request creates a fresh commitment. Save the returned encoding before funding a
-        deposit. Use the Sepolia example below to fund a testnet deposit.
+      {error && <p role="alert">{error}</p>}
+      {recipient && <output className="block break-all font-mono text-xs">{recipient}</output>}
+      <p>
+        Each request creates a fresh commitment. Save its exact bytes before using a compatible
+        route.
       </p>
     </section>
   );
