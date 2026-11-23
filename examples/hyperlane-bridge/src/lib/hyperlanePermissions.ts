@@ -17,12 +17,8 @@ export const HYPERLANE_CONNECTION = {
   readAddress: true,
 };
 
-export type HyperlaneGate = { ready: boolean; scope: object };
-export function assertHyperlaneReady(
-  current: HyperlaneGate | undefined,
-  expected: HyperlaneGate | undefined,
-): void {
-  if (!current?.ready || current !== expected)
+export function assertHyperlaneReady(connection: AbortSignal | undefined): void {
+  if (!connection || connection.aborted)
     throw new Error(
       'Reconnect a compatible Aleo testnet wallet and approve Hyperlane permissions before continuing.',
     );

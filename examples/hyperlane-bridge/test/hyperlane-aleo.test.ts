@@ -327,10 +327,16 @@ async function mount(
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
-  const gate: HyperlaneGate = { ready: true, scope: {} };
+  const initial = new AbortController();
+  let current: AbortController | null = initial;
   const adapter = {};
   let failTracking: ((error: Error) => void) | undefined;
-  const render = async (nextGate = gate, issuedRecipient = encoding) => {
+  const render = async (
+    connection: AbortController | null = initial,
+    issuedRecipient = encoding,
+  ) => {
+    if (current !== connection) current?.abort();
+    current = connection;
     await act(async () =>
       root.render(
         React.createElement(
@@ -354,7 +360,7 @@ async function mount(
           },
           React.createElement(HyperlaneAleoActions, {
             mode,
-            gate: nextGate,
+            connection: connection?.signal,
             issuedRecipient,
           }),
         ),
@@ -440,7 +446,7 @@ test('a wallet change while refreshing claim state prevents submission', async t
   );
   pauseReads = true;
   await h.click();
-  await h.render({ ready: false, scope: {} });
+  await h.render(null);
   await act(async () => release());
   assert.equal(calls, 0);
   assert.equal(h.button().disabled, true);
@@ -457,7 +463,7 @@ test('a tracking error cannot automatically re-enable a previously submitted cla
   await h.failTracking();
   assert.match(h.text(), /status unavailable/);
   assert.equal(h.button().disabled, true);
-  await h.render({ ready: false, scope: {} });
+  await h.render(null);
   assert.match(h.text(), /original wallet account/);
   assert.match(h.text(), /wallet-handle/);
 });
@@ -664,10 +670,10 @@ test('the maximum and partial edits are scoped to the connected wallet context',
   const h = await mount(t, async () => undefined, fixture().read, 'claim', '');
   assert.equal(h.amount().value, '0.001');
   await h.changeAmount('0.0005');
-  await h.render({ ready: false, scope: {} });
+  await h.render(null);
   assert.equal(h.amount().value, '');
   assert.equal(h.button().disabled, true);
-  await h.render({ ready: true, scope: {} });
+  await h.render(new AbortController());
   assert.equal(h.amount().value, '0.001');
 });
 

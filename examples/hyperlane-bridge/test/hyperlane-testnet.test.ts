@@ -3,7 +3,6 @@ import test from 'node:test';
 import React, { act } from 'react';
 import { JSDOM } from 'jsdom';
 import { encodeFunctionResult, zeroAddress, type EIP1193Provider, type Hex } from 'viem';
-import type { HyperlaneGate } from '../src/lib/hyperlanePermissions';
 import { HYP_NATIVE_ABI, quoteTestnetMint, sendTestnetMint } from '../src/lib/hyperlaneTestnet';
 
 const account = '0x1111111111111111111111111111111111111111';
@@ -215,13 +214,21 @@ async function mount(t: test.TestContext, provider?: EIP1193Provider) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
-  const readyGate: HyperlaneGate = { ready: true, scope: {} };
+  const initial = new AbortController();
+  let current: AbortController | null = initial;
   const render = async (
     issuedRecipient = recipient,
-    claimGate: HyperlaneGate | undefined = readyGate,
+    connection: AbortController | null = initial,
   ) => {
+    if (current !== connection) current?.abort();
+    current = connection;
     await act(async () =>
-      root.render(React.createElement(HyperlaneTestnetMint, { issuedRecipient, claimGate })),
+      root.render(
+        React.createElement(HyperlaneTestnetMint, {
+          issuedRecipient,
+          connection: connection?.signal,
+        }),
+      ),
     );
   };
   t.after(async () => {
@@ -318,7 +325,7 @@ test('duplicate clicks and a new encoding cannot open a second pending wallet su
 test('a wallet without private-claim support cannot quote or fund a Sepolia deposit', async t => {
   const evm = fixture();
   const h = await mount(t, evm.provider);
-  await h.render(recipient, { ready: false, scope: {} });
+  await h.render(recipient, null);
   assert.equal(h.quote().disabled, true);
   await h.click(h.quote());
   assert.equal(evm.calls.length, 0);
@@ -330,7 +337,7 @@ test('losing claim capability during EVM simulation prevents the deposit', async
   await h.click(h.quote());
   evm.state.afterSimulation = () => {
     // This synchronous render models a wallet disconnect while the EVM request awaits RPC.
-    void h.render(recipient, { ready: false, scope: {} });
+    void h.render(recipient, null);
   };
   await h.click(h.send()!);
   assert.equal(evm.sent().length, 0);

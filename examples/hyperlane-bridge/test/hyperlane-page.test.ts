@@ -42,12 +42,16 @@ async function mount(
     await act(async () =>
       root.render(
         React.createElement(
-          WalletContext.Provider,
-          { value: context as never },
+          React.StrictMode,
+          null,
           React.createElement(
-            WalletModalContext.Provider,
-            { value: { visible: false, setVisible: () => {} } },
-            React.createElement(HyperlaneRecipientPage),
+            WalletContext.Provider,
+            { value: context as never },
+            React.createElement(
+              WalletModalContext.Provider,
+              { value: { visible: false, setVisible: () => {} } },
+              React.createElement(HyperlaneRecipientPage),
+            ),
           ),
         ),
       ),
@@ -61,6 +65,7 @@ async function mount(
   });
   return {
     render,
+    input: (selector: string) => container.querySelector<HTMLInputElement>(selector)!,
     text: () => container.textContent!,
     button: (text: string) =>
       [...container.querySelectorAll('button')].find(b => b.textContent === text)!,
@@ -114,6 +119,28 @@ test('a capability response arriving after disconnect cannot enable a deposit', 
   await act(async () =>
     resolve(['route-bound-commitment-secret', 'program-freezelist-exclusion-proof']),
   );
+  assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
+  assert.equal(h.button('Quote private burn').disabled, true);
+});
+
+test('returning to the same account cannot revive an encoding request from an old connection', async t => {
+  let resolve!: (value: { commitmentHex: string }) => void;
+  const pending = new Promise<{ commitmentHex: string }>(done => {
+    resolve = done;
+  });
+  const h = await mount(t);
+  await h.render({ requestAddressEncoding: () => pending });
+  await h.click('Request an encoding');
+  await h.render({ address: 'aleo1accountB' });
+  await h.render({ address: 'aleo1accountA' });
+  await act(async () => resolve({ commitmentHex: 'ab'.repeat(32) }));
+  assert.equal(h.input('#mint-recipient').value, '');
+  assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
+});
+test('replacing the adapter at the same address rechecks its capabilities', async t => {
+  const h = await mount(t);
+  await h.click('Request an encoding');
+  await h.render({ wallet: { adapter: {} }, algorithmsSupported: async () => [] });
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
   assert.equal(h.button('Quote private burn').disabled, true);
 });

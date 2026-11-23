@@ -7,7 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export function HyperlaneRecipient({ onEncoding }: { onEncoding?: (encoding: string) => void }) {
+export function HyperlaneRecipient({
+  onEncoding,
+  connection,
+}: {
+  onEncoding?: (encoding: string) => void;
+  connection?: AbortSignal;
+}) {
   const { wallet, address, connected, network, supportsAddressEncoding, requestAddressEncoding } =
     useWallet();
   const { setVisible } = useWalletModal();
@@ -38,7 +44,14 @@ export function HyperlaneRecipient({ onEncoding }: { onEncoding?: (encoding: str
   const busy = current?.busy ?? false;
 
   async function requestEncoding() {
-    if (scopeRef.current !== scope || !connected || !supportsAddressEncoding) return;
+    if (
+      !connection ||
+      connection.aborted ||
+      scopeRef.current !== scope ||
+      !connected ||
+      !supportsAddressEncoding
+    )
+      return;
     if (network !== Network.MAINNET && network !== Network.TESTNET) {
       setResult({
         scope,
@@ -52,11 +65,13 @@ export function HyperlaneRecipient({ onEncoding }: { onEncoding?: (encoding: str
     setResult({ scope, busy: true });
     try {
       const { commitmentHex } = await requestAddressEncoding({ network });
-      if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
+      if (connection.aborted || scopeRef.current !== scope || attemptRef.current !== attempt)
+        return;
       setResult({ scope, busy: false, recipient: `0x${commitmentHex}` });
       onEncoding?.(`0x${commitmentHex}`);
     } catch (cause) {
-      if (scopeRef.current !== scope || attemptRef.current !== attempt) return;
+      if (connection.aborted || scopeRef.current !== scope || attemptRef.current !== attempt)
+        return;
       setResult({
         scope,
         busy: false,
@@ -80,7 +95,12 @@ export function HyperlaneRecipient({ onEncoding }: { onEncoding?: (encoding: str
           <AlertDescription>This wallet does not support address encoding.</AlertDescription>
         </Alert>
       )}
-      <Button onClick={requestEncoding} disabled={busy || !connected || !supportsAddressEncoding}>
+      <Button
+        onClick={requestEncoding}
+        disabled={
+          busy || !connected || !supportsAddressEncoding || !connection || connection.aborted
+        }
+      >
         {busy ? 'Requesting…' : 'Request an encoding'}
       </Button>
       {error && (

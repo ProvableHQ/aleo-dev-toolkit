@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { assertHyperlaneReady, type HyperlaneGate } from '@/lib/hyperlanePermissions';
+import { assertHyperlaneReady } from '@/lib/hyperlanePermissions';
 import {
   preparePrivateBurn,
   preparePrivateClaim,
@@ -15,11 +15,11 @@ import {
 } from '@/lib/hyperlaneAleoTestnet';
 
 export function HyperlaneAleoActions({
-  gate,
+  connection,
   issuedRecipient,
   mode,
 }: {
-  gate: HyperlaneGate;
+  connection?: AbortSignal;
   issuedRecipient?: string;
   mode: 'claim' | 'burn';
 }) {
@@ -27,18 +27,23 @@ export function HyperlaneAleoActions({
   const [encoding, setEncoding] = useState(issuedRecipient ?? '');
   const [recipient, setRecipient] = useState('');
   const [burnAmount, setBurnAmount] = useState('0.001');
-  const claimAmount = useHyperlaneClaimAmount(mode === 'claim', gate, encoding);
+  const claimAmount = useHyperlaneClaimAmount(mode === 'claim', connection, encoding);
   const amount = mode === 'claim' ? claimAmount.amount : burnAmount;
   const setAmount = mode === 'claim' ? claimAmount.setAmount : setBurnAmount;
   const balance = claimAmount.balance;
-  const [quoted, setQuoted] = useState<{ gate: HyperlaneGate; quote: PrivateBurnQuote }>();
+  const [quoted, setQuoted] = useState<{
+    connection: AbortSignal | undefined;
+    quote: PrivateBurnQuote;
+  }>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const [submission, setSubmission] = useState<{ gate: HyperlaneGate; handle?: string }>();
+  const [submission, setSubmission] = useState<{
+    connection: AbortSignal | undefined;
+    handle?: string;
+  }>();
   const active = useRef(false);
   const submitted = useRef(false);
-  const latest = useRef(gate);
-  latest.current = gate;
+  const ready = !!connection && !connection.aborted;
   const form = useMemo(() => ({}), [encoding, recipient, amount, issuedRecipient]);
   const latestForm = useRef(form);
   latestForm.current = form;
@@ -54,9 +59,9 @@ export function HyperlaneAleoActions({
       setEncoding(issuedRecipient);
     }
   }, [issuedRecipient, mode]);
-  const quote = quoted?.gate === gate ? quoted.quote : undefined;
+  const quote = quoted && quoted.connection === connection ? quoted.quote : undefined;
   const { update, error: trackingError } = useTransactionStatus(
-    submission?.gate === gate ? submission.handle : null,
+    submission && submission.connection === connection ? submission.handle : null,
   );
   const locked = busy || claimAmount.loading || !!submission;
   const id = `hyperlane-${mode}`;
@@ -68,7 +73,7 @@ export function HyperlaneAleoActions({
     setError(undefined);
     try {
       const assertCurrent = () => {
-        assertHyperlaneReady(latest.current, gate);
+        assertHyperlaneReady(connection);
         if (!mounted.current || latestForm.current !== form)
           throw new Error('The form changed. Prepare the transaction again.');
       };
@@ -83,7 +88,7 @@ export function HyperlaneAleoActions({
   }
   async function inspect() {
     if (mode === 'claim') {
-      if (locked || !gate.ready) return;
+      if (locked || !ready) return;
       setError(undefined);
       claimAmount.refresh();
       return;
@@ -92,7 +97,7 @@ export function HyperlaneAleoActions({
       setQuoted(undefined);
       const next = await quotePrivateBurn(recipient, amount);
       assertCurrent();
-      if (mounted.current) setQuoted({ gate, quote: next });
+      if (mounted.current) setQuoted({ connection, quote: next });
     });
   }
   async function submit() {
@@ -108,10 +113,10 @@ export function HyperlaneAleoActions({
       if (!mounted.current) return;
       // Never automatically resubmit after a transport error or lost status response.
       submitted.current = true;
-      setSubmission({ gate });
+      setSubmission({ connection });
       setQuoted(undefined);
       const result = await executeTransaction(options);
-      if (mounted.current) setSubmission({ gate, handle: result?.transactionId });
+      if (mounted.current) setSubmission({ connection, handle: result?.transactionId });
       if (!result?.transactionId)
         throw new Error('No transaction handle returned. Check wallet activity before retrying.');
     });
@@ -171,7 +176,7 @@ export function HyperlaneAleoActions({
       {mode === 'claim' && (
         <Button
           variant="outline"
-          disabled={locked || !gate.ready || balance === undefined}
+          disabled={locked || !ready || balance === undefined}
           onClick={inspect}
         >
           Use maximum
@@ -184,7 +189,7 @@ export function HyperlaneAleoActions({
           ' Hyperlane dispatch is separate and is paid from your private ALEO credits record.'}
       </p>
       <Button
-        disabled={locked || !gate.ready || (mode === 'claim' && !claimAmount.validEncoding)}
+        disabled={locked || !ready || (mode === 'claim' && !claimAmount.validEncoding)}
         onClick={inspect}
       >
         {mode === 'claim' ? 'Refresh balance' : 'Quote private burn'}
@@ -209,7 +214,7 @@ export function HyperlaneAleoActions({
       <Button
         disabled={
           locked ||
-          !gate.ready ||
+          !ready ||
           (mode === 'burn' ? !quote : !claimAmount.validEncoding || !amount.trim())
         }
         onClick={submit}
@@ -233,7 +238,7 @@ export function HyperlaneAleoActions({
                 : 'Submission started; the outcome may be unknown until the wallet responds.'}
             </p>
             <p>
-              {submission.gate !== gate
+              {submission.connection !== connection
                 ? 'Wallet context changed. Check this transaction in the original wallet account on testnet.'
                 : update
                   ? `Aleo status: ${update.status}`
