@@ -122,20 +122,28 @@ export async function readClaimable(encoding: string, read = readTestnetMapping)
 function options(
   fn: string,
   inputs: TransactionOptions['inputs'],
-  feeMicrocredits: string,
+  feeMicrocredits?: string,
 ): TransactionOptions {
   if (
-    !/^\d+$/.test(feeMicrocredits) ||
-    !Number.isSafeInteger(Number(feeMicrocredits)) ||
-    Number(feeMicrocredits) <= 0
+    feeMicrocredits !== undefined &&
+    (!/^\d+$/.test(feeMicrocredits) ||
+      !Number.isSafeInteger(Number(feeMicrocredits)) ||
+      Number(feeMicrocredits) < 0)
   )
-    throw new Error('Enter a positive, safe integer execution fee in microcredits.');
-  return { program: WARP, function: fn, inputs, fee: Number(feeMicrocredits), privateFee: false };
+    throw new Error('Enter a nonnegative, safe integer priority fee in microcredits.');
+  // Omit the priority fee by default so Shield applies its pricing and Fee Master strategy.
+  return {
+    program: WARP,
+    function: fn,
+    inputs,
+    ...(feeMicrocredits !== undefined ? { fee: Number(feeMicrocredits) } : {}),
+    privateFee: false,
+  };
 }
 export async function preparePrivateClaim(
   encoding: string,
   amountEth: string,
-  fee: string,
+  fee?: string,
   read = readTestnetMapping,
 ): Promise<TransactionOptions> {
   const hex = commitmentHex(encoding);
@@ -293,7 +301,7 @@ export async function quotePrivateBurn(
 }
 export async function preparePrivateBurn(
   quote: PrivateBurnQuote,
-  fee: string,
+  fee?: string,
   read = readTestnetMapping,
 ): Promise<TransactionOptions> {
   const fresh = await quotePrivateBurn(

@@ -30,7 +30,6 @@ export function HyperlaneAleoActions({
   const claimAmount = useHyperlaneClaimAmount(mode === 'claim', gate, encoding);
   const amount = mode === 'claim' ? claimAmount.amount : burnAmount;
   const setAmount = mode === 'claim' ? claimAmount.setAmount : setBurnAmount;
-  const [fee, setFee] = useState('1000000');
   const balance = claimAmount.balance;
   const [quoted, setQuoted] = useState<{ gate: HyperlaneGate; quote: PrivateBurnQuote }>();
   const [busy, setBusy] = useState(false);
@@ -40,7 +39,7 @@ export function HyperlaneAleoActions({
   const submitted = useRef(false);
   const latest = useRef(gate);
   latest.current = gate;
-  const form = useMemo(() => ({}), [encoding, recipient, amount, fee, issuedRecipient]);
+  const form = useMemo(() => ({}), [encoding, recipient, amount, issuedRecipient]);
   const latestForm = useRef(form);
   latestForm.current = form;
   const mounted = useRef(true);
@@ -100,9 +99,9 @@ export function HyperlaneAleoActions({
     await run(async assertCurrent => {
       const options =
         mode === 'claim'
-          ? await preparePrivateClaim(encoding, amount, fee)
+          ? await preparePrivateClaim(encoding, amount)
           : quote
-            ? await preparePrivateBurn(quote, fee)
+            ? await preparePrivateBurn(quote)
             : undefined;
       if (!options) throw new Error('Review a burn quote first.');
       assertCurrent();
@@ -178,24 +177,17 @@ export function HyperlaneAleoActions({
           Use maximum
         </Button>
       )}
-      <Label htmlFor={`${id}-fee`}>Aleo execution fee budget (microcredits, public fee)</Label>
-      <Input
-        id={`${id}-fee`}
-        value={fee}
-        inputMode="numeric"
-        disabled={locked}
-        onChange={e => setFee(e.target.value)}
-      />
       <p className="body-s text-muted-foreground">
-        Execution fees are separate from bridge fees and dispatch credits. Public fee payment avoids
-        selecting the dispatch credits record again for the fee. The wallet shows the final fee
-        before approval.
+        Fee Master pays eligible Aleo execution fees when enabled in Shield. The wallet shows
+        sponsorship and any fee you would pay before you approve.
+        {mode === 'burn' &&
+          ' Hyperlane dispatch is separate and is paid from your private ALEO credits record.'}
       </p>
       <Button
         disabled={locked || !gate.ready || (mode === 'claim' && !claimAmount.validEncoding)}
         onClick={inspect}
       >
-        {mode === 'claim' ? 'Check delivered claimable balance' : 'Quote private burn'}
+        {mode === 'claim' ? 'Refresh balance' : 'Quote private burn'}
       </Button>
       {balance !== undefined && (
         <p>
@@ -223,7 +215,7 @@ export function HyperlaneAleoActions({
         onClick={submit}
         className="ml-2"
       >
-        {busy ? 'Working…' : mode === 'claim' ? 'Approve private claim' : 'Approve private burn'}
+        {busy ? 'Working…' : mode === 'claim' ? 'Review claim in wallet' : 'Approve private burn'}
       </Button>
       {(error || claimAmount.error || trackingError) && (
         <Alert variant="destructive">

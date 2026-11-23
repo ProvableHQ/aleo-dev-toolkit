@@ -38,19 +38,20 @@ const encoding = \`0x\${commitmentHex}\`;
 // input 2 (recipient), input 3 (original secret), and input 4 (recipient proof).
 const maximum = await readClaimable(encoding);
 if (maximum === 0n) throw new Error('No delivered balance is available to claim yet.');
-const claim = await preparePrivateClaim(encoding, formatEther(maximum), '1000000');
+const claim = await preparePrivateClaim(encoding, formatEther(maximum));
 await execute(claim); // User approves in wallet. Observe update?.status; do not blindly retry.
 
 // A separate, user-initiated outbound action: show this quote for review first.
 const quote = await quotePrivateBurn('0x1111111111111111111111111111111111111111', '0.001');
 // Show quote.amount, quote.tokenFee, quote.net, and quote.dispatchMicrocredits.
 // Recheck the same wallet account/network/permissions before each execute.
-const burn = await preparePrivateBurn(quote, '1000000'); // Rejects changed route/fees.
+const burn = await preparePrivateBurn(quote); // Rejects changed route/fees.
 await execute(burn);
 // Wallet fills token record at 0, credits record at 1, signer proof at 9.
 // The EVM destination at 6 is an encoded address, not an inbound commitment.
 // Burn amount at 7 is GROSS; the bridged amount excludes the token fee.
-// Both actions use a separate public Aleo execution fee (microcredits).
+// Omit the priority fee so Shield applies its fee strategy. Fee Master covers
+// eligible execution fees when enabled; outbound dispatch still spends private ALEO.
 `,
 
   shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';

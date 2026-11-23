@@ -97,6 +97,7 @@ test('private claim uses the exact five-input ABI and wallet-owned recipient, se
   assert.equal(tx.function, 'claim_private');
   assert.equal(tx.privateFee, false);
   assert.equal(tx.fee, 1000000);
+  assert.equal((await preparePrivateClaim(encoding, '0.0005', '0', h.read)).fee, 0);
   assert.deepEqual(tx.inputs, [
     bytes32Limbs(encoding),
     '500000000000000u128',
@@ -113,7 +114,7 @@ test('private claim uses the exact five-input ABI and wallet-owned recipient, se
     },
   ]);
   await assert.rejects(preparePrivateClaim(encoding, '1', '1000000', h.read), /Claimable balance/);
-  await assert.rejects(preparePrivateClaim(encoding, '0.001', '-1', h.read), /execution fee/);
+  await assert.rejects(preparePrivateClaim(encoding, '0.001', '-1', h.read), /priority fee/);
   h.set(WARP, 'claimable', bytes32Limbs(encoding), null);
   assert.equal(await readClaimable(encoding, h.read), 0n);
   await assert.rejects(
@@ -356,7 +357,7 @@ async function mount(
     inspect: async () => {
       await act(async () =>
         [...container.querySelectorAll('button')]
-          .find(b => b.textContent === 'Check delivered claimable balance')!
+          .find(b => b.textContent === 'Refresh balance')!
           .click(),
       );
     },
@@ -365,13 +366,13 @@ async function mount(
     },
     button: () =>
       [...container.querySelectorAll('button')].find(
-        b => b.textContent === 'Approve private claim',
+        b => b.textContent === 'Review claim in wallet',
       )!,
     text: () => container.textContent!,
     click: async () => {
       await act(async () => {
         const b = [...container.querySelectorAll('button')].find(
-          b => b.textContent === 'Approve private claim',
+          b => b.textContent === 'Review claim in wallet',
         )!;
         b.click();
         b.click();
@@ -467,6 +468,8 @@ test('private burn form sends the reviewed eleven-input transaction only once', 
   });
   assert.equal(calls.length, 1);
   assert.equal(calls[0].function, 'transfer_remote_private');
+  assert.equal(Object.hasOwn(calls[0], 'fee'), false);
+  assert.equal(calls[0].privateFee, false);
   assert.equal(calls[0].inputs.length, 11);
   assert.deepEqual(calls[0].inputs[0], {
     type: 'record',
@@ -526,6 +529,8 @@ for (const [baseUnits, displayed] of [
     await h.click();
     assert.equal(calls.length, 1);
     assert.equal(calls[0].inputs[1], `${baseUnits}u128`);
+    assert.equal(Object.hasOwn(calls[0], 'fee'), false);
+    assert.equal(calls[0].privateFee, false);
   });
 }
 

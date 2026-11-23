@@ -111,12 +111,12 @@ test('a fully granted compatible wallet enables the complete flow, and disconnec
   assert.match(h.text(), /Wallet ready for private claims and burns/);
   await h.click('Request an encoding');
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, false);
-  assert.equal(h.button('Check delivered claimable balance').disabled, false);
-  assert.equal(h.button('Approve private claim').disabled, true);
+  assert.equal(h.button('Refresh balance').disabled, false);
+  assert.equal(h.button('Review claim in wallet').disabled, true);
   assert.equal(h.button('Quote private burn').disabled, false);
   await h.render({ connected: false });
   assert.equal(h.button('Connect Sepolia wallet & quote').disabled, true);
-  assert.equal(h.button('Approve private claim').disabled, true);
+  assert.equal(h.button('Review claim in wallet').disabled, true);
   assert.equal(h.button('Quote private burn').disabled, true);
 });
 test('changing connection settings invalidates approval until reconnection', async t => {
@@ -132,7 +132,7 @@ test('configuration disconnects the previous session and saves bounded grants', 
   const h = await mount(t, undefined, false);
   await h.click('Configure Hyperlane testnet permissions');
   assert.deepEqual(h.store.get(algorithmsAllowedAtom), HYPERLANE_GRANTS);
-  assert.equal(h.button('Approve private claim').disabled, true);
+  assert.equal(h.button('Review claim in wallet').disabled, true);
   await h.render({ connected: true });
   assert.match(h.text(), /Wallet ready for private claims and burns/);
 });

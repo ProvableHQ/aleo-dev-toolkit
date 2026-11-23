@@ -87,25 +87,27 @@ Open `/hyperlane` (**Transactions → Hyperlane Testnet ETH**):
    and Hyperlane delivery links. A source receipt alone does not establish delivery.
 5. Enter the original encoding in the claim form. The demo automatically reads
    its `claimable` mapping entry and defaults to the **maximum claimable amount**.
-   After delivery, use **Use maximum** or **Check delivered claimable balance**
-   to refresh it. You can enter a smaller amount for a partial claim. Review the separate Aleo execution
-   fee budget, and select **Approve private claim**. Use the wallet that issued
+   After delivery, use **Use maximum** or **Refresh balance** to refresh it. You
+   can enter a smaller amount for a partial claim. Select **Review claim in wallet**.
+   Use the wallet that issued
    this encoding, with its original recipient account selected. No token record
    is required for a claim. The bridge debits the exact claim amount and creates
    a private `test_arc20_eth.aleo/Token` record with that full amount.
 6. To send private ETH back, enter the **Sepolia recipient** and **gross private
    token spend**, then select **Quote private burn**. Review the token fee, net
-   ETH bridged, dispatch payment in microcredits, and separate execution fee.
+   ETH bridged, dispatch payment in microcredits, and the execution fee or
+   sponsorship shown by Shield.
    Select **Approve private burn**. The wallet needs a single unspent ETH token
    record covering the gross spend and a single private credits record covering
    the dispatch payment. Change records return to the wallet. Split balances
    may need consolidation in the wallet first.
 
-Both Aleo actions use a **public execution fee**, with a user-editable budget in
-microcredits (default `1000000`). Fund the account's public testnet credits balance;
-this is separate from the private credits record consumed by outbound dispatch.
-The wallet shows the final fee before approval. A freeze-listed claim recipient
-or outbound signer cannot obtain a valid exclusion proof.
+**Fee Master pays eligible Aleo execution fees when enabled in Shield.** The demo
+leaves the priority fee unset so the wallet applies its fee strategy and displays
+sponsorship or any user-paid fee before approval. Hyperlane's outbound dispatch
+payment remains separate: it spends the quoted amount from your private ALEO
+credits record, even when Fee Master sponsors execution. A freeze-listed claim
+recipient or outbound signer cannot obtain a valid exclusion proof.
 
 The fixed [Sepolia ETH router](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/deployments/warp_routes/ETH/aleotestnet-config.yaml)
 is `0x7c4aAAaB1f846881af95f5736d127F3F3F07F25F`, enrolled with
