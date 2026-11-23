@@ -97,16 +97,38 @@ test('invalid explicit retry IDs fail before contacting a wallet', () => {
   }
 });
 
-test('preparation rejects missing or invalid request IDs before contacting the provider', async () => {
+test('local request validation rejects without contacting the provider or emitting wallet errors', async () => {
   const { adapter, calls, connect } = fixture();
   await connect();
-  for (const requestId of [undefined, '', 'a'.repeat(129), 42]) {
-    await assert.rejects(
-      adapter.prepareShieldedUsdcxMint({ ...options(), requestId }),
-      WalletInputRequestInvalidError,
-    );
+  const errors = [];
+  adapter.on('error', error => errors.push(error));
+  for (const input of [
+    undefined,
+    null,
+    ...[undefined, '', 'a'.repeat(129), 42].map(requestId => ({ ...options(), requestId })),
+  ]) {
+    await assert.rejects(adapter.prepareShieldedUsdcxMint(input), WalletInputRequestInvalidError);
   }
   assert.equal(calls.length, 0);
+  assert.deepEqual(errors, []);
+  const valid = request();
+  const prepared = await adapter.prepareShieldedUsdcxMint(valid);
+  assert.equal(prepared.requestId, valid.requestId);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(errors, []);
+});
+
+test('local validation runs before the provider wrapper even while disconnected', async () => {
+  const { adapter, calls } = fixture();
+  const errors = [];
+  adapter.on('error', error => errors.push(error));
+  await assert.rejects(
+    adapter.prepareShieldedUsdcxMint({ ...options(), requestId: '' }),
+    WalletInputRequestInvalidError,
+  );
+  await assert.rejects(adapter.prepareShieldedUsdcxMint(request()), WalletNotConnectedError);
+  assert.equal(calls.length, 0);
+  assert.deepEqual(errors, []);
 });
 
 test('requires a connection and detects old providers without preparation support', async () => {

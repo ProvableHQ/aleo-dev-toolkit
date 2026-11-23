@@ -804,17 +804,17 @@ export class ShieldWalletAdapter extends BaseAleoWalletAdapter {
   async prepareShieldedUsdcxMint(
     request: PrepareShieldedUsdcxMintRequest,
   ): Promise<ShieldedUsdcxMintPreparation> {
+    const requestId = request?.requestId;
+    if (typeof requestId !== 'string' || requestId.length === 0 || requestId.length > 128) {
+      throw new WalletInputRequestInvalidError(
+        'Shielded mint preparation requires a requestId (1–128 characters). ' +
+          'Create the request with createShieldedUsdcxMintRequest before calling the wallet.',
+      );
+    }
     return this.callOptionalProviderMethod(
       'prepareShieldedUsdcxMint',
       SHIELDED_USDCX_MINT_FEATURE,
       async wallet => {
-        const { requestId } = request;
-        if (typeof requestId !== 'string' || requestId.length === 0 || requestId.length > 128) {
-          throw new WalletInputRequestInvalidError(
-            'Shielded mint preparation requires a requestId (1–128 characters). ' +
-              'Create the request with createShieldedUsdcxMintRequest before calling the wallet.',
-          );
-        }
         const response = await wallet.prepareShieldedUsdcxMint({ ...request });
         return shieldedUsdcxMintPreparation(response, requestId);
       },
