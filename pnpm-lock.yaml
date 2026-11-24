@@ -117,7 +117,7 @@ importers:
         version: 1.2.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@tailwindcss/vite':
         specifier: ^4.1.8
-        version: 4.1.11(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
+        version: 4.1.11(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
       '@tanstack/react-query':
         specifier: ^5.75.0
         version: 5.80.7(react@19.2.3)
@@ -184,7 +184,7 @@ importers:
         version: 6.21.0(eslint@8.57.1)(typescript@5.8.3)
       '@vitejs/plugin-react':
         specifier: ^4.2.1
-        version: 4.6.0(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
+        version: 4.6.0(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.9)
@@ -210,8 +210,8 @@ importers:
         specifier: ^5.3.3
         version: 5.8.3
       vite:
-        specifier: ^6.4.4
-        version: 6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
+        specifier: ^6.4.6
+        version: 6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
 
   examples/react-app-hooks:
     dependencies:
@@ -257,7 +257,7 @@ importers:
         version: 6.21.0(eslint@8.57.1)(typescript@5.8.3)
       '@vitejs/plugin-react':
         specifier: ^4.2.1
-        version: 4.6.0(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
+        version: 4.6.0(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
       eslint:
         specifier: ^8.55.0
         version: 8.57.1
@@ -271,14 +271,14 @@ importers:
         specifier: ^5.3.3
         version: 5.8.3
       vite:
-        specifier: ^6.4.4
-        version: 6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
+        specifier: ^6.4.6
+        version: 6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
       vite-plugin-top-level-await:
         specifier: ^1.5.0
-        version: 1.5.0(rollup@4.60.1)(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
+        version: 1.5.0(rollup@4.60.1)(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
       vite-plugin-wasm:
         specifier: ^3.4.1
-        version: 3.5.0(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
+        version: 3.5.0(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))
 
   packages/aleo-hooks:
     dependencies:
@@ -8723,8 +8723,8 @@ packages:
     peerDependencies:
       vite: ^2 || ^3 || ^4 || ^5 || ^6 || ^7
 
-  vite@6.4.4:
-    resolution: {integrity: sha512-xGjU/SyjeNyb0E4KxXBvYz/1C+3JXuujvf2hXNOtnlcE+58o5ajd9N2/n2VhkiJvpCP2qQasnUpx5PXNeI+p1Q==}
+  vite@6.4.6:
+    resolution: {integrity: sha512-RtsraAwEG68idOA6iUOoIpOlcSKROnf815aIq9qHTSrDNpLoBrBa12suyfcEd8qn0xwOVQI1Yhm1GbmTjF600A==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
     peerDependencies:
@@ -12707,12 +12707,12 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.1.11
       '@tailwindcss/oxide-win32-x64-msvc': 4.1.11
 
-  '@tailwindcss/vite@4.1.11(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))':
+  '@tailwindcss/vite@4.1.11(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))':
     dependencies:
       '@tailwindcss/node': 4.1.11
       '@tailwindcss/oxide': 4.1.11
       tailwindcss: 4.1.11
-      vite: 6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
+      vite: 6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
 
   '@tanstack/match-sorter-utils@8.19.4':
     dependencies:
@@ -13060,7 +13060,7 @@ snapshots:
 
   '@vercel/oidc@3.0.5': {}
 
-  '@vitejs/plugin-react@4.6.0(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))':
+  '@vitejs/plugin-react@4.6.0(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1))':
     dependencies:
       '@babel/core': 7.28.0
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.0)
@@ -13068,7 +13068,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.19
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
+      vite: 6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -18596,21 +18596,21 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-plugin-top-level-await@1.5.0(rollup@4.60.1)(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)):
+  vite-plugin-top-level-await@1.5.0(rollup@4.60.1)(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)):
     dependencies:
       '@rollup/plugin-virtual': 3.0.2(rollup@4.60.1)
       '@swc/core': 1.12.1
       uuid: 10.0.0
-      vite: 6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
+      vite: 6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
     transitivePeerDependencies:
       - '@swc/helpers'
       - rollup
 
-  vite-plugin-wasm@3.5.0(vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)):
+  vite-plugin-wasm@3.5.0(vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)):
     dependencies:
-      vite: 6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
+      vite: 6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1)
 
-  vite@6.4.4(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1):
+  vite@6.4.6(@types/node@22.15.32)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.23.15)(yaml@2.7.1):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.4)
