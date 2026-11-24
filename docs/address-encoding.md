@@ -74,4 +74,4 @@ source-chain transactions, private claims and burns belong in a bridge app.
 
 ## Full bridge demo
 
-The standalone Hyperlane bridge app is maintained in a separate follow-up PR, based on this address-encoding development branch. Its protocol and UI tests are independent of package publishing.
+For quoting, Sepolia deposits, delivery tracking, private Aleo claims and private burns, use the [standalone Hyperlane bridge app](../examples/hyperlane-bridge/README.md). Run it with `pnpm bridge-app:dev`; its protocol and UI tests run with `pnpm --filter hyperlane-bridge-example test` and are outside package publishing.
