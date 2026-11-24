@@ -34,7 +34,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.3.3",
-    "vite": "^6.4.4",
+    "vite": "^6.4.5",
     "tsx": "^4.23.15",
     "jsdom": "26.1.0",
     "eslint": "^8.55.0",
