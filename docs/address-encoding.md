@@ -64,7 +64,7 @@ pnpm install
 pnpm adapter-app:dev
 ```
 
-Open `/hyperlane` (**Transactions → Address Encoding**), connect a compatible
+Open `/address-encoding` (**Transactions → Address Encoding**), connect a compatible
 wallet on mainnet or testnet, and select **Request an encoding**. The example
 displays the returned commitment with the `0x` prefix. Each request creates a
 fresh commitment; save the exact bytes before using a compatible route.

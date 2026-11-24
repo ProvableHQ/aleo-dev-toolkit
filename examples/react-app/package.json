@@ -61,10 +61,10 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "jsdom": "26.1.0",
+    "tsx": "^4.23.15",
     "tw-animate-css": "^1.3.4",
     "typescript": "^5.3.3",
-    "vite": "^6.4.4",
-    "tsx": "^4.23.15",
-    "jsdom": "26.1.0"
+    "vite": "^6.4.6"
   }
 }

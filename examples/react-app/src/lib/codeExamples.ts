@@ -11,20 +11,20 @@ export const PLACEHOLDERS = {
 } as const;
 
 export const codeExamples = {
-  hyperlaneRecipient: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+  addressEncoding: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { Network } from '@provablehq/aleo-types';
 
 // Inside your component:
 const { connected, network, supportsAddressEncoding, requestAddressEncoding } = useWallet();
 
-async function requestRecipient() {
+async function requestEncoding() {
   if (!connected || !supportsAddressEncoding) throw new Error('Connect a compatible wallet.');
   if (network !== Network.MAINNET && network !== Network.TESTNET) throw new Error('Select mainnet or testnet.');
   const { commitmentHex } = await requestAddressEncoding({ network });
   return \`0x\${commitmentHex}\`;
 }
-// Call requestRecipient from a click handler and display/save the result.
-// A compatible transferRemote call uses it in the existing recipient slot.
+// Call requestEncoding from a click handler and display/save the result.
+// Use the encoding with any compatible integration.
 `,
 
   shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';
