@@ -17,7 +17,7 @@ Object.assign(globalThis, {
 });
 const { createRoot } = await import('react-dom/client');
 const { HyperlaneRecipient } = await import(
-  '../../react-app/src/components/functions/HyperlaneRecipient'
+  '../src/components/functions/HyperlaneRecipient'
 );
 const encoding = 'ab'.repeat(32);
 const deferred = () => {

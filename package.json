@@ -8,7 +8,7 @@
     "packages/aleo-wallet-adapter/wallets/*"
   ],
   "scripts": {
-    "build": "turbo run build --filter=!react-app-example --filter=!react-app-example-hooks --filter=!hyperlane-bridge-example",
+    "build": "turbo run build --filter=!./examples/*",
     "examples:dev": "concurrently \"pnpm run adapter-app:dev\" \"pnpm run hooks-app:dev\"",
     "adapter-app:dev": "cd examples/react-app && pnpm dev",
     "hooks-app:dev": "cd examples/react-app-hooks && pnpm dev",
@@ -20,7 +20,7 @@
     "dev:example": "pnpm --filter react-app-example dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "publish-packages": "pnpm test:release && turbo run build lint --filter=!hyperlane-bridge-example && pnpm test:wallet-discovery && pnpm test:xreserve && pnpm test:address-encoding && changeset publish",
+    "publish-packages": "pnpm test:release && turbo run build lint --filter=!./examples/* && pnpm test:wallet-discovery && pnpm test:xreserve && pnpm test:address-encoding && changeset publish",
     "docs:dev": "cd website && pnpm start",
     "docs:build": "cd website && pnpm build",
     "docs:serve": "cd website && pnpm serve",
@@ -29,8 +29,7 @@
     "test:release": "node --test scripts/deprecate-adaptors.test.mjs",
     "test:address-encoding": "node --test scripts/address-encoding.test.mjs",
     "test:xreserve": "node --test scripts/shielded-usdcx-mint.test.mjs",
-    "test:wallet-discovery": "node --test scripts/shield-wallet-discovery.test.mjs",
-    "bridge-app:dev": "pnpm --filter hyperlane-bridge-example dev"
+    "test:wallet-discovery": "node --test scripts/shield-wallet-discovery.test.mjs"
   },
   "dependencies": {
     "@provablehq/wasm": "^0.8.8"
