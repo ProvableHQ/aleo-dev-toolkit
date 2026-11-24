@@ -16,9 +16,7 @@ Object.assign(globalThis, {
   IS_REACT_ACT_ENVIRONMENT: true,
 });
 const { createRoot } = await import('react-dom/client');
-const { HyperlaneRecipient } = await import(
-  '../src/components/functions/HyperlaneRecipient'
-);
+const { AddressEncoding } = await import('../src/components/functions/AddressEncoding');
 const encoding = 'ab'.repeat(32);
 const deferred = () => {
   let resolve!: (value: { commitmentHex: string }) => void;
@@ -55,7 +53,7 @@ async function mount(t: test.TestContext) {
             React.createElement(
               WalletModalContext.Provider,
               { value: { visible: false, setVisible: () => {} } },
-              React.createElement(HyperlaneRecipient),
+              React.createElement(AddressEncoding),
             ),
           ),
         ),

@@ -11,4 +11,4 @@ export { PrivateInputsPage } from './PrivateInputsPage';
 export { WalletPrivateInputsPage } from './WalletPrivateInputsPage';
 export { RemoteConnectPage } from './RemoteConnectPage';
 export { ShieldedUsdcxMintPage } from './ShieldedUsdcxMintPage';
-export { HyperlaneRecipientPage } from './HyperlaneRecipientPage';
+export { AddressEncodingPage } from './AddressEncodingPage';
