@@ -16,6 +16,7 @@ import {
 import {
   GetBalancesParams,
   Network,
+  AddressEncodingRequest,
   PrepareShieldedUsdcxMintRequest,
   TransactionOptions,
   TransactionStatusSubscription,
@@ -668,6 +669,17 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
     }
   }, [adapter]);
 
+  const requestAddressEncoding = useCallback(
+    async (request: AddressEncodingRequest) => {
+      if (!connected) throw handleError(new WalletNotConnectedError());
+      if (!adapter?.requestAddressEncoding) {
+        throw handleError(new MethodNotImplementedError('requestAddressEncoding'));
+      }
+      return await adapter.requestAddressEncoding(request);
+    },
+    [adapter, handleError, connected],
+  );
+
   const prepareShieldedUsdcxMint = useCallback(
     async (options: PrepareShieldedUsdcxMintRequest) => {
       if (!connected) throw handleError(new WalletNotConnectedError());
@@ -722,6 +734,8 @@ export const AleoWalletProvider: FC<WalletProviderProps> = ({
         requestTransactionHistory,
         getBalances,
         algorithmsSupported,
+        requestAddressEncoding,
+        supportsAddressEncoding: adapter?.supportsAddressEncoding ?? false,
         prepareShieldedUsdcxMint,
         supportsShieldedUsdcxMint: adapter?.supportsShieldedUsdcxMint ?? false,
       }}

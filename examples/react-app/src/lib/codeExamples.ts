@@ -11,6 +11,22 @@ export const PLACEHOLDERS = {
 } as const;
 
 export const codeExamples = {
+  addressEncoding: `import { useWallet } from '@provablehq/aleo-wallet-adapter-react';
+import { Network } from '@provablehq/aleo-types';
+
+// Inside your component:
+const { connected, network, supportsAddressEncoding, requestAddressEncoding } = useWallet();
+
+async function requestEncoding() {
+  if (!connected || !supportsAddressEncoding) throw new Error('Connect a compatible wallet.');
+  if (network !== Network.MAINNET && network !== Network.TESTNET) throw new Error('Select mainnet or testnet.');
+  const { commitmentHex } = await requestAddressEncoding({ network });
+  return \`0x\${commitmentHex}\`;
+}
+// Call requestEncoding from a click handler and display/save the result.
+// Use the encoding with any compatible integration.
+`,
+
   shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { createShieldedUsdcxMintRequest, DecryptPermission, SHIELDED_USDCX_MINT_GRANT } from '@provablehq/aleo-wallet-adapter-core';
 import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';

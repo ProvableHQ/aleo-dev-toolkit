@@ -11,6 +11,8 @@ import {
   BalancesResult,
   GetBalancesParams,
   Network,
+  AddressEncoding,
+  AddressEncodingRequest,
   PrepareShieldedUsdcxMintRequest,
   ShieldedUsdcxMintPreparation,
   TransactionOptions,
@@ -192,6 +194,9 @@ export interface WalletContextState {
    * return `[]`.
    */
   algorithmsSupported: () => Promise<string[]>;
+  /** True only when the selected provider implements the generic request. */
+  supportsAddressEncoding: boolean;
+  requestAddressEncoding: (request: AddressEncodingRequest) => Promise<AddressEncoding>;
   /** True when the selected wallet provider implements shielded mint preparation. */
   supportsShieldedUsdcxMint: boolean;
   prepareShieldedUsdcxMint: (

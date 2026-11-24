@@ -12,6 +12,7 @@ import {
   WalletPrivateInputsPage,
   RemoteConnectPage,
   ShieldedUsdcxMintPage,
+  AddressEncodingPage,
   ViewKeysPage,
   TransactionHistoryPage,
 } from '@/pages';
@@ -45,6 +46,10 @@ export const routes: RouteObject[] = [
       {
         path: 'xreserve',
         element: <ShieldedUsdcxMintPage />,
+      },
+      {
+        path: 'address-encoding',
+        element: <AddressEncodingPage />,
       },
       {
         path: 'deploy',
