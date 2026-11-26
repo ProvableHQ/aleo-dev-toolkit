@@ -21,6 +21,9 @@ selection, and index recovery.
 ## EVM methods
 
 - `getCapabilities()` — returns `{ chainIds, methods }` supported by the wallet.
+- `getAccounts()` — silent read (no prompt) of EVM accounts already granted to
+  this origin for the active Aleo account. Returns `[]` if locked, disconnected,
+  or none have been shared yet.
 - `requestAccount({ intent?: 'current' | 'new' })` — requests wallet approval to
   share an isolated EVM account. Sharing grants no signing authority.
 - `signMessage({ from, message })` — EIP-191 `personal_sign` (UTF-8 or hex).
@@ -34,6 +37,7 @@ selection, and index recovery.
 ## Solana methods
 
 - `getCapabilities()` — returns `{ clusters, methods }`.
+- `getAccounts()` — silent read of Solana accounts already granted to this origin.
 - `requestAccount({ intent?: 'current' | 'new' })` — requests wallet approval to
   share an isolated Solana account.
 - `signMessage({ from, message })` — signs arbitrary bytes, returning `{ signature }`.

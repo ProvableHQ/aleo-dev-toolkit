@@ -36,8 +36,12 @@ function fixture() {
         calls.push({ family: 'evm', method: 'getCapabilities', args: [], receiver: this });
         return {
           chainIds: [5042],
-          methods: ['requestAccount', 'signMessage', 'signTypedData', 'sendTransaction'],
+          methods: ['getAccounts', 'requestAccount', 'signMessage', 'signTypedData', 'sendTransaction'],
         };
+      },
+      async getAccounts() {
+        calls.push({ family: 'evm', method: 'getAccounts', args: [], receiver: this });
+        return [evm];
       },
       async requestAccount(...args) {
         calls.push({ family: 'evm', method: 'requestAccount', args, receiver: this });
@@ -65,8 +69,12 @@ function fixture() {
         calls.push({ family: 'solana', method: 'getCapabilities', args: [], receiver: this });
         return {
           clusters: ['mainnet-beta'],
-          methods: ['requestAccount', 'signMessage', 'signTransaction', 'signAndSendTransaction'],
+          methods: ['getAccounts', 'requestAccount', 'signMessage', 'signTransaction', 'signAndSendTransaction'],
         };
+      },
+      async getAccounts() {
+        calls.push({ family: 'solana', method: 'getAccounts', args: [], receiver: this });
+        return [solana];
       },
       async requestAccount(...args) {
         calls.push({ family: 'solana', method: 'requestAccount', args, receiver: this });
@@ -236,8 +244,9 @@ test('EVM capabilities, signing, sendTransaction and signTransaction validate re
   const client = createShieldMultichainClient(() => f.provider);
   assert.deepEqual(await client.evm.getCapabilities(), {
     chainIds: [5042],
-    methods: ['requestAccount', 'signMessage', 'signTypedData', 'sendTransaction'],
+    methods: ['getAccounts', 'requestAccount', 'signMessage', 'signTypedData', 'sendTransaction'],
   });
+  assert.deepEqual(await client.evm.getAccounts(), [evm]);
   assert.equal(await client.evm.signMessage({ from: evm.address, message: 'hello' }), evmSig);
   assert.equal(
     await client.evm.signTypedData({
@@ -260,7 +269,7 @@ test('EVM capabilities, signing, sendTransaction and signTransaction validate re
   delete f.provider.evm.signTransaction;
   assert.deepEqual(await client.evm.getCapabilities(), {
     chainIds: [],
-    methods: ['requestAccount', 'signMessage', 'signTypedData', 'sendTransaction'],
+    methods: ['getAccounts', 'requestAccount', 'signMessage', 'signTypedData', 'sendTransaction'],
   });
   await assert.rejects(
     client.evm.signTransaction({ from: evm.address, chainId: 5042, to: evm.address }),
@@ -293,8 +302,9 @@ test('Solana capabilities, signing and submission validate responses and report 
   const client = createShieldMultichainClient(() => f.provider);
   assert.deepEqual(await client.solana.getCapabilities(), {
     clusters: ['mainnet-beta'],
-    methods: ['requestAccount', 'signMessage', 'signTransaction', 'signAndSendTransaction'],
+    methods: ['getAccounts', 'requestAccount', 'signMessage', 'signTransaction', 'signAndSendTransaction'],
   });
+  assert.deepEqual(await client.solana.getAccounts(), [solana]);
   const msg = await client.solana.signMessage({
     from: solana.address,
     message: new Uint8Array([1, 2, 3]),
@@ -330,6 +340,8 @@ test('relay transport maps all EVM and Solana methods and lifecycle events', asy
       switch (method) {
         case 'multichain.evm.getCapabilities':
           return { chainIds: [5042], methods: ['requestAccount', 'sendTransaction'] };
+        case 'multichain.evm.getAccounts':
+          return [evm];
         case 'multichain.evm.requestAccount':
           return evm;
         case 'multichain.evm.signMessage':
@@ -341,6 +353,8 @@ test('relay transport maps all EVM and Solana methods and lifecycle events', asy
           return evmRawTx;
         case 'multichain.solana.getCapabilities':
           return { clusters: ['mainnet-beta'], methods: ['requestAccount', 'signMessage'] };
+        case 'multichain.solana.getAccounts':
+          return [solana];
         case 'multichain.solana.requestAccount':
           return solana;
         case 'multichain.solana.signMessage':
@@ -363,6 +377,7 @@ test('relay transport maps all EVM and Solana methods and lifecycle events', asy
     chainIds: [5042],
     methods: ['requestAccount', 'sendTransaction'],
   });
+  assert.deepEqual(await client.evm.getAccounts(), [evm]);
   assert.deepEqual(await client.evm.requestAccount({ intent: 'new' }), evm);
   assert.equal(await client.evm.signMessage({ from: evm.address, message: 'hi' }), evmSig);
   assert.equal(
@@ -396,6 +411,7 @@ test('relay transport maps all EVM and Solana methods and lifecycle events', asy
     calls.map(c => c.method),
     [
       'multichain.evm.getCapabilities',
+      'multichain.evm.getAccounts',
       'multichain.evm.requestAccount',
       'multichain.evm.signMessage',
       'multichain.evm.sendTransaction',
@@ -406,8 +422,8 @@ test('relay transport maps all EVM and Solana methods and lifecycle events', asy
       'multichain.solana.signAndSendTransaction',
     ],
   );
-  assert.deepEqual(calls[1].params, [{ intent: 'new' }]);
-  assert.equal(calls[6].params[0].message, Buffer.from([9, 8]).toString('base64'));
+  assert.deepEqual(calls[2].params, [{ intent: 'new' }]);
+  assert.equal(calls[7].params[0].message, Buffer.from([9, 8]).toString('base64'));
 
   const response = deferred();
   transport.request = () => response.promise;

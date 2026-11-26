@@ -4,6 +4,7 @@ import {
   parseEvmSignedTransaction,
   parseEvmTransactionHash,
   parseMultichainAccount,
+  parseMultichainAccounts,
   parseSolanaCapabilities,
   parseSolanaSignedMessage,
   parseSolanaSignedTransaction,
@@ -121,6 +122,13 @@ export function createShieldMultichainClient(
             ? parseEvmCapabilities(await namespace.getCapabilities())
             : inferEvmCapabilities(namespace),
         ),
+      getAccounts: () =>
+        run('evm', async namespace => {
+          if (typeof namespace.getAccounts !== 'function') {
+            throw new ShieldMultichainError('UNSUPPORTED', 'EVM account listing is unavailable.');
+          }
+          return parseMultichainAccounts(await namespace.getAccounts(), 'evm');
+        }),
       requestAccount: options =>
         run('evm', async namespace => {
           if (typeof namespace.requestAccount !== 'function') {
@@ -177,6 +185,16 @@ export function createShieldMultichainClient(
             ? parseSolanaCapabilities(await namespace.getCapabilities())
             : inferSolanaCapabilities(namespace),
         ),
+      getAccounts: () =>
+        run('solana', async namespace => {
+          if (typeof namespace.getAccounts !== 'function') {
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'Solana account listing is unavailable.',
+            );
+          }
+          return parseMultichainAccounts(await namespace.getAccounts(), 'solana');
+        }),
       requestAccount: options =>
         run('solana', async namespace => {
           if (typeof namespace.requestAccount !== 'function') {

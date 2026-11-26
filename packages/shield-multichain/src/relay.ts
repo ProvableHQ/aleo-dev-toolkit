@@ -4,6 +4,7 @@ import {
   parseEvmSignedTransaction,
   parseEvmTransactionHash,
   parseMultichainAccount,
+  parseMultichainAccounts,
   parseSolanaCapabilities,
   parseSolanaSignedMessage,
   parseSolanaSignedTransaction,
@@ -51,6 +52,8 @@ export function createRelayMultichainProvider(
     evm: {
       getCapabilities: async () =>
         parseEvmCapabilities(await transport.request('multichain.evm.getCapabilities', [])),
+      getAccounts: async () =>
+        parseMultichainAccounts(await transport.request('multichain.evm.getAccounts', []), 'evm'),
       requestAccount: async options =>
         parseMultichainAccount(
           await transport.request('multichain.evm.requestAccount', accountParams(options)),
@@ -72,6 +75,11 @@ export function createRelayMultichainProvider(
     solana: {
       getCapabilities: async () =>
         parseSolanaCapabilities(await transport.request('multichain.solana.getCapabilities', [])),
+      getAccounts: async () =>
+        parseMultichainAccounts(
+          await transport.request('multichain.solana.getAccounts', []),
+          'solana',
+        ),
       requestAccount: async options =>
         parseMultichainAccount(
           await transport.request('multichain.solana.requestAccount', accountParams(options)),

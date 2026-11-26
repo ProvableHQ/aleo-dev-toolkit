@@ -52,6 +52,20 @@ export function parseMultichainAccount<Family extends AccountFamily>(
   return { family, address };
 }
 
+/** Validate an array of public accounts for one chain family. */
+export function parseMultichainAccounts<Family extends AccountFamily>(
+  value: unknown,
+  family: Family,
+): readonly MultichainAccount<Family>[] {
+  if (!Array.isArray(value)) {
+    throw new ShieldMultichainError(
+      'INVALID_RESPONSE',
+      'Wallet returned an invalid public account list.',
+    );
+  }
+  return value.map(item => parseMultichainAccount(item, family));
+}
+
 export function parseEvmCapabilities(value: unknown): EvmCapabilities {
   const raw = value as Partial<EvmCapabilities> | null;
   if (

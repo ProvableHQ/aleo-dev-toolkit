@@ -18,6 +18,7 @@ export interface RequestAccountOptions {
 }
 
 export const EVM_METHODS = [
+  'getAccounts',
   'requestAccount',
   'signMessage',
   'signTypedData',
@@ -80,6 +81,8 @@ export interface EvmTransactionRequest {
 
 export interface EvmMultichainProvider {
   getCapabilities?(): Promise<EvmCapabilities>;
+  /** Silent read of accounts already granted to this origin. Never prompts or leaks unshared accounts. */
+  getAccounts?(): Promise<readonly MultichainAccount<'evm'>[]>;
   requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'evm'>>;
   signMessage?(request: EvmSignMessageRequest): Promise<Hex>;
   signTypedData?(request: EvmSignTypedDataRequest): Promise<Hex>;
@@ -94,6 +97,7 @@ export interface EvmMultichainProvider {
 
 export interface EvmMultichainClient {
   getCapabilities(): Promise<EvmCapabilities>;
+  getAccounts(): Promise<readonly MultichainAccount<'evm'>[]>;
   requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'evm'>>;
   signMessage(request: EvmSignMessageRequest): Promise<Hex>;
   signTypedData(request: EvmSignTypedDataRequest): Promise<Hex>;
@@ -105,6 +109,7 @@ export const SOLANA_CLUSTERS = ['mainnet-beta', 'devnet', 'testnet'] as const;
 export type SolanaCluster = (typeof SOLANA_CLUSTERS)[number];
 
 export const SOLANA_METHODS = [
+  'getAccounts',
   'requestAccount',
   'signMessage',
   'signTransaction',
@@ -142,6 +147,8 @@ export interface SolanaTransactionSignature {
 
 export interface SolanaMultichainProvider {
   getCapabilities?(): Promise<SolanaCapabilities>;
+  /** Silent read of accounts already granted to this origin. Never prompts or leaks unshared accounts. */
+  getAccounts?(): Promise<readonly MultichainAccount<'solana'>[]>;
   requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'solana'>>;
   signMessage?(request: SolanaSignMessageRequest): Promise<SolanaSignedMessage>;
   signTransaction?(request: SolanaSignTransactionRequest): Promise<SolanaSignedTransaction>;
@@ -152,6 +159,7 @@ export interface SolanaMultichainProvider {
 
 export interface SolanaMultichainClient {
   getCapabilities(): Promise<SolanaCapabilities>;
+  getAccounts(): Promise<readonly MultichainAccount<'solana'>[]>;
   requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'solana'>>;
   signMessage(request: SolanaSignMessageRequest): Promise<SolanaSignedMessage>;
   signTransaction(request: SolanaSignTransactionRequest): Promise<SolanaSignedTransaction>;
@@ -183,12 +191,14 @@ export type MultichainProviderSource = () => ShieldMultichainProvider | undefine
 
 export type MultichainMethod =
   | 'multichain.evm.getCapabilities'
+  | 'multichain.evm.getAccounts'
   | 'multichain.evm.requestAccount'
   | 'multichain.evm.signMessage'
   | 'multichain.evm.signTypedData'
   | 'multichain.evm.sendTransaction'
   | 'multichain.evm.signTransaction'
   | 'multichain.solana.getCapabilities'
+  | 'multichain.solana.getAccounts'
   | 'multichain.solana.requestAccount'
   | 'multichain.solana.signMessage'
   | 'multichain.solana.signTransaction'

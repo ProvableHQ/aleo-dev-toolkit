@@ -40,9 +40,12 @@ const txHash = await multichain.evm.sendTransaction({
 
 ## Permission and safety rules
 
-- **Wallet-owned account selection and recovery:** Sites request `'current'` or
-  `'new'` intent only. Derivation paths, recovery indices, and seed phrases stay
-  inside Shield's UI.
+- **Strict per-origin isolation (1 address → 1 app, 1 app → many addresses):**
+  Each derived account belongs to at most one origin and is never offered to
+  another site. An app can call `getAccounts()` to silently restore all accounts
+  already granted to its own origin (e.g. after a reload), or call
+  `requestAccount({ intent: 'new' })` to create another isolated account.
+  Derivation paths and seed phrases stay inside Shield's UI.
 - **Explicit approval per action:** Every account disclosure, message/typed-data
   signature, and transaction requires explicit user review in Shield. Known
   protocols (such as HyperCore EIP-712 actions or Circle CCTP/xReserve calls)
