@@ -7,6 +7,7 @@ import {
   ShieldMultichainError,
   type AccountFamily,
   type MultichainAccount,
+  type RequestAccountOptions,
 } from '@provablehq/shield-multichain';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,7 +24,6 @@ export function AccountDiscovery() {
   const { setVisible } = useWalletModal();
   const [accounts, setAccounts] = useState<Partial<Record<AccountFamily, SharedAccount>>>({});
   const [pending, setPending] = useState<AccountFamily | null>(null);
-  const [trading, setTrading] = useState<string>();
   const [error, setError] = useState('');
   const epoch = useRef(0);
   const inFlight = useRef(false);
@@ -34,7 +34,6 @@ export function AccountDiscovery() {
       epoch.current += 1;
       inFlight.current = false;
       setAccounts({});
-      setTrading(undefined);
       setPending(null);
       setError('');
     };
@@ -58,7 +57,7 @@ export function AccountDiscovery() {
     };
   }, [adapter, connected, address, network]);
 
-  const request = async (family: AccountFamily) => {
+  const request = async (family: AccountFamily, options?: RequestAccountOptions) => {
     if (!connected) {
       setVisible(true);
       return;
@@ -72,7 +71,7 @@ export function AccountDiscovery() {
       if (adapter?.name !== 'Shield Wallet') {
         throw new ShieldMultichainError('UNSUPPORTED', 'Select Shield Wallet for this lab.');
       }
-      const account = await multichain[family].requestAccount();
+      const account = await multichain[family].requestAccount(options);
       if (current === epoch.current && adapter?.account) {
         const shared = { ...account, owner: adapter.account, adapter, network };
         setAccounts(previous => ({ ...previous, [family]: shared }));
@@ -93,30 +92,13 @@ export function AccountDiscovery() {
     }
   };
 
-  const requestTrading = async (fresh: boolean) => {
-    if (!connected) return setVisible(true);
-    if (inFlight.current) return;
-    inFlight.current = true;
-    const current = epoch.current;
-    setPending('evm');
-    setError('');
-    try {
-      const account = await multichain.evm.requestTradingAccount({ fresh });
-      if (epoch.current === current) setTrading(account.address);
-    } catch {
-      if (epoch.current === current) setError('Trading account request did not complete.');
-    } finally {
-      if (epoch.current === current) { inFlight.current = false; setPending(null); }
-    }
-  };
-
   return (
     <section className="space-y-6">
       <div className="space-y-2">
         <h1 className="h2">Shield multichain accounts</h1>
         <p className="text-muted-foreground">
-          Ask Shield's separate multichain provider to share an EVM or Solana account. The wallet
-          derives and approves it internally; this page receives only its public address.
+          Ask Shield's separate multichain provider to share an isolated EVM or Solana account
+          derived for the active Aleo account. The wallet owns derivation, selection, and approval.
         </p>
       </div>
       <Alert>
@@ -140,17 +122,23 @@ export function AccountDiscovery() {
             shared?.network === network
               ? shared.address
               : undefined;
+          const label = family === 'evm' ? 'EVM' : 'Solana';
           return (
             <div key={family} className="space-y-3 rounded-lg border p-4">
-              <h2 className="body-m-bold">{family === 'evm' ? 'EVM' : 'Solana'}</h2>
+              <h2 className="body-m-bold">{label}</h2>
               <p className="break-all" data-account-family={family}>
                 {value ?? 'Not shared'}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button disabled={pending !== null} onClick={() => void request(family)}>
-                  {pending === family
-                    ? 'Waiting for wallet…'
-                    : `Request ${family === 'evm' ? 'EVM' : 'Solana'} account`}
+                  {pending === family ? 'Waiting for wallet…' : `Request ${label} account`}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={pending !== null}
+                  onClick={() => void request(family, { intent: 'new' })}
+                >
+                  New {label} account
                 </Button>
                 {value ? (
                   <Button
@@ -169,19 +157,11 @@ export function AccountDiscovery() {
           );
         })}
       </div>
-      <div className="space-y-3 rounded-lg border p-4">
-        <h2 className="body-m-bold">Hyperliquid trading account</h2>
-        {connected && trading && <p className="break-all">{trading}</p>}
-        <div className="flex gap-2">
-          <Button disabled={pending !== null} onClick={() => void requestTrading(false)}>Request trading account</Button>
-          <Button disabled={pending !== null} variant="outline" onClick={() => void requestTrading(true)}>New trading account</Button>
-        </div>
-      </div>
       {error ? <p role="alert">{error}</p> : null}
       <p className="text-sm text-muted-foreground">
         This lab uses window.shield.multichain through a standalone client. The Aleo adapter is used
         only for the existing connect control. A matching wallet build is required; older builds
-        report unsupported. Trading agent approval requires a separate request.
+        report unsupported.
       </p>
       <CodePanel code={codeExamples.accountDiscovery} language="tsx" />
     </section>

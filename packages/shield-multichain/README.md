@@ -1,51 +1,57 @@
 # @provablehq/shield-multichain
 
-Optional Shield EVM/Solana account discovery, separate from the Aleo wallet
-adapter, standard and React hook. This package has no runtime dependencies.
+Optional Shield EVM and Solana provider client, separate from the Aleo wallet
+adapter, standard, and React hook. This package has no runtime dependencies.
 
 ```ts
 import { createShieldMultichainClient } from '@provablehq/shield-multichain';
 
 const multichain = createShieldMultichainClient();
+const capabilities = await multichain.evm.getCapabilities();
 const evm = await multichain.evm.requestAccount();
-const solana = await multichain.solana.requestAccount();
+const freshEvm = await multichain.evm.requestAccount({ intent: 'new' });
 ```
 
 The injected contract is `window.shield.multichain`, version `1.0.0`, with
-optional `evm` and `solana` namespaces. Each has `requestAccount()`; a wallet
-must explicitly approve disclosure and return only public `{ family, address }`.
-Sharing an address grants no signing authority. Missing namespaces reject with
-`ShieldMultichainError` code `UNSUPPORTED`.
+optional `evm` and `solana` namespaces. Accounts returned by `requestAccount()`
+are isolated, per-Aleo-account derived accounts (never Shield's internal
+main-seed deposit bridge addresses). The wallet owns derivation, account
+selection, and index recovery.
+
+## EVM methods
+
+- `getCapabilities()` — returns `{ chainIds, methods }` supported by the wallet.
+- `requestAccount({ intent?: 'current' | 'new' })` — requests wallet approval to
+  share an isolated EVM account. Sharing grants no signing authority.
+- `signMessage({ from, message })` — EIP-191 `personal_sign` (UTF-8 or hex).
+- `signTypedData({ from, typedData })` — EIP-712 structured data signing.
+- `sendTransaction(request)` — wallet validates, simulates, signs, and
+  broadcasts an EIP-1559 transaction on `chainId`, returning the tx hash.
+- `signTransaction(request)` — signs an EIP-1559 transaction without
+  broadcasting, returning raw signed tx hex. Restricted by Shield core policy to
+  trusted `shield.fi` origins.
+
+## Solana methods
+
+- `getCapabilities()` — returns `{ clusters, methods }`.
+- `requestAccount({ intent?: 'current' | 'new' })` — requests wallet approval to
+  share an isolated Solana account.
+- `signMessage({ from, message })` — signs arbitrary bytes, returning `{ signature }`.
+- `signTransaction({ from, transaction, cluster? })` — signs a serialized
+  transaction, returning `{ signedTransaction }`.
+- `signAndSendTransaction({ from, transaction, cluster? })` — signs and submits
+  a serialized transaction, returning `{ signature }`.
+
+## Lifecycle and relay transport
 
 The provider emits `accountsChanged` and `disconnect` without account data.
-Pending calls are cancelled when those events arrive. Clear displayed addresses
-on either event. The client projects responses to public fields and detects a
-provider replacement during a request. Wallets enforce origin/account bindings,
-lock, revocation and consent at the source.
+Pending calls are cancelled with `ShieldMultichainError('SESSION_CHANGED')` when
+either event arrives or if the provider/namespace object is replaced. Clear
+displayed addresses on either event.
 
-For another wallet surface, pass a provider resolver to
-`createShieldMultichainClient(() => provider)`. For an already-connected remote
-transport, `createRelayMultichainProvider(transport)` maps the same namespaces to
-`multichain.evm.requestAccount` / `multichain.solana.requestAccount` RPC methods.
-Its transport owns pairing, approval wake, timeouts and session binding.
+For an already-connected remote transport, `createRelayMultichainProvider(transport)`
+maps all `evm` and `solana` methods onto `multichain.<family>.<method>` RPC
+calls (encoding Solana `Uint8Array` payloads as base64 on the wire).
 
 See [the integration guide](../../docs/account-discovery.md) for shared-core,
-extension, mobile and embedded-wallet responsibilities. No wallet implementation,
-RPC service, balances or signing are added by this package.
-
-## Hyperliquid trading accounts
-
-Connect Shield first. `client.evm.requestTradingAccount()` asks for the current trading address.
-Pass `{ fresh: true }` for a new address or `{ restoreIndex: i }` to recover a known index with wallet consent.
-Receive addresses use the separate `requestAccount()` method.
-Shield derives the same trading addresses from an imported Aleo private key or its original phrase.
-
-`client.evm.signTradingAgent({ from, network, agentAddress, nonce, validUntil })` requests a HyperCore agent signature.
-The wallet displays the signer, site, network, agent and expiration before approval.
-Use milliseconds for nonce and expiration. A zero agent and null expiration revoke the unnamed agent.
-Submit the matching approveAgent action to the same HyperCore network. The signature chain ID is 42161 for mainnet and 421614 for testnet.
-Each supported browser host exposes these optional capabilities independently of public address discovery.
-
-The optional `evm.sendTradingArcTransaction` method submits one reviewed Arc mainnet bridge call from a shared trading address. It returns the transaction hash. Confirm the receipt before treating the transfer as settled. Gas fields are decimal integers. Shield restricts USDC approvals to Circle's bridge contracts. HyperCore funding pays the same trading address. An Aleo return requires a private mint prepared by this wallet and site.
-
-The optional `evm.signTradingWithdrawal` method approves a HyperCore mainnet USDC withdrawal to the same address on Arc. Pass the decimal USDC amount, source balance (empty string for perps or `spot`), and nonce. It returns the signature for the reviewed action. Both methods require wallet approval and report `UNSUPPORTED` on older wallets.
+extension, mobile, and embedded-wallet responsibilities.

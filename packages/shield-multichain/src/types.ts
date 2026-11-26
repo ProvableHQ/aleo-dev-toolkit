@@ -1,53 +1,163 @@
 export const SHIELD_MULTICHAIN_VERSION = '1.0.0' as const;
 
+export type Hex = `0x${string}`;
 export type AccountFamily = 'evm' | 'solana';
 
-/** A public account only; neither discovery nor this result grants signing. */
+/** A public account only; disclosure alone grants no signing authority. */
 export interface MultichainAccount<Family extends AccountFamily = AccountFamily> {
-  family: Family;
-  address: string;
+  readonly family: Family;
+  readonly address: string;
 }
 
-export interface MultichainFamilyProvider<Family extends AccountFamily> {
-  /** The wallet owns account selection, derivation and explicit approval. */
-  requestAccount(): Promise<MultichainAccount<Family>>;
+/**
+ * The wallet owns account derivation, selection, and index recovery.
+ * `intent: 'new'` hints requesting a fresh isolated address (for example, per deposit).
+ */
+export interface RequestAccountOptions {
+  intent?: 'current' | 'new';
 }
 
-export interface TradingAccountRequest {
-  fresh?: boolean;
-  restoreIndex?: number;
+export const EVM_METHODS = [
+  'requestAccount',
+  'signMessage',
+  'signTypedData',
+  'sendTransaction',
+  'signTransaction',
+] as const;
+export type EvmMethod = (typeof EVM_METHODS)[number];
+
+export interface EvmCapabilities {
+  readonly chainIds: readonly number[];
+  readonly methods: readonly EvmMethod[];
 }
 
-export interface TradingAgentRequest {
-  from: string;
-  network: 'Testnet' | 'Mainnet';
-  agentAddress: string;
-  nonce: number;
-  validUntil: number | null;
+export interface EvmTypedDataField {
+  readonly name: string;
+  readonly type: string;
 }
 
-/** Integer gas fields use decimal strings. The wallet validates the Arc mainnet contract and recipient. */
-export interface TradingArcRequest {
-  from: string;
+export interface EvmTypedData {
+  domain: {
+    name?: string;
+    version?: string;
+    chainId?: number;
+    verifyingContract?: Hex;
+    salt?: Hex;
+  };
+  types: Record<string, ReadonlyArray<EvmTypedDataField>>;
+  primaryType: string;
+  message: Record<string, unknown>;
+}
+
+export interface EvmSignMessageRequest {
+  from: Hex;
+  /** UTF-8 string or 0x-prefixed hex bytes for EIP-191 personal_sign. */
+  message: string | Hex;
+}
+
+export interface EvmSignTypedDataRequest {
+  from: Hex;
+  typedData: EvmTypedData;
+}
+
+/**
+ * Standard EVM EIP-1559 transaction request.
+ * Integer fields use decimal strings. Gas, fee, and nonce fields are optional:
+ * the wallet fills them when omitted and simulates before broadcast.
+ */
+export interface EvmTransactionRequest {
+  from: Hex;
   chainId: number;
-  to: string;
-  data: string;
-  nonce: number;
-  gas: string;
-  maxFeePerGas: string;
-  maxPriorityFeePerGas: string;
+  to: Hex;
+  data?: Hex;
+  /** Decimal wei string (defaults to "0"). */
+  value?: string;
+  nonce?: number;
+  gas?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
 }
-export interface TradingWithdrawalRequest {
+
+export interface EvmMultichainProvider {
+  getCapabilities?(): Promise<EvmCapabilities>;
+  requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'evm'>>;
+  signMessage?(request: EvmSignMessageRequest): Promise<Hex>;
+  signTypedData?(request: EvmSignTypedDataRequest): Promise<Hex>;
+  /** Wallet validates, simulates, signs, and broadcasts on `chainId`, returning the tx hash. */
+  sendTransaction?(request: EvmTransactionRequest): Promise<Hex>;
+  /**
+   * Signs an EVM transaction without broadcasting, returning raw signed transaction hex.
+   * Restricted by wallet core policy to trusted `shield.fi` origins.
+   */
+  signTransaction?(request: EvmTransactionRequest): Promise<Hex>;
+}
+
+export interface EvmMultichainClient {
+  getCapabilities(): Promise<EvmCapabilities>;
+  requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'evm'>>;
+  signMessage(request: EvmSignMessageRequest): Promise<Hex>;
+  signTypedData(request: EvmSignTypedDataRequest): Promise<Hex>;
+  sendTransaction(request: EvmTransactionRequest): Promise<Hex>;
+  signTransaction(request: EvmTransactionRequest): Promise<Hex>;
+}
+
+export const SOLANA_CLUSTERS = ['mainnet-beta', 'devnet', 'testnet'] as const;
+export type SolanaCluster = (typeof SOLANA_CLUSTERS)[number];
+
+export const SOLANA_METHODS = [
+  'requestAccount',
+  'signMessage',
+  'signTransaction',
+  'signAndSendTransaction',
+] as const;
+export type SolanaMethod = (typeof SOLANA_METHODS)[number];
+
+export interface SolanaCapabilities {
+  readonly clusters: readonly SolanaCluster[];
+  readonly methods: readonly SolanaMethod[];
+}
+
+export interface SolanaSignMessageRequest {
   from: string;
-  amount: string;
-  sourceDex: '' | 'spot';
-  nonce: number;
+  message: Uint8Array;
 }
-export interface ShieldTradingProvider {
-  sendTradingArcTransaction(request: TradingArcRequest): Promise<string>;
-  signTradingWithdrawal(request: TradingWithdrawalRequest): Promise<string>;
-  requestTradingAccount(options?: TradingAccountRequest): Promise<MultichainAccount<'evm'>>;
-  signTradingAgent(approval: TradingAgentRequest): Promise<string>;
+
+export interface SolanaSignTransactionRequest {
+  from: string;
+  transaction: Uint8Array;
+  cluster?: SolanaCluster;
+}
+
+export interface SolanaSignedMessage {
+  readonly signature: Uint8Array;
+}
+
+export interface SolanaSignedTransaction {
+  readonly signedTransaction: Uint8Array;
+}
+
+export interface SolanaTransactionSignature {
+  readonly signature: string;
+}
+
+export interface SolanaMultichainProvider {
+  getCapabilities?(): Promise<SolanaCapabilities>;
+  requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'solana'>>;
+  signMessage?(request: SolanaSignMessageRequest): Promise<SolanaSignedMessage>;
+  signTransaction?(request: SolanaSignTransactionRequest): Promise<SolanaSignedTransaction>;
+  signAndSendTransaction?(
+    request: SolanaSignTransactionRequest,
+  ): Promise<SolanaTransactionSignature>;
+}
+
+export interface SolanaMultichainClient {
+  getCapabilities(): Promise<SolanaCapabilities>;
+  requestAccount(options?: RequestAccountOptions): Promise<MultichainAccount<'solana'>>;
+  signMessage(request: SolanaSignMessageRequest): Promise<SolanaSignedMessage>;
+  signTransaction(request: SolanaSignTransactionRequest): Promise<SolanaSignedTransaction>;
+  signAndSendTransaction(
+    request: SolanaSignTransactionRequest,
+  ): Promise<SolanaTransactionSignature>;
 }
 
 /** No addresses in events: a site must request disclosure again. */
@@ -57,21 +167,33 @@ export type MultichainListener = () => void;
 /** Optional window.shield.multichain contract. No dependency on the Aleo adapter. */
 export interface ShieldMultichainProvider {
   readonly version: typeof SHIELD_MULTICHAIN_VERSION;
-  readonly evm?: MultichainFamilyProvider<'evm'> & Partial<ShieldTradingProvider>;
-  readonly solana?: MultichainFamilyProvider<'solana'>;
+  readonly evm?: EvmMultichainProvider;
+  readonly solana?: SolanaMultichainProvider;
   on(event: MultichainEvent, listener: MultichainListener): void;
   off(event: MultichainEvent, listener: MultichainListener): void;
 }
 
 export interface ShieldMultichainClient {
-  readonly evm: MultichainFamilyProvider<'evm'> & ShieldTradingProvider;
-  readonly solana: MultichainFamilyProvider<'solana'>;
+  readonly evm: EvmMultichainClient;
+  readonly solana: SolanaMultichainClient;
 }
 
 /** Resolve on each request so a replaced injected provider cannot answer an old call. */
 export type MultichainProviderSource = () => ShieldMultichainProvider | undefined;
 
-export type MultichainMethod = 'multichain.evm.requestAccount' | 'multichain.solana.requestAccount';
+export type MultichainMethod =
+  | 'multichain.evm.getCapabilities'
+  | 'multichain.evm.requestAccount'
+  | 'multichain.evm.signMessage'
+  | 'multichain.evm.signTypedData'
+  | 'multichain.evm.sendTransaction'
+  | 'multichain.evm.signTransaction'
+  | 'multichain.solana.getCapabilities'
+  | 'multichain.solana.requestAccount'
+  | 'multichain.solana.signMessage'
+  | 'multichain.solana.signTransaction'
+  | 'multichain.solana.signAndSendTransaction';
+
 export type MultichainTransportEvent = `multichain.${MultichainEvent}`;
 
 /**

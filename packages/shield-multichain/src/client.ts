@@ -1,13 +1,31 @@
-import { parseMultichainAccount, ShieldMultichainError } from './accounts';
 import {
+  parseEvmCapabilities,
+  parseEvmSignature,
+  parseEvmSignedTransaction,
+  parseEvmTransactionHash,
+  parseMultichainAccount,
+  parseSolanaCapabilities,
+  parseSolanaSignedMessage,
+  parseSolanaSignedTransaction,
+  parseSolanaTransactionSignature,
+  ShieldMultichainError,
+} from './accounts';
+import {
+  EVM_METHODS,
   SHIELD_MULTICHAIN_VERSION,
+  SOLANA_METHODS,
   type AccountFamily,
-  type MultichainFamilyProvider,
-  type ShieldTradingProvider,
+  type EvmCapabilities,
+  type EvmMethod,
+  type EvmMultichainProvider,
   type MultichainEvent,
   type MultichainProviderSource,
+  type RequestAccountOptions,
   type ShieldMultichainClient,
   type ShieldMultichainProvider,
+  type SolanaCapabilities,
+  type SolanaMethod,
+  type SolanaMultichainProvider,
 } from './types';
 
 /** No global Window augmentation: coexist with existing window.shield typings. */
@@ -17,6 +35,32 @@ export function getInjectedShieldMultichainProvider(): ShieldMultichainProvider 
     ?.multichain;
 }
 
+function sanitizeAccountOptions(
+  options?: RequestAccountOptions,
+): RequestAccountOptions | undefined {
+  if (!options || typeof options !== 'object') return undefined;
+  if (options.intent === 'current' || options.intent === 'new') {
+    return { intent: options.intent };
+  }
+  return undefined;
+}
+
+function inferEvmCapabilities(namespace: EvmMultichainProvider): EvmCapabilities {
+  const methods: EvmMethod[] = [];
+  for (const method of EVM_METHODS) {
+    if (typeof namespace[method] === 'function') methods.push(method);
+  }
+  return { chainIds: [], methods };
+}
+
+function inferSolanaCapabilities(namespace: SolanaMultichainProvider): SolanaCapabilities {
+  const methods: SolanaMethod[] = [];
+  for (const method of SOLANA_METHODS) {
+    if (typeof namespace[method] === 'function') methods.push(method);
+  }
+  return { clusters: [], methods };
+}
+
 /** A small client for the separate namespace; it imports no Aleo packages. */
 export function createShieldMultichainClient(
   source: MultichainProviderSource = getInjectedShieldMultichainProvider,
@@ -24,20 +68,18 @@ export function createShieldMultichainClient(
   const run = async <Family extends AccountFamily, Result>(
     family: Family,
     call: (
-      namespace: MultichainFamilyProvider<Family> & Partial<ShieldTradingProvider>,
+      namespace: Family extends 'evm' ? EvmMultichainProvider : SolanaMultichainProvider,
     ) => Promise<Result>,
   ): Promise<Result> => {
     const provider = source();
-    const namespace = provider?.[family] as
-      | (MultichainFamilyProvider<Family> & Partial<ShieldTradingProvider>)
-      | undefined;
+    const namespace = provider?.[family];
     if (
       provider?.version !== SHIELD_MULTICHAIN_VERSION ||
       !namespace ||
       typeof provider.on !== 'function' ||
       typeof provider.off !== 'function'
     ) {
-      throw new ShieldMultichainError('UNSUPPORTED', 'Shield multichain accounts are unavailable.');
+      throw new ShieldMultichainError('UNSUPPORTED', `Shield multichain ${family} is unavailable.`);
     }
     let stale = false;
     let invalidate: () => void = () => {};
@@ -47,7 +89,7 @@ export function createShieldMultichainClient(
         reject(
           new ShieldMultichainError(
             'SESSION_CHANGED',
-            'The multichain session changed. Request the account again.',
+            'The multichain session changed. Try the request again.',
           ),
         );
       };
@@ -55,11 +97,14 @@ export function createShieldMultichainClient(
     const events: MultichainEvent[] = ['accountsChanged', 'disconnect'];
     for (const event of events) provider.on(event, invalidate);
     try {
-      const result = await Promise.race([call(namespace), cancelled]);
+      const result = await Promise.race([
+        call(namespace as Family extends 'evm' ? EvmMultichainProvider : SolanaMultichainProvider),
+        cancelled,
+      ]);
       if (stale || source() !== provider || provider[family] !== namespace) {
         throw new ShieldMultichainError(
           'SESSION_CHANGED',
-          'The multichain provider changed. Request the account again.',
+          'The multichain provider changed. Try the request again.',
         );
       }
       return result;
@@ -67,59 +112,115 @@ export function createShieldMultichainClient(
       for (const event of events) provider.off(event, invalidate);
     }
   };
-  const requestAccount = <Family extends AccountFamily>(family: Family) =>
-    run(family, async namespace => {
-      if (typeof namespace.requestAccount !== 'function')
-        throw new ShieldMultichainError('UNSUPPORTED', 'Account discovery is unavailable.');
-      return parseMultichainAccount(await namespace.requestAccount(), family);
-    });
+
   return {
     evm: {
-      requestAccount: () => requestAccount('evm'),
-      requestTradingAccount: options =>
+      getCapabilities: () =>
+        run('evm', async namespace =>
+          typeof namespace.getCapabilities === 'function'
+            ? parseEvmCapabilities(await namespace.getCapabilities())
+            : inferEvmCapabilities(namespace),
+        ),
+      requestAccount: options =>
         run('evm', async namespace => {
-          if (!namespace.requestTradingAccount)
-            throw new ShieldMultichainError(
-              'UNSUPPORTED',
-              'Shield trading accounts are unavailable.',
-            );
-          return parseMultichainAccount(await namespace.requestTradingAccount(options), 'evm');
-        }),
-      sendTradingArcTransaction: request =>
-        run('evm', async namespace => {
-          if (!namespace.sendTradingArcTransaction)
-            throw new ShieldMultichainError('UNSUPPORTED', 'The Shield Arc bridge is unavailable.');
-          const hash = await namespace.sendTradingArcTransaction(request);
-          if (typeof hash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(hash)) {
-            throw new ShieldMultichainError('INVALID_RESPONSE', 'Invalid Arc transaction hash.');
+          if (typeof namespace.requestAccount !== 'function') {
+            throw new ShieldMultichainError('UNSUPPORTED', 'EVM account discovery is unavailable.');
           }
-          return hash;
+          const clean = sanitizeAccountOptions(options);
+          const response = clean
+            ? await namespace.requestAccount(clean)
+            : await namespace.requestAccount();
+          return parseMultichainAccount(response, 'evm');
         }),
-      signTradingWithdrawal: request =>
+      signMessage: request =>
         run('evm', async namespace => {
-          if (!namespace.signTradingWithdrawal)
-            throw new ShieldMultichainError('UNSUPPORTED', 'HyperCore withdrawal is unavailable.');
-          const signature = await namespace.signTradingWithdrawal(request);
-          return parseTradingSignature(signature);
+          if (typeof namespace.signMessage !== 'function') {
+            throw new ShieldMultichainError('UNSUPPORTED', 'EVM message signing is unavailable.');
+          }
+          return parseEvmSignature(await namespace.signMessage(request));
         }),
-      signTradingAgent: approval =>
+      signTypedData: request =>
         run('evm', async namespace => {
-          if (!namespace.signTradingAgent)
+          if (typeof namespace.signTypedData !== 'function') {
             throw new ShieldMultichainError(
               'UNSUPPORTED',
-              'Hyperliquid agent approval is unavailable.',
+              'EVM typed-data signing is unavailable.',
             );
-          const signature = await namespace.signTradingAgent(approval);
-          return parseTradingSignature(signature);
+          }
+          return parseEvmSignature(await namespace.signTypedData(request));
+        }),
+      sendTransaction: request =>
+        run('evm', async namespace => {
+          if (typeof namespace.sendTransaction !== 'function') {
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'EVM transaction submission is unavailable.',
+            );
+          }
+          return parseEvmTransactionHash(await namespace.sendTransaction(request));
+        }),
+      signTransaction: request =>
+        run('evm', async namespace => {
+          if (typeof namespace.signTransaction !== 'function') {
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'EVM transaction signing is unavailable.',
+            );
+          }
+          return parseEvmSignedTransaction(await namespace.signTransaction(request));
         }),
     },
-    solana: { requestAccount: () => requestAccount('solana') },
+    solana: {
+      getCapabilities: () =>
+        run('solana', async namespace =>
+          typeof namespace.getCapabilities === 'function'
+            ? parseSolanaCapabilities(await namespace.getCapabilities())
+            : inferSolanaCapabilities(namespace),
+        ),
+      requestAccount: options =>
+        run('solana', async namespace => {
+          if (typeof namespace.requestAccount !== 'function') {
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'Solana account discovery is unavailable.',
+            );
+          }
+          const clean = sanitizeAccountOptions(options);
+          const response = clean
+            ? await namespace.requestAccount(clean)
+            : await namespace.requestAccount();
+          return parseMultichainAccount(response, 'solana');
+        }),
+      signMessage: request =>
+        run('solana', async namespace => {
+          if (typeof namespace.signMessage !== 'function') {
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'Solana message signing is unavailable.',
+            );
+          }
+          return parseSolanaSignedMessage(await namespace.signMessage(request));
+        }),
+      signTransaction: request =>
+        run('solana', async namespace => {
+          if (typeof namespace.signTransaction !== 'function') {
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'Solana transaction signing is unavailable.',
+            );
+          }
+          return parseSolanaSignedTransaction(await namespace.signTransaction(request));
+        }),
+      signAndSendTransaction: request =>
+        run('solana', async namespace => {
+          if (typeof namespace.signAndSendTransaction !== 'function') {
+            throw new ShieldMultichainError(
+              'UNSUPPORTED',
+              'Solana transaction submission is unavailable.',
+            );
+          }
+          return parseSolanaTransactionSignature(await namespace.signAndSendTransaction(request));
+        }),
+    },
   };
-}
-
-function parseTradingSignature(value: unknown): string {
-  if (typeof value !== 'string' || !/^0x[0-9a-fA-F]{130}$/.test(value)) {
-    throw new ShieldMultichainError('INVALID_RESPONSE', 'Invalid Hyperliquid signature.');
-  }
-  return value;
 }
