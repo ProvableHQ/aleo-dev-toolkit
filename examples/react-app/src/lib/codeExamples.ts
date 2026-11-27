@@ -16,13 +16,18 @@ export const codeExamples = {
 const multichain = createShieldMultichainClient();
 
 // Separate provider: window.shield.multichain.evm / .solana.
-// Call from an explicit user action. The wallet approves disclosure.
-const evm = await multichain.evm.requestAccount();
-const solana = await multichain.solana.requestAccount();
+// Accounts are isolated per Aleo account and scoped strictly to this origin.
+const existing = await multichain.evm.getAccounts();
+const evm = existing.at(-1) ?? (await multichain.evm.requestAccount());
 
-// Use evm.address / solana.address in your UI.
-// Clear them on multichain accountsChanged / disconnect.
-// Unsupported wallets reject; sharing grants no signing authority.`,
+// Request an additional isolated address for this origin:
+const fresh = await multichain.evm.requestAccount({ intent: 'new' });
+
+// Sign EIP-712 typed data or send a transaction on a supported chain:
+// const sig = await multichain.evm.signTypedData({ from: evm.address, typedData });
+// const txHash = await multichain.evm.sendTransaction({ from: evm.address, chainId: 5042, to, data });
+
+// Clear displayed addresses on multichain accountsChanged / disconnect.`,
   shieldedUsdcxMint: `import { AleoWalletProvider, useWallet } from '@provablehq/aleo-wallet-adapter-react';
 import { createShieldedUsdcxMintRequest, DecryptPermission, SHIELDED_USDCX_MINT_GRANT } from '@provablehq/aleo-wallet-adapter-core';
 import { ShieldWalletAdapter } from '@provablehq/aleo-wallet-adapter-shield';
