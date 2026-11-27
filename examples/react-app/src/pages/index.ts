@@ -11,3 +11,4 @@ export { PrivateInputsPage } from './PrivateInputsPage';
 export { WalletPrivateInputsPage } from './WalletPrivateInputsPage';
 export { RemoteConnectPage } from './RemoteConnectPage';
 export { ShieldedUsdcxMintPage } from './ShieldedUsdcxMintPage';
+export { AccountDiscoveryPage } from './AccountDiscoveryPage';

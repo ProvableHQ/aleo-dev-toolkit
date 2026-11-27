@@ -39,6 +39,7 @@ const navigationGroups: NavGroup[] = [
       { to: '/wallet', label: 'Get Started', icon: Wallet },
       { to: '/customizations', label: 'Customizations', icon: Brush },
       { to: '/remote', label: 'Remote Connect', icon: Smartphone },
+      { to: '/accounts', label: 'EVM / Solana Accounts', icon: Wallet },
     ],
   },
   {

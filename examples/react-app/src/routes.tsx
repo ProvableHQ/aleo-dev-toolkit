@@ -11,6 +11,7 @@ import {
   PrivateInputsPage,
   WalletPrivateInputsPage,
   RemoteConnectPage,
+  AccountDiscoveryPage,
   ShieldedUsdcxMintPage,
   ViewKeysPage,
   TransactionHistoryPage,
@@ -22,6 +23,7 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <Layout />,
     children: [
+      { path: 'accounts', element: <AccountDiscoveryPage /> },
       {
         index: true,
         element: <Navigate to="/wallet" replace />,

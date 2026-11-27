@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@provablehq/shield-multichain": "workspace:*",
     "@provablehq/aleo-types": "workspace:*",
     "@provablehq/aleo-wallet-algorithms": "workspace:*",
     "@provablehq/aleo-wallet-adapter-core": "workspace:*",
